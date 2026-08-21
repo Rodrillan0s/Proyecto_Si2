@@ -1,0 +1,11 @@
+flask
+flask-cors
+psycopg2-binary
+python-dotenv
+pandas
+gunicorn
+PyJWT
+groq
+Flask-SocketIO
+gevent
+gevent-websocket
