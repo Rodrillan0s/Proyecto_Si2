@@ -1,50 +1,71 @@
+import jwt
 from datetime import datetime,timedelta,timezone
 from app.config import Config
-import jwt
+from fastapi import Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
+#INICAR PROTOCOLO DE DETECCION BEARER
+bearer_scheme = HTTPBearer()
 
-def create_access_token(user_id,user_name,role,id_tenant,name,minutes=120):
+def create_access_token(nro_usuario, username, nombre_rol, id_empresa, nombre_completo,nro_taller , minutes=120):
     """
-    GENERA EL JWT PARA LA SESION DEL USUARIO
+    GENERA EL JWT PARA LA SESIÓN DEL USUARIO
     """
-
-    payload={
-        'user_id':user_id,
-        'username':user_name,
-        'role':role,
-        'name':name,
-        'exp':datetime.now(timezone.utc) + timedelta(minutes=minutes),
+    payload = {
+        'nro_usuario': nro_usuario,
+        'username': username,
+        'nombre_rol': nombre_rol,
+        'id_empresa': id_empresa,
+        'nro_taller':nro_taller,
+        'nombre_completo': nombre_completo,
+        'exp': datetime.now(timezone.utc) + timedelta(minutes=minutes),
         'iat': datetime.now(timezone.utc)
     }
 
-    return jwt.encode(payload, Config.TOKEN_SECRET_KEY, algorithm="HS256")
+    # Usamos Config.TOKEN_KEY que definiste en tu archivo de configuración
+    return jwt.encode(payload, Config.TOKEN_KEY, algorithm="HS256")
 
 
-def decode_access_token(token):
+def decode_access_token(token: str):
     """
     DECODIFICA Y VALIDA EL JWT ENVIADO POR EL FRONTEND
     """
     try:
-        #DECODIFICA EL TOKEN PARA OBTENER LOS VALORES DENTRO DE EL
-        payload = jwt.decode(token, Config.TOKEN_SECRET_KEY, algorithms=["HS256"])
+        payload = jwt.decode(token, Config.TOKEN_KEY, algorithms=["HS256"])
         
-        #DEVUELVE UN JSON CON LOS VALORES DENTRO ('sub','username','role','exp','iat')
         return {
-            'success':True,
-            'message':'TOKEN VALIDO',
-            'payload':payload
-            }
+            'success': True,
+            'message': 'TOKEN VALIDO',
+            'payload': payload
+        }
         
     except jwt.ExpiredSignatureError:
-        #DEVUELVE UN ERROR SI ES QUE EL TOKEN EXPIRO
         return {
-            'success':False,
-            'message':'TOKEN EXPIRADO'
+            'success': False,
+            'message': 'Su sesión ha expirado. Por favor, inicie sesión nuevamente.'
         }
         
     except jwt.InvalidTokenError:
-        #ERROR SI EL TOKEN ES INVALIDO
         return {
-            'success':False,
-            'message':'TOKEN INVALIDO'
+            'success': False,
+            'message': 'Token de acceso inválido o corrupto.'
         }
+
+
+def verificar_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
+    """
+    Dependencia reusable que extrae el token Bearer, lo valida con tu función 
+    y retorna el payload decodificado si todo está correcto.
+    """
+    #OBTENEMOS EL TOKEN
+    token = credentials.credentials
+
+    #VERIFICAMOS CON FUNCION DE DECODIFICACION
+    resultado = decode_access_token(token)
+    
+    #SI LA DECODIFICACION FALLA (TOKEN EXPIRADO O INVALIDO) RETORNAR ERROR
+    if not resultado.get('success'):
+        raise HTTPException(status_code=401, detail=resultado.get('message'))
+        
+    #SI LA VERIFICACION RETORNA EXITO RETORNAMOS EL CONTENIDO DEL TOKEN
+    return resultado.get('payload')

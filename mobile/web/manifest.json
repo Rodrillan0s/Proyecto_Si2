@@ -1,6 +1,6 @@
 {
-    "name": "agroenlace_mobile",
-    "short_name": "agroenlace_mobile",
+    "name": "emergencias_vehiculares",
+    "short_name": "emergencias_vehiculares",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

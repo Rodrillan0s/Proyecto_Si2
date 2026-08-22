@@ -1,34 +1,105 @@
-# app/services/notificaciones_services.py
-from flask_socketio import join_room
-from datetime import datetime
+from app.repos import notificaciones_repos
+from app.classes.websocket_manager import manager
 
-def manejar_conexion_usuario(user_id: int):
-    nombre_sala = f"user_{user_id}"
-    join_room(nombre_sala)
-    print(f"[SOCKET SERVICE] Conexión establecida. Usuario {user_id} asignado a la sala: {nombre_sala}")
-    return {"status": "connected", "room": nombre_sala}
-
-# --- NUEVA FUNCIÓN ---
-def emitir_notificacion_masiva(socketio_instance, clientes_ids, asunto, mensaje, canal):
-    """
-    Recibe la instancia de socketio y la lista de IDs de clientes.
-    Emite el evento 'nueva_notificacion' a cada sala individual.
-    """
-    fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+#ALERTA A TODOS LOS TALLERES (CUANDO SE CREA LA EMERGENCIA)
+async def enviar_push_nueva_emergencia(nro_emergencia: int, tipo_emergencia: str):
+    roles_destino = ['ADMINISTRADOR', 'GERENTE TALLER', 'MECANICO']
+    usuarios_destino = notificaciones_repos.obtener_usuarios_por_roles(roles_destino)
     
-    payload_socket = {
-        "asunto": asunto,
-        "mensaje": mensaje,
-        "canal": canal,
-        "fecha": fecha_actual
+    titulo = "¡Nueva Emergencia Reportada!"
+    cuerpo = f"Se requiere asistencia: {tipo_emergencia}"
+    tipo_ref = "NUEVA_EMERGENCIA"
+
+    mensaje_push = {
+        "tipo_alerta": tipo_ref,
+        "titulo": titulo,
+        "cuerpo": cuerpo,
+        "data": {"nro_emergencia": nro_emergencia}
+    }
+    
+    for u in usuarios_destino:
+        nro_usu = u['nro_usuario']
+        # 1. Guardar en base de datos
+        notificaciones_repos.guardar_notificacion_db(titulo, cuerpo, tipo_ref, nro_usu, nro_emergencia)
+        # 2. Enviar por WebSocket
+        await manager.send_personal_message(mensaje_push, nro_usu)
+
+#ALERTA AL CLIENTE (CUANDO UN TALLER LE MANDA UNA OFERTA)
+async def enviar_push_nueva_oferta(nro_emergencia: int, id_oferta: int, nro_usuario_cliente: int, precio: float):
+    titulo = "¡Nueva Oferta Recibida!"
+    cuerpo = f"Un taller ha ofrecido atender su emergencia por Bs. {precio}."
+    tipo_ref = "NUEVA_OFERTA"
+
+    # 1. Guardar en base de datos
+    notificaciones_repos.guardar_notificacion_db(titulo, cuerpo, tipo_ref, nro_usuario_cliente, nro_emergencia)
+
+    # 2. Enviar por WebSocket
+    mensaje_push = {
+        "tipo_alerta": tipo_ref,
+        "titulo": titulo,
+        "cuerpo": cuerpo,
+        "data": {"nro_emergencia": nro_emergencia, "id_oferta": id_oferta}
+    }
+    await manager.send_personal_message(mensaje_push, nro_usuario_cliente)
+
+#ALERTA A LOS TRABAJADORES DEL TALLER (CUANDO EL CLIENTE RESPONDE LA OFERTA)
+async def enviar_push_respuesta_oferta(nro_emergencia: int, id_oferta: int, estado_respuesta: str, nro_taller: int):
+    usuarios_taller = notificaciones_repos.obtener_usuarios_por_taller(nro_taller)
+    
+    if estado_respuesta == 'ACEPTADA':
+        titulo = "¡Oferta Aceptada!"
+        cuerpo = "El cliente aceptó tu cotización. ¡Inicia el trayecto!"
+    else:
+        titulo = "Oferta Rechazada"
+        cuerpo = "El cliente ha declinado tu cotización."
+        
+    tipo_ref = "RESPUESTA_OFERTA"
+
+    mensaje_push = {
+        "tipo_alerta": tipo_ref,
+        "titulo": titulo,
+        "cuerpo": cuerpo,
+        "data": {"nro_emergencia": nro_emergencia, "id_oferta": id_oferta}
+    }
+    
+    for u in usuarios_taller:
+        nro_usu = u['nro_usuario']
+        # 1. Guardar en BD para cada miembro del taller
+        notificaciones_repos.guardar_notificacion_db(titulo, cuerpo, tipo_ref, nro_usu, nro_emergencia)
+        # 2. Notificar por WebSocket
+        await manager.send_personal_message(mensaje_push, nro_usu)
+
+def listar_mis_notificaciones(nro_usuario: int):
+    if not nro_usuario:
+        raise ValueError("No se pudo identificar al usuario de la sesión.")
+    
+    alertas = notificaciones_repos.obtener_notificaciones_por_usuario_db(int(nro_usuario))
+    return {
+        "success": True,
+        "message": "Bandeja de notificaciones recuperada exitosamente.",
+        "data": alertas
     }
 
-    enviados = 0
-    for cliente_id in clientes_ids:
-        room_name = f"user_{cliente_id}"
-        # Emitimos el evento a la sala específica de este cliente
-        socketio_instance.emit('nueva_notificacion', payload_socket, room=room_name)
-        enviados += 1
+def cambiar_estado_leido(nro_usuario: int, id_notificacion: int = None, marcar_todo: bool = False):
+    if not nro_usuario:
+        raise ValueError("Operación no autorizada. Sesión inválida.")
         
-    print(f"[SOCKET EMIT] Notificación enviada a {enviados} clientes por el canal {canal}.")
-    return enviados
+    # ESCENARIO A: Botón masivo para limpiar toda la bandeja
+    if marcar_todo:
+        total_actualizadas = notificaciones_repos.marcar_todas_las_notificaciones_leidas_db(int(nro_usuario))
+        return {
+            "success": True,
+            "message": f"Todas las notificaciones fueron marcadas como leídas. ({total_actualizadas} alertas afectadas)"
+        }
+        
+    # ESCENARIO B: Se leyó una notificación específica
+    if id_notificacion:
+        exito = notificaciones_repos.marcar_notificacion_leida_db(int(id_notificacion), int(nro_usuario))
+        if not exito:
+            raise ValueError("No se encontró la notificación seleccionada o no te pertenece.")
+        return {
+            "success": True,
+            "message": "Notificación marcada como leída exitosamente."
+        }
+        
+    raise ValueError("Parámetros insuficientes para procesar la lectura de alertas.")

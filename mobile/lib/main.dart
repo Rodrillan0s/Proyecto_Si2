@@ -1,53 +1,64 @@
 import 'package:flutter/material.dart';
-import 'services/offline_pedido_service.dart';
-
-//SCREENS
-import 'screens/auth_screen.dart';
-import 'screens/home_screen.dart';
-import 'services/token_storage.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'theme/app_theme.dart';
-import 'screens/perfil_screen.dart';
-import 'screens/productos_screen.dart';
-import 'screens/pedidos_screen.dart';
-import 'screens/ordenes_screen.dart';
-import 'screens/entregas_screen.dart';
+import 'services/auth_provider.dart';
+import 'screens/auth_screens.dart';
+import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final token = await TokenStorage.getToken();
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+    ),
+  );
 
-  runApp(AgroEnlaceApp(isLoggedIn: token != null));
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]);
+
+  // Verificar sesión antes de arrancar
+  final authProvider = AuthProvider();
+  await authProvider.verificarSesion();
+
+  runApp(
+    ChangeNotifierProvider.value(
+      value: authProvider,
+      child: const EmergenciasVehicularesApp(),
+    ),
+  );
 }
 
-class AgroEnlaceApp extends StatelessWidget {
-  final bool isLoggedIn;
-
-  const AgroEnlaceApp({
-    super.key,
-    required this.isLoggedIn,
-  });
+class EmergenciasVehicularesApp extends StatelessWidget {
+  const EmergenciasVehicularesApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'AgroEnlace Mobile',
+      title: 'Emergencias Vehiculares',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      theme: AppTheme.theme,
+      home: const _RootRouter(),
+    );
+  }
+}
 
-      // Si ya inició sesión antes, entra al home.
-      initialRoute: isLoggedIn ? '/home' : '/auth',
+/// Escucha AuthProvider y decide qué pantalla mostrar.
+class _RootRouter extends StatelessWidget {
+  const _RootRouter();
 
-      //await OfflinePedidoService.instance.init();
-      routes: {
-        '/auth': (context) => const AuthScreen(),
-        '/home': (context) => const HomeScreen(),
-        '/perfil': (context) => const PerfilScreen(),
-        '/productos': (context) => const ProductosScreen(),
-        '/pedidos': (context) => const PedidosScreen(),
-        '/ordenes': (context) => const OrdenesScreen(),
-        '/entregas': (context) => const EntregasScreen(),
-      },
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      child: auth.estaAutenticado
+          ? const HomeScreen(key: ValueKey('home'))
+          : const LoginScreen(key: ValueKey('login')),
     );
   }
 }

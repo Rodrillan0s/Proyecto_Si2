@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "agroenlace_mobile" "\0"
+            VALUE "CompanyName", "com.emergenciasvehiculares" "\0"
+            VALUE "FileDescription", "emergencias_vehiculares" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "agroenlace_mobile" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "agroenlace_mobile.exe" "\0"
-            VALUE "ProductName", "agroenlace_mobile" "\0"
+            VALUE "InternalName", "emergencias_vehiculares" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 com.emergenciasvehiculares. All rights reserved." "\0"
+            VALUE "OriginalFilename", "emergencias_vehiculares.exe" "\0"
+            VALUE "ProductName", "emergencias_vehiculares" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

@@ -1,56 +1,104 @@
-# app/repos/users_repos.py
+from app.classes.postgres import PostgreSQL
 from app.config import Config
 
-def get_all_users(db, id_empresa=None):
-    query = f"""
-        SELECT a.id_usuario, a.user_name, a.documento_identidad, a.nombre_razon_social, a.telefono, b.nombre_rol as rol, a.id_empresa,
-        a.correo as mail
-        FROM {Config.SCHEMA}.{Config.T_USER} a
-        INNER JOIN {Config.SCHEMA}.{Config.T_ROL} b ON b.id = a.id_rol
-    """
-    params = []
-    
-    # Condicional Multi-tenant
-    if id_empresa:
-        query += " WHERE a.id_empresa = %s"
-        params.append(id_empresa)
+# --- LEER USUARIOS ---
+def obtener_todos_los_usuarios():
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        query = f"""
+            SELECT 
+                a.nro_usuario, a.ci, a.nombre_usuario, a.estado, a.id_empresa,d.nombre_empresa,
+                b.nombre_completo, b.correo, b.telefono, b.direccion,
+                c.nombre_rol, a.nro_rol
+            FROM {Config.SCHEMA}.usuario a
+            INNER JOIN {Config.SCHEMA}.persona b ON a.ci = b.ci
+            INNER JOIN {Config.SCHEMA}.rol c ON a.nro_rol = c.nro_rol
+            LEFT JOIN {Config.SCHEMA}.empresa d ON d.id_empresa=a.id_empresa
+            WHERE a.estado = 'ACTIVO';
+        """
+        resultados = db.execute_query(query, fetchall=True)
         
-    return db.execute_query(query, tuple(params) if params else None, fetchall=True)
+        usuarios = []
+        if resultados:
+            for r in resultados:
+                usuarios.append({
+                    "nro_usuario": r[0], "ci": r[1], "nombre_usuario": r[2], 
+                    "estado": r[3], "id_empresa": r[4],"nombre_empresa": r[5], 
+                    "nombre_completo": r[6], 
+                    "correo": r[7], "telefono": r[8], "direccion": r[9], 
+                    "nombre_rol": r[10], "nro_rol": r[11]
+                })
+        return usuarios
+    finally:
+        db.close_connection()
 
+# --- CREAR USUARIO ---
+def crear_usuario_db(datos_persona, datos_usuario):
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        #INSERTAR DATOS PERSONA
+        query_persona = f"""
+            INSERT INTO {Config.SCHEMA}.persona (ci, nombre_completo, telefono, correo, direccion)
+            VALUES (%s, %s, %s, %s, %s)
+            ON CONFLICT (ci) DO UPDATE 
+            SET nombre_completo = EXCLUDED.nombre_completo,
+                telefono = EXCLUDED.telefono,
+                correo = EXCLUDED.correo,
+                direccion = EXCLUDED.direccion;
+        """
+        db.execute_query(query_persona, datos_persona)
 
-def delete_user_by_username(db, username):
-    query = f"DELETE FROM {Config.SCHEMA}.{Config.T_USER} WHERE user_name = %s"
-    # Quitamos commit=True, lo hará el servicio
-    return db.execute_query(query, (username,))
-
-
-def update_user_dynamic(db, username, fields, params):
-    set_clause = ", ".join(fields)
-    query = f"""
-        UPDATE {Config.SCHEMA}.{Config.T_USER}
-        SET {set_clause}
-        WHERE user_name = %s
-    """
-    # Quitamos commit=True, lo hará el servicio
-    return db.execute_query(query, tuple(params + [username]))
-
-
-def get_all_employees(db, id_empresa=None):
-    query = f"""
-        SELECT id_usuario, user_name, nombre_razon_social, id_empresa
-        FROM {Config.SCHEMA}.{Config.T_USER}
-        WHERE id_rol = 3
-    """
-    params = []
-    
-    # Condicional Multi-tenant: usamos AND porque ya hay un WHERE
-    if id_empresa:
-        query += " AND id_empresa = %s"
-        params.append(id_empresa)
+        #INSERTAR DATOS USUARIO
+        query_usuario = f"""
+            INSERT INTO {Config.SCHEMA}.usuario (nombre_usuario, password_hash, estado, ci, nro_rol, id_empresa)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING nro_usuario;
+        """
+        resultado = db.execute_query(query_usuario, datos_usuario, fetchone=True, commit=True)
         
-    return db.execute_query(query, tuple(params) if params else None, fetchall=True)
+        return resultado[0] if resultado else None
+    finally:
+        db.close_connection()
 
-# ========================================================
-# NOTA: Para la importación masiva de usuarios 
-# reutilizaremos auth_repos.insert_user desde el servicio.
-# ========================================================
+# --- ACTUALIZAR USUARIO ---
+def actualizar_usuario_db(nro_usuario, ci, datos_persona, datos_usuario, cambiar_password=False):
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        query_persona = f"""
+            UPDATE {Config.SCHEMA}.persona
+            SET nombre_completo = %s, telefono = %s, correo = %s, direccion = %s
+            WHERE ci = %s;
+        """
+        db.execute_query(query_persona, datos_persona + (ci,))
+
+        if cambiar_password:
+            query_usuario = f"""
+                UPDATE {Config.SCHEMA}.usuario
+                SET nombre_usuario = %s, password_hash = %s, nro_rol = %s, id_empresa = %s
+                WHERE nro_usuario = %s;
+            """
+        else:
+            query_usuario = f"""
+                UPDATE {Config.SCHEMA}.usuario
+                SET nombre_usuario = %s, nro_rol = %s, id_empresa = %s
+                WHERE nro_usuario = %s;
+            """
+        
+        db.execute_query(query_usuario, datos_usuario + (nro_usuario,), commit=True)
+        return True
+    finally:
+        db.close_connection()
+
+# --- ELIMINAR USUARIO ---
+def eliminar_usuario_db(nro_usuario: int):
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        query = f"UPDATE {Config.SCHEMA}.usuario SET estado = 'INACTIVO' WHERE nro_usuario = %s;"
+        db.execute_query(query, (nro_usuario,), commit=True)
+        return True
+    finally:
+        db.close_connection()

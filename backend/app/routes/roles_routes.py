@@ -1,69 +1,48 @@
-# app/routes/roles_routes.py
-from flask import Blueprint, request, jsonify
+from fastapi import APIRouter, Body, HTTPException, Depends
 from app.services import roles_services
-from app.utils.security import decode_access_token
+from app.utils.security import verificar_token
 
-router = Blueprint('roles_routes', __name__)
+router = APIRouter(tags=["Roles"])
 
-def admin_required(func):
-    """Decorator para validar token y rol de admin en roles"""
-    def wrapper(*args, **kwargs):
-        auth_header = request.headers.get('Authorization')
-        if not auth_header or not auth_header.startswith('Bearer '):
-            return jsonify({'success': False, 'message': 'Usuario No Autenticado.'}), 401
-        
-        token = auth_header.split(" ")[1]
-        validation = decode_access_token(token)
-        
-        if not validation.get('success'):
-            return jsonify({'success': False, 'message': 'Usuario No Autenticado.'}), 401
-            
-        payload = validation.get('payload', {})
-        rol = int(payload.get('role', 0))
-        
-        if rol != 1:
-            return jsonify({'success': False, 'message': 'Acceso denegado. Se requieren permisos de Administrador.'}), 403
-            
-        request.user_payload = payload
-        return func(*args, **kwargs)
-    wrapper.__name__ = func.__name__
-    return wrapper
+@router.get('/')
+def get_roles(token_data: dict = Depends(verificar_token)):
+    try:
+        return roles_services.listar_roles()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
-@router.route('/api/get-roles', methods=['GET'])
-@admin_required
-def get_roles():
-   response_data, status_code = roles_services.fetch_roles()
-   return jsonify(response_data), status_code
-
-@router.route('/api/add-roles', methods=['POST'])
-@admin_required
-def add_roles():
-    data = request.get_json()
+@router.post('/')
+def create_rol(data: dict = Body(...), token_data: dict = Depends(verificar_token)):
     if not data:
-        return jsonify({'success': False, 'message': 'Solicitud Invalida'}), 400
+        raise HTTPException(status_code=400, detail='El cuerpo de la petición está vacío.')
     
-    admin_id = request.user_payload.get('user_id')
-    response_data, status_code = roles_services.create_new_role(data, admin_id)
-    return jsonify(response_data), status_code
+    try:
+        return roles_services.registrar_rol(data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno en BD: {str(e)}")
 
-@router.route('/api/update-roles', methods=['POST'])  
-@admin_required
-def update_roles():
-    data = request.get_json()
+@router.put('/{nro_rol}')
+def update_rol(nro_rol: int, data: dict = Body(...), token_data: dict = Depends(verificar_token)):
     if not data:
-        return jsonify({'success': False, 'message': 'No se enviaron datos en la petición.'}), 400
+        raise HTTPException(status_code=400, detail='El cuerpo de la petición está vacío.')
+        
+    try:
+        return roles_services.actualizar_rol(nro_rol, data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno en BD: {str(e)}")
 
-    admin_id = request.user_payload.get('user_id')
-    response_data, status_code = roles_services.update_role(data, admin_id)
-    return jsonify(response_data), status_code
-
-@router.route('/api/delete-roles', methods=['POST'])
-@admin_required
-def delete_roles():
-    data = request.get_json()
-    if not data:
-        return jsonify({'success': False, 'message': 'No se enviaron datos en la petición.'}), 400
-
-    admin_id = request.user_payload.get('user_id')
-    response_data, status_code = roles_services.remove_role(data, admin_id)
-    return jsonify(response_data), status_code
+@router.delete('/{nro_rol}')
+def delete_rol(nro_rol: int, token_data: dict = Depends(verificar_token)):
+    try:
+        return roles_services.borrar_rol(nro_rol)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        error_msg = str(e)
+        if "fk_usuario_rol" in error_msg:
+            raise HTTPException(status_code=400, detail="No se puede eliminar este rol porque hay usuarios asignados a él.")
+        raise HTTPException(status_code=500, detail=f"Error interno en BD: {error_msg}")

@@ -1,17 +1,64 @@
-#PYTHON CACHE
+# =========================
+# Entornos Virtuales
+# =========================
+.venv/
+venv/
+env/
+ENV/
+
+# =========================
+# Variables de Entorno
+# =========================
+.env
+.env.*
+*.secret
+
+# =========================
+# Caché de Python y FastAPI
+# =========================
 __pycache__/
 *.py[cod]
 *$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
-#VARIABLES DE ENTORNO
-.env
-.env.*
-!.env.example
+# =========================
+# Logs del Servidor
+# =========================
+*.log
 
-#ARCHIVOS VSCODE
+# =========================
+# Bases de datos locales
+# =========================
+# Aunque usarás PostgreSQL con psycopg2, es buena práctica ignorar
+# bases de datos de SQLite locales que a veces se crean para pruebas rápidas
+*.sqlite3
+*.db
+
+# =========================
+# Entornos de Desarrollo (IDEs)
+# =========================
 .vscode/
-.history/
+.idea/
+*.swp
+*.swo
 
-#ENTORNOS VIRTUALES
-venv
-.venv
+# =========================
+# Archivos del Sistema Operativo
+# =========================
+# Linux
+*~
+.directory
+# Mac
+.DS_Store
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# =========================
+# Empaquetado y Distribución
+# =========================
+build/
+dist/
+*.egg-info/

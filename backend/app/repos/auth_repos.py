@@ -1,52 +1,120 @@
-# app/repos/auth_repos.py
+from app.classes.postgres import PostgreSQL
 from app.config import Config
 
-def check_user_exists(db, doc, mail, user_name):
-    check_query = f"""
-        SELECT 1
-        FROM {Config.SCHEMA}.{Config.T_USER}
-        WHERE DOCUMENTO_IDENTIDAD=%s OR CORREO=%s 
-        OR USER_NAME=%s
-        LIMIT 1
-    """
-    check_params = (doc, mail, user_name)
-    return db.execute_query(check_query, check_params, fetchone=True)
+def obtener_usuario_por_ci(ci: str):
+    db = PostgreSQL()    
+    try:
+        db.create_connection()
 
-
-def insert_user(db, user, doc, name, mail, number, direction, password_hash, id_role=4, id_empresa=None):
-    if direction:
-        insert_query = f"""
-            INSERT INTO {Config.SCHEMA}.{Config.T_USER} 
-            (USER_NAME,PASSWORD_HASH,DOCUMENTO_IDENTIDAD,NOMBRE_RAZON_SOCIAL,DIRECCION,CORREO,TELEFONO,ID_ROL,ID_EMPRESA)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        query = f"""
+            SELECT a.password_hash,a.nro_usuario,a.ci,b.nombre_completo,b.correo,b.telefono,
+            a.nombre_usuario,c.nombre_rol,a.id_empresa,nro_taller
+            FROM {Config.SCHEMA}.usuario a
+            INNER JOIN taller.persona b ON a.ci = b.ci
+            INNER JOIN taller.rol c ON a.nro_rol = c.nro_rol
+            WHERE a.ci = %s AND a.estado = 'ACTIVO';
         """
-        params = (user, password_hash, doc, name, direction, mail, number, id_role, id_empresa)
-    else:
-        insert_query = f"""
-            INSERT INTO {Config.SCHEMA}.{Config.T_USER} 
-            (USER_NAME,PASSWORD_HASH,DOCUMENTO_IDENTIDAD,NOMBRE_RAZON_SOCIAL,CORREO,TELEFONO,ID_ROL,ID_EMPRESA)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        
+        
+        resultado = db.execute_query(query, (ci,), fetchone=True)
+        
+        if resultado:
+            return {
+                "password_hash": resultado[0],
+                "nro_usuario": resultado[1],
+                "ci": resultado[2],
+                "nombre_completo": resultado[3],
+                "correo": resultado[4],
+                "telefono": resultado[5],
+                "nombre_usuario": resultado[6],
+                "nombre_rol": resultado[7],
+                "id_empresa":resultado[8],
+                "nro_taller":resultado[9]
+            }
+            
+        return None
+    except Exception as e:
+        raise ValueError(f'ERROR: {str(e)}') 
+    finally:
+        db.close_connection()
+
+
+def existe_persona_por_ci(ci: str):
+    db = PostgreSQL()
+    try:
+        db.create_connection()
+
+        query = f"SELECT 1 FROM {Config.SCHEMA}.persona WHERE ci = %s;"
+
+        result=db.execute_query(query, (ci,), fetchone=True)
+
+        if result:
+            return True
+        
+        return False
+    except Exception as e:
+        raise ValueError(f'ERROR: {str(e)}') 
+    finally:
+        db.close_connection()
+
+
+def existe_nombre_usuario(nombre_usuario: str):
+    db = PostgreSQL()
+    
+    try:
+
+        db.create_connection()
+
+        query = f"SELECT 1 FROM {Config.SCHEMA}.usuario WHERE UPPER(nombre_usuario) = %s;"
+
+        result=db.execute_query(query, (nombre_usuario,), fetchone=True)
+
+        if result:
+            return True
+        
+        return False
+    except Exception as e:
+        raise ValueError(f'ERROR: {str(e)}') 
+    finally:
+        db.close_connection()
+
+
+def registrar_usuario_bd(data: dict, persona_existe: bool):
+    db = PostgreSQL()
+
+    try:
+        db.create_connection()
+
+        #SI LA PERSONA NO EXISTE LA REGISTRAMOS
+        if not persona_existe:
+            query_persona = """
+                INSERT INTO taller.persona (ci, nombre_completo, telefono, correo, direccion)
+                VALUES (%s, %s, %s, %s, %s);
+            """
+            params_persona = (
+                data.get('ci'), data.get('nombre_completo').upper(), data.get('telefono'), 
+                data.get('correo'), data.get('direccion')
+            )
+            
+            db.execute_query(query_persona, params_persona)
+        
+        #INSERTAMOS EL USUARIO
+        query_usuario = """
+            INSERT INTO taller.usuario (nombre_usuario, password_hash, estado, ci, nro_rol, id_empresa)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING nro_usuario;
         """
-        params = (user, password_hash, doc, name, mail, number, id_role, id_empresa)
-
-    # Nota importante: Eliminamos commit=True, el commit lo hará el Servicio
-    return db.execute_query(query=insert_query, params=params)
-
-
-def get_user_id_by_username(db, username):
-    query = f"""
-        SELECT id_usuario
-        FROM {Config.SCHEMA}.{Config.T_USER}
-        WHERE user_name=%s
-    """
-    return db.execute_query(query=query, params=(username,), fetchone=True)
-
-
-def extract_login_user(db, user_input):
-    query = f"""
-        SELECT ID_USUARIO, USER_NAME, PASSWORD_HASH, NOMBRE_RAZON_SOCIAL, CORREO, ID_ROL, ESTADO_CUENTA, ID_EMPRESA
-        FROM {Config.SCHEMA}.{Config.T_USER}
-        WHERE UPPER(CORREO) = %s OR USER_NAME = %s
-    """
-    params = (user_input, user_input)
-    return db.execute_query(query=query, params=params, fetchone=True)
+        params_usuario = (
+            data.get('nombre_usuario').upper(), data.get('password_hash'), data.get('estado'),
+            data.get('ci'), data.get('nro_rol'), data.get('id_empresa')
+        )
+        
+        #EJECUTAMOS EL INSERT Y HACEMOS COMMIT=TRUE PARA GUARDAR AMBOS INSERTS 
+        resultado = db.execute_query(query_usuario, params_usuario, commit=True, fetchone=True)
+        
+        return resultado[0] if resultado else None
+        
+    except Exception as e:
+        raise ValueError(f'ERROR: {str(e)}') 
+    finally:
+        db.close_connection()

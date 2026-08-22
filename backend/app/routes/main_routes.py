@@ -1,10 +1,11 @@
-from flask import Blueprint,request
+from fastapi import APIRouter, Body
 
-router=Blueprint('main_routes',__name__)
+router = APIRouter(tags=["Principal"])
 
-@router.route('/')
+@router.get("/")
 def index():
     return {
-        'success':True,
-        'message':'API Iniciada Exitosamente.'
+        "sistema": "Plataforma Inteligente de Atención de Emergencias Vehiculares",
+        "estado": "En línea",
+        "version": "1.0.0"
     }

@@ -1,43 +1,27 @@
-# app/routes/profile_routes.py
-from functools import wraps
-from flask import Blueprint, request, jsonify
+from fastapi import APIRouter,Body,HTTPException,Depends
 from app.services import profile_services
-from app.utils.security import decode_access_token
+from app.utils.security import verificar_token
 
-router = Blueprint('profile_routes', __name__)
+router=APIRouter(tags=['Perfil'])
 
-def token_required(func):
-    """Decorador genérico para validar sesión y extraer el user_id para el perfil"""
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        auth_header = request.headers.get("Authorization")
-        if not auth_header or not auth_header.startswith("Bearer "):
-            return jsonify({"success": False, "message": "Usuario No Autenticado."}), 401
-
-        token = auth_header.split(" ")[1]
-        validation = decode_access_token(token)
-
-        if not validation.get("success"):
-            return jsonify({"success": False, "message": "Sesión inválida o expirada."}), 401
-
-        request.user_payload = validation.get("payload", {})
-        return func(*args, **kwargs)
-    return wrapper
-
-@router.route('/api/profile', methods=['GET'])
-@token_required
-def get_profile():
-    # Soportamos tanto 'user_id' como 'id_usuario' dependiendo de cómo lo guardaste en el token
-    user_id = request.user_payload.get('user_id', request.user_payload.get('id_usuario'))
+@router.get('/')
+def get_profile(token_data:dict = Depends(verificar_token)):
+    try:
+        nro_usuario=token_data.get('nro_usuario')
+        return profile_services.obtener_perfil_usuario(nro_usuario)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as err:
+        raise HTTPException(status_code=500, detail=f"Error interno en : {err}")
     
-    response_data, status_code = profile_services.fetch_profile_data(user_id)
-    return jsonify(response_data), status_code
 
-@router.route('/api/update-profile', methods=['PUT'])
-@token_required
-def update_profile():
-    user_id = request.user_payload.get('user_id', request.user_payload.get('id_usuario'))
-    data = request.get_json() or {}
-    
-    response_data, status_code = profile_services.modify_profile_data(data, user_id)
-    return jsonify(response_data), status_code
+@router.put('/')
+def update_profile(token_data:dict=Depends(verificar_token),data:dict=Body(...)):
+    try:
+        nro_usuario=token_data.get('nro_usuario')
+
+        return profile_services.actualizar_perfil_usuario(nro_usuario,data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as err:
+        raise HTTPException(status_code=500, detail=f"Error interno en : {err}")

@@ -1,41 +1,89 @@
-from flask import Blueprint, request
-from flask_socketio import ConnectionRefusedError, join_room
-from app.services import notificaciones_services
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
+from app.classes.websocket_manager import manager
 from app.utils.security import decode_access_token
+from fastapi import Depends, HTTPException, Body
+from app.utils.security import verificar_token
+from app.services import notificaciones_services
 
-router = Blueprint('notificaciones_routes', __name__)
+router = APIRouter(tags=["WebSockets Notificaciones"])
 
-def register_notificaciones_sockets(socketio):
+
+@router.websocket("/notificaciones")
+async def websocket_endpoint(websocket: WebSocket, token: str = Query(...)):
+    await websocket.accept()
     
-    @socketio.on('connect')
-    def handle_connect(auth):
-        print("[SOCKET] Intento de conexión recibido.")
-        
-        # Intentamos obtener token de auth o de query params
-        token = None
-        if auth and isinstance(auth, dict):
-            token = auth.get('token')
-        
-        if not token:
-            token = request.args.get('token')
-            
-        if not token:
-            print("[SOCKET] Error: No se envió token.")
-            raise ConnectionRefusedError('Token no proporcionado.')
+    print("INTENTANDO CONECTAR WEBSOCKET")
+    print(f"TOKEN RECIBIDO POR URL: {token[:30]}...")
 
-        print(f'[SOCKET] TOKEN RECIBIDO: {token[:30]}')
-        validation = decode_access_token(token)
-        if not validation.get('success'):
-            print("[SOCKET] Error: Token inválido.")
-            raise ConnectionRefusedError('Token inválido.')
+    #VALIDAR EL TOKEN
+    validation = decode_access_token(token)
+    
+    #COMPROBACION DE TOKEN
+    if not validation or (isinstance(validation, dict) and validation.get('success') is False):
+        print("❌ CONEXIÓN RECHAZADA: El token es inválido o expiró.")
+        await websocket.close(code=1008)
+        return
 
-        payload = validation.get('payload', {})
-        user_id = payload.get('user_id', payload.get('id_usuario'))
+    #EXTRAER CONTENIDO DEL TOKEN
+    payload = validation.get('payload') if isinstance(validation, dict) else None
+    if not payload:
+        payload = validation.get('data', validation) if isinstance(validation, dict) else validation
 
-        # Llamamos al servicio para unirlo a su sala
-        notificaciones_services.manejar_conexion_usuario(user_id)
-        print(f"[SOCKET] Usuario {user_id} conectado exitosamente.")
+    try:
+        nro_usuario = payload.get('nro_usuario')
+    except Exception:
+        nro_usuario = None
 
-    @socketio.on('disconnect')
-    def handle_disconnect():
-        print("[SOCKET] Cliente desconectado.")
+    if not nro_usuario:
+        print("CONEXIÓN RECHAZADA: NO SE ENCONTRO UN NRO_USUARIO DENTRO DEL TOKEN.")
+        await websocket.close(code=1008)
+        return
+
+    print(f"TOKEN VALIDO. VINCULANDO CANAL AL USUARIO: {nro_usuario}")
+
+    #GUARDAR CONEXION ACTIVA
+    manager.active_connections[int(nro_usuario)] = websocket
+    print(f"CANAL EN TIEMPO REAL ABIERTO EXITOSAMENTE PARA EL USUARIO {nro_usuario}.")
+    
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        if int(nro_usuario) in manager.active_connections:
+            del manager.active_connections[int(nro_usuario)]
+        print(f"USUARIO {nro_usuario} DESCONECTADO DEL WEBSOCKET.")
+# ============================================================
+# 📡 ENDPOINTS HTTP TRADICIONALES (Bandeja de Entrada e Historial)
+# ============================================================
+
+@router.get('/historial')
+def get_mis_notificaciones(token_data: dict = Depends(verificar_token)):
+    """
+    Endpoint HTTP para poblar la lista/bandeja de entrada del usuario.
+    """
+    nro_usuario = token_data.get('nro_usuario')
+    try:
+        return notificaciones_services.listar_mis_notificaciones(nro_usuario)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put('/leer')
+def update_marcar_como_leido(data: dict = Body(...), token_data: dict = Depends(verificar_token)):
+    """
+    Endpoint flexible para marcar una o todas las notificaciones como leídas.
+    """
+    nro_usuario = token_data.get('nro_usuario')
+    id_notificacion = data.get('id_notificacion')
+    marcar_todo = data.get('marcar_todo', False)
+    
+    try:
+        return notificaciones_services.cambiar_estado_leido(
+            nro_usuario=nro_usuario, 
+            id_notificacion=id_notificacion, 
+            marcar_todo=marcar_todo
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

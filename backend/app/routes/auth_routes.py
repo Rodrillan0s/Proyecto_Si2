@@ -1,34 +1,43 @@
-from flask import Blueprint,request,jsonify
+from fastapi import APIRouter, Body, HTTPException
 from app.services import auth_services
 
-router=Blueprint('auth_routes',__name__)
+router = APIRouter(tags=["Autenticacion"])
 
-
-@router.post('/api/register')
-def register():
-    data=request.get_json()
-
-    if not data:
-        return jsonify({
-            'success':False,
-            'message':'Debe enviar los datos para registrarse.'
-        }),401
+@router.post('/login')
+def login(data: dict = Body(...)):
     
-    response_data,status_code=auth_services.register_new_user(data)
-
-    return jsonify(response_data),status_code
-
-
-#INICIO DE SESION
-@router.post('/api/login')
-def login():
-    data=request.get_json()
-
     if not data:
-        return jsonify({
-            'success':False,
-            'message':'Petición Vacia.'
-        })
+        raise HTTPException(
+            status_code=400, 
+            detail='El cuerpo de la petición está vacío o no es un JSON válido.'
+        )
     
-    response_data,status_code=auth_services.validate_user(data)
-    return jsonify(response_data),status_code
+    try:
+        result = auth_services.loguear_usuario(data)
+        
+        return result
+        
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+    
+@router.post('/register')
+def register(data:dict=Body(...)):
+    if not data:
+        raise HTTPException(
+            status_code=400,
+            detail='El cuerpo de la peticion esta vacio o no es un JSON valido.'
+        )
+    
+    try:
+        result=auth_services.registrar_nuevo_usuario(data)
+
+        return result
+    
+    except ValueError as e:
+        raise HTTPException(status_code=401,detail=str(e))
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Error interno: {str(e)}')

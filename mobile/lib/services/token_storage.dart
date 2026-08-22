@@ -1,77 +1,44 @@
-import 'package:shared_preferences/shared_preferences.dart';
+//token_storage.dart
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class TokenStorage {
-  static const String _tokenKey = 'access_token';
-  static const String _userIdKey = 'user_id';
-  static const String _empresaIdKey = 'empresa_id';
-  static const String _userNameKey = 'user_name';
-  static const String _userMailKey = 'user_mail';
-  static const String _userRoleKey = 'user_role';
+    static const FlutterSecureStorage _storage = FlutterSecureStorage();
 
-  static Future<void> saveToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_tokenKey, token);
-  }
-
-  static Future<String?> getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_tokenKey);
-  }
-
-  static Future<void> saveUser({
-    required int idUsuario,
-    required String name,
-    required String mail,
-    required int role,
-    int? idEmpresa,
-  }) async {
-    final prefs = await SharedPreferences.getInstance();
-
-    await prefs.setInt(_userIdKey, idUsuario);
-    await prefs.setString(_userNameKey, name);
-    await prefs.setString(_userMailKey, mail);
-    await prefs.setInt(_userRoleKey, role);
-
-    if (idEmpresa != null) {
-      await prefs.setInt(_empresaIdKey, idEmpresa);
-    } else {
-      await prefs.remove(_empresaIdKey);
+    static Future<void> saveToken(String token) async 
+    {
+        await _storage.write(key: 'auth_token', value: token);
     }
-  }
 
-  static Future<int?> getUserId() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(_userIdKey);
-  }
+    static Future<String?> getToken() async 
+    {
+        return _storage.read(key: 'auth_token');
+    }
 
-  static Future<int?> getEmpresaId() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(_empresaIdKey);
-  }
+    static Future<void> clearToken() async 
+    {
+        await _storage.delete(key: 'auth_token');
+    }
 
-  static Future<String?> getUserName() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_userNameKey);
-  }
+    static Future<void> saveUserData({
+        required String nroUsuario,
+        required String ci,
+        required String nombreCompleto,
+        required String correo,
+        required String nombreRol,
+        required String telefono,
+        required String idEmpresa,
+    }) 
+    async {
+        await _storage.write(key: 'nro_usuario', value: nroUsuario);
+        await _storage.write(key: 'ci', value: ci);
+        await _storage.write(key: 'nombre_completo', value: nombreCompleto);
+        await _storage.write(key: 'correo', value: correo);
+        await _storage.write(key: 'nombre_rol', value: nombreRol);
+        await _storage.write(key: 'telefono', value: telefono);
+        await _storage.write(key: 'id_empresa', value: idEmpresa);
+    }
 
-  static Future<String?> getUserMail() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_userMailKey);
-  }
-
-  static Future<int?> getUserRole() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(_userRoleKey);
-  }
-
-  static Future<void> clearSession() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    await prefs.remove(_tokenKey);
-    await prefs.remove(_userIdKey);
-    await prefs.remove(_empresaIdKey);
-    await prefs.remove(_userNameKey);
-    await prefs.remove(_userMailKey);
-    await prefs.remove(_userRoleKey);
-  }
+    static Future<String?> getValue(String key) async {
+       return _storage.read(key: key);
+    }
 }

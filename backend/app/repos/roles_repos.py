@@ -1,42 +1,69 @@
-# app/repos/roles_repos.py
+from app.classes.postgres import PostgreSQL
 from app.config import Config
 
-def get_all_roles(db):
-    roles_query=f"""
-    SELECT id, nombre_rol
-    FROM {Config.SCHEMA}.{Config.T_ROL}
-    ORDER BY id ASC
-    """
-    roles_result = db.execute_query(roles_query, fetchall=True)
-    data = []
+# --- LEER ROLES ---
+def obtener_todos_los_roles():
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        query = f"""
+            SELECT nro_rol, nombre_rol, descripcion, fecha_registro 
+            FROM {Config.SCHEMA}.rol 
+            ORDER BY nro_rol ASC;
+        """
+        resultados = db.execute_query(query, fetchall=True)
+        
+        roles = []
+        if resultados:
+            for r in resultados:
+                roles.append({
+                    "nro_rol": r[0],
+                    "nombre_rol": r[1],
+                    "descripcion": r[2],
+                    # Convertimos la fecha a string para que el JSON no tenga problemas
+                    "fecha_registro": r[3].strftime("%Y-%m-%d %H:%M:%S") if r[3] else None
+                })
+        return roles
+    finally:
+        db.close_connection()
 
-    if roles_result is not None and db.cur and db.cur.description:
-        columns = [column[0] for column in db.cur.description]
-        for row in roles_result:
-            data.append(dict(zip(columns, row)))
+# --- CREAR ROL ---
+def crear_rol_db(nombre_rol, descripcion):
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        query = f"""
+            INSERT INTO {Config.SCHEMA}.rol (nombre_rol, descripcion) 
+            VALUES (%s, %s) 
+            RETURNING nro_rol;
+        """
+        resultado = db.execute_query(query, (nombre_rol, descripcion), fetchone=True, commit=True)
+        return resultado[0] if resultado else None
+    finally:
+        db.close_connection()
 
-    return data
+# --- ACTUALIZAR ROL ---
+def actualizar_rol_db(nro_rol, nombre_rol, descripcion):
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        query = f"""
+            UPDATE {Config.SCHEMA}.rol 
+            SET nombre_rol = %s, descripcion = %s 
+            WHERE nro_rol = %s;
+        """
+        filas_afectadas = db.execute_query(query, (nombre_rol, descripcion, nro_rol), commit=True)
+        return filas_afectadas > 0
+    finally:
+        db.close_connection()
 
-def exist_role(db, nombre_rol):
-    check_query = f"""
-        SELECT 1
-        FROM {Config.SCHEMA}.{Config.T_ROL}
-        WHERE nombre_rol=%s
-    """
-    return db.execute_query(check_query, (nombre_rol,), fetchone=True)
-
-def insert_new_role(db, nombre_rol):
-    insert_query = f"INSERT INTO {Config.SCHEMA}.{Config.T_ROL} (nombre_rol) VALUES (%s)"
-    return db.execute_query(insert_query, (nombre_rol,))
-
-def update_role_name(db, id_rol, nombre_rol):
-    update_query = f"""
-        UPDATE {Config.SCHEMA}.{Config.T_ROL} 
-        SET nombre_rol = %s 
-        WHERE id = %s
-    """
-    return db.execute_query(update_query, (nombre_rol, id_rol))
-
-def delete_role(db, id_rol):
-    delete_query = f"DELETE FROM {Config.SCHEMA}.{Config.T_ROL} WHERE id = %s"
-    return db.execute_query(delete_query, (id_rol,))
+# --- ELIMINAR ROL (Borrado Físico) ---
+def eliminar_rol_db(nro_rol: int):
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        query = f"DELETE FROM {Config.SCHEMA}.rol WHERE nro_rol = %s;"
+        filas_afectadas = db.execute_query(query, (nro_rol,), commit=True)
+        return filas_afectadas > 0
+    finally:
+        db.close_connection()

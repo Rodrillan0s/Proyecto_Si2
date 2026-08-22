@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-
 import '../services/profile_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/app_widgets.dart';
+import '../widgets/ev_widgets.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -12,505 +11,390 @@ class PerfilScreen extends StatefulWidget {
 }
 
 class _PerfilScreenState extends State<PerfilScreen> {
-  bool loading = true;
-  bool saving = false;
+  final _formKey = GlobalKey<FormState>();
 
-  String message = '';
-  bool messageSuccess = false;
+  final _telefonoController = TextEditingController();
+  final _correoController = TextEditingController();
+  final _direccionController = TextEditingController();
+  final _passwordController = TextEditingController();
 
-  ProfileData? profile;
-
-  final nameController = TextEditingController();
-  final mailController = TextEditingController();
-  final phoneController = TextEditingController();
-  final directionController = TextEditingController();
-  final newPasswordController = TextEditingController();
-  final confirmPasswordController = TextEditingController();
+  Map<String, dynamic>? _perfil;
+  bool _cargando = true;
+  bool _guardando = false;
+  bool _obscurePass = true;
 
   @override
   void initState() {
     super.initState();
-    loadProfile();
+    _cargarPerfil();
   }
 
   @override
   void dispose() {
-    nameController.dispose();
-    mailController.dispose();
-    phoneController.dispose();
-    directionController.dispose();
-    newPasswordController.dispose();
-    confirmPasswordController.dispose();
+    _telefonoController.dispose();
+    _correoController.dispose();
+    _direccionController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> loadProfile() async {
-    setState(() {
-      loading = true;
-      message = '';
-    });
+  Future<void> _cargarPerfil() async {
+    setState(() => _cargando = true);
 
-    final result = await ProfileService.getProfile();
+    try {
+      final perfil = await ProfileService().obtenerPerfil();
 
-    if (!mounted) return;
+      _telefonoController.text = _texto(perfil['telefono']);
+      _correoController.text = _texto(perfil['correo']);
+      _direccionController.text = _texto(perfil['direccion']);
 
-    if (!result.success || result.profile == null) {
+      if (!mounted) return;
+
       setState(() {
-        loading = false;
-        message = result.message;
-        messageSuccess = false;
+        _perfil = perfil;
+        _cargando = false;
       });
-      return;
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() => _cargando = false);
+
+      _mostrarError(e.toString().replaceAll('Exception: ', ''));
     }
-
-    final data = result.profile!;
-
-    setState(() {
-      profile = data;
-      nameController.text = data.nombreRazonSocial;
-      mailController.text = data.correo;
-      phoneController.text = data.telefono;
-      directionController.text = data.direccion;
-      loading = false;
-    });
   }
 
-  Future<void> saveProfile() async {
-    final newPassword = newPasswordController.text.trim();
-    final confirmPassword = confirmPasswordController.text.trim();
+  Future<void> _guardarPerfil() async {
+    if (_perfil == null) return;
+    if (!_formKey.currentState!.validate()) return;
 
-    if (nameController.text.trim().isEmpty ||
-        mailController.text.trim().isEmpty ||
-        phoneController.text.trim().isEmpty) {
-      setState(() {
-        message = 'Nombre, correo y teléfono son obligatorios';
-        messageSuccess = false;
-      });
-      return;
+    setState(() => _guardando = true);
+
+    try {
+      await ProfileService().actualizarPerfil(
+        ci: _texto(_perfil!['ci']),
+        telefono: _telefonoController.text.trim(),
+        correo: _correoController.text.trim(),
+        direccion: _direccionController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      if (!mounted) return;
+
+      _passwordController.clear();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Perfil actualizado correctamente.'),
+          backgroundColor: AppTheme.success,
+        ),
+      );
+
+      await _cargarPerfil();
+    } catch (e) {
+      if (!mounted) return;
+
+      _mostrarError(e.toString().replaceAll('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _guardando = false);
     }
+  }
 
-    if (newPassword.isNotEmpty && newPassword != confirmPassword) {
-      setState(() {
-        message = 'Las nuevas contraseñas no coinciden';
-        messageSuccess = false;
-      });
-      return;
-    }
+  String _texto(dynamic valor) {
+    if (valor == null) return '';
+    return valor.toString();
+  }
 
-    setState(() {
-      saving = true;
-      message = '';
-    });
+  String _textoDefault(dynamic valor) {
+    final texto = _texto(valor).trim();
+    return texto.isEmpty ? 'No registrado' : texto;
+  }
 
-    final result = await ProfileService.updateProfile(
-      nombreRazonSocial: nameController.text.trim(),
-      correo: mailController.text.trim(),
-      telefono: phoneController.text.trim(),
-      direccion: directionController.text.trim(),
-      newPassword: newPassword,
-      confirmPassword: confirmPassword,
+  void _mostrarError(String mensaje) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(mensaje),
+        backgroundColor: AppTheme.error,
+      ),
     );
+  }
 
-    if (!mounted) return;
+  String get _iniciales {
+    final nombre = _texto(_perfil?['nombre_completo']).trim();
 
-    setState(() {
-      saving = false;
-      message = result.message;
-      messageSuccess = result.success;
-    });
+    if (nombre.isEmpty) return '?';
 
-    if (result.success) {
-      newPasswordController.clear();
-      confirmPasswordController.clear();
-      await loadProfile();
+    final partes = nombre.split(' ');
+
+    if (partes.length >= 2) {
+      return '${partes[0][0]}${partes[1][0]}'.toUpperCase();
     }
+
+    return nombre[0].toUpperCase();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundBlue,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildTopBar(),
-            Expanded(
-              child: loading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        color: AppTheme.primaryGreen,
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: loadProfile,
-                      color: AppTheme.primaryGreen,
-                      child: SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.all(18),
-                        child: Column(
-                          children: [
-                            if (profile != null) _buildProfileHero(),
-                            const SizedBox(height: 14),
-                            if (profile != null) _buildAccountInfo(),
-                            const SizedBox(height: 14),
-                            _buildEditCard(),
-                          ],
-                        ),
-                      ),
-                    ),
-            ),
-          ],
+      backgroundColor: AppTheme.background,
+      appBar: AppBar(
+        title: const Text('MI PERFIL'),
+        backgroundColor: AppTheme.primary,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
-    );
-  }
-
-  Widget _buildTopBar() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
-      decoration: const BoxDecoration(
-        color: AppTheme.primaryGreen,
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.white.withOpacity(0.14),
-              foregroundColor: Colors.white,
-            ),
-            icon: const Icon(Icons.arrow_back),
-          ),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'MI PERFIL',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1,
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'Datos personales y seguridad',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: loadProfile,
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.white.withOpacity(0.14),
-              foregroundColor: Colors.white,
-            ),
-            icon: const Icon(Icons.refresh),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProfileHero() {
-    final data = profile!;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppTheme.primaryGreen,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryGreen.withOpacity(0.22),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -16,
-            top: -18,
-            child: Icon(
-              Icons.person,
-              size: 110,
-              color: Colors.white.withOpacity(0.10),
-            ),
-          ),
-          Row(
-            children: [
-              Container(
-                width: 68,
-                height: 68,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.16),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white24),
-                ),
-                child: const Icon(
-                  Icons.person,
-                  color: Colors.white,
-                  size: 38,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      data.nombreRazonSocial.toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      data.correo,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white70,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
+      body: _cargando
+          ? const _LoadingState()
+          : _perfil == null
+              ? _ErrorState(onReintentar: _cargarPerfil)
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
                       children: [
-                        _buildWhiteBadge(data.estadoCuenta),
-                        const SizedBox(width: 8),
-                        _buildWhiteBadge(data.rol),
+                        _PerfilHeader(
+                          iniciales: _iniciales,
+                          nombreCompleto: _textoDefault(_perfil!['nombre_completo']),
+                          nombreUsuario: _textoDefault(_perfil!['nombre_usuario']),
+                          rol: _textoDefault(_perfil!['nombre_rol']),
+                        ),
+                        const SizedBox(height: 14),
+
+                        _InfoCard(
+                          title: 'Datos de cuenta',
+                          children: [
+                            _InfoRow(
+                              icon: Icons.badge_outlined,
+                              label: 'CI',
+                              value: _textoDefault(_perfil!['ci']),
+                            ),
+                            const SizedBox(height: 10),
+                            _InfoRow(
+                              icon: Icons.confirmation_number_outlined,
+                              label: 'Usuario N°',
+                              value: _textoDefault(_perfil!['nro_usuario']),
+                            ),
+                            const SizedBox(height: 10),
+                            _InfoRow(
+                              icon: Icons.verified_user_outlined,
+                              label: 'Estado',
+                              value: _textoDefault(_perfil!['estado']),
+                            ),
+                            const SizedBox(height: 10),
+                            _InfoRow(
+                              icon: Icons.calendar_today_outlined,
+                              label: 'Registro',
+                              value: _textoDefault(_perfil!['fecha_registro']),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        _InfoCard(
+                          title: 'Información laboral',
+                          children: [
+                            _InfoRow(
+                              icon: Icons.work_outline_rounded,
+                              label: 'Rol',
+                              value: _textoDefault(_perfil!['nombre_rol']),
+                            ),
+                            const SizedBox(height: 10),
+                            _InfoRow(
+                              icon: Icons.business_outlined,
+                              label: 'Empresa',
+                              value: _textoDefault(_perfil!['nombre_empresa']),
+                            ),
+                            const SizedBox(height: 10),
+                            _InfoRow(
+                              icon: Icons.directions_car_outlined,
+                              label: 'Vehículos',
+                              value: _textoDefault(_perfil!['cant_vehiculos']),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        _InfoCard(
+                          title: 'Editar datos personales',
+                          children: [
+                            EvTextField(
+                              label: 'TELÉFONO',
+                              hint: 'Ej: 70012345',
+                              controller: _telefonoController,
+                              keyboardType: TextInputType.phone,
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) {
+                                  return 'Ingrese su teléfono';
+                                }
+                                if (v.trim().length < 6) {
+                                  return 'Teléfono inválido';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            EvTextField(
+                              label: 'CORREO ELECTRÓNICO',
+                              hint: 'usuario@ejemplo.com',
+                              controller: _correoController,
+                              keyboardType: TextInputType.emailAddress,
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) {
+                                  return 'Ingrese su correo';
+                                }
+                                if (!v.contains('@')) {
+                                  return 'Correo inválido';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            EvTextField(
+                              label: 'DIRECCIÓN',
+                              hint: 'Ej: Av. Cristo Redentor, Santa Cruz',
+                              controller: _direccionController,
+                              keyboardType: TextInputType.streetAddress,
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) {
+                                  return 'Ingrese su dirección';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            EvTextField(
+                              label: 'NUEVA CONTRASEÑA (opcional)',
+                              hint: 'Dejar vacío si no desea cambiarla',
+                              controller: _passwordController,
+                              obscure: _obscurePass,
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePass
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                  size: 18,
+                                  color: AppTheme.textHint,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscurePass = !_obscurePass;
+                                  });
+                                },
+                              ),
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) {
+                                  return null;
+                                }
+
+                                if (v.trim().length < 8) {
+                                  return 'Mínimo 8 caracteres';
+                                }
+
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 20),
+                            EvPrimaryButton(
+                              label: 'Guardar Cambios',
+                              loading: _guardando,
+                              onPressed: _guardarPerfil,
+                            ),
+                          ],
+                        ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
+}
 
-  Widget _buildAccountInfo() {
-    final data = profile!;
+class _PerfilHeader extends StatelessWidget {
+  final String iniciales;
+  final String nombreCompleto;
+  final String nombreUsuario;
+  final String rol;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppTheme.borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionTitle('DATOS DE CUENTA'),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildInfoTile(
-                  icon: Icons.alternate_email,
-                  label: 'Usuario',
-                  value: data.userName,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildInfoTile(
-                  icon: Icons.badge,
-                  label: 'Documento',
-                  value: data.documentoIdentidad,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          _buildInfoTile(
-            icon: Icons.calendar_month,
-            label: 'Fecha registro',
-            value: data.fechaRegistro,
-          ),
-        ],
-      ),
-    );
-  }
+  const _PerfilHeader({
+    required this.iniciales,
+    required this.nombreCompleto,
+    required this.nombreUsuario,
+    required this.rol,
+  });
 
-  Widget _buildEditCard() {
+  @override
+  Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppTheme.borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionTitle('EDITAR INFORMACIÓN'),
-          const SizedBox(height: 12),
-          if (message.isNotEmpty) ...[
-            AgroErrorBox(
-              message: message,
-              success: messageSuccess,
-            ),
-            const SizedBox(height: 14),
-          ],
-          AgroTextField(
-            label: 'Nombre o razón social',
-            hint: 'Nombre',
-            controller: nameController,
-          ),
-          const SizedBox(height: 12),
-          AgroTextField(
-            label: 'Correo',
-            hint: 'correo@agro.com',
-            controller: mailController,
-            keyboardType: TextInputType.emailAddress,
-          ),
-          const SizedBox(height: 12),
-          AgroTextField(
-            label: 'Teléfono',
-            hint: '70000000',
-            controller: phoneController,
-            keyboardType: TextInputType.phone,
-          ),
-          const SizedBox(height: 12),
-          AgroTextField(
-            label: 'Dirección',
-            hint: 'Dirección',
-            controller: directionController,
-          ),
-          const SizedBox(height: 20),
-          _buildPasswordBox(),
-          const SizedBox(height: 18),
-          AgroButton(
-            text: 'Guardar cambios',
-            loading: saving,
-            onPressed: saveProfile,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPasswordBox() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(
-                Icons.lock_outline,
-                color: AppTheme.primaryGreen,
-                size: 20,
-              ),
-              SizedBox(width: 8),
-              Text(
-                'CAMBIAR CONTRASEÑA',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  color: AppTheme.slateText,
-                  letterSpacing: 1,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Deja estos campos vacíos si no quieres cambiar tu contraseña.',
-            style: TextStyle(
-              fontSize: 11,
-              color: AppTheme.mutedText,
-            ),
-          ),
-          const SizedBox(height: 12),
-          AgroTextField(
-            label: 'Nueva contraseña',
-            hint: '••••••••',
-            controller: newPasswordController,
-            obscureText: true,
-          ),
-          const SizedBox(height: 12),
-          AgroTextField(
-            label: 'Confirmar contraseña',
-            hint: '••••••••',
-            controller: confirmPasswordController,
-            obscureText: true,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoTile({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.borderColor),
+        color: AppTheme.primary,
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: AppTheme.primaryGreen,
-            size: 20,
+          CircleAvatar(
+            radius: 28,
+            backgroundColor: const Color(0xFF2D3A8C),
+            child: Text(
+              iniciales,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ),
-          const SizedBox(width: 9),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  label.toUpperCase(),
+                  nombreCompleto.toUpperCase(),
                   style: const TextStyle(
-                    fontSize: 9,
+                    color: Colors.white,
+                    fontSize: 15,
                     fontWeight: FontWeight.w900,
-                    color: AppTheme.mutedText,
-                    letterSpacing: 1,
+                    height: 1.25,
                   ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 4),
                 Text(
-                  value.isEmpty ? 'Sin datos' : value,
-                  overflow: TextOverflow.ellipsis,
+                  nombreUsuario,
                   style: const TextStyle(
+                    color: Color(0xFFBFCFFF),
                     fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                    color: AppTheme.slateText,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                    ),
+                  ),
+                  child: Text(
+                    rol.toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.6,
+                    ),
                   ),
                 ),
               ],
@@ -520,38 +404,169 @@ class _PerfilScreenState extends State<PerfilScreen> {
       ),
     );
   }
+}
 
-  Widget _buildWhiteBadge(String text) {
+class _InfoCard extends StatelessWidget {
+  final String title;
+  final List<Widget> children;
+
+  const _InfoCard({
+    required this.title,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 9,
-        vertical: 5,
-      ),
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.14),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white24),
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppTheme.border),
       ),
-      child: Text(
-        text.toUpperCase(),
-        style: const TextStyle(
-          fontSize: 8,
-          fontWeight: FontWeight.w900,
-          color: Colors.white,
-          letterSpacing: 0.8,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.textSecondary,
+              letterSpacing: 1.1,
+            ),
+          ),
+          const SizedBox(height: 14),
+          ...children,
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: AppTheme.textSecondary,
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 90,
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textPrimary,
+              height: 1.35,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LoadingState extends StatelessWidget {
+  const _LoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: SizedBox(
+        width: 26,
+        height: 26,
+        child: CircularProgressIndicator(
+          strokeWidth: 2.5,
+          color: AppTheme.primary,
         ),
       ),
     );
   }
+}
 
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w900,
-        color: AppTheme.mutedText,
-        letterSpacing: 1.4,
+class _ErrorState extends StatelessWidget {
+  final Future<void> Function() onReintentar;
+
+  const _ErrorState({
+    required this.onReintentar,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                color: AppTheme.error.withOpacity(0.08),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.error_outline_rounded,
+                color: AppTheme.error,
+                size: 30,
+              ),
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              'No se pudo cargar el perfil',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Verificá tu conexión e intentá nuevamente.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                color: AppTheme.textSecondary,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 20),
+            OutlinedButton.icon(
+              onPressed: onReintentar,
+              icon: const Icon(Icons.refresh_rounded, size: 16),
+              label: const Text('REINTENTAR'),
+            ),
+          ],
+        ),
       ),
     );
   }
