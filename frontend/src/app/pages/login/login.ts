@@ -1,5 +1,5 @@
-import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, OnInit, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth';
@@ -8,13 +8,15 @@ import { AuthService } from '../../services/auth';
   selector: 'app-login',
   standalone: true,
   imports: [CommonModule, FormsModule], // Necesario para ngIf y ngModel
-  templateUrl: './login.html'
+  templateUrl: './login.html',
+  styleUrl: './login.css'
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   
   // Inyección de dependencias
   private authService = inject(AuthService);
   private router = inject(Router);
+  private platformId = inject(PLATFORM_ID);
 
   // Variables de estado
   credenciales = {
@@ -23,6 +25,27 @@ export class LoginComponent {
   };
   mensajeError = '';
   cargando = false;
+  modoOscuro = false;
+
+  ngOnInit() {
+    if (isPlatformBrowser(this.platformId)) {
+      if (localStorage.getItem('tema_sistema') === 'dark') {
+        this.modoOscuro = true;
+        document.documentElement.classList.add('dark');
+      }
+    }
+  }
+
+  alternarTema() {
+    this.modoOscuro = !this.modoOscuro;
+    if (this.modoOscuro) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('tema_sistema', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('tema_sistema', 'light');
+    }
+  }
 
   // Función principal
   hacerLogin() {
@@ -42,7 +65,7 @@ export class LoginComponent {
           // 3. Guardar sesión y redirigir
           this.authService.guardarSesion(respuesta.token, respuesta.usuario);
           this.cargando = false;
-          this.router.navigate(['/home']); 
+          this.router.navigate(['/']); 
         }
       },
       error: (errorHttp) => {

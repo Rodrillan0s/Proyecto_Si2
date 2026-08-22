@@ -1,84 +1,97 @@
-<div class="min-h-screen flex w-full bg-gray-100 font-sans">
-  
-  <div class="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white border-r border-gray-200 shadow-2xl z-10">
+<div class="login-container" [class.dark]="modoOscuro">
+
+  <!-- FLOATING AMBIENT GLOW CIRCLES -->
+  <div class="glow-circle glow-circle-1"></div>
+  <div class="glow-circle glow-circle-2"></div>
+
+  <!-- FLOATING GLASSMOPHISM CARD -->
+  <div class="login-card">
+
+    <!-- FLOATING THEME TOGGLE BUTTON -->
+    <button (click)="alternarTema()" class="theme-toggle-btn" title="Alternar Modo Oscuro">
+      <svg *ngIf="!modoOscuro" class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+      </svg>
+      <svg *ngIf="modoOscuro" class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+      </svg>
+    </button>
     
-    <div class="w-full max-w-sm space-y-8">
+    <!-- BRAND LOGO -->
+    <div class="login-logo" [class.login-logo-dark]="modoOscuro">
+      <svg class="w-7 h-7 text-orange-600 dark:text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+      </svg>
+      <span>OBRATEC</span>
+    </div>
+
+    <!-- FORM HEADER -->
+    <div class="form-header">
+      <h1 class="form-title">Acceso al Sistema</h1>
+      <p class="form-subtitle">Ingresa tus credenciales para administrar tus obras.</p>
+    </div>
+
+    <!-- ERROR ALERT -->
+    <div *ngIf="mensajeError" class="error-alert">
+      <strong>Error:</strong> {{ mensajeError }}
+    </div>
+
+    <!-- INPUT GROUP -->
+    <div class="input-group">
       
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 tracking-tight uppercase">
-          Emergencias<span class="text-blue-900">Vehiculares</span>
-        </h1>
-        <div class="h-1 w-12 bg-blue-900 mt-4"></div>
-        
-        <h2 class="text-xl font-semibold text-gray-800 mt-8">Acceso al Sistema</h2>
-        <p class="text-gray-500 text-sm mt-1">Portal exclusivo para personal autorizado.</p>
-      </div>
-
-      <div *ngIf="mensajeError" class="bg-red-50 border border-red-300 text-red-800 px-4 py-3 rounded-sm text-sm">
-        <strong>Error:</strong> {{ mensajeError }}
-      </div>
-
-      <div class="space-y-5">
-        
-        <div>
-          <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Carnet de Identidad</label>
+      <!-- CI Input with Icon -->
+      <div class="input-field">
+        <label class="input-label">Carnet de Identidad</label>
+        <div class="input-wrapper">
+          <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.333 0 4 .667 4 2v1H5v-1c0-1.333 2.667-2 4-2z"></path>
+          </svg>
           <input 
             type="text" 
             [(ngModel)]="credenciales.ci"
-            class="block w-full px-3 py-2.5 border border-gray-300 rounded-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-900 focus:border-blue-900 sm:text-sm transition-colors"
+            class="input-control" 
             placeholder="Ej: 9781936"
             (keyup.enter)="hacerLogin()">
         </div>
+      </div>
 
-        <div>
-          <div class="flex items-center justify-between mb-2">
-            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Contraseña</label>
-          </div>
+      <!-- Password Input with Icon -->
+      <div class="input-field">
+        <label class="input-label">Contraseña</label>
+        <div class="input-wrapper">
+          <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+          </svg>
           <input 
             type="password" 
             [(ngModel)]="credenciales.password"
-            class="block w-full px-3 py-2.5 border border-gray-300 rounded-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-900 focus:border-blue-900 sm:text-sm transition-colors"
+            class="input-control" 
             placeholder="••••••••"
             (keyup.enter)="hacerLogin()">
         </div>
-
-        <button 
-          (click)="hacerLogin()"
-          [disabled]="cargando"
-          class="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-sm text-sm font-bold text-white bg-blue-900 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-900 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors mt-6 uppercase tracking-wider">
-          
-          <span *ngIf="!cargando">Iniciar Sesión</span>
-          
-          <span *ngIf="cargando" class="flex items-center gap-2">
-            <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Procesando...
-          </span>
-        </button>
-
       </div>
-      
-      <div class="pt-6 text-xs text-gray-400 border-t border-gray-100">
-        &copy; 2026 Emergencias Vehiculares. Todos los derechos reservados.
-      </div>
-    </div>
-  </div>
 
-  <div class="hidden lg:flex lg:w-1/2 relative bg-gray-900">
-    
-    
-    <div class="absolute inset-0 bg-blue-900 mix-blend-multiply opacity-60"></div>
-    
-    <div class="relative w-full flex flex-col justify-center px-16 text-white">
-      <h2 class="text-3xl font-light tracking-wide mb-4">
-        Plataforma Integrada de<br>Gestión Operativa
-      </h2>
-      <p class="text-gray-300 max-w-md leading-relaxed text-sm">
-        Administración centralizada de servicios automotrices, flotas de emergencia y facturación electrónica. Acceso restringido y monitorizado.
-      </p>
+      <!-- Submit Button -->
+      <button 
+        (click)="hacerLogin()"
+        [disabled]="cargando"
+        class="btn-submit">
+        <span *ngIf="!cargando">Iniciar Sesión</span>
+        <span *ngIf="cargando" style="display: flex; gap: 0.5rem; align-items: center;">
+          <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Procesando...
+        </span>
+      </button>
     </div>
+
+    <!-- FOOTER -->
+    <div class="login-footer">
+      &copy; 2026 OBRATEC. Todos los derechos reservados.
+    </div>
+
   </div>
 
 </div>

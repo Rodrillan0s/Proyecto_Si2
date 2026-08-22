@@ -1,0 +1,290 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+.login-container {
+  font-family: 'GT Walsheim', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  background-color: #f8fafc;
+  /* Soft architectural blueprint background on the entire screen */
+  background-image: radial-gradient(circle at center, rgba(248, 250, 252, 0.8) 0%, #f1f5f9 100%), url('https://images.unsplash.com/photo-1517089596392-db9a5e2f22c6?q=80&w=1200&auto=format&fit=crop');
+  background-size: cover;
+  background-position: center;
+  padding: 1.5rem;
+  transition: background-color 0.3s ease;
+}
+
+.login-container.dark {
+  background-color: #020617;
+  background-image: radial-gradient(circle at center, rgba(15, 23, 42, 0.9) 0%, #020617 100%), url('https://images.unsplash.com/photo-1517089596392-db9a5e2f22c6?q=80&w=1200&auto=format&fit=crop');
+}
+
+/* FLOATING AMBIENT GLOW CIRCLES (ADD LIFE) */
+.glow-circle {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  opacity: 0.12;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.glow-circle-1 {
+  width: 25rem;
+  height: 25rem;
+  background-color: #f97316; /* Orange glow */
+  top: -5rem;
+  right: -5rem;
+}
+
+.glow-circle-2 {
+  width: 30rem;
+  height: 30rem;
+  background-color: #3b82f6; /* Blue glow */
+  bottom: -10rem;
+  left: -10rem;
+}
+
+.login-container.dark .glow-circle-1 {
+  opacity: 0.18;
+}
+
+.login-container.dark .glow-circle-2 {
+  opacity: 0.15;
+}
+
+/* FLOATING GLASSMOPHISM CARD */
+.login-card {
+  width: 100%;
+  max-width: 28rem;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 1.5rem;
+  padding: 2.5rem;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.08);
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.login-container.dark .login-card {
+  background: rgba(15, 23, 42, 0.75);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+/* INTERACTIVE THEME TOGGLE BUTTON */
+.theme-toggle-btn {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.login-container.dark .theme-toggle-btn {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.theme-toggle-btn:hover {
+  transform: scale(1.05);
+  background-color: #f1f5f9;
+}
+
+.login-container.dark .theme-toggle-btn:hover {
+  background-color: #1e293b;
+}
+
+/* BRAND LOGO */
+.login-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: #ea580c;
+  text-transform: uppercase;
+}
+
+.login-logo-dark {
+  color: #f97316;
+}
+
+.form-header {
+  margin-top: 0.5rem;
+}
+
+.form-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 0.35rem;
+}
+
+.login-container.dark .form-title {
+  color: #ffffff;
+}
+
+.form-subtitle {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.login-container.dark .form-subtitle {
+  color: #94a3b8;
+}
+
+/* INPUTS WITH ICONS */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.input-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.input-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.login-container.dark .input-label {
+  color: #cbd5e1;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 1rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.input-control {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.75rem; /* left padding leaves room for the icon */
+  font-size: 0.9rem;
+  border-radius: 0.75rem;
+  border: 1.5px solid #cbd5e1;
+  background-color: #ffffff;
+  color: #0f172a;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.login-container.dark .input-control {
+  background-color: rgba(17, 24, 39, 0.8);
+  border-color: #374151;
+  color: #ffffff;
+}
+
+.input-control:focus {
+  border-color: #ea580c;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
+}
+
+.login-container.dark .input-control:focus {
+  border-color: #f97316;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+}
+
+/* BUTTON */
+.btn-submit {
+  width: 100%;
+  background-color: #ea580c;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 0.85rem;
+  border-radius: 0.75rem;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 4px 6px -1px rgba(234, 88, 12, 0.2);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-submit:hover {
+  background-color: #c2410c;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px -1px rgba(234, 88, 12, 0.35);
+}
+
+.btn-submit:disabled {
+  background-color: #cbd5e1;
+  color: #94a3b8;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.login-container.dark .btn-submit:disabled {
+  background-color: #1f2937;
+  color: #4b5563;
+}
+
+/* ERROR MESSAGE */
+.error-alert {
+  background-color: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.login-container.dark .error-alert {
+  background-color: rgba(220, 38, 38, 0.1);
+  border-color: rgba(220, 38, 38, 0.2);
+  color: #fca5a5;
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: 0.5rem;
+  padding-top: 1.5rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  border-top: 1px solid #f1f5f9;
+}
+
+.login-container.dark .login-footer {
+  color: #64748b;
+  border-top-color: #1e293b;
+}

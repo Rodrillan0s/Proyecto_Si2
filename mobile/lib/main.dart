@@ -27,18 +27,18 @@ void main() async {
   runApp(
     ChangeNotifierProvider.value(
       value: authProvider,
-      child: const EmergenciasVehicularesApp(),
+      child: const ConstructorApp(),
     ),
   );
 }
 
-class EmergenciasVehicularesApp extends StatelessWidget {
-  const EmergenciasVehicularesApp({super.key});
+class ConstructorApp extends StatelessWidget {
+  const ConstructorApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Emergencias Vehiculares',
+      title: 'Plataforma de Gestión Base',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.theme,
       home: const _RootRouter(),

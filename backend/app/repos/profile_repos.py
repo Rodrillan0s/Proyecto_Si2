@@ -9,11 +9,10 @@ def get_profile(nro_usuario):
 
         query=f'''
             SELECT A.ci,A.nombre_usuario,A.fecha_registro, A.nro_usuario,A.estado,A.nro_rol,A.id_empresa,E.nombre_empresa,B.nombre_completo,B.telefono,B.correo,B.direccion,
-            C.nombre_rol,COUNT(D.nro_vehiculo) AS cant_vehiculos
+            C.nombre_rol, 0 AS cant_vehiculos
             FROM {Config.SCHEMA}.USUARIO A
             INNER JOIN {Config.SCHEMA}.PERSONA B ON A.ci =B.ci 
             INNER JOIN {Config.SCHEMA}.ROL C ON A.nro_rol =C.nro_rol 
-            LEFT JOIN {Config.SCHEMA}.vehiculo D ON A.nro_usuario = D.nro_usuario
             LEFT JOIN {Config.SCHEMA}.empresa E ON e.id_empresa =A.id_empresa
             WHERE A.nro_usuario =%s
             GROUP BY A.ci,A.nombre_usuario,A.fecha_registro, A.nro_usuario,A.estado,A.nro_rol,A.id_empresa,E.nombre_empresa,B.nombre_completo,B.telefono,B.correo,B.direccion,
