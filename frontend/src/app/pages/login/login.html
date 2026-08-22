@@ -1,34 +1,17 @@
-<div class="login-container" [class.dark]="modoOscuro">
+<div class="login-wrapper" [class.dark]="modoOscuro">
 
-  <!-- FLOATING AMBIENT GLOW CIRCLES -->
-  <div class="glow-circle glow-circle-1"></div>
-  <div class="glow-circle glow-circle-2"></div>
+  <!-- LEFT COLUMN (FORM CONTAINER) -->
+  <div class="login-left-pane">
 
-  <!-- FLOATING GLASSMOPHISM CARD -->
-  <div class="login-card">
-
-    <!-- FLOATING THEME TOGGLE BUTTON -->
-    <button (click)="alternarTema()" class="theme-toggle-btn" title="Alternar Modo Oscuro">
-      <svg *ngIf="!modoOscuro" class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
-      </svg>
-      <svg *ngIf="modoOscuro" class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
-      </svg>
-    </button>
-    
     <!-- BRAND LOGO -->
-    <div class="login-logo" [class.login-logo-dark]="modoOscuro">
-      <svg class="w-7 h-7 text-orange-600 dark:text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-      </svg>
-      <span>OBRATEC</span>
-    </div>
-
-    <!-- FORM HEADER -->
-    <div class="form-header">
-      <h1 class="form-title">Acceso al Sistema</h1>
-      <p class="form-subtitle">Ingresa tus credenciales para administrar tus obras.</p>
+    <div class="login-logo-container">
+      <div class="login-logo">
+        <svg class="logo-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+        <span>OBRATEC</span>
+      </div>
+      <h2 class="login-prompt">Ingrese a su cuenta</h2>
     </div>
 
     <!-- ERROR ALERT -->
@@ -36,62 +19,96 @@
       <strong>Error:</strong> {{ mensajeError }}
     </div>
 
-    <!-- INPUT GROUP -->
-    <div class="input-group">
-      
-      <!-- CI Input with Icon -->
+    <!-- FORM INPUTS -->
+    <div class="login-form">
       <div class="input-field">
-        <label class="input-label">Carnet de Identidad</label>
-        <div class="input-wrapper">
-          <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.333 0 4 .667 4 2v1H5v-1c0-1.333 2.667-2 4-2z"></path>
-          </svg>
-          <input 
-            type="text" 
-            [(ngModel)]="credenciales.ci"
-            class="input-control" 
-            placeholder="Ej: 9781936"
-            (keyup.enter)="hacerLogin()">
-        </div>
+        <label class="input-label">Correo, usuario o CI</label>
+        <input type="text" [(ngModel)]="credenciales.ci" class="input-control"
+          placeholder="Ingrese su correo, usuario o CI" (keyup.enter)="hacerLogin()">
       </div>
 
-      <!-- Password Input with Icon -->
       <div class="input-field">
         <label class="input-label">Contraseña</label>
-        <div class="input-wrapper">
-          <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-          </svg>
-          <input 
-            type="password" 
-            [(ngModel)]="credenciales.password"
-            class="input-control" 
-            placeholder="••••••••"
-            (keyup.enter)="hacerLogin()">
-        </div>
+        <input type="password" [(ngModel)]="credenciales.password" class="input-control"
+          placeholder="Ingrese contraseña" (keyup.enter)="hacerLogin()">
       </div>
 
-      <!-- Submit Button -->
-      <button 
-        (click)="hacerLogin()"
-        [disabled]="cargando"
-        class="btn-submit">
-        <span *ngIf="!cargando">Iniciar Sesión</span>
+      <div class="remember-me">
+        <input type="checkbox" id="remember" class="checkbox-control">
+        <label for="remember" class="checkbox-label">Recordar cuenta en este dispositivo</label>
+      </div>
+
+      <button (click)="hacerLogin()" [disabled]="cargando" class="btn-submit">
+        <span *ngIf="!cargando">Continuar</span>
         <span *ngIf="cargando" style="display: flex; gap: 0.5rem; align-items: center;">
           <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            <path class="opacity-75" fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+            </path>
           </svg>
-          Procesando...
         </span>
       </button>
+
+      <div class="help-links">
+        <a href="#" class="help-link">¿Olvidó su contraseña?</a>
+        <span class="divider">|</span>
+        <a href="#" class="help-link">¿Problemas para iniciar sesión?</a>
+      </div>
     </div>
 
-    <!-- FOOTER -->
-    <div class="login-footer">
-      &copy; 2026 OBRATEC. Todos los derechos reservados.
+    <!-- FOOTER LINKS -->
+    <div class="login-footer-links">
+      <a href="#" class="footer-link">Aviso de privacidad</a>
+      <span class="divider">|</span>
+      <a href="#" class="footer-link">Condiciones de uso</a>
     </div>
 
+    <!-- FLOATING THEME TOGGLE BUTTON -->
+    <button (click)="alternarTema()" class="theme-toggle-btn" title="Alternar Modo Oscuro">
+      <svg *ngIf="!modoOscuro" class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+      </svg>
+      <svg *ngIf="modoOscuro" class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z">
+        </path>
+      </svg>
+    </button>
+
+  </div>
+
+  <!-- RIGHT COLUMN (BANNER CONTAINER) -->
+  <div class="login-right-pane">
+    <div class="banner-overlay"></div>
+    <div class="banner-diagonal-mask"></div>
+
+    <div class="banner-content">
+      <div class="banner-logo">
+        <svg class="banner-logo-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+        <span>OBRATEC</span>
+      </div>
+
+      <p class="banner-meta">OBRAS Y REMODELAMIENTOS A MEDIDA</p>
+
+      <h2 class="banner-title">Tu plataforma para el futuro de la construcción.</h2>
+
+      <p class="banner-desc">
+        Únete a OBRATEC para experimentar el poder de la administración en tiempo real de tu personal, materiales e
+        inventario. Simplifica los flujos de trabajo de tus proyectos de ingeniería civil con tecnología de punta.
+      </p>
+
+      <button class="btn-banner-action">Saber más</button>
+    </div>
+
+    <!-- CAROUSEL INDICATOR DOTS -->
+    <div class="banner-carousel-dots">
+      <span class="dot active"></span>
+      <span class="dot"></span>
+    </div>
   </div>
 
 </div>

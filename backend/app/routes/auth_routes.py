@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Body, HTTPException
+from fastapi import APIRouter, Body, HTTPException, Request
 from app.services import auth_services
 
 router = APIRouter(tags=["Autenticacion"])
 
 @router.post('/login')
-def login(data: dict = Body(...)):
+def login(request: Request, data: dict = Body(...)):
     
     if not data:
         raise HTTPException(
@@ -13,7 +13,10 @@ def login(data: dict = Body(...)):
         )
     
     try:
-        result = auth_services.loguear_usuario(data)
+        user_agent = request.headers.get("user-agent", "unknown_ua")
+        client_ip = request.client.host if request.client else "unknown"
+        
+        result = auth_services.loguear_usuario(data, user_agent=user_agent, client_ip=client_ip)
         
         return result
         

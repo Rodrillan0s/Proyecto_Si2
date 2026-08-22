@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
-
 import os
+
 load_dotenv()
 
 class Config:
@@ -12,10 +12,9 @@ class Config:
     DB_USER = os.getenv("DB_USER")
     DB_PASSWORD = os.getenv("DB_PASSWORD")
 
-    SCHEMA='obras'
-    
+    SCHEMA = 'obras'
     
     #CREDENCIALES CONFIGURACION APP
-    SECRET_KEY = os.getenv("SECRET_KEY")
-    TOKEN_KEY = os.getenv("TOKEN_KEY")
-    DEBUG = os.getenv("DEBUG", True)
+    SECRET_KEY = os.getenv("SECRET_KEY", "obratec_secret_key_123456")
+    TOKEN_KEY = os.getenv("TOKEN_KEY", "obratec_token_key_123456")
+    DEBUG = os.getenv("DEBUG", "True")

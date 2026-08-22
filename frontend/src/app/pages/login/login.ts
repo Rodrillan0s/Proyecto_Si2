@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, PLATFORM_ID } from '@angular/core';
+import { Component, inject, OnInit, PLATFORM_ID, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -17,6 +17,8 @@ export class LoginComponent implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
   private platformId = inject(PLATFORM_ID);
+  private cdr = inject(ChangeDetectorRef);
+  private ngZone = inject(NgZone);
 
   // Variables de estado
   credenciales = {
@@ -45,6 +47,7 @@ export class LoginComponent implements OnInit {
       document.documentElement.classList.remove('dark');
       localStorage.setItem('tema_sistema', 'light');
     }
+    this.cdr.detectChanges();
   }
 
   // Función principal
@@ -57,21 +60,48 @@ export class LoginComponent implements OnInit {
 
     this.cargando = true;
     this.mensajeError = '';
+    this.cdr.detectChanges();
 
     // 2. Llamar al servicio
     this.authService.iniciarSesion(this.credenciales).subscribe({
       next: (respuesta) => {
-        if (respuesta.success) {
-          // 3. Guardar sesión y redirigir
-          this.authService.guardarSesion(respuesta.token, respuesta.usuario);
-          this.cargando = false;
-          this.router.navigate(['/']); 
-        }
+        this.ngZone.run(() => {
+          console.log('Login exitoso next:', respuesta);
+          if (respuesta.success) {
+            // 3. Guardar sesión y redirigir
+            this.authService.guardarSesion(respuesta.token, respuesta.usuario);
+            this.cargando = false;
+            this.router.navigate(['/']); 
+          }
+          this.cdr.detectChanges();
+        });
       },
       error: (errorHttp) => {
-        // 4. Capturar errores del backend (ej: 401 Unauthorized)
-        this.cargando = false;
-        this.mensajeError = errorHttp.error?.detail || 'Error de conexión con el servidor.';
+        this.ngZone.run(() => {
+          console.error('ERROR EN LOGIN SUB:', errorHttp);
+          this.cargando = false;
+          
+          // Manejar estructura de error en Angular
+          let errorMsg = 'Error de conexión con el servidor.';
+          if (errorHttp.error) {
+            if (typeof errorHttp.error === 'string') {
+              try {
+                const parsed = JSON.parse(errorHttp.error);
+                errorMsg = parsed.detail || errorMsg;
+              } catch (e) {
+                errorMsg = errorHttp.error;
+              }
+            } else if (errorHttp.error.detail) {
+              errorMsg = errorHttp.error.detail;
+            } else if (errorHttp.message) {
+              errorMsg = errorHttp.message;
+            }
+          }
+          
+          this.mensajeError = errorMsg;
+          console.log('mensajeError establecido en:', this.mensajeError);
+          this.cdr.detectChanges();
+        });
       }
     });
   }
