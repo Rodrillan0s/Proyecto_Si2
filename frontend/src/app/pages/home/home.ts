@@ -1,5 +1,5 @@
-import { Component, OnInit, inject,PLATFORM_ID } from '@angular/core';
-import { CommonModule,isPlatformBrowser } from '@angular/common';
+import { Component, OnInit, inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth';
 
@@ -19,9 +19,8 @@ export class HomeComponent implements OnInit {
   usuarioActual: any = null;
   modoOscuro: boolean = false;
 
-  //METODO AL INICIAR LA PAGINA
+  // METODO AL INICIAR LA PAGINA
   ngOnInit() {
-    //VALIDAR QUE SE ESTE EJECUTANDO EN NAVEGADOR
     if (isPlatformBrowser(this.platformId)) {
       this.usuarioActual = this.authService.obtenerUsuario();
       
@@ -29,6 +28,12 @@ export class HomeComponent implements OnInit {
       if (this.usuarioActual && this.authService.tokenExpirado()) {
         this.authService.cerrarSesion();
         this.usuarioActual = null;
+      }
+
+      // Redirección si ya está autenticado con sesión válida
+      if (this.usuarioActual) {
+        this.router.navigate(['/panel']);
+        return;
       }
 
       // VERIFICAR PREFERENCIA DE MODO OSCURO
@@ -39,7 +44,7 @@ export class HomeComponent implements OnInit {
     }
   }
 
-  //METODO PARA ALTERNAR EL MODO OSCURO
+  // METODO PARA ALTERNAR EL MODO OSCURO
   alternarModoOscuro() {
     this.modoOscuro = !this.modoOscuro;
     if (this.modoOscuro) {
@@ -51,14 +56,15 @@ export class HomeComponent implements OnInit {
     }
   }
 
-  //METODO PARA NAVEGAR A ALGUN MODULO
+  // METODO PARA NAVEGAR A ALGUN MODULO
   navegarA(ruta: string) {
     this.router.navigate([ruta]);
   }
 
-  //METODO PARA CERRAR SESION
+  // METODO PARA CERRAR SESION
   cerrarSesion() {
     this.authService.cerrarSesion();
+    this.usuarioActual = null;
     this.router.navigate(['/login']);
   }
 }

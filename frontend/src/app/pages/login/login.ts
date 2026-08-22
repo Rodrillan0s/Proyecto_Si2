@@ -68,10 +68,10 @@ export class LoginComponent implements OnInit {
         this.ngZone.run(() => {
           console.log('Login exitoso next:', respuesta);
           if (respuesta.success) {
-            // 3. Guardar sesión y redirigir
+            // 3. Guardar sesión y redirigir a /panel
             this.authService.guardarSesion(respuesta.token, respuesta.usuario);
             this.cargando = false;
-            this.router.navigate(['/']); 
+            this.router.navigate(['/panel']); 
           }
           this.cdr.detectChanges();
         });

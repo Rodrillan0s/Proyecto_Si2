@@ -24,8 +24,7 @@
 
       <div class="nav-actions">
         <!-- Modo Oscuro -->
-        <button (click)="alternarModoOscuro()" class="btn-outline" [class.btn-outline-dark]="modoOscuro"
-          style="padding: 0.4rem; display: flex; align-items: center; justify-content: center;">
+        <button (click)="alternarModoOscuro()" class="btn-outline btn-icon" [class.btn-outline-dark]="modoOscuro">
           <svg *ngIf="!modoOscuro" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
@@ -38,12 +37,10 @@
         </button>
 
         <ng-container *ngIf="usuarioActual">
-          <span class="hidden lg:inline text-sm font-semibold" [style.color]="modoOscuro ? '#e2e8f0' : '#475569'">
-            {{ usuarioActual.nombre_completo }}
-          </span>
-
-          <button (click)="cerrarSesion()" class="btn-primary"
-            style="background-color: #ef4444; box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);">
+          <button (click)="navegarA('/panel')" class="btn-primary" style="background-color: #ea580c;">
+            Ir al Panel
+          </button>
+          <button (click)="cerrarSesion()" class="btn-outline" [class.btn-outline-dark]="modoOscuro">
             Salir
           </button>
         </ng-container>
@@ -77,16 +74,11 @@
           eficientes y rentables.
         </p>
         <div class="hero-buttons">
-          <button *ngIf="usuarioActual"
-            (click)="usuarioActual?.nombre_rol === 'ADMINISTRADOR' ? navegarA('/usuarios') : navegarA('/perfil')"
-            class="btn-primary">
-            Ingresar al Panel
+          <button (click)="navegarA(usuarioActual ? '/panel' : '/login')" class="btn-primary">
+            {{ usuarioActual ? 'Ingresar al Panel' : 'Conoce más' }}
           </button>
 
           <ng-container *ngIf="!usuarioActual">
-            <button (click)="navegarA('/login')" class="btn-primary">
-              Conoce más
-            </button>
             <button (click)="navegarA('/login')" class="btn-outline" [class.btn-outline-dark]="modoOscuro">
               Solicitar Demo &rarr;
             </button>
@@ -104,7 +96,7 @@
       alt="OBRATEC Obra Panoramic">
   </div>
 
-  <!-- SECTION SOLUTIONS (B.3 Vertical Photo Cards sits cleanly below) -->
+  <!-- SECTION SOLUTIONS -->
   <section class="solutions-section" [class.solutions-section-dark]="modoOscuro">
     <div class="section-header">
       <h2 class="section-title" [class.section-title-dark]="modoOscuro">Soluciones a Tu Medida</h2>
@@ -114,7 +106,7 @@
 
     <div class="solutions-grid">
       <!-- Obras Civiles -->
-      <div class="solution-card" (click)="navegarA('/')">
+      <div class="solution-card" (click)="navegarA(usuarioActual ? '/panel' : '/login')">
         <img class="solution-card-img"
           src="https://images.unsplash.com/photo-1590069261209-f8e9b8642343?q=80&w=600&auto=format&fit=crop"
           alt="Obras Civiles">
@@ -124,7 +116,7 @@
       </div>
 
       <!-- Remodelaciones -->
-      <div class="solution-card" (click)="navegarA('/')">
+      <div class="solution-card" (click)="navegarA(usuarioActual ? '/panel' : '/login')">
         <img class="solution-card-img"
           src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop"
           alt="Remodelaciones">
@@ -134,7 +126,7 @@
       </div>
 
       <!-- Inventarios -->
-      <div class="solution-card" (click)="navegarA('/')">
+      <div class="solution-card" (click)="navegarA(usuarioActual ? '/panel' : '/login')">
         <img class="solution-card-img"
           src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=600&auto=format&fit=crop"
           alt="Inventarios">
@@ -144,7 +136,7 @@
       </div>
 
       <!-- Costos y Presupuestos -->
-      <div class="solution-card" (click)="navegarA('/')">
+      <div class="solution-card" (click)="navegarA(usuarioActual ? '/panel' : '/login')">
         <img class="solution-card-img"
           src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=600&auto=format&fit=crop"
           alt="Costos y Presupuestos">
@@ -155,7 +147,7 @@
     </div>
   </section>
 
-  <!-- SECTION MODULES (B.2 Photographic Thumbnail Cards) -->
+  <!-- SECTION MODULES -->
   <section class="modules-section" [class.modules-section-dark]="modoOscuro">
     <div class="modules-container">
       <div class="section-header">
@@ -165,7 +157,6 @@
       </div>
 
       <div class="modules-grid">
-        <!-- Gestión de Proyectos -->
         <div class="module-card" [class.module-card-dark]="modoOscuro">
           <div class="module-photo-container">
             <img class="module-photo"
@@ -179,7 +170,6 @@
           </div>
         </div>
 
-        <!-- Inventario y Materiales -->
         <div class="module-card" [class.module-card-dark]="modoOscuro">
           <div class="module-photo-container">
             <img class="module-photo"
@@ -193,7 +183,6 @@
           </div>
         </div>
 
-        <!-- Unidades y Acabados -->
         <div class="module-card" [class.module-card-dark]="modoOscuro">
           <div class="module-photo-container">
             <img class="module-photo"
@@ -204,48 +193,6 @@
             <h3 class="module-title" [class.module-title-dark]="modoOscuro">Unidades y Acabados</h3>
             <p class="module-desc" [class.module-desc-dark]="modoOscuro">Personalizaciones y especificaciones
               constructivas de cada lote o edificación.</p>
-          </div>
-        </div>
-
-        <!-- Presupuestos y Costos -->
-        <div class="module-card" [class.module-card-dark]="modoOscuro">
-          <div class="module-photo-container">
-            <img class="module-photo"
-              src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=300&auto=format&fit=crop&q=80"
-              alt="Costos">
-          </div>
-          <div class="module-info">
-            <h3 class="module-title" [class.module-title-dark]="modoOscuro">Presupuestos y Costos</h3>
-            <p class="module-desc" [class.module-desc-dark]="modoOscuro">Comparación entre costos estimados y reales.
-              Control de órdenes de cambio.</p>
-          </div>
-        </div>
-
-        <!-- Actividades y Órdenes -->
-        <div class="module-card" [class.module-card-dark]="modoOscuro">
-          <div class="module-photo-container">
-            <img class="module-photo"
-              src="https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=300&auto=format&fit=crop&q=80"
-              alt="Órdenes">
-          </div>
-          <div class="module-info">
-            <h3 class="module-title" [class.module-title-dark]="modoOscuro">Actividades y Trabajo</h3>
-            <p class="module-desc" [class.module-desc-dark]="modoOscuro">Asignación de cuadrillas, materiales, equipos y
-              seguimiento de estado físico.</p>
-          </div>
-        </div>
-
-        <!-- Avances y Evidencias -->
-        <div class="module-card" [class.module-card-dark]="modoOscuro">
-          <div class="module-photo-container">
-            <img class="module-photo"
-              src="https://images.unsplash.com/photo-1590069261209-f8e9b8642343?w=300&auto=format&fit=crop&q=80"
-              alt="Evidencias">
-          </div>
-          <div class="module-info">
-            <h3 class="module-title" [class.module-title-dark]="modoOscuro">Avances y Evidencias</h3>
-            <p class="module-desc" [class.module-desc-dark]="modoOscuro">Registro de porcentaje de avance físico con
-              evidencias fotográficas desde móvil.</p>
           </div>
         </div>
       </div>

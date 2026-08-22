@@ -1,0 +1,260 @@
+<!-- Sub-header -->
+<div class="panel-subheader">
+  <div class="panel-subheader-left">
+    <h2 class="panel-title-text" *ngIf="vistaActiva === 'resumen'">Resumen del Sistema</h2>
+    <h2 class="panel-title-text" *ngIf="vistaActiva === 'preferencias'">Preferencias del Sistema</h2>
+    <h2 class="panel-title-text" *ngIf="vistaActiva === 'seguridad'">Seguridad y Auditoria</h2>
+  </div>
+  <div class="panel-subheader-right">
+    <button class="btn-create-project" *ngIf="vistaActiva === 'resumen'">+ Nueva Obra</button>
+  </div>
+</div>
+
+<!-- 1. VISTA RESUMEN GENERAL -->
+<div class="view-panel space-y-6" *ngIf="vistaActiva === 'resumen'">
+  <!-- ROW 1: CHARTS AND INDICATORS -->
+  <div class="grid-2-cols">
+    <!-- Card Chart 1 -->
+    <div class="dashboard-card">
+      <div class="card-header">
+        <h3 class="card-title">Avance Fisico de Obra (Bid Win-Loss)</h3>
+        <span class="card-tag">Ultimos 12 meses</span>
+      </div>
+      <div class="chart-mockup">
+        <div class="bar-chart-container">
+          <div class="bar-column">
+            <div class="bar-segment won" style="height: 60%;"></div>
+            <div class="bar-segment lost" style="height: 25%;"></div>
+            <span class="bar-label">Q1 '26</span>
+          </div>
+          <div class="bar-column">
+            <div class="bar-segment won" style="height: 70%;"></div>
+            <div class="bar-segment lost" style="height: 15%;"></div>
+            <span class="bar-label">Q2 '26</span>
+          </div>
+          <div class="bar-column">
+            <div class="bar-segment won" style="height: 45%;"></div>
+            <div class="bar-segment lost" style="height: 40%;"></div>
+            <span class="bar-label">Q3 '26</span>
+          </div>
+          <div class="bar-column">
+            <div class="bar-segment won" style="height: 80%;"></div>
+            <div class="bar-segment lost" style="height: 10%;"></div>
+            <span class="bar-label">Q4 '26</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card Chart 2 -->
+    <div class="dashboard-card">
+      <div class="card-header">
+        <h3 class="card-title">Horas de Mano de Obra (Manpower Hours)</h3>
+        <span class="card-tag">Ultimos 30 dias</span>
+      </div>
+      <div class="chart-mockup">
+        <svg viewBox="0 0 400 150" class="svg-chart">
+          <defs>
+            <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#ea580c" stop-opacity="0.3"/>
+              <stop offset="100%" stop-color="#ea580c" stop-opacity="0.0"/>
+            </linearGradient>
+          </defs>
+          <path d="M 0 100 Q 80 40 160 80 T 320 20 L 400 60 L 400 150 L 0 150 Z" fill="url(#chartGrad)"/>
+          <path d="M 0 100 Q 80 40 160 80 T 320 20 L 400 60" fill="none" stroke="#ea580c" stroke-width="3"/>
+          <circle cx="320" cy="20" r="5" fill="#ea580c"/>
+        </svg>
+        <div class="chart-tooltip">70 Horas Registradas</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 2: USER PROFILE INFO CARD -->
+  <div class="dashboard-card" *ngIf="usuarioActual">
+    <div class="card-header border-b">
+      <h3 class="card-title">Datos Generales del Perfil Actual</h3>
+    </div>
+    <div class="profile-card-body">
+      <div class="profile-avatar-large">
+        {{ usuarioActual.nombre_completo.substring(0, 2).toUpperCase() }}
+      </div>
+      <div class="profile-details-grid">
+        <div class="profile-item">
+          <span class="item-label">Nombre Completo</span>
+          <span class="item-value">{{ usuarioActual.nombre_completo }}</span>
+        </div>
+        <div class="profile-item">
+          <span class="item-label">Usuario</span>
+          <span class="item-value">@{{ usuarioActual.nombre_usuario || 'sin_usuario' }}</span>
+        </div>
+        <div class="profile-item">
+          <span class="item-label">Cedula de Identidad (CI)</span>
+          <span class="item-value">{{ usuarioActual.ci }}</span>
+        </div>
+        <div class="profile-item">
+          <span class="item-label">Correo Electronico</span>
+          <span class="item-value">{{ usuarioActual.correo }}</span>
+        </div>
+        <div class="profile-item">
+          <span class="item-label">Telefono de Contacto</span>
+          <span class="item-value">{{ usuarioActual.telefono || 'No Registrado' }}</span>
+        </div>
+        <div class="profile-item">
+          <span class="item-label">Empresa (Tenant)</span>
+          <span class="item-value">{{ usuarioActual.nombre_empresa || 'Constructora General' }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 3: RECENT ACTIVITIES -->
+  <div class="dashboard-card">
+    <div class="card-header border-b">
+      <h3 class="card-title">Mis Obras Recientes</h3>
+    </div>
+    <div class="table-container">
+      <table class="dashboard-table">
+        <thead>
+          <tr>
+            <th>Nombre de la Obra</th>
+            <th>Tipo</th>
+            <th>Fecha Inicio</th>
+            <th>Estado</th>
+            <th>Progreso</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="font-bold">Edificio Renacer - Sector A</td>
+            <td>Edificacion Civil</td>
+            <td>01/03/2026</td>
+            <td><span class="badge status-active">Activo</span></td>
+            <td>
+              <div class="progress-bar-container">
+                <div class="progress-bar-fill" style="width: 75%;"></div>
+                <span class="progress-percentage">75%</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td class="font-bold">Puente Colgante Urubo</td>
+            <td>Infraestructura Vial</td>
+            <td>15/01/2026</td>
+            <td><span class="badge status-active">Activo</span></td>
+            <td>
+              <div class="progress-bar-container">
+                <div class="progress-bar-fill" style="width: 40%;"></div>
+                <span class="progress-percentage">40%</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td class="font-bold">Remodelacion Oficinas Centrales</td>
+            <td>Remodelacion comercial</td>
+            <td>10/06/2026</td>
+            <td><span class="badge status-pending">Planificacion</span></td>
+            <td>
+              <div class="progress-bar-container">
+                <div class="progress-bar-fill" style="width: 5%;"></div>
+                <span class="progress-percentage">5%</span>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 2. VISTA PREFERENCIAS DE APP -->
+<div class="view-panel" *ngIf="vistaActiva === 'preferencias'">
+  <div class="dashboard-card">
+    <div class="card-header border-b">
+      <h3 class="card-title">Configuracion del Panel y Preferencias</h3>
+    </div>
+    <div class="settings-list">
+      <div class="setting-row">
+        <div class="setting-info">
+          <h4 class="setting-title">Modo Oscuro del Panel</h4>
+          <p class="setting-desc">Alterna el esquema de color del panel para reducir la fatiga visual.</p>
+        </div>
+        <button (click)="alternarModoOscuro()" class="toggle-btn" [class.on]="modoOscuro">
+          <span class="toggle-circle"></span>
+        </button>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <h4 class="setting-title">Idioma del Sistema</h4>
+          <p class="setting-desc">Idioma predeterminado para reportes y herramientas de obras.</p>
+        </div>
+        <select class="settings-select">
+          <option selected>Espanol (America Latina)</option>
+          <option>English (US)</option>
+        </select>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <h4 class="setting-title">Notificaciones Push</h4>
+          <p class="setting-desc">Recibir alertas en tiempo real sobre aprobaciones de ordenes de trabajo.</p>
+        </div>
+        <button class="toggle-btn on">
+          <span class="toggle-circle"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 3. VISTA SEGURIDAD E HISTORIAL -->
+<div class="view-panel" *ngIf="vistaActiva === 'seguridad'">
+  <div class="dashboard-card">
+    <div class="card-header border-b">
+      <h3 class="card-title">Estado de Seguridad de la Cuenta</h3>
+    </div>
+    <div class="security-summary">
+      <div class="security-grid">
+        <div class="security-status-card">
+          <span class="sec-label">Intentos Fallidos Acumulados</span>
+          <span class="sec-value">0 / 5</span>
+        </div>
+        <div class="security-status-card">
+          <span class="sec-label">Estado del Bloqueo</span>
+          <span class="sec-value status-ok">Sin Restricciones</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-card mt-6">
+    <div class="card-header border-b">
+      <h3 class="card-title">Dispositivos Autorizados y Firmados</h3>
+    </div>
+    <div class="table-container">
+      <table class="dashboard-table">
+        <thead>
+          <tr>
+            <th>Hash de Dispositivo</th>
+            <th>Navegador Detectado</th>
+            <th>Fecha de Registro</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let dispositivo of dispositivosConocidos">
+            <td class="font-mono text-xs text-gray-500">{{ dispositivo.hash }}</td>
+            <td class="font-bold">{{ dispositivo.navegador }}</td>
+            <td>{{ dispositivo.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td><span class="badge status-active">Autorizado</span></td>
+          </tr>
+          <tr *ngIf="dispositivosConocidos.length === 0">
+            <td colspan="4" style="text-align: center; padding: 2rem; color: #94a3b8;">
+              Registrando tu firma de dispositivo actual al completar el login...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

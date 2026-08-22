@@ -5,6 +5,7 @@ import { LoginComponent } from './pages/login/login';
 import { ListaUsuariosComponent } from './pages/usuarios/lista-usuarios/lista-usuarios';
 import { HomeComponent } from './pages/home/home';
 import { PerfilComponent } from './pages/perfil/perfil';
+import { PanelComponent } from './pages/panel/panel';
 import { RolesComponent } from './pages/roles/roles';
 import { ListaEmpresasComponent } from './pages/empresas/lista-empresas/lista-empresas';
 import { BackupComponent } from './pages/backup/backup';
@@ -18,24 +19,22 @@ import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout';
 import { publicGuard } from './guards/public-guard';
 import { authGuard } from './guards/auth-guard';
 
-
-
-
 export const routes: Routes = [
-    //RUTAS PUBLICAS
-    { path: '', component: HomeComponent },
+    // RUTAS PUBLICAS (Redirigen si ya existe sesion activa)
+    { path: '', component: HomeComponent, canActivate: [publicGuard] },
     { path: 'login', component: LoginComponent, canActivate: [publicGuard] },
 
-    //RUTAS SIN SIDEBAR
-    { path: 'home', redirectTo: '', pathMatch: 'full' },
-    { path: 'perfil', component: PerfilComponent, canActivate: [authGuard] },
+    // Redireccion de home
+    { path: 'home', redirectTo: 'panel', pathMatch: 'full' },
 
-    //RUTAS CONSIDEBAR
+    // RUTAS PRIVADAS ADMINISTRATIVAS (Comparten el mismo header y sidebar unificado de Procore)
     {
         path: '',
         component: AdminLayoutComponent,
         canActivate: [authGuard],
         children: [
+            { path: 'panel', component: PanelComponent },
+            { path: 'perfil', component: PerfilComponent },
             { path: 'usuarios', component: ListaUsuariosComponent },
             { path: 'roles', component: RolesComponent },
             { path: 'empresas', component: ListaEmpresasComponent },
