@@ -7,15 +7,14 @@ def obtener_todos_los_usuarios():
     db.create_connection()
     try:
         query = f"""
-            SELECT 
-                a.nro_usuario, a.ci, a.nombre_usuario, a.estado, a.id_empresa,d.nombre_empresa,
-                b.nombre_completo, b.correo, b.telefono, b.direccion,
-                c.nombre_rol, a.nro_rol
-            FROM {Config.SCHEMA}.usuario a
-            INNER JOIN {Config.SCHEMA}.persona b ON a.ci = b.ci
-            INNER JOIN {Config.SCHEMA}.rol c ON a.nro_rol = c.nro_rol
-            LEFT JOIN {Config.SCHEMA}.empresa d ON d.id_empresa=a.id_empresa
-            WHERE a.estado = 'ACTIVO';
+select id_usuario,username,correo,nombre_completo,
+fecha_nacimiento,ci,direccion,telefono,nombre_empresa,nombre_rol,a.id_rol,
+a.id_empresa
+from  obras.t_usuario  a 
+inner join obras.t_persona b on a.id_persona=b.id_persona s
+inner join obras.t_empresa c on c.id_empresa=a.id_empresa
+inner join obras.t_rol d on a.id_rol=d.id_rol
+where estado='ACTIVO'
         """
         resultados = db.execute_query(query, fetchall=True)
         
@@ -23,82 +22,133 @@ def obtener_todos_los_usuarios():
         if resultados:
             for r in resultados:
                 usuarios.append({
-                    "nro_usuario": r[0], "ci": r[1], "nombre_usuario": r[2], 
-                    "estado": r[3], "id_empresa": r[4],"nombre_empresa": r[5], 
-                    "nombre_completo": r[6], 
-                    "correo": r[7], "telefono": r[8], "direccion": r[9], 
-                    "nombre_rol": r[10], "nro_rol": r[11]
+                    "id_usuario": r[0],
+                    "username": r[1], 
+                    "correo": r[2], 
+                    "nombre_completo": r[3],
+                    "fecha_nacimiento": r[4],
+                    "ci": r[5], 
+                    "direccion": r[6], 
+                    "telefono": r[7],
+                    "nombre_empresa": r[8], 
+                    "nombre_rol": r[9], 
+                    "id_rol": r[10],
+                    "id_empresa": r[11]
                 })
         return usuarios
     finally:
         db.close_connection()
 
-# --- CREAR USUARIO ---
-def crear_usuario_db(datos_persona, datos_usuario):
+# --- REGISTRAR USUARIO ---
+def crear_usuario_db(datos):
     db = PostgreSQL()
     db.create_connection()
-    try:
-        #INSERTAR DATOS PERSONA
-        query_persona = f"""
-            INSERT INTO {Config.SCHEMA}.persona (ci, nombre_completo, telefono, correo, direccion)
-            VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (ci) DO UPDATE 
-            SET nombre_completo = EXCLUDED.nombre_completo,
-                telefono = EXCLUDED.telefono,
-                correo = EXCLUDED.correo,
-                direccion = EXCLUDED.direccion;
-        """
-        db.execute_query(query_persona, datos_persona)
 
-        #INSERTAR DATOS USUARIO
-        query_usuario = f"""
-            INSERT INTO {Config.SCHEMA}.usuario (nombre_usuario, password_hash, estado, ci, nro_rol, id_empresa)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            RETURNING nro_usuario;
+    try:
+        # Validar campos obligatorios
+        campos_obligatorios = [
+            "username",
+            "password",
+            "correo",
+            "id_empresa",
+            "id_rol",
+            "nombre_completo",
+            "fecha_nacimiento",
+            "ci",
+            "direccion",
+            "telefono",
+            "telefono_ref",
+            "ubicacion"
+        ]
+
+        for campo in campos_obligatorios:
+            if campo not in datos or datos[campo] is None or str(datos[campo]).strip() == "":
+                raise ValueError(f"El campo '{campo}' es obligatorio")
+
+        # Validar ID de empresa
+        try:
+            datos["id_empresa"] = int(datos["id_empresa"])
+        except (ValueError, TypeError):
+            raise ValueError("El ID de empresa debe ser numérico")
+
+        # Validar ID de rol
+        try:
+            datos["id_rol"] = int(datos["id_rol"])
+        except (ValueError, TypeError):
+            raise ValueError("El ID de rol debe ser numérico")
+
+        # Validar CI
+        if not str(datos["ci"]).isdigit():
+            raise ValueError("El CI debe contener solamente números")
+
+        # Validar teléfono
+        if not str(datos["telefono"]).isdigit():
+            raise ValueError("El teléfono debe contener solamente números")
+
+        # Validar teléfono de referencia
+        if not str(datos["telefono_ref"]).isdigit():
+            raise ValueError("El teléfono de referencia debe contener solamente números")
+
+        # Llamar al procedimiento
+        query = f"""
+            CALL obras.p_registrar_usuario(
+                %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s, %s
+            );
         """
-        resultado = db.execute_query(query_usuario, datos_usuario, fetchone=True, commit=True)
-        
-        return resultado[0] if resultado else None
+
+        parametros = (
+            datos["username"],
+            datos["password"],
+            datos["correo"],
+            datos["id_empresa"],
+            datos["id_rol"],
+            datos["nombre_completo"],
+            datos["fecha_nacimiento"],
+            datos["ci"],
+            datos["direccion"],
+            datos["telefono"],
+            datos["telefono_ref"],
+            datos["ubicacion"]
+        )
+
+        db.execute_query(
+            query,
+            parametros,
+            commit=True
+        )
+
+        return True
+
     finally:
         db.close_connection()
 
-# --- ACTUALIZAR USUARIO ---
-def actualizar_usuario_db(nro_usuario, ci, datos_persona, datos_usuario, cambiar_password=False):
+
+# --- ELIMINAR USUARIO (SOFT DELETE) ---
+def eliminar_usuario_db(id_usuario):
     db = PostgreSQL()
     db.create_connection()
+
     try:
-        query_persona = f"""
-            UPDATE {Config.SCHEMA}.persona
-            SET nombre_completo = %s, telefono = %s, correo = %s, direccion = %s
-            WHERE ci = %s;
+        # Validar que el ID sea numérico
+        try:
+            id_usuario = int(id_usuario)
+        except (ValueError, TypeError):
+            raise ValueError("El ID del usuario debe ser numérico")
+
+        query = f"""
+            UPDATE OBRAS.t_usuario
+            SET estado = 'INACTIVO'
+            WHERE id_usuario = %s;
         """
-        db.execute_query(query_persona, datos_persona + (ci,))
 
-        if cambiar_password:
-            query_usuario = f"""
-                UPDATE {Config.SCHEMA}.usuario
-                SET nombre_usuario = %s, password_hash = %s, nro_rol = %s, id_empresa = %s
-                WHERE nro_usuario = %s;
-            """
-        else:
-            query_usuario = f"""
-                UPDATE {Config.SCHEMA}.usuario
-                SET nombre_usuario = %s, nro_rol = %s, id_empresa = %s
-                WHERE nro_usuario = %s;
-            """
-        
-        db.execute_query(query_usuario, datos_usuario + (nro_usuario,), commit=True)
-        return True
-    finally:
-        db.close_connection()
+        resultado = db.execute_query(
+            query,
+            (id_usuario,),
+            commit=True
+        )
 
-# --- ELIMINAR USUARIO ---
-def eliminar_usuario_db(nro_usuario: int):
-    db = PostgreSQL()
-    db.create_connection()
-    try:
-        query = f"UPDATE {Config.SCHEMA}.usuario SET estado = 'INACTIVO' WHERE nro_usuario = %s;"
-        db.execute_query(query, (nro_usuario,), commit=True)
         return True
+
     finally:
         db.close_connection()

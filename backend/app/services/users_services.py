@@ -1,5 +1,7 @@
 from app.repos import users_repos
 from werkzeug.security import generate_password_hash
+import re
+
 
 def listar_usuarios():
     usuarios = users_repos.obtener_todos_los_usuarios()
@@ -9,87 +11,97 @@ def listar_usuarios():
         "data": usuarios
     }
 
+
 def registrar_usuario(data: dict):
-    campos_requeridos = ['ci', 'nombre_completo', 'nombre_usuario', 'password', 'nro_rol', 'id_empresa']
+    campos_requeridos = [
+        'username',
+        'password',
+        'correo',
+        'id_empresa',
+        'id_rol',
+        'nombre_completo',
+        'fecha_nacimiento',
+        'ci',
+        'direccion',
+        'telefono',
+        'telefono_ref',
+        'ubicacion'
+    ]
+
+    # VALIDAR CAMPOS OBLIGATORIOS
     for campo in campos_requeridos:
-        if not data.get(campo):
+        if campo not in data or data[campo] is None or str(data[campo]).strip() == "":
             raise ValueError(f"El campo '{campo}' es obligatorio.")
 
+    # VALIDAR ID EMPRESA
+    try:
+        id_empresa = int(data['id_empresa'])
+        if id_empresa <= 0:
+            raise ValueError
+    except (ValueError, TypeError):
+        raise ValueError("El ID de empresa debe ser un número entero positivo.")
+
+    # VALIDAR ID ROL
+    try:
+        id_rol = int(data['id_rol'])
+        if id_rol <= 0:
+            raise ValueError
+    except (ValueError, TypeError):
+        raise ValueError("El ID de rol debe ser un número entero positivo.")
+
+    # VALIDAR CI
+    if not str(data['ci']).isdigit():
+        raise ValueError("El CI debe contener solamente números.")
+
+    # VALIDAR TELÉFONO
+    if not str(data['telefono']).isdigit():
+        raise ValueError("El teléfono debe contener solamente números.")
+
+    # VALIDAR TELÉFONO DE REFERENCIA
+    if not str(data['telefono_ref']).isdigit():
+        raise ValueError("El teléfono de referencia debe contener solamente números.")
+
+    # VALIDAR CORREO
+    if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', data['correo']):
+        raise ValueError("El correo electrónico no tiene un formato válido.")
+
+    # VALIDAR CONTRASEÑA
+    if len(data['password']) < 6:
+        raise ValueError("La contraseña debe tener al menos 6 caracteres.")
+
+    # GENERAR HASH DE CONTRASEÑA
     password_hash = generate_password_hash(data['password'])
 
-    datos_persona = (
-        data['ci'], 
-        data['nombre_completo'].upper(), 
-        data.get('telefono'), 
-        data.get('correo'), 
-        data.get('direccion')
-    )
-    
-    datos_usuario = (
-        data['nombre_usuario'].upper(), 
-        password_hash, 
-        'ACTIVO', 
-        data['ci'], 
-        data['nro_rol'],
-        data['id_empresa']
-    )
+    datos = {
+        "username": data['username'].upper(),
+        "password": password_hash,
+        "correo": data['correo'],
+        "id_empresa": id_empresa,
+        "id_rol": id_rol,
+        "nombre_completo": data['nombre_completo'].upper(),
+        "fecha_nacimiento": data['fecha_nacimiento'],
+        "ci": data['ci'],
+        "direccion": data['direccion'],
+        "telefono": data['telefono'],
+        "telefono_ref": data['telefono_ref'],
+        "ubicacion": data['ubicacion']
+    }
 
-    nuevo_id = users_repos.crear_usuario_db(datos_persona, datos_usuario)
+    users_repos.crear_usuario_db(datos)
 
     return {
         "success": True,
-        "message": "Usuario registrado exitosamente",
-        "nro_usuario": nuevo_id
+        "message": "Usuario registrado exitosamente"
     }
 
-def actualizar_usuario(nro_usuario: int, data: dict):
-    if nro_usuario <= 0:
+
+def borrar_usuario(id_usuario: int):
+    # VALIDAR ID DE USUARIO
+    if id_usuario <= 0:
         raise ValueError("ID de usuario no válido.")
-        
-    campos_requeridos = ['ci', 'nombre_completo', 'nombre_usuario', 'nro_rol', 'id_empresa']
-    for campo in campos_requeridos:
-        if not data.get(campo):
-            raise ValueError(f"El campo '{campo}' es obligatorio.")
 
-    ci = data['ci']
-    
-    datos_persona = (
-        data['nombre_completo'].upper(), 
-        data.get('telefono'), 
-        data.get('correo'), 
-        data.get('direccion')
-    )
-    
-    cambiar_password = False
-    if data.get('password') and len(data.get('password').strip()) > 0:
-        cambiar_password = True
-        password_hash = generate_password_hash(data['password'])
-        datos_usuario = (
-            data['nombre_usuario'], 
-            password_hash,
-            data['nro_rol'],
-            data['id_empresa']
-        )
-    else:
-        datos_usuario = (
-            data['nombre_usuario'], 
-            data['nro_rol'],
-            data['id_empresa']
-        )
+    users_repos.eliminar_usuario_db(id_usuario)
 
-    users_repos.actualizar_usuario_db(nro_usuario, ci, datos_persona, datos_usuario, cambiar_password)
-
-    return {
-        "success": True,
-        "message": "Usuario actualizado exitosamente"
-    }
-
-def borrar_usuario(nro_usuario: int):
-    if nro_usuario <= 0:
-        raise ValueError("ID de usuario no válido.")
-        
-    users_repos.eliminar_usuario_db(nro_usuario)
-    
     return {
         "success": True,
         "message": "Usuario eliminado correctamente."
