@@ -21,14 +21,12 @@ def get_profile(nro_usuario):
 
         user=db.execute_query(query,(nro_usuario,),fetchone=True)
 
-        columns=[]
-        for column in  db.cur.description:
-            columns.append(column[0])
-        print(columns) 
+        if not user:
+            return None
+
+        columns=[column[0] for column in db.cur.description]
         
         data=dict(zip(columns,user))
-
-        print(data)
 
         return data
 
