@@ -2,7 +2,7 @@ import { Component, OnInit, inject, NgZone, ChangeDetectorRef, PLATFORM_ID } fro
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { PerfilService, PerfilUsuario } from '../../services/perfil';
+import { CambiarPasswordRequest, PerfilService, PerfilUsuario } from '../../services/perfil';
 import { AuthService } from '../../services/auth';
 
 @Component({
@@ -27,6 +27,14 @@ export class PerfilComponent implements OnInit {
   mensaje: { texto: string, tipo: 'exito' | 'error' } | null = null;
   modoOscuro: boolean = false;
   mensajeError: string = '';
+
+  mostrarModalPassword: boolean = false;
+  cambiandoPassword: boolean = false;
+  errorCambioPassword: string = '';
+  mostrarPasswordActual: boolean = false;
+  mostrarPasswordNueva: boolean = false;
+  mostrarConfirmarPassword: boolean = false;
+  passwordForm: CambiarPasswordRequest = this.crearPasswordFormVacio();
 
   // En perfil.component.ts
   async ngOnInit() {
@@ -93,8 +101,7 @@ export class PerfilComponent implements OnInit {
         ci: this.perfil.ci,
         telefono: this.perfil.telefono,
         correo: this.perfil.correo,
-        direccion: this.perfil.direccion,
-        password: '' 
+        direccion: this.perfil.direccion
       };
       this.modoEdicion = true;
     }
@@ -113,10 +120,6 @@ export class PerfilComponent implements OnInit {
       correo: this.perfilForm.correo,
       direccion: this.perfilForm.direccion
     };
-
-    if (this.perfilForm.password && this.perfilForm.password.trim() !== '') {
-      payload.password = this.perfilForm.password;
-    }
 
     this.perfilService.actualizarPerfil(payload).subscribe({
       next: (res) => {
@@ -148,5 +151,129 @@ export class PerfilComponent implements OnInit {
       this.mensaje = null;
       this.cdr.detectChanges();
     }, 4000);
+  }
+
+  abrirModalPassword() {
+    this.limpiarPasswordForm();
+    this.mostrarModalPassword = true;
+  }
+
+  cerrarModalPassword() {
+    if (this.cambiandoPassword) return;
+
+    this.mostrarModalPassword = false;
+    this.limpiarPasswordForm();
+  }
+
+  cambiarPassword() {
+    if (!this.passwordFormValido || this.cambiandoPassword) return;
+
+    this.cambiandoPassword = true;
+    this.errorCambioPassword = '';
+
+    const payload: CambiarPasswordRequest = {
+      password_actual: this.passwordForm.password_actual,
+      password_nueva: this.passwordForm.password_nueva,
+      confirmar_password: this.passwordForm.confirmar_password
+    };
+
+    this.perfilService.cambiarPassword(payload).subscribe({
+      next: (res) => {
+        this.ngZone.run(() => {
+          this.cambiandoPassword = false;
+
+          if (res.success) {
+            this.cerrarModalPassword();
+            this.mostrarMensaje('Contraseña actualizada correctamente', 'exito');
+          } else {
+            this.errorCambioPassword = 'No se pudo actualizar la contraseña. Inténtalo más tarde.';
+          }
+
+          this.cdr.detectChanges();
+        });
+      },
+      error: (err) => {
+        this.ngZone.run(() => {
+          this.errorCambioPassword = this.obtenerMensajeErrorPassword(err);
+          this.cambiandoPassword = false;
+          this.cdr.detectChanges();
+        });
+      }
+    });
+  }
+
+  get requisitosPassword(): { texto: string; cumple: boolean }[] {
+    const password = this.passwordForm.password_nueva;
+
+    return [
+      { texto: 'Al menos 8 caracteres', cumple: password.length >= 8 },
+      { texto: 'Una letra mayúscula', cumple: /[A-Z]/.test(password) },
+      { texto: 'Una letra minúscula', cumple: /[a-z]/.test(password) },
+      { texto: 'Un número', cumple: /[0-9]/.test(password) },
+      { texto: 'Un carácter especial', cumple: /[^A-Za-z0-9\s]/.test(password) }
+    ];
+  }
+
+  get passwordNuevaSegura(): boolean {
+    return this.requisitosPassword.every(requisito => requisito.cumple);
+  }
+
+  get passwordsCoinciden(): boolean {
+    return this.passwordForm.confirmar_password.length > 0
+      && this.passwordForm.password_nueva === this.passwordForm.confirmar_password;
+  }
+
+  get passwordFormValido(): boolean {
+    return this.passwordForm.password_actual.length > 0
+      && this.passwordForm.password_nueva.length > 0
+      && this.passwordForm.confirmar_password.length > 0
+      && this.passwordNuevaSegura
+      && this.passwordsCoinciden;
+  }
+
+  private crearPasswordFormVacio(): CambiarPasswordRequest {
+    return {
+      password_actual: '',
+      password_nueva: '',
+      confirmar_password: ''
+    };
+  }
+
+  private limpiarPasswordForm() {
+    this.passwordForm = this.crearPasswordFormVacio();
+    this.errorCambioPassword = '';
+    this.mostrarPasswordActual = false;
+    this.mostrarPasswordNueva = false;
+    this.mostrarConfirmarPassword = false;
+  }
+
+  private obtenerMensajeErrorPassword(err: any): string {
+    if (err?.status === 0) {
+      return 'No se pudo conectar con el servidor.';
+    }
+
+    if (err?.status === 404) {
+      return 'No se pudo identificar al usuario.';
+    }
+
+    if (err?.status >= 500) {
+      return 'No se pudo actualizar la contraseña. Inténtalo más tarde.';
+    }
+
+    if (err?.status === 400) {
+      const detalle = err?.error?.detail;
+      const mensajesPermitidos = [
+        'La contraseña actual es incorrecta',
+        'Las contraseñas no coinciden',
+        'La nueva contraseña no cumple los requisitos de seguridad',
+        'Los tres campos de contraseña son obligatorios'
+      ];
+
+      return mensajesPermitidos.includes(detalle)
+        ? detalle
+        : 'Verifica los datos ingresados.';
+    }
+
+    return 'No se pudo actualizar la contraseña. Inténtalo más tarde.';
   }
 }
