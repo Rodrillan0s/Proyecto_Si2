@@ -11,6 +11,8 @@ import { ListaEmpresasComponent } from './pages/empresas/lista-empresas/lista-em
 import { BackupComponent } from './pages/backup/backup';
 import { NotificacionesComponent } from './pages/notificaciones/notificaciones';
 import { BitacoraComponent } from './pages/bitacora/bitacora';
+import { RegistroComponent } from './pages/registro/registro';
+import { MainClienteComponent } from './pages/main-cliente/main-cliente';
 
 //LAYOUTS
 import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout';
@@ -18,11 +20,13 @@ import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout';
 //GUARDS
 import { publicGuard } from './guards/public-guard';
 import { authGuard } from './guards/auth-guard';
+import { roleGuard } from './guards/role-guard';
 
 export const routes: Routes = [
     // RUTAS PUBLICAS (Redirigen si ya existe sesion activa)
     { path: '', component: HomeComponent, canActivate: [publicGuard] },
     { path: 'login', component: LoginComponent, canActivate: [publicGuard] },
+    { path: 'registro', component: RegistroComponent, canActivate: [publicGuard] },
 
     // Redireccion de home
     { path: 'home', redirectTo: 'panel', pathMatch: 'full' },
@@ -31,17 +35,19 @@ export const routes: Routes = [
     {
         path: '',
         component: AdminLayoutComponent,
-        canActivate: [authGuard],
+        canActivate: [authGuard, roleGuard],
+        data: { roles: ['ADMINISTRADOR', 'ADMINISTRADOR_EMPRESA'] },
         children: [
             { path: 'panel', component: PanelComponent },
             { path: 'perfil', component: PerfilComponent },
             { path: 'usuarios', component: ListaUsuariosComponent },
             { path: 'roles', component: RolesComponent },
-            { path: 'empresas', component: ListaEmpresasComponent },
+            { path: 'empresas', component: ListaEmpresasComponent, canActivate: [roleGuard], data: { roles: ['ADMINISTRADOR'] } },
             { path: 'backup', component: BackupComponent },
             { path: 'notificaciones', component: NotificacionesComponent },
             { path: 'bitacora', component: BitacoraComponent }
         ]
     },
+    { path: 'main_cliente', component: MainClienteComponent, canActivate: [authGuard, roleGuard], data: { roles: ['CLIENTE'] } },
     { path: '**', redirectTo: 'login' }
 ];

@@ -1,7 +1,7 @@
 from app.repos import roles_repos
 
-def listar_roles():
-    roles = roles_repos.obtener_todos_los_roles()
+def listar_roles(token_data: dict):
+    roles = roles_repos.obtener_todos_los_roles(token_data.get('nombre_rol') != 'ADMINISTRADOR')
     return {
         "success": True,
         "message": "Roles recuperados exitosamente",

@@ -7,7 +7,7 @@ router = APIRouter(tags=["Usuarios"])
 @router.get('/')
 def get_users(token_data: dict = Depends(verificar_token)):
     try:
-        return users_services.listar_usuarios()
+        return users_services.listar_usuarios(token_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
@@ -17,7 +17,7 @@ def create_user(data: dict = Body(...), token_data: dict = Depends(verificar_tok
         raise HTTPException(status_code=400, detail='El cuerpo de la petición está vacío.')
     
     try:
-        return users_services.registrar_usuario(data)
+        return users_services.registrar_usuario(data, token_data)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -32,7 +32,7 @@ def update_user(nro_usuario: int, data: dict = Body(...), token_data: dict = Dep
         raise HTTPException(status_code=400, detail='El cuerpo de la petición está vacío.')
         
     try:
-        return users_services.actualizar_usuario(nro_usuario, data)
+        return users_services.actualizar_usuario(nro_usuario, data, token_data)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -44,7 +44,7 @@ def update_user(nro_usuario: int, data: dict = Body(...), token_data: dict = Dep
 @router.delete('/{nro_usuario}')
 def delete_user(nro_usuario: int, token_data: dict = Depends(verificar_token)):
     try:
-        return users_services.borrar_usuario(nro_usuario)
+        return users_services.borrar_usuario(nro_usuario, token_data)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:

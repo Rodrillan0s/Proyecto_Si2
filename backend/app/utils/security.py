@@ -69,3 +69,11 @@ def verificar_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_s
         
     #SI LA VERIFICACION RETORNA EXITO RETORNAMOS EL CONTENIDO DEL TOKEN
     return resultado.get('payload')
+
+
+def exigir_rol(*roles_permitidos):
+    def verificar_rol(token_data: dict = Depends(verificar_token)):
+        if token_data.get('nombre_rol') not in roles_permitidos:
+            raise HTTPException(status_code=403, detail='No tiene permisos para realizar esta acción.')
+        return token_data
+    return verificar_rol

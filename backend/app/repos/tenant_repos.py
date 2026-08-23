@@ -8,8 +8,8 @@ def obtener_todas_las_empresas():
     try:
         # Se quitó el filtro WHERE estado = 'ACTIVO' para mostrar todo
         query = f"""
-            SELECT id_empresa, nombre_empresa, nit, estado 
-            FROM {Config.SCHEMA}.empresa 
+            SELECT id_empresa, nombre_empresa
+            FROM {Config.SCHEMA}.t_empresa
             ORDER BY id_empresa ASC;
         """
         resultados = db.execute_query(query, fetchall=True)
@@ -20,8 +20,8 @@ def obtener_todas_las_empresas():
                 empresas.append({
                     "id_empresa": r[0],
                     "nombre_empresa": r[1],
-                    "nit": r[2],
-                    "estado": r[3]
+                    "nit": None,
+                    "estado": "ACTIVO"
                 })
         return empresas
     finally:
@@ -33,11 +33,11 @@ def crear_empresa_db(nombre_empresa, nit):
     db.create_connection()
     try:
         query = f"""
-            INSERT INTO {Config.SCHEMA}.empresa (nombre_empresa, nit, estado) 
-            VALUES (%s, %s, 'ACTIVO') 
+            INSERT INTO {Config.SCHEMA}.t_empresa (nombre_empresa)
+            VALUES (%s)
             RETURNING id_empresa;
         """
-        resultado = db.execute_query(query, (nombre_empresa, nit), fetchone=True, commit=True)
+        resultado = db.execute_query(query, (nombre_empresa,), fetchone=True, commit=True)
         return resultado[0] if resultado else None
     finally:
         db.close_connection()
@@ -48,12 +48,12 @@ def actualizar_empresa_db(id_empresa, nombre_empresa, nit, estado):
     db.create_connection()
     try:
         query = f"""
-            UPDATE {Config.SCHEMA}.empresa 
-            SET nombre_empresa = %s, nit = %s, estado = %s 
+            UPDATE {Config.SCHEMA}.t_empresa
+            SET nombre_empresa = %s
             WHERE id_empresa = %s;
         """
         # Guardamos cuántas filas se actualizaron realmente
-        filas_afectadas = db.execute_query(query, (nombre_empresa, nit, estado, id_empresa), commit=True)
+        filas_afectadas = db.execute_query(query, (nombre_empresa, id_empresa), commit=True)
         return filas_afectadas > 0 # Retorna True si afectó al menos 1 fila, False si es 0
     finally:
         db.close_connection()
@@ -63,7 +63,7 @@ def eliminar_empresa_db(id_empresa: int):
     db = PostgreSQL()
     db.create_connection()
     try:
-        query = f"DELETE FROM {Config.SCHEMA}.empresa WHERE id_empresa = %s;"
+        query = f"DELETE FROM {Config.SCHEMA}.t_empresa WHERE id_empresa = %s;"
         # Guardamos cuántas filas se borraron realmente
         filas_afectadas = db.execute_query(query, (id_empresa,), commit=True)
         return filas_afectadas > 0

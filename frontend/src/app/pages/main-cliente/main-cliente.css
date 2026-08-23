@@ -1,0 +1,12 @@
+.client-page {
+  min-height: 100vh;
+  padding: 4rem 2rem;
+  background: #f8fafc;
+  color: #1e293b;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  text-align: center;
+}
+
+.client-brand { color: #ea580c; font-size: 1.5rem; font-weight: 800; letter-spacing: .04em; }
+h1 { margin: 6rem 0 .5rem; font-size: 2rem; }
+p { color: #64748b; }

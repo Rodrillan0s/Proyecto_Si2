@@ -1,18 +1,18 @@
 from fastapi import APIRouter, Body, HTTPException, Depends
 from app.services import tenant_services
-from app.utils.security import verificar_token
+from app.utils.security import exigir_rol
 
 router = APIRouter(tags=["Empresas (Tenants)"])
 
 @router.get('/')
-def get_empresas(token_data: dict = Depends(verificar_token)):
+def get_empresas(token_data: dict = Depends(exigir_rol('ADMINISTRADOR'))):
     try:
         return tenant_services.listar_empresas()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
 @router.post('/')
-def create_empresa(data: dict = Body(...), token_data: dict = Depends(verificar_token)):
+def create_empresa(data: dict = Body(...), token_data: dict = Depends(exigir_rol('ADMINISTRADOR'))):
     if not data:
         raise HTTPException(status_code=400, detail='El cuerpo de la petición está vacío.')
     
@@ -24,7 +24,7 @@ def create_empresa(data: dict = Body(...), token_data: dict = Depends(verificar_
         raise HTTPException(status_code=500, detail=f"Error interno en BD: {str(e)}")
 
 @router.put('/{id_empresa}')
-def update_empresa(id_empresa: int, data: dict = Body(...), token_data: dict = Depends(verificar_token)):
+def update_empresa(id_empresa: int, data: dict = Body(...), token_data: dict = Depends(exigir_rol('ADMINISTRADOR'))):
     if not data:
         raise HTTPException(status_code=400, detail='El cuerpo de la petición está vacío.')
         
@@ -36,7 +36,7 @@ def update_empresa(id_empresa: int, data: dict = Body(...), token_data: dict = D
         raise HTTPException(status_code=500, detail=f"Error interno en BD: {str(e)}")
 
 @router.delete('/{id_empresa}')
-def delete_empresa(id_empresa: int, token_data: dict = Depends(verificar_token)):
+def delete_empresa(id_empresa: int, token_data: dict = Depends(exigir_rol('ADMINISTRADOR'))):
     try:
         return tenant_services.borrar_empresa(id_empresa)
     except ValueError as e:

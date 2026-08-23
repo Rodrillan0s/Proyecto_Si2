@@ -19,6 +19,10 @@ export class HomeComponent implements OnInit {
   usuarioActual: any = null;
   modoOscuro: boolean = false;
 
+  esAdministrador(): boolean {
+    return ['ADMINISTRADOR', 'ADMINISTRADOR_EMPRESA'].includes(this.usuarioActual?.nombre_rol);
+  }
+
   // METODO AL INICIAR LA PAGINA
   ngOnInit() {
     if (isPlatformBrowser(this.platformId)) {
@@ -32,7 +36,8 @@ export class HomeComponent implements OnInit {
 
       // Redirección si ya está autenticado con sesión válida
       if (this.usuarioActual) {
-        this.router.navigate(['/panel']);
+        const destino = this.usuarioActual.nombre_rol === 'CLIENTE' ? '/main_cliente' : '/panel';
+        this.router.navigate([destino]);
         return;
       }
 

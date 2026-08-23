@@ -1,0 +1,32 @@
+<main class="register-page">
+  <section class="register-panel">
+    <button type="button" class="back-link" (click)="volverAlLogin()">&larr; Volver al inicio de sesión</button>
+    <div class="brand">OBRATEC</div>
+    <h1>Crear usuario</h1>
+    <p class="intro">Crea tu cuenta para acceder a la plataforma.</p>
+
+    <div *ngIf="mensajeError" class="error-alert">{{ mensajeError }}</div>
+
+    <form (ngSubmit)="registrar()" #form="ngForm">
+      <div class="form-grid">
+        <label>Nombre completo *<input name="nombre_completo" [(ngModel)]="formulario.nombre_completo" required></label>
+        <label>CI *<input name="ci" [(ngModel)]="formulario.ci" required></label>
+        <label>Correo *<input type="email" name="correo" [(ngModel)]="formulario.correo" required></label>
+        <label>Teléfono<input name="telefono" [(ngModel)]="formulario.telefono"></label>
+        <label>Nombre de usuario *<input name="nombre_usuario" [(ngModel)]="formulario.nombre_usuario" required></label>
+        <label>Dirección<input name="direccion" [(ngModel)]="formulario.direccion"></label>
+        <label>Contraseña *<input type="password" name="password" [(ngModel)]="formulario.password" required></label>
+        <label>Confirmar contraseña *<input type="password" name="confirmar_password" [(ngModel)]="formulario.confirmar_password" required></label>
+      </div>
+
+      <label class="company-field">Empresa (opcional)
+        <input name="nombre_empresa" [(ngModel)]="formulario.nombre_empresa" placeholder="Déjalo vacío si eres cliente">
+        <span>Si escribes una empresa nueva, tu cuenta será su administrador inicial. Si lo dejas vacío, se creará como cliente.</span>
+      </label>
+
+      <button class="submit-button" type="submit" [disabled]="cargando || form.invalid">
+        {{ cargando ? 'Creando cuenta...' : 'Crear cuenta' }}
+      </button>
+    </form>
+  </section>
+</main>

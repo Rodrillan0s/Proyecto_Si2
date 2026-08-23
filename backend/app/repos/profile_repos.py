@@ -8,15 +8,15 @@ def get_profile(nro_usuario):
         db.create_connection()
 
         query=f'''
-            SELECT A.ci,A.nombre_usuario,A.fecha_registro, A.nro_usuario,A.estado,A.nro_rol,A.id_empresa,E.nombre_empresa,B.nombre_completo,B.telefono,B.correo,B.direccion,
-            C.nombre_rol, 0 AS cant_vehiculos
-            FROM {Config.SCHEMA}.USUARIO A
-            INNER JOIN {Config.SCHEMA}.PERSONA B ON A.ci =B.ci 
-            INNER JOIN {Config.SCHEMA}.ROL C ON A.nro_rol =C.nro_rol 
-            LEFT JOIN {Config.SCHEMA}.empresa E ON e.id_empresa =A.id_empresa
-            WHERE A.nro_usuario =%s
-            GROUP BY A.ci,A.nombre_usuario,A.fecha_registro, A.nro_usuario,A.estado,A.nro_rol,A.id_empresa,E.nombre_empresa,B.nombre_completo,B.telefono,B.correo,B.direccion,
-            C.nombre_rol;
+            SELECT B.ci, A.username, NULL AS fecha_registro, A.id_usuario,
+                   'ACTIVO' AS estado, A.id_rol, A.id_empresa, E.nombre_empresa,
+                   B.nombre_completo, B.telefono, A.correo, B.direccion,
+                   C.nombre_rol, 0 AS cant_vehiculos
+            FROM {Config.SCHEMA}.t_usuario A
+            LEFT JOIN {Config.SCHEMA}.t_persona B ON A.id_persona = B.id_persona
+            LEFT JOIN {Config.SCHEMA}.t_rol C ON A.id_rol = C.id_rol
+            LEFT JOIN {Config.SCHEMA}.t_empresa E ON E.id_empresa = A.id_empresa
+            WHERE A.id_usuario = %s;
         '''
 
         user=db.execute_query(query,(nro_usuario,),fetchone=True)
@@ -44,27 +44,31 @@ def update_profile(data:dict):
 
        #PREPARAR INSERT PERSONA
         query=f"""
-            UPDATE {Config.SCHEMA}.persona
-            SET telefono=%s, correo=%s, direccion=%s
+            UPDATE {Config.SCHEMA}.t_persona
+            SET telefono=%s, direccion=%s
             WHERE ci=%s
         """
-        params=(data['telefono'],data['correo'],data['direccion'],data['ci'])
+        params=(data['telefono'], data['direccion'], data['ci'])
 
-        if data.get('password_hash'):
-            hacer_commit=False
-        else:
-            hacer_commit=True
+        db.execute_query(query, params)
 
-        db.execute_query(query,params,commit=hacer_commit)
+        query_user = f"""
+            UPDATE {Config.SCHEMA}.t_usuario
+            SET correo=%s
+            WHERE id_usuario=%s
+        """
+        db.execute_query(query_user, (data['correo'], data['nro_usuario']))
 
         if data.get('password_hash'):
             query_user=f"""
-            UPDATE {Config.SCHEMA}.usuario
-            SET password_hash=%s
-            WHERE nro_usuario=%s
+            UPDATE {Config.SCHEMA}.t_usuario
+            SET password=%s
+            WHERE id_usuario=%s
             """
             param_user=(data['password_hash'],data['nro_usuario'])
-            db.execute_query(query_user,param_user,commit=True)
+            db.execute_query(query_user,param_user)
+
+        db.conn.commit()
         
         return {
             'success':True,

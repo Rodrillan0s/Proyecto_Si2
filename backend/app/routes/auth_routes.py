@@ -40,7 +40,7 @@ def register(data:dict=Body(...)):
         return result
     
     except ValueError as e:
-        raise HTTPException(status_code=401,detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'Error interno: {str(e)}')

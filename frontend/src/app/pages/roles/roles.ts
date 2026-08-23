@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { AuthService } from '../../services/auth';
 
 export interface Rol {
   nro_rol?: number;
@@ -29,6 +30,7 @@ export class RolesComponent implements OnInit {
   private cdr = inject(ChangeDetectorRef);
   private ngZone = inject(NgZone);
   private apiUrl = environment.apiUrl;
+  private authService = inject(AuthService);
 
   roles: Rol[] = [];
   cargando: boolean = false;
@@ -40,6 +42,10 @@ export class RolesComponent implements OnInit {
   
   rolForm: Rol = this.inicializarRol();
   totalRoles: number = 0;
+
+  esAdministradorSistema(): boolean {
+    return this.authService.obtenerUsuario()?.nombre_rol === 'ADMINISTRADOR';
+  }
 
   ngOnInit() {
     this.cargarRoles();

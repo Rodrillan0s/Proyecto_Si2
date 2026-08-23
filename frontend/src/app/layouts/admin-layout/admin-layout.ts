@@ -73,6 +73,14 @@ export class AdminLayoutComponent implements OnInit {
       });
   }
 
+  esAdministrador(): boolean {
+    return ['ADMINISTRADOR', 'ADMINISTRADOR_EMPRESA'].includes(this.usuarioActual?.nombre_rol);
+  }
+
+  esAdministradorSistema(): boolean {
+    return this.usuarioActual?.nombre_rol === 'ADMINISTRADOR';
+  }
+
   // ------------------------------------------------------------------
   // SIDEBAR & NAVEGACION
   // ------------------------------------------------------------------

@@ -50,6 +50,10 @@ export class LoginComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  crearUsuario() {
+    this.router.navigate(['/registro']);
+  }
+
   // Función principal
   hacerLogin() {
     // 1. Validar que no haya campos vacíos
@@ -71,7 +75,8 @@ export class LoginComponent implements OnInit {
             // 3. Guardar sesión y redirigir a /panel
             this.authService.guardarSesion(respuesta.token, respuesta.usuario);
             this.cargando = false;
-            this.router.navigate(['/panel']); 
+            const esCliente = respuesta.usuario?.nombre_rol === 'CLIENTE';
+            this.router.navigate([esCliente ? '/main_cliente' : '/panel']);
           }
           this.cdr.detectChanges();
         });

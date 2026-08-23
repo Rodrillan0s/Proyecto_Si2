@@ -17,8 +17,8 @@ export const publicGuard: CanActivateFn = (route, state) => {
   const tokenExpirado = authService.tokenExpirado();
 
   if (usuario && !tokenExpirado) {
-    // Si ya está logueado, redirigir al panel privado
-    router.navigate(['/panel']);
+    const destino = usuario.nombre_rol === 'CLIENTE' ? '/main_cliente' : '/panel';
+    router.navigate([destino]);
     return false;
   }
 

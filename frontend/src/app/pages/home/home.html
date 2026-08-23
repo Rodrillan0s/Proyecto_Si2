@@ -12,11 +12,11 @@
 
       <div class="nav-links">
         <a class="nav-link" [class.nav-link-dark]="modoOscuro" (click)="navegarA('/')">Inicio</a>
-        <a class="nav-link" [class.nav-link-dark]="modoOscuro" *ngIf="usuarioActual?.nombre_rol === 'ADMINISTRADOR'"
+        <a class="nav-link" [class.nav-link-dark]="modoOscuro" *ngIf="esAdministrador()"
           (click)="navegarA('/usuarios')">Usuarios</a>
-        <a class="nav-link" [class.nav-link-dark]="modoOscuro" *ngIf="usuarioActual?.nombre_rol === 'ADMINISTRADOR'"
+        <a class="nav-link" [class.nav-link-dark]="modoOscuro" *ngIf="esAdministrador()"
           (click)="navegarA('/roles')">Roles</a>
-        <a class="nav-link" [class.nav-link-dark]="modoOscuro" *ngIf="usuarioActual?.nombre_rol === 'ADMINISTRADOR'"
+        <a class="nav-link" [class.nav-link-dark]="modoOscuro" *ngIf="esAdministrador()"
           (click)="navegarA('/empresas')">Empresas</a>
         <a class="nav-link" [class.nav-link-dark]="modoOscuro" *ngIf="usuarioActual" (click)="navegarA('/perfil')">Mi
           Perfil</a>

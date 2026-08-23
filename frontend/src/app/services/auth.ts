@@ -17,6 +17,10 @@ export class AuthService {
     return this.http.post<any>(`${this.apiUrl}/api/auth/login`, credenciales);
   }
 
+  registrarUsuario(datos: any) {
+    return this.http.post<any>(`${this.apiUrl}/api/auth/register`, datos);
+  }
+
   guardarSesion(token: string, usuario: any) {
     if (isPlatformBrowser(this.platformId)) {
       localStorage.setItem('token', token);

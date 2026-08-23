@@ -122,6 +122,58 @@ def registrar_usuario_bd(data: dict, persona_existe: bool, db: PostgreSQL = None
         if not id_persona:
             raise ValueError("No se pudo obtener o registrar la persona.")
 
+        nombre_empresa = (data.get('nombre_empresa') or '').strip().upper()
+        if nombre_empresa:
+            empresa_res = db.execute_query(
+                f"""SELECT id_empresa FROM {Config.SCHEMA}.t_empresa
+                    WHERE UPPER(nombre_empresa) = %s ORDER BY id_empresa LIMIT 1;""",
+                (nombre_empresa,), fetchone=True
+            )
+            if empresa_res:
+                id_empresa = empresa_res[0]
+            else:
+                empresa_res = db.execute_query(
+                    f"""INSERT INTO {Config.SCHEMA}.t_empresa (nombre_empresa)
+                        VALUES (%s) RETURNING id_empresa;""",
+                    (nombre_empresa,), fetchone=True
+                )
+                id_empresa = empresa_res[0]
+
+            usuarios_empresa = db.execute_query(
+                f"SELECT 1 FROM {Config.SCHEMA}.t_usuario WHERE id_empresa = %s LIMIT 1;",
+                (id_empresa,), fetchone=True
+            )
+            rol_empresa = db.execute_query(
+                f"""SELECT id_rol FROM {Config.SCHEMA}.t_rol
+                    WHERE UPPER(nombre_rol) = 'ADMINISTRADOR_EMPRESA' LIMIT 1;""",
+                fetchone=True
+            )
+            if not usuarios_empresa and rol_empresa:
+                data['nro_rol'] = rol_empresa[0]
+                db.execute_query(
+                    f"""INSERT INTO {Config.SCHEMA}.t_rol_permiso (id_rol, id_permiso)
+                        SELECT %s, id_permiso FROM {Config.SCHEMA}.t_permiso
+                        ON CONFLICT DO NOTHING;""",
+                    (rol_empresa[0],)
+                )
+        else:
+            empresa_res = db.execute_query(
+                f"""SELECT id_empresa FROM {Config.SCHEMA}.t_empresa
+                    WHERE nombre_empresa = %s ORDER BY id_empresa LIMIT 1;""",
+                ('CLIENTES SIN EMPRESA',), fetchone=True
+            )
+            if not empresa_res:
+                raise ValueError("No existe la empresa técnica para clientes sin empresa.")
+            id_empresa = empresa_res[0]
+            rol_cliente = db.execute_query(
+                f"""SELECT id_rol FROM {Config.SCHEMA}.t_rol
+                    WHERE UPPER(nombre_rol) = 'CLIENTE' LIMIT 1;""",
+                fetchone=True
+            )
+            if not rol_cliente:
+                raise ValueError("No existe el rol CLIENTE.")
+            data['nro_rol'] = rol_cliente[0]
+
         query_usuario = f"""
             INSERT INTO {Config.SCHEMA}.t_usuario (username, password, correo, id_persona, id_rol, id_empresa)
             VALUES (%s, %s, %s, %s, %s, %s)
@@ -129,7 +181,7 @@ def registrar_usuario_bd(data: dict, persona_existe: bool, db: PostgreSQL = None
         """
         params_usuario = (
             data.get('nombre_usuario').upper(), data.get('password_hash'), data.get('correo'),
-            id_persona, data.get('nro_rol'), data.get('id_empresa')
+            id_persona, data.get('nro_rol'), id_empresa
         )
         resultado = db.execute_query(query_usuario, params_usuario, commit=True, fetchone=True)
         return resultado[0] if resultado else None

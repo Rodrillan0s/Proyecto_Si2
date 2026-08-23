@@ -79,10 +79,22 @@ export class ListaUsuariosComponent implements OnInit {
 
   rolesDisponibles = [
     { id: 1, nombre: 'ADMINISTRADOR' },
-    { id: 2, nombre: 'GERENTE TALLER' },
-    { id: 3, nombre: 'MECANICO' },
-    { id: 4, nombre: 'CLIENTE' }
+    { id: 2, nombre: 'CLIENTE' },
+    { id: 3, nombre: 'ADMINISTRADOR_EMPRESA' },
+    { id: 4, nombre: 'JEFE DE OBRA' },
+    { id: 5, nombre: 'ELECTRICO' },
+    { id: 6, nombre: 'PLOMERO' },
+    { id: 7, nombre: 'MAESTROALBAÑIL' },
+    { id: 8, nombre: 'ALBAÑIL' }
   ];
+
+  esAdministradorSistema(): boolean {
+    return this.authService.obtenerUsuario()?.nombre_rol === 'ADMINISTRADOR';
+  }
+
+  rolesVisibles() {
+    return this.esAdministradorSistema() ? this.rolesDisponibles : this.rolesDisponibles.filter(rol => ![1, 2].includes(rol.id));
+  }
 
   async ngOnInit() {
     this.cargando = true;
@@ -96,7 +108,7 @@ export class ListaUsuariosComponent implements OnInit {
 
     // Si después de esperar sigue sin haber token, no hacemos nada
     if (this.authService.obtenerToken()) {
-      this.cargarEmpresas();
+      if (this.esAdministradorSistema()) this.cargarEmpresas();
       this.cargarUsuarios();
     } else {
       this.cargando = false;
@@ -196,8 +208,8 @@ export class ListaUsuariosComponent implements OnInit {
   }
 
   guardarUsuario() {
-    if (!this.usuarioForm.ci || !this.usuarioForm.nombre_completo || !this.usuarioForm.nombre_usuario || !this.usuarioForm.id_empresa) {
-      alert('Por favor complete todos los campos obligatorios, incluyendo la Empresa.');
+    if (!this.usuarioForm.ci || !this.usuarioForm.nombre_completo || !this.usuarioForm.nombre_usuario) {
+      alert('Por favor complete todos los campos obligatorios.');
       return;
     }
 

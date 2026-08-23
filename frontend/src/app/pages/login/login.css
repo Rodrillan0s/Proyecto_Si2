@@ -216,6 +216,32 @@
   box-shadow: none;
 }
 
+.btn-register {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid #ea580c;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #c2410c;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.btn-register:hover {
+  background: #fff7ed;
+}
+
+.login-wrapper.dark .btn-register {
+  border-color: #f97316;
+  color: #fb923c;
+}
+
+.login-wrapper.dark .btn-register:hover {
+  background: rgba(249, 115, 22, 0.12);
+}
+
 .login-wrapper.dark .btn-submit:disabled {
   background-color: #334155;
   color: #64748b;

@@ -88,7 +88,7 @@ def loguear_usuario(data: dict, user_agent: str = None, client_ip: str = None):
 def registrar_nuevo_usuario(data: dict):
     
     #VALIDAR CAMPOS OBLIGATORIOS
-    campos_obligatorios = ['ci', 'nombre_completo', 'nombre_usuario', 'password', 'nro_rol']
+    campos_obligatorios = ['ci', 'nombre_completo', 'nombre_usuario', 'password']
     for campo in campos_obligatorios:
         if not data.get(campo):
             raise ValueError(f"El campo '{campo}' es obligatorio.")
