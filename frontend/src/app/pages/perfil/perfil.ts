@@ -60,9 +60,14 @@ export class PerfilComponent implements OnInit {
   }
   // ----------------------------------------
 
-  // En tu perfil.component.ts
+  /**
+   * CU09 - HU-23: Consultar perfil del usuario autenticado.
+   * El backend identifica al usuario mediante el token JWT (Bearer).
+   * No se pasa ningún ID desde el frontend → no es posible consultar el perfil de otro usuario.
+   */
   async cargarDatosPerfil(reintentos = 3) {
     this.cargando = true;
+    this.mensajeError = '';
     
     this.perfilService.obtenerPerfil().subscribe({
       next: (res) => {
@@ -78,7 +83,22 @@ export class PerfilComponent implements OnInit {
           setTimeout(() => this.cargarDatosPerfil(reintentos - 1), 500);
         } else {
           this.ngZone.run(() => {
-            this.mostrarMensaje('No se pudo cargar el perfil tras varios intentos.', 'error');
+            // Determinar mensaje de error específico según el tipo de fallo
+            if (err.status === 0) {
+              this.mensajeError = 'No se pudo conectar con el servidor. Verifica tu conexión a internet.';
+            } else if (err.status === 401) {
+              this.mensajeError = 'Tu sesión ha expirado o no es válida. Por favor, inicia sesión nuevamente.';
+              setTimeout(() => this.router.navigate(['/login']), 2000);
+            } else if (err.status === 404) {
+              this.mensajeError = 'No se encontró la información de tu perfil en el sistema.';
+            } else if (err.status === 500) {
+              this.mensajeError = 'Error interno del servidor. Intenta más tarde o contacta al administrador.';
+            } else if (err.error?.detail) {
+              this.mensajeError = err.error.detail;
+            } else {
+              this.mensajeError = 'Ocurrió un error inesperado al cargar tu perfil.';
+            }
+            this.perfil = null;
             this.cargando = false;
             this.cdr.detectChanges();
           });
@@ -93,8 +113,7 @@ export class PerfilComponent implements OnInit {
         ci: this.perfil.ci,
         telefono: this.perfil.telefono,
         correo: this.perfil.correo,
-        direccion: this.perfil.direccion,
-        password: '' 
+        direccion: this.perfil.direccion
       };
       this.modoEdicion = true;
     }
@@ -114,10 +133,6 @@ export class PerfilComponent implements OnInit {
       direccion: this.perfilForm.direccion
     };
 
-    if (this.perfilForm.password && this.perfilForm.password.trim() !== '') {
-      payload.password = this.perfilForm.password;
-    }
-
     this.perfilService.actualizarPerfil(payload).subscribe({
       next: (res) => {
         this.ngZone.run(() => {
@@ -134,7 +149,8 @@ export class PerfilComponent implements OnInit {
       },
       error: (err) => {
         this.ngZone.run(() => {
-          this.mostrarMensaje('Error al actualizar', 'error');
+          const detalle = err.error?.detail || 'Error al actualizar el perfil.';
+          this.mostrarMensaje(detalle, 'error');
           this.cargando = false;
           this.cdr.detectChanges();
         });

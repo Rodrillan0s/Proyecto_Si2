@@ -39,13 +39,23 @@ export const routes: Routes = [
         data: { roles: ['ADMINISTRADOR', 'ADMINISTRADOR_EMPRESA'] },
         children: [
             { path: 'panel', component: PanelComponent },
-            { path: 'perfil', component: PerfilComponent },
             { path: 'usuarios', component: ListaUsuariosComponent },
             { path: 'roles', component: RolesComponent },
             { path: 'empresas', component: ListaEmpresasComponent, canActivate: [roleGuard], data: { roles: ['ADMINISTRADOR'] } },
             { path: 'backup', component: BackupComponent },
             { path: 'notificaciones', component: NotificacionesComponent },
             { path: 'bitacora', component: BitacoraComponent }
+        ]
+    },
+
+    // CU09 - CONSULTAR PERFIL: Accesible para TODOS los usuarios autenticados con AdminLayout
+    {
+        path: '',
+        component: AdminLayoutComponent,
+        canActivate: [authGuard, roleGuard],
+        data: { roles: ['ADMINISTRADOR', 'ADMINISTRADOR_EMPRESA', 'SUPERVISOR', 'PERSONAL_CAMPO', 'CONTRATISTA', 'PROPIETARIO', 'RESPONSABLE_PROYECTO'] },
+        children: [
+            { path: 'perfil', component: PerfilComponent }
         ]
     },
     { path: 'main_cliente', component: MainClienteComponent, canActivate: [authGuard, roleGuard], data: { roles: ['CLIENTE'] } },
