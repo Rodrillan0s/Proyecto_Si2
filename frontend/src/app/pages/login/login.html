@@ -19,6 +19,10 @@
       <strong>Error:</strong> {{ mensajeError }}
     </div>
 
+    <div *ngIf="mensajeExitoRecuperacion" class="success-alert" role="status" aria-live="polite">
+      {{ mensajeExitoRecuperacion }}
+    </div>
+
     <!-- FORM INPUTS -->
     <div class="login-form">
       <div class="input-field">
@@ -53,7 +57,9 @@
       <button type="button" (click)="crearUsuario()" class="btn-register">Crear usuario</button>
 
       <div class="help-links">
-        <a href="#" class="help-link">¿Olvidó su contraseña?</a>
+        <button type="button" class="help-link" (click)="abrirModalRecuperacion()">
+          ¿Olvidó su contraseña?
+        </button>
         <span class="divider">|</span>
         <a href="#" class="help-link">¿Problemas para iniciar sesión?</a>
       </div>
@@ -111,6 +117,220 @@
       <span class="dot active"></span>
       <span class="dot"></span>
     </div>
+  </div>
+
+  <div *ngIf="mostrarModalRecuperacion" class="recovery-modal-overlay">
+    <section class="recovery-modal-panel"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="recovery-modal-title"
+             [attr.aria-busy]="procesandoRecuperacion">
+      <header class="recovery-modal-header">
+        <div>
+          <p class="recovery-step-label">Paso {{ pasoRecuperacion }} de 3</p>
+          <h2 id="recovery-modal-title">{{ tituloPasoRecuperacion }}</h2>
+        </div>
+
+        <button type="button"
+                class="recovery-close-button"
+                (click)="cerrarModalRecuperacion()"
+                [disabled]="procesandoRecuperacion"
+                aria-label="Cerrar recuperación de contraseña">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </header>
+
+      <form *ngIf="pasoRecuperacion === 1"
+            class="recovery-step-form"
+            (ngSubmit)="solicitarRecuperacion()">
+        <div class="recovery-modal-body">
+          <p class="recovery-description">
+            Ingresa el correo asociado a tu cuenta y te enviaremos un código de recuperación.
+          </p>
+
+          <div *ngIf="errorRecuperacion" class="recovery-error" role="alert">
+            {{ errorRecuperacion }}
+          </div>
+
+          <div class="recovery-field">
+            <label for="recovery-email">Correo electrónico</label>
+            <input id="recovery-email"
+                   name="correoRecuperacion"
+                   type="email"
+                   [(ngModel)]="correoRecuperacion"
+                   autocomplete="email"
+                   required
+                   placeholder="usuario@correo.com">
+          </div>
+        </div>
+
+        <footer class="recovery-modal-footer">
+          <button type="button"
+                  class="recovery-secondary-button"
+                  (click)="cerrarModalRecuperacion()"
+                  [disabled]="procesandoRecuperacion">
+            Cancelar
+          </button>
+          <button type="submit"
+                  class="recovery-primary-button"
+                  [disabled]="!correoRecuperacionValido || procesandoRecuperacion">
+            <span *ngIf="procesandoRecuperacion" class="recovery-spinner" aria-hidden="true"></span>
+            {{ procesandoRecuperacion ? 'Enviando...' : 'Enviar código' }}
+          </button>
+        </footer>
+      </form>
+
+      <form *ngIf="pasoRecuperacion === 2"
+            class="recovery-step-form"
+            (ngSubmit)="verificarCodigoRecuperacion()">
+        <div class="recovery-modal-body">
+          <p class="recovery-description">
+            Ingresa el código de 6 dígitos que enviamos a tu correo.
+          </p>
+
+          <div *ngIf="mensajeRecuperacion" class="recovery-info" role="status" aria-live="polite">
+            {{ mensajeRecuperacion }}
+          </div>
+
+          <div *ngIf="errorRecuperacion" class="recovery-error" role="alert">
+            {{ errorRecuperacion }}
+          </div>
+
+          <div class="recovery-field">
+            <label for="recovery-code">Código</label>
+            <input id="recovery-code"
+                   name="codigoRecuperacion"
+                   type="text"
+                   [ngModel]="codigoRecuperacion"
+                   (ngModelChange)="actualizarCodigoRecuperacion($event)"
+                   inputmode="numeric"
+                   autocomplete="one-time-code"
+                   maxlength="6"
+                   pattern="[0-9]{6}"
+                   required
+                   class="recovery-code-input"
+                   placeholder="000000">
+          </div>
+        </div>
+
+        <footer class="recovery-modal-footer">
+          <button type="button"
+                  class="recovery-secondary-button"
+                  (click)="cerrarModalRecuperacion()"
+                  [disabled]="procesandoRecuperacion">
+            Cancelar
+          </button>
+          <button type="submit"
+                  class="recovery-primary-button"
+                  [disabled]="!codigoRecuperacionValido || procesandoRecuperacion">
+            <span *ngIf="procesandoRecuperacion" class="recovery-spinner" aria-hidden="true"></span>
+            {{ procesandoRecuperacion ? 'Verificando...' : 'Verificar código' }}
+          </button>
+        </footer>
+      </form>
+
+      <form *ngIf="pasoRecuperacion === 3"
+            class="recovery-step-form"
+            (ngSubmit)="restablecerPassword()">
+        <div class="recovery-modal-body">
+          <p class="recovery-description">
+            Crea una contraseña segura para volver a ingresar a tu cuenta.
+          </p>
+
+          <div *ngIf="errorRecuperacion" class="recovery-error" role="alert">
+            {{ errorRecuperacion }}
+          </div>
+
+          <div class="recovery-field">
+            <label for="recovery-new-password">Nueva contraseña</label>
+            <div class="recovery-password-control">
+              <input id="recovery-new-password"
+                     name="passwordNueva"
+                     [type]="mostrandoPasswordNueva ? 'text' : 'password'"
+                     [(ngModel)]="passwordNueva"
+                     autocomplete="new-password"
+                     required>
+              <button type="button"
+                      (click)="mostrandoPasswordNueva = !mostrandoPasswordNueva"
+                      [attr.aria-label]="mostrandoPasswordNueva ? 'Ocultar nueva contraseña' : 'Mostrar nueva contraseña'"
+                      [attr.aria-pressed]="mostrandoPasswordNueva">
+                <svg *ngIf="!mostrandoPasswordNueva" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+                <svg *ngIf="mostrandoPasswordNueva" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18M10.585 10.587a2 2 0 002.828 2.828M9.878 4.242A9.9 9.9 0 0112 4c4.478 0 8.268 2.943 9.542 7a9.956 9.956 0 01-2.293 3.95M6.61 6.61A9.96 9.96 0 002.458 12c1.274 4.057 5.065 7 9.542 7a9.91 9.91 0 004.193-.92"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="recovery-password-requirements">
+            <p>Composición de la contraseña</p>
+            <ul aria-live="polite">
+              <li *ngFor="let requisito of requisitosPasswordRecuperacion"
+                  [class.requirement-complete]="requisito.cumple">
+                <svg *ngIf="requisito.cumple" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <svg *ngIf="!requisito.cumple" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                  <circle cx="12" cy="12" r="8" stroke-width="1.5"></circle>
+                </svg>
+                {{ requisito.texto }}
+              </li>
+            </ul>
+          </div>
+
+          <div class="recovery-field">
+            <label for="recovery-confirm-password">Confirmar nueva contraseña</label>
+            <div class="recovery-password-control">
+              <input id="recovery-confirm-password"
+                     name="confirmarPassword"
+                     [type]="mostrandoConfirmacion ? 'text' : 'password'"
+                     [(ngModel)]="confirmarPassword"
+                     autocomplete="new-password"
+                     required>
+              <button type="button"
+                      (click)="mostrandoConfirmacion = !mostrandoConfirmacion"
+                      [attr.aria-label]="mostrandoConfirmacion ? 'Ocultar confirmación de contraseña' : 'Mostrar confirmación de contraseña'"
+                      [attr.aria-pressed]="mostrandoConfirmacion">
+                <svg *ngIf="!mostrandoConfirmacion" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+                <svg *ngIf="mostrandoConfirmacion" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18M10.585 10.587a2 2 0 002.828 2.828M9.878 4.242A9.9 9.9 0 0112 4c4.478 0 8.268 2.943 9.542 7a9.956 9.956 0 01-2.293 3.95M6.61 6.61A9.96 9.96 0 002.458 12c1.274 4.057 5.065 7 9.542 7a9.91 9.91 0 004.193-.92"></path>
+                </svg>
+              </button>
+            </div>
+
+            <p *ngIf="confirmarPassword.length > 0"
+               class="recovery-match-message"
+               [class.match-success]="passwordsRecuperacionCoinciden"
+               role="status">
+              {{ passwordsRecuperacionCoinciden ? 'Las contraseñas coinciden' : 'Las contraseñas no coinciden.' }}
+            </p>
+          </div>
+        </div>
+
+        <footer class="recovery-modal-footer">
+          <button type="button"
+                  class="recovery-secondary-button"
+                  (click)="cerrarModalRecuperacion()"
+                  [disabled]="procesandoRecuperacion">
+            Cancelar
+          </button>
+          <button type="submit"
+                  class="recovery-primary-button"
+                  [disabled]="!formularioPasswordRecuperacionValido || procesandoRecuperacion">
+            <span *ngIf="procesandoRecuperacion" class="recovery-spinner" aria-hidden="true"></span>
+            {{ procesandoRecuperacion ? 'Actualizando...' : 'Restablecer contraseña' }}
+          </button>
+        </footer>
+      </form>
+    </section>
   </div>
 
 </div>

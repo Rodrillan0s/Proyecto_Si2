@@ -1,4 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { AuthService } from '../../services/auth';
 
 @Component({
   selector: 'app-main-cliente',
@@ -6,4 +8,12 @@ import { Component } from '@angular/core';
   templateUrl: './main-cliente.html',
   styleUrl: './main-cliente.css'
 })
-export class MainClienteComponent {}
+export class MainClienteComponent {
+  private authService = inject(AuthService);
+  private router = inject(Router);
+
+  cerrarSesion(): void {
+    this.authService.cerrarSesion();
+    this.router.navigate(['/login']);
+  }
+}
