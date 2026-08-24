@@ -1,4 +1,3 @@
-from backend.app.routes import password_recovery_routes
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import Config
