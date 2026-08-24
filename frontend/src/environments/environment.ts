@@ -1,4 +1,4 @@
 export const environment = {
-  production: true,
-  apiUrl: 'https://taller-exa2-backend.onrender.com' 
+  production: true ,
+  apiUrl: 'https://obratec-66o2.onrender.com'
 };
