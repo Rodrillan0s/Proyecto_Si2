@@ -1,78 +1,100 @@
-import smtplib
-import ssl
-from email.message import EmailMessage
+import requests
 
 from app.config import Config
 
 
-def _crear_contexto_ssl():
-    contexto = ssl.create_default_context()
-    if hasattr(ssl, "VERIFY_X509_STRICT"):
-        contexto.verify_flags &= ~ssl.VERIFY_X509_STRICT
-    return contexto
+BREVO_EMAIL_URL = "https://api.brevo.com/v3/smtp/email"
 
 
-def _enviar_mensaje(mensaje: EmailMessage):
-    if Config.SMTP_USE_SSL:
-        with smtplib.SMTP_SSL(
-            Config.SMTP_HOST,
-            Config.SMTP_PORT,
-            timeout=Config.SMTP_TIMEOUT_SECONDS,
-            context=_crear_contexto_ssl()
-        ) as servidor:
-            servidor.login(
-                Config.SMTP_USER,
-                Config.SMTP_PASSWORD
-            )
-            servidor.send_message(mensaje)
+def _enviar_mensaje(destinatario: str, asunto: str, contenido: str):
+    if not Config.BREVO_API_KEY:
+        raise RuntimeError("Falta configurar la API key de Brevo")
 
-    else:
-        with smtplib.SMTP(
-            Config.SMTP_HOST,
-            Config.SMTP_PORT,
-            timeout=Config.SMTP_TIMEOUT_SECONDS
-        ) as servidor:
+    if not Config.BREVO_SENDER_EMAIL:
+        raise RuntimeError("Falta configurar el email remitente de Brevo")
 
-            if Config.SMTP_USE_TLS:
-                servidor.starttls(context=_crear_contexto_ssl())
+    headers = {
+        "api-key": Config.BREVO_API_KEY,
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+    payload = {
+        "sender": {
+            "name": Config.BREVO_SENDER_NAME,
+            "email": Config.BREVO_SENDER_EMAIL,
+        },
+        "to": [{"email": destinatario}],
+        "subject": asunto,
+        "textContent": contenido,
+    }
 
-            servidor.login(
-                Config.SMTP_USER,
-                Config.SMTP_PASSWORD
-            )
+    try:
+        respuesta = requests.post(
+            BREVO_EMAIL_URL,
+            headers=headers,
+            json=payload,
+            timeout=Config.BREVO_TIMEOUT_SECONDS,
+        )
+    except requests.exceptions.Timeout as exc:
+        raise RuntimeError("Timeout al conectar con Brevo") from exc
+    except requests.exceptions.ConnectionError as exc:
+        raise RuntimeError("Error de conexión con Brevo") from exc
+    except requests.exceptions.RequestException as exc:
+        raise RuntimeError("Error al enviar el correo mediante Brevo") from exc
 
-            servidor.send_message(mensaje)
+    if respuesta.status_code == 201:
+        return
+
+    if 200 <= respuesta.status_code < 300:
+        try:
+            respuesta_json = respuesta.json()
+        except ValueError as exc:
+            raise RuntimeError(
+                f"Brevo respondió HTTP {respuesta.status_code} sin confirmar el envío"
+            ) from exc
+
+        if isinstance(respuesta_json, dict) and respuesta_json.get("messageId"):
+            return
+
+        raise RuntimeError(
+            f"Brevo respondió HTTP {respuesta.status_code} sin confirmar el envío"
+        )
+
+    if respuesta.status_code == 429:
+        raise RuntimeError("Brevo alcanzó temporalmente el límite de solicitudes")
+
+    if respuesta.status_code in {400, 401, 403, 422}:
+        raise RuntimeError(f"Brevo rechazó la solicitud con HTTP {respuesta.status_code}")
+
+    if 500 <= respuesta.status_code < 600:
+        raise RuntimeError(
+            f"El servicio de Brevo no está disponible (HTTP {respuesta.status_code})"
+        )
+
+    raise RuntimeError(f"Respuesta inesperada de Brevo: HTTP {respuesta.status_code}")
 
 
 def enviar_correo_prueba(destinatario: str):
-    mensaje = EmailMessage()
-
-    mensaje["Subject"] = "Prueba SMTP - OBRATEC"
-    mensaje["From"] = f"{Config.SMTP_FROM_NAME} <{Config.SMTP_FROM}>"
-    mensaje["To"] = destinatario
-
-    mensaje.set_content(
+    contenido = (
         "Hola.\n\n"
         "Este es un correo de prueba enviado desde OBRATEC.\n\n"
-        "Si recibiste este mensaje, la configuración SMTP funciona correctamente."
+        "Si recibiste este mensaje, la configuración de Brevo funciona correctamente."
     )
 
-    _enviar_mensaje(mensaje)
+    _enviar_mensaje(destinatario, "Prueba de correo - OBRATEC", contenido)
 
 
 def enviar_codigo_recuperacion(destinatario: str, codigo: str):
-    mensaje = EmailMessage()
-
-    mensaje["Subject"] = "Código de recuperación - OBRATEC"
-    mensaje["From"] = f"{Config.SMTP_FROM_NAME} <{Config.SMTP_FROM}>"
-    mensaje["To"] = destinatario
-
-    mensaje.set_content(
-        "Solicitaste recuperar tu contraseña.\n\n"
+    contenido = (
+        "Solicitaste recuperar tu contraseña de OBRATEC.\n\n"
         "Tu código de recuperación es:\n\n"
         f"{codigo}\n\n"
         "Este código vence en 10 minutos.\n\n"
         "Si no solicitaste este cambio, puedes ignorar este mensaje."
     )
 
-    _enviar_mensaje(mensaje)
+    _enviar_mensaje(
+        destinatario,
+        "Código de recuperación - OBRATEC",
+        contenido,
+    )
