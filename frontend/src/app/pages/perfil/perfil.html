@@ -103,8 +103,13 @@
           <input id="input-correo" type="email" name="correo" [(ngModel)]="perfilForm.correo" required class="w-full bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 rounded-sm p-2.5 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-500 focus:border-blue-900 dark:focus:border-blue-500 transition-colors">
         </div>
         <div>
+<<<<<<< HEAD
           <label class="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Dirección Física</label>
           <input id="input-direccion" type="text" name="direccion" [(ngModel)]="perfilForm.direccion" required class="w-full bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 rounded-sm p-2.5 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-500 focus:border-blue-900 dark:focus:border-blue-500 transition-colors">
+=======
+          <label class="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Direccion Fisica</label>
+          <input type="text" name="direccion" [(ngModel)]="perfilForm.direccion" required class="w-full bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 rounded-sm p-2.5 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-500 focus:border-blue-900 dark:focus:border-blue-500 transition-colors">
+>>>>>>> a377cd91d3dce8ef4986f99357ff7434b5cf29bf
         </div>
       </div>
       <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-slate-800">
@@ -114,6 +119,199 @@
     </form>
   </div>
 
+</div>
+
+<section *ngIf="!cargando && perfil" class="mt-6 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-sm shadow-sm transition-colors duration-300">
+  <div class="p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h2 class="text-lg font-bold text-gray-900 dark:text-white">Seguridad</h2>
+      <p class="mt-1 text-sm text-gray-500 dark:text-slate-400">Administra la seguridad de tu cuenta.</p>
+    </div>
+
+    <button type="button" (click)="abrirModalPassword()"
+            class="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-[#ea580c] hover:bg-[#c2410c] rounded-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#ea580c]/30">
+      Cambiar contraseña
+    </button>
+  </div>
+</section>
+
+<div *ngIf="mostrarModalPassword"
+     class="fixed inset-0 z-[110] flex items-center justify-center p-3 sm:p-4 bg-gray-900/60 dark:bg-black/70 backdrop-blur-sm">
+  <div role="dialog"
+       aria-modal="true"
+       aria-labelledby="cambiar-password-title"
+       [attr.aria-busy]="cambiandoPassword"
+       class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-sm shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+
+    <div class="shrink-0 flex justify-between items-center p-5 sm:p-6 border-b border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50">
+      <h3 id="cambiar-password-title" class="text-xl font-bold text-gray-900 dark:text-white">
+        Cambiar contraseña
+      </h3>
+
+      <button type="button"
+              (click)="cerrarModalPassword()"
+              [disabled]="cambiandoPassword"
+              aria-label="Cerrar modal de cambio de contraseña"
+              class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-white rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <form (ngSubmit)="cambiarPassword()" #passwordFormRef="ngForm" class="min-h-0 flex flex-1 flex-col">
+      <div class="flex-grow overflow-y-auto p-5 sm:p-6 space-y-5">
+        <div *ngIf="errorCambioPassword"
+             role="alert"
+             class="p-3 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-400 border border-red-200 dark:border-red-800/50 rounded-sm text-sm font-medium">
+          {{ errorCambioPassword }}
+        </div>
+
+        <div>
+          <label for="password-actual" class="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            Contraseña actual
+          </label>
+          <div class="relative">
+            <input id="password-actual"
+                   name="password_actual"
+                   [type]="mostrarPasswordActual ? 'text' : 'password'"
+                   [(ngModel)]="passwordForm.password_actual"
+                   #passwordActualModel="ngModel"
+                   required
+                   autocomplete="current-password"
+                   class="w-full pr-12 bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 rounded-sm p-2.5 text-gray-900 dark:text-white focus:ring-1 focus:ring-[#ea580c] focus:border-[#ea580c] transition-colors">
+            <button type="button"
+                    (click)="mostrarPasswordActual = !mostrarPasswordActual"
+                    [attr.aria-label]="mostrarPasswordActual ? 'Ocultar contraseña actual' : 'Mostrar contraseña actual'"
+                    [attr.aria-pressed]="mostrarPasswordActual"
+                    class="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 transition-colors">
+              <svg *ngIf="!mostrarPasswordActual" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+              </svg>
+              <svg *ngIf="mostrarPasswordActual" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18M10.585 10.587a2 2 0 002.828 2.828M9.878 4.242A9.9 9.9 0 0112 4c4.478 0 8.268 2.943 9.542 7a9.956 9.956 0 01-2.293 3.95M6.61 6.61A9.96 9.96 0 002.458 12c1.274 4.057 5.065 7 9.542 7a9.91 9.91 0 004.193-.92"></path>
+              </svg>
+            </button>
+          </div>
+          <p *ngIf="passwordActualModel.invalid && (passwordActualModel.touched || passwordFormRef.submitted)"
+             class="mt-1 text-xs text-red-700 dark:text-red-400">
+            La contraseña actual es obligatoria.
+          </p>
+        </div>
+
+        <div>
+          <label for="password-nueva" class="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            Nueva contraseña
+          </label>
+          <div class="relative">
+            <input id="password-nueva"
+                   name="password_nueva"
+                   [type]="mostrarPasswordNueva ? 'text' : 'password'"
+                   [(ngModel)]="passwordForm.password_nueva"
+                   #passwordNuevaModel="ngModel"
+                   required
+                   autocomplete="new-password"
+                   class="w-full pr-12 bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 rounded-sm p-2.5 text-gray-900 dark:text-white focus:ring-1 focus:ring-[#ea580c] focus:border-[#ea580c] transition-colors">
+            <button type="button"
+                    (click)="mostrarPasswordNueva = !mostrarPasswordNueva"
+                    [attr.aria-label]="mostrarPasswordNueva ? 'Ocultar nueva contraseña' : 'Mostrar nueva contraseña'"
+                    [attr.aria-pressed]="mostrarPasswordNueva"
+                    class="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 transition-colors">
+              <svg *ngIf="!mostrarPasswordNueva" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+              </svg>
+              <svg *ngIf="mostrarPasswordNueva" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18M10.585 10.587a2 2 0 002.828 2.828M9.878 4.242A9.9 9.9 0 0112 4c4.478 0 8.268 2.943 9.542 7a9.956 9.956 0 01-2.293 3.95M6.61 6.61A9.96 9.96 0 002.458 12c1.274 4.057 5.065 7 9.542 7a9.91 9.91 0 004.193-.92"></path>
+              </svg>
+            </button>
+          </div>
+          <p *ngIf="passwordNuevaModel.invalid && (passwordNuevaModel.touched || passwordFormRef.submitted)"
+             class="mt-1 text-xs text-red-700 dark:text-red-400">
+            La nueva contraseña es obligatoria.
+          </p>
+
+          <div class="mt-3 p-3 bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-sm">
+            <p class="text-xs font-bold text-gray-700 dark:text-slate-300">Composición de la contraseña</p>
+            <ul class="mt-2 space-y-1.5" aria-live="polite">
+              <li *ngFor="let requisito of requisitosPassword"
+                  class="flex items-center gap-2 text-xs transition-colors"
+                  [ngClass]="requisito.cumple ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-slate-400'">
+                <svg *ngIf="requisito.cumple" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <svg *ngIf="!requisito.cumple" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="12" r="8" stroke-width="1.5"></circle>
+                </svg>
+                {{ requisito.texto }}
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div>
+          <label for="confirmar-password" class="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            Confirmar nueva contraseña
+          </label>
+          <div class="relative">
+            <input id="confirmar-password"
+                   name="confirmar_password"
+                   [type]="mostrarConfirmarPassword ? 'text' : 'password'"
+                   [(ngModel)]="passwordForm.confirmar_password"
+                   #confirmarPasswordModel="ngModel"
+                   required
+                   autocomplete="new-password"
+                   class="w-full pr-12 bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 rounded-sm p-2.5 text-gray-900 dark:text-white focus:ring-1 focus:ring-[#ea580c] focus:border-[#ea580c] transition-colors">
+            <button type="button"
+                    (click)="mostrarConfirmarPassword = !mostrarConfirmarPassword"
+                    [attr.aria-label]="mostrarConfirmarPassword ? 'Ocultar confirmación de contraseña' : 'Mostrar confirmación de contraseña'"
+                    [attr.aria-pressed]="mostrarConfirmarPassword"
+                    class="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 transition-colors">
+              <svg *ngIf="!mostrarConfirmarPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+              </svg>
+              <svg *ngIf="mostrarConfirmarPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18M10.585 10.587a2 2 0 002.828 2.828M9.878 4.242A9.9 9.9 0 0112 4c4.478 0 8.268 2.943 9.542 7a9.956 9.956 0 01-2.293 3.95M6.61 6.61A9.96 9.96 0 002.458 12c1.274 4.057 5.065 7 9.542 7a9.91 9.91 0 004.193-.92"></path>
+              </svg>
+            </button>
+          </div>
+
+          <p *ngIf="confirmarPasswordModel.invalid && (confirmarPasswordModel.touched || passwordFormRef.submitted)"
+             class="mt-1 text-xs text-red-700 dark:text-red-400">
+            La confirmación es obligatoria.
+          </p>
+          <p *ngIf="passwordForm.confirmar_password.length > 0"
+             class="mt-1 text-xs font-medium flex items-center gap-1.5"
+             [ngClass]="passwordsCoinciden ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'">
+            <svg *ngIf="passwordsCoinciden" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <svg *ngIf="!passwordsCoinciden" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+            {{ passwordsCoinciden ? 'Las contraseñas coinciden' : 'Las contraseñas no coinciden' }}
+          </p>
+        </div>
+      </div>
+
+      <div class="shrink-0 p-5 sm:p-6 border-t border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50 flex flex-col-reverse sm:flex-row justify-end gap-3">
+        <button type="button"
+                (click)="cerrarModalPassword()"
+                [disabled]="cambiandoPassword"
+                class="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          Cancelar
+        </button>
+        <button type="submit"
+                [disabled]="!passwordFormValido || cambiandoPassword"
+                class="w-full sm:w-auto px-6 py-2 text-sm font-medium text-white bg-[#ea580c] hover:bg-[#c2410c] rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+          <span *ngIf="cambiandoPassword" class="animate-spin rounded-full h-4 w-4 border-2 border-white border-r-transparent" aria-hidden="true"></span>
+          {{ cambiandoPassword ? 'Actualizando...' : 'Cambiar contraseña' }}
+        </button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <div *ngIf="cargando" class="flex flex-col items-center justify-center p-16 w-full">

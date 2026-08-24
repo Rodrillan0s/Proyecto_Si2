@@ -31,6 +31,12 @@ export interface ApiResponsePut {
   message: string;
 }
 
+export interface CambiarPasswordRequest {
+  password_actual: string;
+  password_nueva: string;
+  confirmar_password: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -59,5 +65,9 @@ export class PerfilService {
   actualizarPerfil(datos: any): Observable<ApiResponsePut> {
     const headers = this.getHeaders();
     return this.http.put<ApiResponsePut>(`${this.apiUrl}/api/perfil/`, datos, { headers });
+  }
+
+  cambiarPassword(datos: CambiarPasswordRequest): Observable<ApiResponsePut> {
+    return this.http.put<ApiResponsePut>(`${this.apiUrl}/api/perfil/cambiar-password`, datos);
   }
 }

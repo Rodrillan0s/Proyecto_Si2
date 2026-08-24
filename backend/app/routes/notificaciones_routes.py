@@ -10,8 +10,6 @@ router = APIRouter(tags=["WebSockets Notificaciones"])
 
 @router.websocket("/notificaciones")
 async def websocket_endpoint(websocket: WebSocket, token: str = Query(...)):
-    await websocket.accept()
-    
     print("INTENTANDO CONECTAR WEBSOCKET")
     print(f"TOKEN RECIBIDO POR URL: {token[:30]}...")
 
@@ -23,6 +21,8 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(...)):
         print("❌ CONEXIÓN RECHAZADA: El token es inválido o expiró.")
         await websocket.close(code=1008)
         return
+
+    await websocket.accept()
 
     #EXTRAER CONTENIDO DEL TOKEN
     payload = validation.get('payload') if isinstance(validation, dict) else None

@@ -76,3 +76,41 @@ def update_profile(data:dict):
         
     except Exception as e:
         raise ValueError(f'ERROR: {str(e)}')
+
+def get_password_hash(id_usuario):
+    db=PostgreSQL()
+    try:
+        db.create_connection()
+
+        query=f'''
+            SELECT password
+            FROM {Config.SCHEMA}.t_usuario
+            WHERE id_usuario = %s;
+        '''
+
+        user=db.execute_query(query,(id_usuario,),fetchone=True)
+        return user[0] if user else None
+
+    except Exception as e:
+        raise ValueError(f'ERROR: {str(e)}')
+    finally:
+        db.close_connection()
+
+def update_password(id_usuario, password_hash):
+    db=PostgreSQL()
+    try:
+        db.create_connection()
+
+        query=f'''
+            UPDATE {Config.SCHEMA}.t_usuario
+            SET password = %s
+            WHERE id_usuario = %s;
+        '''
+
+        db.execute_query(query,(password_hash, id_usuario))
+        db.conn.commit()
+
+    except Exception as e:
+        raise ValueError(f'ERROR: {str(e)}')
+    finally:
+        db.close_connection()
