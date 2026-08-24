@@ -38,4 +38,4 @@ def update_profile(token_data: dict = Depends(verificar_token), data: dict = Bod
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as err:
-        raise HTTPException(status_code=500, detail=f"Error interno en : {err}")
+        raise HTTPException(status_code=500, detail=f"Error interno en : {err}")
