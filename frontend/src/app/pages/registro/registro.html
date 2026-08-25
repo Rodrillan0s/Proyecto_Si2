@@ -19,6 +19,16 @@
         <label>Confirmar contraseña *<input type="password" name="confirmar_password" [(ngModel)]="formulario.confirmar_password" required></label>
       </div>
 
+      <div class="password-requirements">
+        <p>Composición de la contraseña</p>
+        <ul aria-live="polite">
+          <li *ngFor="let requisito of requisitosPassword"
+              [class.requirement-complete]="requisito.cumple">
+            {{ requisito.cumple ? '✓' : '○' }} {{ requisito.texto }}
+          </li>
+        </ul>
+      </div>
+
       <label class="company-field">Empresa (opcional)
         <input name="nombre_empresa" [(ngModel)]="formulario.nombre_empresa" placeholder="Déjalo vacío si eres cliente">
         <span>Si escribes una empresa nueva, tu cuenta será su administrador inicial. Si lo dejas vacío, se creará como cliente.</span>

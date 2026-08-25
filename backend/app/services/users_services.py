@@ -1,4 +1,5 @@
 from app.repos import users_repos
+from app.utils import security
 from werkzeug.security import generate_password_hash
 
 def listar_usuarios(token_data: dict):
@@ -15,6 +16,8 @@ def registrar_usuario(data: dict, token_data: dict):
     for campo in campos_requeridos:
         if not data.get(campo):
             raise ValueError(f"El campo '{campo}' es obligatorio.")
+    if not security.password_cumple_requisitos(data.get('password')):
+        raise ValueError("La contraseña no cumple los requisitos de seguridad.")
     es_admin_sistema = token_data.get('nombre_rol') == 'ADMINISTRADOR'
     id_empresa = data.get('id_empresa') if es_admin_sistema else token_data.get('id_empresa')
     if not id_empresa:

@@ -1,4 +1,5 @@
 import jwt
+import re
 from datetime import datetime,timedelta,timezone
 from app.config import Config
 from fastapi import Depends, HTTPException
@@ -6,6 +7,15 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 #INICAR PROTOCOLO DE DETECCION BEARER
 bearer_scheme = HTTPBearer()
+
+def password_cumple_requisitos(password: str) -> bool:
+    return bool(isinstance(password, str) and (
+        len(password) >= 8
+        and re.search(r'[A-Z]', password)
+        and re.search(r'[a-z]', password)
+        and re.search(r'[0-9]', password)
+        and re.search(r'[^A-Za-z0-9\s]', password)
+    ))
 
 def create_access_token(nro_usuario, username, nombre_rol, id_empresa, nombre_completo,nro_taller , minutes=120):
     """

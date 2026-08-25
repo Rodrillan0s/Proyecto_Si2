@@ -41,14 +41,29 @@ export class RegistroComponent {
   mensajeError = '';
   cargando = false;
 
+  get requisitosPassword(): { texto: string; cumple: boolean }[] {
+    const password = this.formulario.password;
+    return [
+      { texto: 'Al menos 8 caracteres', cumple: password.length >= 8 },
+      { texto: 'Una letra mayúscula', cumple: /[A-Z]/.test(password) },
+      { texto: 'Una letra minúscula', cumple: /[a-z]/.test(password) },
+      { texto: 'Un número', cumple: /[0-9]/.test(password) },
+      { texto: 'Un carácter especial', cumple: /[^A-Za-z0-9\s]/.test(password) }
+    ];
+  }
+
+  get passwordSegura(): boolean {
+    return this.requisitosPassword.every(requisito => requisito.cumple);
+  }
+
   registrar() {
     this.mensajeError = '';
     if (!this.formulario.ci || !this.formulario.nombre_completo || !this.formulario.nombre_usuario || !this.formulario.password || !this.formulario.correo) {
       this.mensajeError = 'Complete los campos obligatorios.';
       return;
     }
-    if (this.formulario.password.length < 6) {
-      this.mensajeError = 'La contraseña debe tener al menos 6 caracteres.';
+    if (!this.passwordSegura) {
+      this.mensajeError = 'La contraseña no cumple los requisitos de seguridad.';
       return;
     }
     if (this.formulario.password !== this.formulario.confirmar_password) {
