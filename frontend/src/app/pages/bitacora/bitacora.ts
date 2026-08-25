@@ -10,6 +10,8 @@ import {
   RegistroBitacora
 } from '../../services/bitacora.service';
 
+
+
 @Component({
   selector: 'app-bitacora',
   standalone: true,
