@@ -1,21 +1,14 @@
-import { Component, OnInit, inject, PLATFORM_ID } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../services/auth';
-
-interface RegistroBitacora {
-  id: number;
-  fecha: string;
-  hora: string;
-  usuario: string;
-  rol: string;
-  modulo: string;
-  accion: string;
-  descripcion: string;
-  ip: string;
-  estado: 'EXITOSO' | 'ADVERTENCIA' | 'ERROR';
-}
+import {
+  BitacoraService,
+  PaginacionBitacora,
+  RegistroBitacora
+} from '../../services/bitacora.service';
 
 @Component({
   selector: 'app-bitacora',
@@ -26,140 +19,21 @@ interface RegistroBitacora {
 export class BitacoraComponent implements OnInit {
 
   private authService = inject(AuthService);
+  private bitacoraService = inject(BitacoraService);
   private router = inject(Router);
   private platformId = inject(PLATFORM_ID);
+  private cdr = inject(ChangeDetectorRef);
 
   usuarioActual: any = null;
   modoOscuro: boolean = false;
 
-  textoBusqueda: string = '';
-  filtroModulo: string = '';
-  filtroEstado: string = '';
-
-  registros: RegistroBitacora[] = [
-    {
-      id: 1,
-      fecha: '2026-06-09',
-      hora: '08:15',
-      usuario: 'Carlos Méndez',
-      rol: 'ADMINISTRADOR',
-      modulo: 'Seguridad y Usuarios',
-      accion: 'Inicio de sesión',
-      descripcion: 'El usuario ingresó correctamente al sistema administrativo.',
-      ip: '192.168.1.25',
-      estado: 'EXITOSO'
-    },
-    {
-      id: 2,
-      fecha: '2026-06-09',
-      hora: '08:28',
-      usuario: 'Laura Justiniano',
-      rol: 'GERENTE TALLER',
-      modulo: 'Red de Talleres',
-      accion: 'Actualización',
-      descripcion: 'Se actualizó la disponibilidad del taller AutoFix Norte.',
-      ip: '192.168.1.31',
-      estado: 'EXITOSO'
-    },
-    {
-      id: 3,
-      fecha: '2026-06-09',
-      hora: '08:41',
-      usuario: 'Mario Rojas',
-      rol: 'MECANICO',
-      modulo: 'Emergencias',
-      accion: 'Cambio de estado',
-      descripcion: 'La emergencia Nro. 1045 cambió de PENDIENTE a EN CURSO.',
-      ip: '192.168.1.47',
-      estado: 'EXITOSO'
-    },
-    {
-      id: 4,
-      fecha: '2026-06-09',
-      hora: '09:02',
-      usuario: 'Sistema',
-      rol: 'SERVICIO INTERNO',
-      modulo: 'Analítica y KPIs',
-      accion: 'Consulta',
-      descripcion: 'Se consultaron métricas operacionales globales del dashboard.',
-      ip: '127.0.0.1',
-      estado: 'EXITOSO'
-    },
-    {
-      id: 5,
-      fecha: '2026-06-09',
-      hora: '09:18',
-      usuario: 'Roberto Pérez',
-      rol: 'ADMINISTRADOR',
-      modulo: 'Seguridad y Usuarios',
-      accion: 'Intento fallido',
-      descripcion: 'Intento de acceso a módulo restringido desde una cuenta sin permisos suficientes.',
-      ip: '192.168.1.52',
-      estado: 'ADVERTENCIA'
-    },
-    {
-      id: 6,
-      fecha: '2026-06-09',
-      hora: '09:36',
-      usuario: 'Daniela Vargas',
-      rol: 'GERENTE TALLER',
-      modulo: 'Emergencias',
-      accion: 'Cotización',
-      descripcion: 'Se emitió una oferta comercial para la emergencia Nro. 1051.',
-      ip: '192.168.1.36',
-      estado: 'EXITOSO'
-    },
-    {
-      id: 7,
-      fecha: '2026-06-09',
-      hora: '10:05',
-      usuario: 'Sistema',
-      rol: 'SERVICIO INTERNO',
-      modulo: 'IA y Diagnóstico',
-      accion: 'Análisis IA',
-      descripcion: 'Se generó un prediagnóstico automático con evidencias multimedia.',
-      ip: '127.0.0.1',
-      estado: 'EXITOSO'
-    },
-    {
-      id: 8,
-      fecha: '2026-06-09',
-      hora: '10:22',
-      usuario: 'Luis Gutiérrez',
-      rol: 'MECANICO',
-      modulo: 'Emergencias',
-      accion: 'Error de operación',
-      descripcion: 'No se pudo actualizar el tracking por pérdida temporal de conexión.',
-      ip: '192.168.1.61',
-      estado: 'ERROR'
-    },
-    {
-      id: 9,
-      fecha: '2026-06-09',
-      hora: '10:40',
-      usuario: 'Fernanda Salinas',
-      rol: 'ADMINISTRADOR',
-      modulo: 'Copias de Respaldo',
-      accion: 'Respaldo',
-      descripcion: 'Se generó una copia de respaldo manual del sistema.',
-      ip: '192.168.1.20',
-      estado: 'EXITOSO'
-    },
-    {
-      id: 10,
-      fecha: '2026-06-09',
-      hora: '11:03',
-      usuario: 'Jorge Paz',
-      rol: 'GERENTE TALLER',
-      modulo: 'Red de Talleres',
-      accion: 'Registro',
-      descripcion: 'Se registró un nuevo taller asociado a la plataforma.',
-      ip: '192.168.1.44',
-      estado: 'EXITOSO'
-    }
-  ];
-
-  registrosFiltrados: RegistroBitacora[] = [];
+  fecha: string = '';
+  usuario: string = '';
+  accion: string = '';
+  registros: RegistroBitacora[] = [];
+  pagination: PaginacionBitacora = { page: 1, limit: 20, total: 0, total_pages: 0 };
+  loading: boolean = false;
+  error: string = '';
 
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {
@@ -175,42 +49,81 @@ export class BitacoraComponent implements OnInit {
         document.documentElement.classList.add('dark');
       }
 
-      this.aplicarFiltros();
+      void this.cargarBitacora();
     }
   }
 
-  aplicarFiltros(): void {
-    let data = [...this.registros];
+  async cargarBitacora(): Promise<void> {
+    const fecha = this.fecha.trim();
 
-    if (this.textoBusqueda.trim()) {
-      const busqueda = this.textoBusqueda.toLowerCase().trim();
+    if (!this.fechaValida(fecha)) {
+      this.loading = false;
+      this.error = 'Seleccione una fecha válida.';
+      return;
+    }
 
-      data = data.filter(item =>
-        item.usuario.toLowerCase().includes(busqueda) ||
-        item.rol.toLowerCase().includes(busqueda) ||
-        item.modulo.toLowerCase().includes(busqueda) ||
-        item.accion.toLowerCase().includes(busqueda) ||
-        item.descripcion.toLowerCase().includes(busqueda) ||
-        item.ip.toLowerCase().includes(busqueda)
+    this.loading = true;
+    this.error = '';
+
+    try {
+      const respuesta = await firstValueFrom(
+        this.bitacoraService.obtenerBitacora({
+          fecha,
+          usuario: this.usuario.trim(),
+          accion: this.accion.trim(),
+          page: this.pagination.page,
+          limit: this.pagination.limit
+        })
       );
-    }
 
-    if (this.filtroModulo) {
-      data = data.filter(item => item.modulo === this.filtroModulo);
-    }
+      this.registros = respuesta.data ?? [];
+      this.pagination = {
+        page: respuesta.pagination?.page ?? 1,
+        limit: respuesta.pagination?.limit ?? 20,
+        total: respuesta.pagination?.total ?? 0,
+        total_pages: respuesta.pagination?.total_pages ?? 0
+      };
+    } catch (err: unknown) {
+      console.error('Error consultando bitácora:', err);
 
-    if (this.filtroEstado) {
-      data = data.filter(item => item.estado === this.filtroEstado);
+      this.registros = [];
+      this.pagination = {
+        page: this.pagination.page,
+        limit: this.pagination.limit,
+        total: 0,
+        total_pages: 0
+      };
+      this.error = this.obtenerMensajeError(err);
+    } finally {
+      this.loading = false;
+      this.cdr.detectChanges();
     }
+  }
 
-    this.registrosFiltrados = data;
+  buscar(): void {
+    if (this.loading) return;
+
+    this.pagination.page = 1;
+    void this.cargarBitacora();
   }
 
   limpiarFiltros(): void {
-    this.textoBusqueda = '';
-    this.filtroModulo = '';
-    this.filtroEstado = '';
-    this.aplicarFiltros();
+    if (this.loading) return;
+
+    this.fecha = '';
+    this.usuario = '';
+    this.accion = '';
+    this.pagination.page = 1;
+    void this.cargarBitacora();
+  }
+
+  cambiarPagina(page: number): void {
+    if (this.loading || page < 1 || page > this.pagination.total_pages || page === this.pagination.page) {
+      return;
+    }
+
+    this.pagination.page = page;
+    void this.cargarBitacora();
   }
 
   alternarModoOscuro(): void {
@@ -234,39 +147,34 @@ export class BitacoraComponent implements OnInit {
     this.router.navigate(['/login']);
   }
 
-  getModulos(): string[] {
-    return [...new Set(this.registros.map(item => item.modulo))];
+  trackByRegistro(index: number, item: RegistroBitacora): string {
+    return `${item.id_bitacora}-${index}`;
   }
 
-  contarPorEstado(estado: 'EXITOSO' | 'ADVERTENCIA' | 'ERROR'): number {
-    return this.registros.filter(item => item.estado === estado).length;
+  private fechaValida(fecha: string): boolean {
+    if (!fecha) return true;
+
+    const coincidencia = /^(\d{4})-(\d{2})-(\d{2})$/.exec(fecha);
+    if (!coincidencia) return false;
+
+    const anio = Number(coincidencia[1]);
+    const mes = Number(coincidencia[2]);
+    const dia = Number(coincidencia[3]);
+
+    if (anio < 2000 || anio > 2100) return false;
+
+    const fechaUtc = new Date(Date.UTC(anio, mes - 1, dia));
+    return fechaUtc.getUTCFullYear() === anio
+      && fechaUtc.getUTCMonth() === mes - 1
+      && fechaUtc.getUTCDate() === dia;
   }
 
-  getClaseEstado(estado: string): string {
-    if (estado === 'EXITOSO') {
-      return 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-400 dark:border-green-900';
-    }
+  private obtenerMensajeError(err: unknown): string {
+    const errorHttp = err as { status?: number; error?: { detail?: unknown } };
+    const detalle = errorHttp?.error?.detail;
 
-    if (estado === 'ADVERTENCIA') {
-      return 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-400 dark:border-yellow-900';
-    }
-
-    return 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-900';
-  }
-
-  getClaseAccion(estado: string): string {
-    if (estado === 'EXITOSO') {
-      return 'text-green-700 dark:text-green-400';
-    }
-
-    if (estado === 'ADVERTENCIA') {
-      return 'text-yellow-700 dark:text-yellow-400';
-    }
-
-    return 'text-red-700 dark:text-red-400';
-  }
-
-  trackByRegistro(index: number, item: RegistroBitacora): number {
-    return item.id;
+    return errorHttp?.status === 400 && typeof detalle === 'string' && detalle.trim()
+      ? detalle
+      : 'No fue posible cargar la bitácora.';
   }
 }

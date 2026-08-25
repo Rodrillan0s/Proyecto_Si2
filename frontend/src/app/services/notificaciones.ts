@@ -57,6 +57,7 @@ export class NotificacionesService {
 
     const token = this.authService.obtenerToken();
     if (!token) return;
+    if (this.authService.tokenExpirado()) return;
 
     // 1. Cargar historial desde BD antes de abrir el canal en tiempo real
     this.cargarHistorial();
@@ -99,8 +100,12 @@ export class NotificacionesService {
       };
 
       this.socket.onclose = () => {
-        console.log('WebSocket Desconectado 🔴. Reconectando en 5s...');
         this.socket = null;
+        if (this.authService.tokenExpirado()) {
+          console.log('WebSocket desconectado: la sesión expiró.');
+          return;
+        }
+        console.log('WebSocket Desconectado 🔴. Reconectando en 5s...');
         setTimeout(() => this.conectar(), 5000);
       };
 

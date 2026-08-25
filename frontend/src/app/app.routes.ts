@@ -44,7 +44,7 @@ export const routes: Routes = [
             { path: 'empresas', component: ListaEmpresasComponent, canActivate: [roleGuard], data: { roles: ['ADMINISTRADOR'] } },
             { path: 'backup', component: BackupComponent },
             { path: 'notificaciones', component: NotificacionesComponent },
-            { path: 'bitacora', component: BitacoraComponent }
+            { path: 'bitacora', component: BitacoraComponent, canActivate: [roleGuard], data: { roles: ['ADMINISTRADOR'] } }
         ]
     },
 

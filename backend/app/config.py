@@ -16,7 +16,7 @@ class Config:
     
     #CREDENCIALES CONFIGURACION APP
     SECRET_KEY = os.getenv("SECRET_KEY", "obratec_secret_key_123456")
-    TOKEN_KEY = os.getenv("TOKEN_KEY", "obratec_token_key_123456")
+    TOKEN_KEY = os.getenv("TOKEN_KEY", "obratec_token_key_1234567890abcdef")
     DEBUG = os.getenv("DEBUG", "True")
 
 

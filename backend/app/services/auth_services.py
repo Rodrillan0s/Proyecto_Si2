@@ -1,4 +1,4 @@
-from app.repos import auth_repos
+from app.repos import auth_repos, bitacora_repos
 from app.utils import security
 from app.classes.postgres import PostgreSQL
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -34,6 +34,15 @@ def loguear_usuario(data: dict, user_agent: str = None, client_ip: str = None):
         if not is_valid:
             # REGISTRAR INTENTOS ERRONEOS AL LOGUEARSE
             res_fallo = auth_repos.registrar_intento_fallido_sp(id_usuario, db=db)
+            bitacora_repos.registrar_bitacora(
+                id_usuario,
+                "AUTENTICACION",
+                "LOGIN_FALLIDO",
+                "Intento de inicio de sesión con contraseña incorrecta.",
+                (client_ip or "unknown")[:20],
+                "FALLIDO",
+                db=db,
+            )
             intentos = res_fallo.get('intentos_fallidos', 0)
             
             if intentos >= 5:
@@ -54,6 +63,15 @@ def loguear_usuario(data: dict, user_agent: str = None, client_ip: str = None):
 
         # REGISTRAR LOGIN CORRECTO
         auth_repos.login_exitoso_sp(id_usuario, dispositivo_hash, db=db)
+        bitacora_repos.registrar_bitacora(
+            id_usuario,
+            "AUTENTICACION",
+            "LOGIN_EXITOSO",
+            "Inicio de sesión exitoso.",
+            (client_ip or "unknown")[:20],
+            "EXITOSO",
+            db=db,
+        )
 
         # GENERAR TOKEN JWT DE ACCESO
         token = security.create_access_token(
