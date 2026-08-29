@@ -13,6 +13,8 @@ import { NotificacionesComponent } from './pages/notificaciones/notificaciones';
 import { BitacoraComponent } from './pages/bitacora/bitacora';
 import { RegistroComponent } from './pages/registro/registro';
 import { MainClienteComponent } from './pages/main-cliente/main-cliente';
+import { ProyectosComponent } from './pages/proyectos/proyectos';
+import { ProyectoDetalleComponent } from './pages/proyectos/detalle/proyecto-detalle';
 
 //LAYOUTS
 import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout';
@@ -36,11 +38,13 @@ export const routes: Routes = [
         path: '',
         component: AdminLayoutComponent,
         canActivate: [authGuard, roleGuard],
-        data: { roles: ['ADMINISTRADOR', 'ADMINISTRADOR_EMPRESA'] },
+        data: { roles: ['ADMINISTRADOR', 'ADMINISTRADOR_EMPRESA', 'JEFE DE OBRA'] },
         children: [
             { path: 'panel', component: PanelComponent },
-            { path: 'usuarios', component: ListaUsuariosComponent },
-            { path: 'roles', component: RolesComponent },
+            { path: 'proyectos', component: ProyectosComponent },
+            { path: 'proyectos/:id', component: ProyectoDetalleComponent },
+            { path: 'usuarios', component: ListaUsuariosComponent, canActivate: [roleGuard], data: { roles: ['ADMINISTRADOR', 'ADMINISTRADOR_EMPRESA'] } },
+            { path: 'roles', component: RolesComponent, canActivate: [roleGuard], data: { roles: ['ADMINISTRADOR', 'ADMINISTRADOR_EMPRESA'] } },
             { path: 'empresas', component: ListaEmpresasComponent, canActivate: [roleGuard], data: { roles: ['ADMINISTRADOR'] } },
             { path: 'backup', component: BackupComponent },
             { path: 'notificaciones', component: NotificacionesComponent },

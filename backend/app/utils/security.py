@@ -77,3 +77,48 @@ def exigir_rol(*roles_permitidos):
             raise HTTPException(status_code=403, detail='No tiene permisos para realizar esta acción.')
         return token_data
     return verificar_rol
+
+
+import time
+
+_PERMISOS_ROL_CACHE = {}
+_CACHE_EXPIRY = 0
+
+def obtener_permisos_rol(nombre_rol: str) -> set:
+    global _PERMISOS_ROL_CACHE, _CACHE_EXPIRY
+    now = time.time()
+    if now < _CACHE_EXPIRY and nombre_rol in _PERMISOS_ROL_CACHE:
+        return _PERMISOS_ROL_CACHE[nombre_rol]
+
+    from app.classes.postgres import PostgreSQL
+    from app.config import Config
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        query = f"""
+            SELECT r.nombre_rol, p.nombre_permiso
+            FROM {Config.SCHEMA}.t_rol r
+            INNER JOIN {Config.SCHEMA}.t_rol_permiso rp ON r.id_rol = rp.id_rol
+            INNER JOIN {Config.SCHEMA}.t_permiso p ON rp.id_permiso = p.id_permiso;
+        """
+        filas = db.execute_query(query, fetchall=True) or []
+        nuevo_cache = {}
+        for r_rol, p_nom in filas:
+            nuevo_cache.setdefault(r_rol, set()).add(p_nom)
+        _PERMISOS_ROL_CACHE = nuevo_cache
+        _CACHE_EXPIRY = now + 120
+        return _PERMISOS_ROL_CACHE.get(nombre_rol, set())
+    finally:
+        db.close_connection()
+
+def exigir_permiso(nombre_permiso: str):
+    def verificar_permiso(token_data: dict = Depends(verificar_token)):
+        rol = token_data.get('nombre_rol')
+        if rol == 'ADMINISTRADOR':
+            return token_data
+            
+        permisos = obtener_permisos_rol(rol)
+        if nombre_permiso not in permisos:
+            raise HTTPException(status_code=403, detail='No tiene permisos para realizar esta acción.')
+        return token_data
+    return verificar_permiso

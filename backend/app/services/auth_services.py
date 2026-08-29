@@ -10,7 +10,12 @@ def loguear_usuario(data: dict, user_agent: str = None, client_ip: str = None):
     password = data.get('password')
 
     if not identificador or not password:
-        raise ValueError("El correo, usuario o CI y la contraseña son obligatorios.")
+        raise ValueError("Ingrese su usuario, correo o CI, y su contraseña.")
+
+    if isinstance(identificador, str):
+        identificador = identificador.strip()
+        if "@" not in identificador:
+            identificador = identificador.upper()
 
     db = PostgreSQL()
     db.create_connection()
@@ -18,7 +23,7 @@ def loguear_usuario(data: dict, user_agent: str = None, client_ip: str = None):
         res_db = auth_repos.obtener_usuario_por_login_sp(identificador, db=db)
 
         if not res_db.get("success"):
-            raise ValueError(res_db.get("error", "El usuario no existe o está bloqueado."))
+            raise ValueError(res_db.get("error", "No se encontro ningun usuario registrado."))
 
         id_usuario = res_db['id_usuario']
         password_hash = res_db['password_hash']
@@ -45,11 +50,12 @@ def loguear_usuario(data: dict, user_agent: str = None, client_ip: str = None):
             )
             intentos = res_fallo.get('intentos_fallidos', 0)
             
-            if intentos >= 5:
-                raise ValueError("Has alcanzado el límite máximo de intentos fallidos. Tu cuenta ha sido bloqueada por 15 minutos.")
-            else:
-                intentos_restantes = 5 - intentos
-                raise ValueError(f"Contraseña incorrecta. Te quedan {intentos_restantes} intento(s) antes de bloquear la cuenta.")
+            if intentos >= 3:
+                raise ValueError("Su cuenta ha sido bloqueada por demasiados intentos fallidos. Espere 15 minutos para intentarlo de nuevo.")
+            elif intentos == 1:
+                raise ValueError("Contraseña incorrecta.")
+            elif intentos == 2:
+                raise ValueError("Contraseña incorrecta. Te quedan 1 intento antes de bloquear la cuenta.")
 
         # VERIFICAR DISPOSITIVOS CONOCIDOS
         fingerprint = f"{user_agent or 'unknown_ua'}"

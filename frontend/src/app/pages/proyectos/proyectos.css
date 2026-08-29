@@ -1,0 +1,204 @@
+/* PROYECTOS MODULE STYLE - PREMIUM INDUSTRIAL SYSTEM */
+
+.proyectos-container {
+  font-family: 'GT Walsheim', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* STATS */
+.stat-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+}
+
+/* INPUTS */
+.form-input {
+  background-color: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #0f172a;
+  padding: 0.6rem 0.85rem;
+  border-radius: 0.75rem;
+  font-size: 0.9rem;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.dark .form-input {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #ffffff;
+}
+
+.form-input:focus {
+  border-color: #ea580c;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
+}
+
+.form-select {
+  background-color: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #0f172a;
+  padding: 0.6rem 2.25rem 0.6rem 0.85rem;
+  border-radius: 0.75rem;
+  font-size: 0.9rem;
+  outline: none;
+  transition: all 0.2s ease;
+  background-position: right 0.75rem center;
+  background-size: 16px 12px;
+}
+
+.dark .form-select {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #ffffff;
+}
+
+.form-select:focus {
+  border-color: #ea580c;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
+}
+
+.form-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #475569;
+  margin-bottom: 0.4rem;
+}
+
+.dark .form-label {
+  color: #94a3b8;
+}
+
+/* BUTTONS */
+.btn-primary {
+  background-color: #ea580c;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 0.65rem 1.25rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 6px -1px rgba(234, 88, 12, 0.2);
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: #c2410c;
+  box-shadow: 0 6px 12px -1px rgba(234, 88, 12, 0.3);
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: #475569;
+  font-weight: 700;
+  padding: 0.65rem 1.25rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  border: 1.5px solid #cbd5e1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dark .btn-outline {
+  color: #cbd5e1;
+  border-color: #334155;
+}
+
+.btn-outline:hover {
+  background-color: #f1f5f9;
+}
+
+.dark .btn-outline:hover {
+  background-color: #1e293b;
+}
+
+/* STATUS BADGES */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-badge.planificacion {
+  background-color: #eff6ff;
+  color: #2563eb;
+}
+.dark .status-badge.planificacion {
+  background-color: rgba(37, 99, 235, 0.15);
+  color: #60a5fa;
+}
+
+.status-badge.activo {
+  background-color: #ecfdf5;
+  color: #059669;
+}
+.dark .status-badge.activo {
+  background-color: rgba(5, 150, 105, 0.15);
+  color: #34d399;
+}
+
+.status-badge.pausado {
+  background-color: #fffbeb;
+  color: #d97706;
+}
+.dark .status-badge.pausado {
+  background-color: rgba(217, 119, 6, 0.15);
+  color: #fbbf24;
+}
+
+.status-badge.finalizado {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+.dark .status-badge.finalizado {
+  background-color: rgba(75, 85, 99, 0.15);
+  color: #9ca3af;
+}
+
+.status-badge.cancelado {
+  background-color: #fdf2f2;
+  color: #dc2626;
+}
+.dark .status-badge.cancelado {
+  background-color: rgba(220, 38, 38, 0.15);
+  color: #fca5a5;
+}
+
+/* MODAL BACKDROP */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(8px);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.dark .modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+.modal-card {
+  transform: scale(0.98);
+  animation: modalEnter 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modalEnter {
+  to {
+    transform: scale(1);
+  }
+}

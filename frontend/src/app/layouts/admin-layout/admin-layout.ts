@@ -81,6 +81,10 @@ export class AdminLayoutComponent implements OnInit {
     return this.usuarioActual?.nombre_rol === 'ADMINISTRADOR';
   }
 
+  puedeVerProyectos(): boolean {
+    return ['ADMINISTRADOR', 'ADMINISTRADOR_EMPRESA', 'JEFE DE OBRA'].includes(this.usuarioActual?.nombre_rol);
+  }
+
   // ------------------------------------------------------------------
   // SIDEBAR & NAVEGACION
   // ------------------------------------------------------------------

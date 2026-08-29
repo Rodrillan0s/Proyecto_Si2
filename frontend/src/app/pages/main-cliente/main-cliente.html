@@ -1,28 +1,143 @@
-<main class="client-page">
-  <header class="client-header">
-    <div class="client-brand">OBRATEC</div>
+<div class="client-portal min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-gray-100">
 
-    <button type="button" class="logout-button" (click)="cerrarSesion()">
-      <svg
-        class="logout-icon"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-        ></path>
-      </svg>
-      <span>Cerrar sesión</span>
-    </button>
+  <!-- NAVBAR CLIENTE -->
+  <header class="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-orange-600 flex items-center justify-center text-white font-black text-lg shadow-md shadow-orange-600/30">
+          O
+        </div>
+        <div>
+          <span class="font-extrabold text-xl tracking-tight text-gray-900 dark:text-white">OBRATEC</span>
+          <span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400">Portal Propietario</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <!-- Theme button -->
+        <button (click)="alternarModoOscuro()" class="p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
+          <svg *ngIf="!modoOscuro" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+          <svg *ngIf="modoOscuro" class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+        </button>
+
+        <!-- User info -->
+        <div class="hidden sm:flex items-center gap-2 pl-2 border-l border-gray-200 dark:border-slate-800">
+          <div class="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-950/50 text-orange-600 dark:text-orange-400 font-bold flex items-center justify-center text-xs">
+            {{ usuarioActual?.nombre_completo?.substring(0,2)?.toUpperCase() }}
+          </div>
+          <span class="text-xs font-bold">{{ usuarioActual?.nombre_completo }}</span>
+        </div>
+
+        <button (click)="cerrarSesion()" class="p-2 text-gray-400 hover:text-red-600 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors" title="Cerrar sesión">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+        </button>
+      </div>
+    </div>
   </header>
 
-  <section class="client-content">
-    <h1>Bienvenido</h1>
-    <p>Tu espacio de cliente estará disponible próximamente.</p>
-  </section>
-</main>
+  <!-- CUERPO PRINCIPAL -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    
+    <!-- SALUDO Y BIENVENIDA -->
+    <div class="bg-gradient-to-r from-orange-600 to-amber-600 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-orange-600/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div>
+        <span class="text-xs font-extrabold uppercase tracking-widest text-orange-200">Panel del Cliente</span>
+        <h1 class="text-3xl font-black mt-1">Hola, {{ usuarioActual?.nombre_completo }}</h1>
+        <p class="text-orange-100 text-sm mt-1 max-w-xl">Supervisa en tiempo real el estado, ubicación y avances de las obras contratadas con nosotros.</p>
+      </div>
+
+      <div class="flex gap-4">
+        <div class="bg-white/10 backdrop-blur-md rounded-2xl p-4 text-center min-w-[5.5rem] border border-white/10">
+          <div class="text-2xl font-black">{{ totalProyectos }}</div>
+          <div class="text-[10px] uppercase font-bold text-orange-200">Proyectos</div>
+        </div>
+        <div class="bg-white/10 backdrop-blur-md rounded-2xl p-4 text-center min-w-[5.5rem] border border-white/10">
+          <div class="text-2xl font-black">{{ proyectosEnEjecucion }}</div>
+          <div class="text-[10px] uppercase font-bold text-orange-200">En Curso</div>
+        </div>
+        <div class="bg-white/10 backdrop-blur-md rounded-2xl p-4 text-center min-w-[5.5rem] border border-white/10">
+          <div class="text-2xl font-black">{{ proyectosFinalizados }}</div>
+          <div class="text-[10px] uppercase font-bold text-orange-200">Listos</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN: TUS PROYECTOS -->
+    <div class="space-y-4">
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white">Mis Obras y Proyectos</h2>
+          <p class="text-xs text-gray-500">Información técnica y localización en Santa Cruz de la Sierra</p>
+        </div>
+      </div>
+
+      <!-- CARGANDO -->
+      <div *ngIf="cargando" class="flex justify-center py-12">
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-600"></div>
+      </div>
+
+      <!-- GRILLA DE PROYECTOS -->
+      <div *ngIf="!cargando && proyectos.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div *ngFor="let p of proyectos" class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between space-y-4">
+          
+          <div>
+            <div class="flex justify-between items-start gap-2 mb-2">
+              <span class="text-xs font-mono font-bold text-orange-600 uppercase">{{ p.codigo }}</span>
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider" 
+                    [ngClass]="{
+                      'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400': p.estado_obra === 'ACTIVO',
+                      'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400': p.estado_obra === 'PLANIFICACION',
+                      'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400': p.estado_obra === 'PAUSADO',
+                      'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300': p.estado_obra === 'FINALIZADO',
+                      'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400': p.estado_obra === 'CANCELADO'
+                    }">
+                {{ p.estado_obra }}
+              </span>
+            </div>
+
+            <h3 class="font-bold text-lg text-gray-900 dark:text-white leading-snug">{{ p.nombre }}</h3>
+            <p class="text-xs text-gray-500 mt-1 line-clamp-2">{{ p.descripcion || 'Sin descripción adicional.' }}</p>
+          </div>
+
+          <!-- DATOS DE LOCALIZACIÓN Y FECHAS -->
+          <div class="bg-gray-50 dark:bg-slate-800/40 rounded-xl p-3 space-y-2 text-xs">
+            <div class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+              <svg class="w-4 h-4 text-orange-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+              <span class="truncate font-semibold">{{ p.ubicacion || p.zona || 'Santa Cruz de la Sierra' }}</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 text-[11px] text-gray-500 pt-1 border-t border-gray-100 dark:border-slate-800">
+              <div>
+                <span class="block text-[10px] text-gray-400 uppercase">Inicio</span>
+                <span class="font-semibold text-gray-700 dark:text-gray-300">{{ p.fecha_inicio | date:'dd/MM/yyyy' }}</span>
+              </div>
+              <div>
+                <span class="block text-[10px] text-gray-400 uppercase">Entrega Estimada</span>
+                <span class="font-semibold text-gray-700 dark:text-gray-300">{{ (p.fecha_fin | date:'dd/MM/yyyy') || 'Por definir' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUPERVISOR -->
+          <div *ngIf="p.supervisor_nombre" class="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-slate-800 text-xs text-gray-600 dark:text-gray-400">
+            <div class="w-6 h-6 rounded-full bg-orange-100 text-orange-600 font-bold flex items-center justify-center text-[10px]">
+              S
+            </div>
+            <span class="truncate">Supervisor: <strong class="text-gray-800 dark:text-gray-200">{{ p.supervisor_nombre }}</strong></span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ESTADO VACÍO -->
+      <div *ngIf="!cargando && proyectos.length === 0" class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-3xl p-12 text-center space-y-3">
+        <div class="w-14 h-14 bg-orange-100 dark:bg-orange-950/40 text-orange-600 rounded-2xl flex items-center justify-center mx-auto">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+        </div>
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white">No tienes obras asignadas actualmente</h3>
+        <p class="text-xs text-gray-500 max-w-sm mx-auto">Cuando la empresa constructora te asigne a un proyecto en ejecución, aparecerá reflejado aquí con todos los detalles y avances.</p>
+      </div>
+    </div>
+
+  </main>
+</div>
