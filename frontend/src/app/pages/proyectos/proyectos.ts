@@ -140,6 +140,13 @@ export class ProyectosComponent implements OnInit, OnDestroy {
     }
   }
 
+  verEstructura(id?: number, event?: Event) {
+    if (event) event.stopPropagation();
+    if (id) {
+      this.router.navigate([`/proyectos/${id}`], { queryParams: { tab: 'estructura' } });
+    }
+  }
+
   abrirModalNuevo() {
     this.modoEdicion = false;
     this.proyectoForm = this.inicializarFormulario();
@@ -258,6 +265,10 @@ export class ProyectosComponent implements OnInit, OnDestroy {
 
   guardarProyecto() {
     // Validaciones
+    if (!this.proyectoForm.nombre || !this.proyectoForm.nombre.trim()) {
+      this.mostrarError('El nombre del proyecto es obligatorio.');
+      return;
+    }
     if (!this.proyectoForm.id_tipo_obra) {
       this.mostrarError('El tipo de proyecto es obligatorio.');
       return;
@@ -279,13 +290,7 @@ export class ProyectosComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Auto-generar nombre si no existe
-    if (!this.proyectoForm.nombre) {
-      const tipoObj = this.tiposProyecto.find(t => t.id_tipo_obra === Number(this.proyectoForm.id_tipo_obra));
-      const tipoNom = tipoObj?.nombre_obra || 'Proyecto';
-      this.proyectoForm.nombre = `${tipoNom} ${this.proyectoForm.codigo}`;
-    }
-
+    this.proyectoForm.nombre = this.proyectoForm.nombre.trim();
     this.guardando = true;
 
     if (!this.proyectoForm.fecha_fin) {

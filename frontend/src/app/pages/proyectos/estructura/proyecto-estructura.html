@@ -1,0 +1,614 @@
+<div class="estructura-container space-y-6" (click)="cerrarMenu()">
+
+  <!-- 1. ENCABEZADO DE LA SECCIÓN Y ACCIONES -->
+  <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm space-y-4">
+    
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div class="space-y-1">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span *ngIf="codigoProyecto" class="text-xs font-mono font-bold text-orange-600 dark:text-orange-500 uppercase tracking-widest">
+            {{ codigoProyecto }}
+          </span>
+          <span *ngIf="codigoProyecto" class="text-gray-300 dark:text-slate-600">·</span>
+          <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estructura del Proyecto</span>
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-2.5">
+          <svg class="w-6 h-6 text-orange-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+          </svg>
+          <span>{{ nombreProyecto || 'Estructura del proyecto' }}</span>
+        </h2>
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          Organiza los sectores, etapas, bloques, torres, niveles, áreas y ambientes que forman parte de esta obra.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-2.5 flex-wrap">
+        
+        <!-- Selector de Modo de Vista: Árbol / Tarjetas -->
+        <div class="inline-flex p-1 bg-gray-100 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 text-xs font-semibold">
+          <button (click)="vistaModo = 'arbol'"
+                  class="px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all"
+                  [ngClass]="vistaModo === 'arbol' ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-xs' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+            </svg>
+            Árbol
+          </button>
+          
+          <button (click)="vistaModo = 'tarjetas'"
+                  class="px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all"
+                  [ngClass]="vistaModo === 'tarjetas' ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-xs' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+            </svg>
+            Tarjetas
+          </button>
+        </div>
+
+        <!-- Botones Expandir / Contraer (Solo en modo árbol) -->
+        <ng-container *ngIf="vistaModo === 'arbol' && arbol.length > 0">
+          <button (click)="expandirTodo()" class="btn-outline text-xs flex items-center gap-1" title="Expandir todo">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 13l-7 7-7-7m14-8l-7 7-7-7"></path>
+            </svg>
+            Expandir
+          </button>
+          <button (click)="contraerTodo()" class="btn-outline text-xs flex items-center gap-1" title="Contraer todo">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 11l7-7 7 7M5 19l7-7 7 7"></path>
+            </svg>
+            Contraer
+          </button>
+        </ng-container>
+
+        <!-- Botón Principal: + Agregar elemento -->
+        <button *ngIf="esRolAutorizado()" (click)="abrirModalNuevo()" class="btn-primary text-xs flex items-center gap-1.5 shadow-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          + Agregar elemento
+        </button>
+
+      </div>
+    </div>
+
+    <!-- 2. RESUMEN DE ELEMENTOS (MÉTRICAS / CHIPS) -->
+    <div *ngIf="nodosPlanos.length > 0" class="pt-3 border-t border-gray-100 dark:border-slate-800/80 flex items-center gap-2 flex-wrap">
+      
+      <!-- Total General -->
+      <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 rounded-full text-xs font-semibold border border-gray-200 dark:border-slate-700">
+        <svg class="w-3.5 h-3.5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+        </svg>
+        {{ nodosPlanos.length }} {{ nodosPlanos.length === 1 ? 'elemento total' : 'elementos totales' }}
+      </span>
+
+      <!-- Por Tipo -->
+      <span *ngFor="let item of resumenTipos" class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 dark:bg-slate-800/50 text-gray-600 dark:text-gray-400 rounded-full text-xs font-medium border border-gray-200/60 dark:border-slate-800">
+        <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+        {{ item.cantidad }} {{ item.tipo }}{{ item.cantidad > 1 ? 's' : '' }}
+      </span>
+
+    </div>
+
+  </div>
+
+  <!-- ALERTAS -->
+  <div *ngIf="mensajeError" class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl text-sm dark:bg-red-950/20 dark:border-red-900/30 dark:text-red-400">
+    <strong>Error:</strong> {{ mensajeError }}
+  </div>
+  <div *ngIf="mensajeExito" class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl text-sm dark:bg-green-950/20 dark:border-green-900/30 dark:text-green-400">
+    <strong>Éxito:</strong> {{ mensajeExito }}
+  </div>
+
+  <!-- CARGANDO -->
+  <div *ngIf="cargando" class="flex justify-center items-center py-20">
+    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-600"></div>
+  </div>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <div *ngIf="!cargando">
+
+    <!-- 11. ESTADO VACÍO -->
+    <div *ngIf="arbol.length === 0" class="bg-white dark:bg-slate-900 p-12 rounded-2xl border border-gray-200 dark:border-slate-800 text-center space-y-4 max-w-lg mx-auto shadow-sm my-4">
+      <div class="inline-flex p-4 bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 rounded-2xl border border-orange-100 dark:border-orange-900/40">
+        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+        </svg>
+      </div>
+      <div>
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+          {{ nombreProyecto ? nombreProyecto + ' aún no tiene una estructura definida' : 'Tu proyecto aún no tiene una estructura definida' }}
+        </h3>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
+          Organiza la obra creando sectores, etapas, bloques, torres, niveles, áreas o ambientes.
+        </p>
+      </div>
+      <button *ngIf="esRolAutorizado()" (click)="abrirModalNuevo()" class="btn-primary text-sm inline-flex items-center gap-2 shadow-md">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        + Crear primer elemento
+      </button>
+    </div>
+
+    <!-- MODO 1: ÁRBOL JERÁRQUICO -->
+    <div *ngIf="arbol.length > 0 && vistaModo === 'arbol'" class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm space-y-3">
+      
+      <ng-container *ngFor="let nodo of arbol">
+        <ng-container *ngTemplateOutlet="nodoPlantilla; context: { $implicit: nodo, nivel: 0 }"></ng-container>
+      </ng-container>
+
+      <div *ngIf="esRolAutorizado()" class="pt-6 border-t border-gray-100 dark:border-slate-800/80 flex justify-center">
+        <button (click)="abrirModalNuevo()" class="btn-outline text-xs flex items-center gap-2 hover:border-orange-500 hover:text-orange-600 transition-colors">
+          <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          + Agregar elemento raíz
+        </button>
+      </div>
+
+    </div>
+
+    <!-- MODO 2: VISTA ALTERNATIVA MEDIANTE TARJETAS -->
+    <div *ngIf="arbol.length > 0 && vistaModo === 'tarjetas'" class="space-y-6">
+      
+      <!-- 9. BREADCRUMB DE NAVEGACIÓN -->
+      <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-gray-200 dark:border-slate-800 flex items-center justify-between gap-4 flex-wrap">
+        <nav class="flex items-center gap-2 text-xs font-semibold flex-wrap">
+          
+          <button (click)="irANivel(-1)" class="text-orange-600 hover:underline flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+            </svg>
+            Estructura Raíz
+          </button>
+
+          <ng-container *ngFor="let item of rutaNavegacion; let i = index">
+            <span class="text-gray-400">/</span>
+            <button (click)="irANivel(i)" 
+                    class="hover:underline truncate max-w-[150px]"
+                    [ngClass]="i === rutaNavegacion.length - 1 ? 'text-gray-900 dark:text-white font-bold' : 'text-orange-600'">
+              {{ item.nombre }}
+            </button>
+          </ng-container>
+
+        </nav>
+
+        <div class="flex items-center gap-2">
+          <button *ngIf="rutaNavegacion.length > 0" (click)="subirNivel()" class="btn-outline text-xs flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Nivel Superior
+          </button>
+          
+          <button *ngIf="esRolAutorizado()" (click)="abrirModalNuevo(nodoActual || undefined)" class="btn-primary text-xs flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            {{ nodoActual ? '+ Agregar dentro de ' + nodoActual.nombre : '+ Agregar elemento' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- GRID DE TARJETAS -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        
+        <div *ngFor="let nodo of nodosNivelActual"
+             class="card-elemento bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 hover:border-orange-400 dark:hover:border-orange-500 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group">
+          
+          <div>
+            <div class="flex justify-between items-start gap-2 mb-3">
+              <span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded-md tracking-wider border"
+                    [ngClass]="{
+                      'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/50 dark:text-orange-400 dark:border-orange-900/50': nodo.tipo === 'Torre' || nodo.tipo === 'Bloque',
+                      'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-400 dark:border-blue-900/50': nodo.tipo === 'Nivel',
+                      'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-400 dark:border-green-900/50': nodo.tipo === 'Sector' || nodo.tipo === 'Área',
+                      'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/50 dark:text-purple-400 dark:border-purple-900/50': nodo.tipo === 'Etapa' || nodo.tipo === 'Ambiente',
+                      'bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700': nodo.tipo === 'Otro'
+                    }">
+                {{ nodo.tipo }}
+              </span>
+
+              <!-- Menú contextual ⋮ -->
+              <div *ngIf="esRolAutorizado()" class="relative">
+                <button (click)="toggleMenu(nodo.id_estructura!, $event)"
+                        class="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+                  </svg>
+                </button>
+
+                <div *ngIf="menuAbiertoId === nodo.id_estructura"
+                     (click)="$event.stopPropagation()"
+                     class="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-gray-100 dark:border-slate-700 py-1.5 z-30 text-xs">
+                  <button (click)="abrirModalNuevo(nodo); cerrarMenu()" class="w-full text-left px-3.5 py-2 hover:bg-orange-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    Agregar dentro
+                  </button>
+                  <button (click)="abrirModalEditar(nodo); cerrarMenu()" class="w-full text-left px-3.5 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                    Editar
+                  </button>
+                  <button (click)="verDetalles(nodo)" class="w-full text-left px-3.5 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                    Ver detalles
+                  </button>
+                  <div class="border-t border-gray-100 dark:border-slate-700 my-1"></div>
+                  <button (click)="confirmarEliminar(nodo); cerrarMenu()" class="w-full text-left px-3.5 py-2 hover:bg-red-50 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    Eliminar
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <h4 class="text-base font-bold text-gray-900 dark:text-white group-hover:text-orange-600 transition-colors">
+              {{ nodo.nombre }}
+            </h4>
+            
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+              {{ nodo.descripcion || 'Sin descripción adicional.' }}
+            </p>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-gray-100 dark:border-slate-800/80 flex items-center justify-between">
+            <span class="text-xs text-gray-400 font-medium">
+              {{ nodo.hijos ? nodo.hijos.length : 0 }} {{ (nodo.hijos && nodo.hijos.length === 1) ? 'subnivel' : 'subniveles' }}
+            </span>
+
+            <button *ngIf="nodo.hijos && nodo.hijos.length > 0" 
+                    (click)="entrarNivel(nodo)" 
+                    class="text-xs font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1">
+              Ver estructura →
+            </button>
+
+            <button *ngIf="!nodo.hijos || nodo.hijos.length === 0" 
+                    (click)="abrirModalNuevo(nodo)" 
+                    class="text-xs font-semibold text-gray-400 hover:text-orange-600 flex items-center gap-1">
+              + Agregar nivel
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Tarjeta Rápida "+ Agregar elemento" -->
+        <div *ngIf="esRolAutorizado()"
+             (click)="abrirModalNuevo(nodoActual || undefined)"
+             class="border-2 border-dashed border-gray-200 dark:border-slate-800 hover:border-orange-400 dark:hover:border-orange-500 rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer group transition-all min-h-[10rem]">
+          <div class="p-3 bg-orange-50 dark:bg-orange-950/30 text-orange-600 rounded-xl group-hover:scale-110 transition-transform">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+          </div>
+          <span class="text-xs font-bold text-gray-800 dark:text-gray-200 mt-3 group-hover:text-orange-600">
+            {{ nodoActual ? '+ Agregar dentro de ' + nodoActual.nombre : '+ Agregar elemento raíz' }}
+          </span>
+          <span class="text-[10px] text-gray-400 mt-0.5">Crear un nuevo nivel en esta vista</span>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- 3. PLANTILLA RECURSIVA PARA MODO ÁRBOL -->
+  <ng-template #nodoPlantilla let-nodo let-nivel="nivel">
+    <div class="tree-node-wrapper space-y-2">
+      
+      <!-- Fila / Tarjeta Interactiva del Elemento -->
+      <div class="group relative flex items-center justify-between p-3.5 rounded-xl border border-gray-200/80 dark:border-slate-800 bg-gray-50/70 dark:bg-slate-800/30 hover:bg-white dark:hover:bg-slate-800/80 hover:border-orange-300 dark:hover:border-orange-800/60 hover:shadow-sm transition-all"
+           [style.margin-left.rem]="nivel * 1.5">
+        
+        <div class="flex items-center gap-3 min-w-0 flex-1">
+          
+          <!-- Flecha Expandir / Contraer (▼ / ▶) -->
+          <button *ngIf="nodo.hijos && nodo.hijos.length > 0" (click)="toggleExpandir(nodo)"
+                  class="p-1 rounded-md text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
+                  title="Alternar despliegue">
+            <svg class="w-4 h-4 transition-transform duration-200" [class.rotate-90]="nodo.expandido" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </button>
+          
+          <div *ngIf="!nodo.hijos || nodo.hijos.length === 0" class="w-6 flex justify-center text-gray-300 dark:text-slate-600 flex-shrink-0">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+            </svg>
+          </div>
+
+          <!-- Icono SVG por tipo (sin emojis) -->
+          <div class="nodo-tipo-icono p-2 rounded-lg text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-800 border border-gray-200/80 dark:border-slate-700 shadow-2xs flex-shrink-0">
+            <svg class="w-4 h-4 text-orange-600 dark:text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+            </svg>
+          </div>
+
+          <!-- Nombre, descripción y conteo -->
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-bold text-gray-900 dark:text-white text-sm tracking-tight truncate">{{ nodo.nombre }}</span>
+              
+              <span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded-md tracking-wider border"
+                    [ngClass]="{
+                      'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/50 dark:text-orange-400 dark:border-orange-900/50': nodo.tipo === 'Torre' || nodo.tipo === 'Bloque',
+                      'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-400 dark:border-blue-900/50': nodo.tipo === 'Nivel',
+                      'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-400 dark:border-green-900/50': nodo.tipo === 'Sector' || nodo.tipo === 'Área',
+                      'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/50 dark:text-purple-400 dark:border-purple-900/50': nodo.tipo === 'Etapa' || nodo.tipo === 'Ambiente',
+                      'bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700': nodo.tipo === 'Otro'
+                    }">
+                {{ nodo.tipo }}
+              </span>
+
+              <span *ngIf="nodo.hijos && nodo.hijos.length > 0" class="text-[10px] text-gray-400 font-medium">
+                · {{ nodo.hijos.length }} {{ nodo.hijos.length === 1 ? 'subnivel' : 'subniveles' }}
+              </span>
+            </div>
+
+            <p *ngIf="nodo.descripcion" class="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+              {{ nodo.descripcion }}
+            </p>
+          </div>
+        </div>
+
+        <!-- 4. ACCIONES EN HOVER Y MENÚ CONTEXTUAL ⋮ -->
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          
+          <!-- Botón de acción rápida visible en hover: [+] Agregar dentro -->
+          <button *ngIf="esRolAutorizado()" (click)="abrirModalNuevo(nodo); $event.stopPropagation()"
+                  class="hidden sm:inline-flex items-center gap-1 text-xs font-semibold text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/50 px-2.5 py-1 rounded-lg border border-orange-200/60 dark:border-orange-800/40 transition-colors"
+                  title="Agregar elemento dentro de {{ nodo.nombre }}">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            Agregar dentro
+          </button>
+
+          <!-- Botón de acción rápida: [✏️] Editar -->
+          <button *ngIf="esRolAutorizado()" (click)="abrirModalEditar(nodo); $event.stopPropagation()"
+                  class="hidden md:inline-flex p-1 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                  title="Editar {{ nodo.nombre }}">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
+          </button>
+
+          <!-- 7. BOTÓN DE MENÚ CONTEXTUAL ⋮ -->
+          <div *ngIf="esRolAutorizado()" class="relative">
+            <button (click)="toggleMenu(nodo.id_estructura!, $event)"
+                    class="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                    title="Opciones">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+              </svg>
+            </button>
+
+            <!-- Menú Desplegable Contextual -->
+            <div *ngIf="menuAbiertoId === nodo.id_estructura"
+                 (click)="$event.stopPropagation()"
+                 class="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-gray-100 dark:border-slate-700 py-1.5 z-30 text-xs">
+              
+              <button (click)="abrirModalNuevo(nodo); cerrarMenu()" class="w-full text-left px-3.5 py-2 hover:bg-orange-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                Agregar dentro
+              </button>
+
+              <button (click)="abrirModalEditar(nodo); cerrarMenu()" class="w-full text-left px-3.5 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+                Editar
+              </button>
+
+              <button (click)="verDetalles(nodo)" class="w-full text-left px-3.5 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+                Ver detalles
+              </button>
+
+              <div class="border-t border-gray-100 dark:border-slate-700 my-1"></div>
+
+              <button (click)="reordenar(nodo, 'UP'); cerrarMenu()" class="w-full text-left px-3.5 py-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-600 dark:text-gray-300 flex items-center gap-2">
+                <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                </svg>
+                Mover arriba
+              </button>
+
+              <button (click)="reordenar(nodo, 'DOWN'); cerrarMenu()" class="w-full text-left px-3.5 py-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-600 dark:text-gray-300 flex items-center gap-2">
+                <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+                Mover abajo
+              </button>
+
+              <div class="border-t border-gray-100 dark:border-slate-700 my-1"></div>
+
+              <button (click)="confirmarEliminar(nodo); cerrarMenu()" class="w-full text-left px-3.5 py-2 hover:bg-red-50 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 flex items-center gap-2">
+                <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+                Eliminar
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- 8. VISUALIZACIÓN POR NIVELES: Hijos Recursivos Indentados -->
+      <div *ngIf="nodo.expandido && nodo.hijos && nodo.hijos.length > 0" class="tree-children space-y-2 border-l-2 border-dashed border-gray-200 dark:border-slate-800 ml-4 pl-3">
+        <ng-container *ngFor="let hijo of nodo.hijos">
+          <ng-container *ngTemplateOutlet="nodoPlantilla; context: { $implicit: hijo, nivel: nivel + 1 }"></ng-container>
+        </ng-container>
+      </div>
+
+    </div>
+  </ng-template>
+
+  <!-- 6. PANEL LATERAL (DRAWER) PARA CREAR / EDITAR -->
+  <div *ngIf="mostrarPanelLateral" class="drawer-overlay" (click)="cerrarPanelLateral()">
+    <div class="drawer-container bg-white dark:bg-slate-900 border-l border-gray-200 dark:border-slate-800 shadow-2xl w-full max-w-md h-full flex flex-col justify-between"
+         (click)="$event.stopPropagation()">
+      
+      <!-- Cabecera del Drawer -->
+      <div class="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-start bg-gray-50/50 dark:bg-slate-800/30">
+        <div>
+          <span *ngIf="nombreProyecto" class="text-[10px] font-bold text-orange-600 dark:text-orange-500 uppercase tracking-widest block mb-0.5">
+            Proyecto: {{ nombreProyecto }}
+          </span>
+          <h3 class="text-lg font-extrabold text-gray-900 dark:text-white uppercase tracking-wide">
+            {{ modoEdicion ? 'Modificar elemento de estructura' : 'Nuevo elemento de estructura' }}
+          </h3>
+          <p class="text-xs text-gray-500 mt-1">Definición de un nivel físico o funcional de la obra.</p>
+        </div>
+        <button (click)="cerrarPanelLateral()" class="text-gray-400 hover:text-gray-600 dark:hover:text-white p-1 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- 5. CREACIÓN CONTEXTUAL (Cuerpo del Drawer) -->
+      <div class="p-6 space-y-5 flex-1 overflow-y-auto">
+        
+        <!-- Indicador Contextual "Se agregará dentro de:" -->
+        <div class="p-3.5 bg-gray-50 dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700 rounded-xl">
+          <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-1">
+            {{ padreSeleccionado ? 'Se agregará dentro de:' : 'Nivel de agregación:' }}
+          </span>
+          <div class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+            </svg>
+            <span *ngIf="padreSeleccionado">{{ padreSeleccionado.nombre }} ({{ padreSeleccionado.tipo }})</span>
+            <span *ngIf="!padreSeleccionado">Raíz del Proyecto (Nivel Principal)</span>
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label">Nombre del elemento *</label>
+          <input type="text" [(ngModel)]="elementoForm.nombre" placeholder="Nivel 1, Torre A, Ambiente 101..." class="form-input w-full">
+        </div>
+
+        <div>
+          <label class="form-label">Tipo de elemento *</label>
+          <select [(ngModel)]="elementoForm.tipo" class="form-select w-full">
+            <option *ngFor="let t of tiposDisponibles" [value]="t">{{ t }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="form-label">Descripción</label>
+          <textarea [(ngModel)]="elementoForm.descripcion" rows="3" placeholder="Descripción opcional..." class="form-input w-full"></textarea>
+        </div>
+
+      </div>
+
+      <!-- Pie del Drawer: Cancelar | Guardar elemento -->
+      <div class="p-4 border-t border-gray-100 dark:border-slate-800 flex justify-end gap-3 bg-gray-50/50 dark:bg-slate-800/30">
+        <button (click)="cerrarPanelLateral()" class="btn-outline text-xs" [disabled]="guardando">Cancelar</button>
+        <button (click)="guardarElemento()" class="btn-primary text-xs" [disabled]="guardando">
+          <span *ngIf="!guardando">{{ modoEdicion ? 'Actualizar' : 'Guardar elemento' }}</span>
+          <span *ngIf="guardando">Guardando...</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 12. MODAL DE CONFIRMACIÓN DE ELIMINACIÓN -->
+  <div *ngIf="mostrarModalEliminar && nodoAEliminar" class="modal-backdrop">
+    <div class="modal-card bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden p-6 space-y-4">
+      
+      <div class="flex items-center gap-3 text-red-600">
+        <div class="p-2.5 bg-red-100 dark:bg-red-950/40 rounded-xl">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-gray-900 dark:text-white">Eliminar "{{ nodoAEliminar.nombre }}"</h3>
+          <p class="text-xs text-gray-500">Esta acción no se puede deshacer.</p>
+        </div>
+      </div>
+
+      <div class="text-sm text-gray-600 dark:text-gray-300">
+        ¿Estás seguro de eliminar este elemento?
+        
+        <div *ngIf="contarDescendientes(nodoAEliminar) > 0" class="mt-3 p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 rounded-xl text-xs text-red-700 dark:text-red-400 leading-relaxed">
+          <strong>Advertencia:</strong> Este elemento contiene <strong>{{ contarDescendientes(nodoAEliminar) }}</strong> elementos dentro. La eliminación afectará toda su estructura.
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button (click)="cerrarModalEliminar()" class="btn-outline text-xs" [disabled]="guardando">Cancelar</button>
+        <button (click)="ejecutarEliminacion()" class="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-colors" [disabled]="guardando">
+          <span *ngIf="!guardando">Eliminar</span>
+          <span *ngIf="guardando">Eliminando...</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL RÁPIDO: VER DETALLES -->
+  <div *ngIf="mostrarModalDetalle && nodoDetalle" class="modal-backdrop">
+    <div class="modal-card bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden p-6 space-y-4">
+      <div class="flex justify-between items-start border-b border-gray-100 dark:border-slate-800 pb-3">
+        <div>
+          <span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded-md tracking-wider border bg-orange-50 text-orange-700 border-orange-200">
+            {{ nodoDetalle.tipo }}
+          </span>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white mt-1">{{ nodoDetalle.nombre }}</h3>
+        </div>
+        <button (click)="cerrarModalDetalle()" class="text-gray-400 hover:text-gray-600 p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div class="text-xs space-y-3 text-gray-600 dark:text-gray-300">
+        <div>
+          <strong class="text-gray-400 uppercase text-[10px] block">Descripción:</strong>
+          <p class="mt-0.5 text-sm">{{ nodoDetalle.descripcion || 'Sin descripción detallada registrada.' }}</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-2">
+          <div class="p-3 bg-gray-50 dark:bg-slate-800 rounded-xl">
+            <span class="text-[10px] text-gray-400 font-bold uppercase block">Subniveles Directos</span>
+            <span class="text-base font-bold text-gray-900 dark:text-white">{{ nodoDetalle.hijos ? nodoDetalle.hijos.length : 0 }}</span>
+          </div>
+          <div class="p-3 bg-gray-50 dark:bg-slate-800 rounded-xl">
+            <span class="text-[10px] text-gray-400 font-bold uppercase block">Descendientes Totales</span>
+            <span class="text-base font-bold text-gray-900 dark:text-white">{{ contarDescendientes(nodoDetalle) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-slate-800">
+        <button (click)="cerrarModalDetalle()" class="btn-outline text-xs">Cerrar</button>
+        <button *ngIf="esRolAutorizado()" (click)="abrirModalEditar(nodoDetalle); cerrarModalDetalle()" class="btn-primary text-xs">Editar</button>
+      </div>
+    </div>
+  </div>
+
+</div>

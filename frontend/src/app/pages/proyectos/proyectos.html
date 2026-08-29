@@ -141,6 +141,11 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                   </svg>
                 </button>
+                <button (click)="verEstructura(p.id_obra, $event)" class="p-1.5 text-gray-500 hover:text-green-600 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors" title="Estructura de la Obra">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                  </svg>
+                </button>
                 <button *ngIf="esRolAutorizado()" (click)="abrirModalEditar(p, $event)" class="p-1.5 text-gray-500 hover:text-blue-600 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors" title="Editar General">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
@@ -185,6 +190,11 @@
         <div class="space-y-4">
           <div class="flex items-center gap-2 border-b border-gray-100 dark:border-slate-800 pb-2">
             <span class="text-xs font-extrabold text-orange-600 uppercase tracking-wider">INFORMACIÓN GENERAL</span>
+          </div>
+
+          <div>
+            <label class="form-label">Nombre del Proyecto *</label>
+            <input type="text" [(ngModel)]="proyectoForm.nombre" placeholder="Ej. Condominio Los Pinos, Edificio Solaris, Tramo Norte..." class="form-input w-full font-bold text-sm">
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

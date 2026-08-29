@@ -7,6 +7,8 @@ import { ProyectosService, Proyecto } from '../../../services/proyectos';
 import { AuthService } from '../../../services/auth';
 import { environment } from '../../../../environments/environment';
 
+import { ProyectoEstructuraComponent } from '../estructura/proyecto-estructura';
+
 export interface UsuarioEmpresa {
   nro_usuario: number;
   nombre_completo: string;
@@ -16,7 +18,7 @@ export interface UsuarioEmpresa {
 @Component({
   selector: 'app-proyecto-detalle',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ProyectoEstructuraComponent],
   templateUrl: './proyecto-detalle.html',
   styleUrl: './proyecto-detalle.css'
 })
@@ -36,6 +38,9 @@ export class ProyectoDetalleComponent implements OnInit, OnDestroy {
   usuariosDisponibles: UsuarioEmpresa[] = [];
   idUsuarioSeleccionado: number | undefined;
 
+  // Control de pestañas
+  tabActivo: 'general' | 'estructura' = 'general';
+
   cargando: boolean = false;
   procesandoAccion: boolean = false;
   mensajeError: string = '';
@@ -53,6 +58,20 @@ export class ProyectoDetalleComponent implements OnInit, OnDestroy {
         this.router.navigate(['/proyectos']);
       }
     });
+
+    this.route.queryParamMap.subscribe(qp => {
+      const tab = qp.get('tab');
+      if (tab === 'estructura') {
+        this.tabActivo = 'estructura';
+      }
+    });
+  }
+
+  seleccionarTab(tab: 'general' | 'estructura') {
+    this.tabActivo = tab;
+    if (tab === 'general') {
+      this.iniciarMapaDetalle();
+    }
   }
 
   ngOnDestroy() {
