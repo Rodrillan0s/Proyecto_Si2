@@ -17,7 +17,7 @@ def password_cumple_requisitos(password: str) -> bool:
         and re.search(r'[^A-Za-z0-9\s]', password)
     ))
 
-def create_access_token(nro_usuario, username, nombre_rol, id_empresa, nombre_completo,nro_taller , minutes=120):
+def create_access_token(nro_usuario, username, nombre_rol, id_empresa, nombre_empresa, nombre_completo, nro_taller, minutes=120):
     """
     GENERA EL JWT PARA LA SESIÓN DEL USUARIO
     """
@@ -26,7 +26,8 @@ def create_access_token(nro_usuario, username, nombre_rol, id_empresa, nombre_co
         'username': username,
         'nombre_rol': nombre_rol,
         'id_empresa': id_empresa,
-        'nro_taller':nro_taller,
+        'nombre_empresa': nombre_empresa,
+        'nro_taller': nro_taller,
         'nombre_completo': nombre_completo,
         'exp': datetime.now(timezone.utc) + timedelta(minutes=minutes),
         'iat': datetime.now(timezone.utc)
@@ -34,6 +35,13 @@ def create_access_token(nro_usuario, username, nombre_rol, id_empresa, nombre_co
 
     # Usamos Config.TOKEN_KEY que definiste en tu archivo de configuración
     return jwt.encode(payload, Config.TOKEN_KEY, algorithm="HS256")
+
+
+def es_admin_sistema(token_data: dict) -> bool:
+    """Define si el usuario tiene permisos de plataforma usando el nombre de la empresa."""
+    nombre_rol = (token_data.get('nombre_rol') or '').upper()
+    nombre_empresa = (token_data.get('nombre_empresa') or '').upper().strip()
+    return nombre_rol == 'ADMINISTRADOR' and 'OBRATEC' in nombre_empresa
 
 
 def decode_access_token(token: str):

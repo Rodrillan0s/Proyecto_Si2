@@ -3,7 +3,8 @@ from app.utils import security
 from werkzeug.security import generate_password_hash
 
 def listar_usuarios(token_data: dict):
-    id_empresa = None if token_data.get('nombre_rol') == 'ADMINISTRADOR' else token_data.get('id_empresa')
+    es_superadmin = security.es_admin_sistema(token_data)
+    id_empresa = None if es_superadmin else token_data.get('id_empresa')
     usuarios = users_repos.obtener_todos_los_usuarios(id_empresa)
     return {
         "success": True,
@@ -18,7 +19,7 @@ def registrar_usuario(data: dict, token_data: dict):
             raise ValueError(f"El campo '{campo}' es obligatorio.")
     if not security.password_cumple_requisitos(data.get('password')):
         raise ValueError("La contraseña no cumple los requisitos de seguridad.")
-    es_admin_sistema = token_data.get('nombre_rol') == 'ADMINISTRADOR'
+    es_admin_sistema = security.es_admin_sistema(token_data)
     id_empresa = data.get('id_empresa') if es_admin_sistema else token_data.get('id_empresa')
     if not id_empresa:
         raise ValueError('El usuario administrador no tiene una empresa asociada.')
@@ -59,7 +60,7 @@ def actualizar_usuario(nro_usuario: int, data: dict, token_data: dict):
     for campo in campos_requeridos:
         if not data.get(campo):
             raise ValueError(f"El campo '{campo}' es obligatorio.")
-    es_admin_sistema = token_data.get('nombre_rol') == 'ADMINISTRADOR'
+    es_admin_sistema = security.es_admin_sistema(token_data)
     id_empresa = data.get('id_empresa') if es_admin_sistema else token_data.get('id_empresa')
     if not id_empresa:
         raise ValueError('El usuario administrador no tiene una empresa asociada.')
@@ -104,7 +105,8 @@ def borrar_usuario(nro_usuario: int, token_data: dict):
     if nro_usuario <= 0:
         raise ValueError("ID de usuario no válido.")
         
-    id_empresa = None if token_data.get('nombre_rol') == 'ADMINISTRADOR' else token_data.get('id_empresa')
+    es_superadmin = security.es_admin_sistema(token_data)
+    id_empresa = None if es_superadmin else token_data.get('id_empresa')
     if not users_repos.eliminar_usuario_db(nro_usuario, id_empresa):
         raise ValueError('No puede eliminar un usuario fuera de su empresa.')
     

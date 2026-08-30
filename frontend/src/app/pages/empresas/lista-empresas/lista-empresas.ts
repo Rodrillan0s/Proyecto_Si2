@@ -59,6 +59,7 @@ export class ListaEmpresasComponent implements OnInit {
     return {
       nombre_empresa: '',
       nit: '',
+      descripcion: '',
       estado: 'ACTIVO'
     };
   }

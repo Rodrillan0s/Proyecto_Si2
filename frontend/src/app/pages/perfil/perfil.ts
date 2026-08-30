@@ -121,7 +121,9 @@ export class PerfilComponent implements OnInit {
         ci: this.perfil.ci,
         telefono: this.perfil.telefono,
         correo: this.perfil.correo,
-        direccion: this.perfil.direccion
+        direccion: this.perfil.direccion,
+        id_empresa: this.perfil.id_empresa,
+        descripcion_empresa: this.perfil.descripcion_empresa || ''
       };
       this.modoEdicion = true;
     }
@@ -138,7 +140,9 @@ export class PerfilComponent implements OnInit {
       ci: this.perfilForm.ci,
       telefono: this.perfilForm.telefono,
       correo: this.perfilForm.correo,
-      direccion: this.perfilForm.direccion
+      direccion: this.perfilForm.direccion,
+      id_empresa: this.perfilForm.id_empresa,
+      descripcion_empresa: this.perfilForm.descripcion_empresa
     };
 
     this.perfilService.actualizarPerfil(payload).subscribe({

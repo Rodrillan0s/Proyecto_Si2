@@ -78,7 +78,8 @@ export class AdminLayoutComponent implements OnInit {
   }
 
   esAdministradorSistema(): boolean {
-    return this.usuarioActual?.nombre_rol === 'ADMINISTRADOR';
+    const nombreEmpresa = (this.usuarioActual?.nombre_empresa || '').toUpperCase();
+    return this.usuarioActual?.nombre_rol === 'ADMINISTRADOR' && nombreEmpresa.includes('OBRATEC');
   }
 
   // ------------------------------------------------------------------

@@ -48,6 +48,10 @@
           <p class="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Dirección Física</p>
           <p class="text-base font-medium text-gray-900 dark:text-white mt-1">{{ perfil.direccion || '—' }}</p>
         </div>
+        <div class="col-span-2" *ngIf="perfil.descripcion_empresa">
+          <p class="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Descripción de la Empresa</p>
+          <p class="text-base font-medium text-gray-900 dark:text-white mt-1 whitespace-pre-line">{{ perfil.descripcion_empresa }}</p>
+        </div>
       </div>
     </div>
 
@@ -103,13 +107,13 @@
           <input id="input-correo" type="email" name="correo" [(ngModel)]="perfilForm.correo" required class="w-full bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 rounded-sm p-2.5 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-500 focus:border-blue-900 dark:focus:border-blue-500 transition-colors">
         </div>
         <div>
-<<<<<<< HEAD
           <label class="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Dirección Física</label>
           <input id="input-direccion" type="text" name="direccion" [(ngModel)]="perfilForm.direccion" required class="w-full bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 rounded-sm p-2.5 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-500 focus:border-blue-900 dark:focus:border-blue-500 transition-colors">
-=======
-          <label class="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Direccion Fisica</label>
-          <input type="text" name="direccion" [(ngModel)]="perfilForm.direccion" required class="w-full bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 rounded-sm p-2.5 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-500 focus:border-blue-900 dark:focus:border-blue-500 transition-colors">
->>>>>>> a377cd91d3dce8ef4986f99357ff7434b5cf29bf
+        </div>
+
+        <div *ngIf="perfil?.id_empresa" class="md:col-span-2">
+          <label class="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Descripción de la Empresa</label>
+          <textarea id="input-descripcion-empresa" name="descripcion_empresa" rows="4" [(ngModel)]="perfilForm.descripcion_empresa" class="w-full bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 rounded-sm p-2.5 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-500 focus:border-blue-900 dark:focus:border-blue-500 transition-colors resize-none" placeholder="Escribe una pequeña descripción de la empresa..."></textarea>
         </div>
       </div>
       <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-slate-800">

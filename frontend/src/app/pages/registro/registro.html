@@ -29,11 +29,6 @@
         </ul>
       </div>
 
-      <label class="company-field">Empresa (opcional)
-        <input name="nombre_empresa" [(ngModel)]="formulario.nombre_empresa" placeholder="Déjalo vacío si eres cliente">
-        <span>Si escribes una empresa nueva, tu cuenta será su administrador inicial. Si lo dejas vacío, se creará como cliente.</span>
-      </label>
-
       <button class="submit-button" type="submit" [disabled]="cargando || form.invalid">
         {{ cargando ? 'Creando cuenta...' : 'Crear cuenta' }}
       </button>

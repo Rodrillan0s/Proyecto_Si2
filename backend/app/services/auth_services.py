@@ -79,6 +79,7 @@ def loguear_usuario(data: dict, user_agent: str = None, client_ip: str = None):
             res_db['username'],
             res_db["nombre_rol"],
             res_db['id_empresa'],
+            res_db['nombre_empresa'],
             res_db['nombre_completo'],
             None
         )

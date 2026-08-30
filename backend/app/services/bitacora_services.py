@@ -14,7 +14,7 @@ def registrar_evento_bitacora(id_usuario, modulo, accion, descripcion, ip, estad
     )
 
 
-def consultar_bitacora(fecha=None, id_usuario=None, usuario=None, accion=None, page=1, limit=20):
+def consultar_bitacora(fecha=None, id_usuario=None, usuario=None, accion=None, page=1, limit=20, id_empresa=None, es_admin_sistema=False):
     if fecha is not None:
         try:
             date.fromisoformat(fecha)
@@ -27,6 +27,8 @@ def consultar_bitacora(fecha=None, id_usuario=None, usuario=None, accion=None, p
         raise ValueError("El parámetro 'page' debe ser mayor que cero.")
     if limit < 1 or limit > 100:
         raise ValueError("El parámetro 'limit' debe estar entre 1 y 100.")
+    if not es_admin_sistema and id_empresa is None:
+        raise ValueError("No se pudo determinar la empresa del usuario autenticado.")
 
     resultado = bitacora_repos.obtener_bitacora(
         fecha=fecha,
@@ -35,6 +37,8 @@ def consultar_bitacora(fecha=None, id_usuario=None, usuario=None, accion=None, p
         accion=accion.strip() if accion else None,
         page=page,
         limit=limit,
+        id_empresa=id_empresa,
+        es_admin_sistema=es_admin_sistema,
     )
     total = resultado["total"]
 

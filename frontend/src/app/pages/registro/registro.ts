@@ -13,7 +13,6 @@ interface RegistroForm {
   telefono: string;
   correo: string;
   direccion: string;
-  nombre_empresa: string;
 }
 
 @Component({
@@ -35,8 +34,7 @@ export class RegistroComponent {
     confirmar_password: '',
     telefono: '',
     correo: '',
-    direccion: '',
-    nombre_empresa: ''
+    direccion: ''
   };
   mensajeError = '';
   cargando = false;
@@ -79,8 +77,7 @@ export class RegistroComponent {
       password: this.formulario.password,
       telefono: this.formulario.telefono,
       correo: this.formulario.correo,
-      direccion: this.formulario.direccion,
-      nombre_empresa: this.formulario.nombre_empresa
+      direccion: this.formulario.direccion
     }).subscribe({
       next: () => this.router.navigate(['/login'], { queryParams: { registrado: '1' } }),
       error: (error) => {

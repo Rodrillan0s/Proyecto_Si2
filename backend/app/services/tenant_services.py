@@ -10,10 +10,12 @@ def listar_empresas():
 
 def registrar_empresa(data: dict):
     nombre_empresa = data.get('nombre_empresa')
+    nit = data.get('nit')
+    descripcion = data.get('descripcion')
     
     if not nombre_empresa or len(nombre_empresa.strip()) == 0:
         raise ValueError("El campo 'nombre_empresa' es obligatorio.")
-    nuevo_id = tenant_repos.crear_empresa_db(nombre_empresa.upper(), None)
+    nuevo_id = tenant_repos.crear_empresa_db(nombre_empresa.upper(), nit, descripcion)
 
     return {
         "success": True,
@@ -26,13 +28,13 @@ def actualizar_empresa(id_empresa: int, data: dict):
         raise ValueError("ID de empresa no válido.")
         
     nombre_empresa = data.get('nombre_empresa')
+    nit = data.get('nit')
+    descripcion = data.get('descripcion')
     
     if not nombre_empresa or len(nombre_empresa.strip()) == 0:
         raise ValueError("El campo 'nombre_empresa' es obligatorio.")
-    # Guardamos el resultado de la base de datos
-    exito = tenant_repos.actualizar_empresa_db(id_empresa, nombre_empresa.upper(), None, None)
+    exito = tenant_repos.actualizar_empresa_db(id_empresa, nombre_empresa.upper(), nit, descripcion, None)
 
-    # Si exito es False, significa que el ID no existía
     if not exito:
         raise ValueError(f"No se pudo actualizar. La empresa con ID {id_empresa} no existe o ya fue eliminada.")
 

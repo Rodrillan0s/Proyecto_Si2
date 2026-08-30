@@ -78,7 +78,7 @@ def registrar_bitacora(
     )
 
 
-def obtener_bitacora(fecha=None, id_usuario=None, usuario=None, accion=None, page=1, limit=20):
+def obtener_bitacora(fecha=None, id_usuario=None, usuario=None, accion=None, page=1, limit=20, id_empresa=None, es_admin_sistema=False):
     pool = _obtener_pool_bitacora()
     conn = pool.getconn()
     db = PostgreSQL()
@@ -101,6 +101,9 @@ def obtener_bitacora(fecha=None, id_usuario=None, usuario=None, accion=None, pag
         if accion is not None:
             filtros.append("b.accion ILIKE %s")
             parametros.append(f"%{accion}%")
+        if not es_admin_sistema and id_empresa is not None:
+            filtros.append("u.id_empresa = %s")
+            parametros.append(id_empresa)
 
         where = f"WHERE {' AND '.join(filtros)}" if filtros else ""
         offset = (page - 1) * limit
