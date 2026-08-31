@@ -260,8 +260,8 @@ def eliminar_personalizacion(id_obra, id_unidad, id_personalizacion, token_data,
 
 
 def listar_materiales(id_obra, token_data):
-    _empresa_del_proyecto(id_obra, token_data)
-    return unidad_repos.listar_materiales_disponibles()
+    empresa = _empresa_del_proyecto(id_obra, token_data)
+    return unidad_repos.listar_materiales_disponibles(empresa)
 
 
 def reemplazar_materiales(id_obra, id_unidad, data, token_data, client_ip="unknown"):
@@ -284,7 +284,8 @@ def reemplazar_materiales(id_obra, id_unidad, data, token_data, client_ip="unkno
         if key in ids:
             raise ValueError("No puede repetir el mismo material y uso.")
         ids.add(key)
-    res = unidad_repos.reemplazar_materiales(id_obra, id_unidad, _id_empresa(token_data), materiales)
+    empresa = _empresa_del_proyecto(id_obra, token_data)
+    res = unidad_repos.reemplazar_materiales(id_obra, id_unidad, empresa, materiales)
     if not res.get("success"):
         raise ValueError(res.get("error"))
     bitacora_repos.registrar_bitacora(

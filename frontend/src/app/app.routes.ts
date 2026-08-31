@@ -15,6 +15,7 @@ import { RegistroComponent } from './pages/registro/registro';
 import { MainClienteComponent } from './pages/main-cliente/main-cliente';
 import { ProyectosComponent } from './pages/proyectos/proyectos';
 import { ProyectoDetalleComponent } from './pages/proyectos/detalle/proyecto-detalle';
+import { MaterialesComponent } from './pages/materiales/materiales';
 
 //LAYOUTS
 import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout';
@@ -43,6 +44,7 @@ export const routes: Routes = [
             { path: 'panel', component: PanelComponent },
             { path: 'proyectos', component: ProyectosComponent },
             { path: 'proyectos/:id', component: ProyectoDetalleComponent },
+            { path: 'materiales', component: MaterialesComponent },
             { path: 'usuarios', component: ListaUsuariosComponent, canActivate: [roleGuard], data: { roles: ['ADMINISTRADOR', 'ADMINISTRADOR_EMPRESA'] } },
             { path: 'roles', component: RolesComponent, canActivate: [roleGuard], data: { roles: ['ADMINISTRADOR', 'ADMINISTRADOR_EMPRESA'] } },
             { path: 'empresas', component: ListaEmpresasComponent, canActivate: [roleGuard], data: { roles: ['ADMINISTRADOR'] } },

@@ -294,16 +294,23 @@ def eliminar_personalizacion(id_obra, id_unidad, id_personalizacion, id_empresa)
         db.close_connection()
 
 
-def listar_materiales_disponibles() -> dict:
+def listar_materiales_disponibles(id_empresa: int) -> dict:
     db = PostgreSQL()
     db.create_connection()
     try:
         rows = db.execute_query(
-            "SELECT id_material, nombre_material, precio FROM obras.t_material ORDER BY nombre_material",
-            fetchall=True
+            """SELECT m.id_material, m.nombre_material, m.precio,
+                      um.id_unidad_medida, um.nombre, um.abreviatura
+               FROM obras.t_material m
+               LEFT JOIN obras.t_unidad_medida um ON um.id_unidad_medida=m.id_unidad_medida
+               WHERE m.estado='ACTIVO' AND m.id_empresa=%s
+               ORDER BY m.nombre_material""",
+            (id_empresa,), fetchall=True
         ) or []
         return {"success": True, "data": [
-            {"id_material": row[0], "nombre_material": row[1], "precio": row[2]} for row in rows
+            {"id_material": row[0], "nombre_material": row[1], "precio": row[2],
+             "unidad_medida": ({"id_unidad_medida": row[3], "nombre": row[4], "abreviatura": row[5]}
+                                if row[3] is not None else None)} for row in rows
         ]}
     finally:
         db.close_connection()
@@ -321,6 +328,18 @@ def reemplazar_materiales(id_obra, id_unidad, id_empresa, materiales: list) -> d
         """, (id_unidad, id_obra, id_empresa, id_empresa), fetchone=True)
         if not valid:
             return {"success": False, "error": "La unidad no existe o no pertenece a su empresa."}
+        ids_material = sorted({item["id_material"] for item in materiales})
+        if ids_material:
+            valid_materials = db.execute_query("""
+                SELECT COUNT(*)
+                FROM obras.t_material
+                WHERE id_material = ANY(%s) AND id_empresa=%s AND estado='ACTIVO'
+            """, (ids_material, id_empresa), fetchone=True)
+            if not valid_materials or valid_materials[0] != len(ids_material):
+                return {
+                    "success": False,
+                    "error": "Uno o más materiales no existen, están inactivos o pertenecen a otra empresa."
+                }
         db.execute_query("DELETE FROM obras.t_unidad_material WHERE id_unidad=%s", (id_unidad,))
         for item in materiales:
             db.execute_query("""
