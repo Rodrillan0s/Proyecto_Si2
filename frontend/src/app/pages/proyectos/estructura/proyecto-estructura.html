@@ -69,7 +69,6 @@
           </svg>
           + Agregar elemento
         </button>
-
       </div>
     </div>
 
@@ -184,11 +183,11 @@
             Nivel Superior
           </button>
           
-          <button *ngIf="esRolAutorizado()" (click)="abrirModalNuevo(nodoActual || undefined)" class="btn-primary text-xs flex items-center gap-1">
+          <button *ngIf="esRolAutorizado() && (!nodoActual || puedeAgregarElemento(nodoActual))" (click)="abrirModalNuevo(nodoActual || undefined)" class="btn-primary text-xs flex items-center gap-1">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
             </svg>
-            {{ nodoActual ? '+ Agregar dentro de ' + nodoActual.nombre : '+ Agregar elemento' }}
+            {{ nodoActual ? '+ Agregar elemento dentro de ' + nodoActual.nombre : '+ Agregar elemento' }}
           </button>
         </div>
       </div>
@@ -224,11 +223,20 @@
                 <div *ngIf="menuAbiertoId === nodo.id_estructura"
                      (click)="$event.stopPropagation()"
                      class="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-gray-100 dark:border-slate-700 py-1.5 z-30 text-xs">
-                  <button (click)="abrirModalNuevo(nodo); cerrarMenu()" class="w-full text-left px-3.5 py-2 hover:bg-orange-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                  <button *ngIf="puedeAgregarElemento(nodo)" (click)="abrirModalNuevo(nodo); cerrarMenu()" class="w-full text-left px-3.5 py-2 hover:bg-orange-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 flex items-center gap-2">
                     <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                     </svg>
-                    Agregar dentro
+                    Agregar elemento dentro
+                  </button>
+                  <button *ngIf="puedeAgregarUnidad(nodo)" (click)="abrirUnidadNueva(nodo)" class="w-full text-left px-3.5 py-2 hover:bg-green-50 dark:hover:bg-slate-700 text-green-700 dark:text-green-400">
+                    Agregar unidad dentro
+                  </button>
+                  <button *ngIf="puedeConvertirEnUnidad(nodo)" (click)="convertirNodoEnUnidad(nodo)" class="w-full text-left px-3.5 py-2 hover:bg-green-50 dark:hover:bg-slate-700 text-green-700 dark:text-green-400">
+                    Convertir en unidad
+                  </button>
+                  <button *ngIf="esUnidad(nodo)" (click)="verUnidad(nodo)" class="w-full text-left px-3.5 py-2 hover:bg-green-50 dark:hover:bg-slate-700 text-green-700 dark:text-green-400">
+                    Ver unidad
                   </button>
                   <button (click)="abrirModalEditar(nodo); cerrarMenu()" class="w-full text-left px-3.5 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 flex items-center gap-2">
                     <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -248,7 +256,7 @@
                     <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                     </svg>
-                    Eliminar
+                    {{ esUnidad(nodo) ? 'Eliminar unidad' : 'Eliminar' }}
                   </button>
                 </div>
               </div>
@@ -257,34 +265,45 @@
             <h4 class="text-base font-bold text-gray-900 dark:text-white group-hover:text-orange-600 transition-colors">
               {{ nodo.nombre }}
             </h4>
+            <span *ngIf="esUnidad(nodo)" class="inline-flex mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400">
+              Unidad · {{ unidadDeNodo(nodo)?.codigo }}
+            </span>
             
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
               {{ nodo.descripcion || 'Sin descripción adicional.' }}
             </p>
           </div>
 
-          <div class="mt-4 pt-3 border-t border-gray-100 dark:border-slate-800/80 flex items-center justify-between">
+          <div class="mt-4 pt-3 border-t border-gray-100 dark:border-slate-800/80 flex items-center justify-between gap-2">
             <span class="text-xs text-gray-400 font-medium">
               {{ nodo.hijos ? nodo.hijos.length : 0 }} {{ (nodo.hijos && nodo.hijos.length === 1) ? 'subnivel' : 'subniveles' }}
             </span>
 
-            <button *ngIf="nodo.hijos && nodo.hijos.length > 0" 
-                    (click)="entrarNivel(nodo)" 
-                    class="text-xs font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1">
-              Ver estructura →
-            </button>
+            <div class="flex items-center justify-end gap-2 flex-wrap">
+              <button *ngIf="nodo.hijos && nodo.hijos.length > 0"
+                      (click)="entrarNivel(nodo)"
+                      class="text-xs font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1">
+                Ver estructura →
+              </button>
 
-            <button *ngIf="!nodo.hijos || nodo.hijos.length === 0" 
-                    (click)="abrirModalNuevo(nodo)" 
-                    class="text-xs font-semibold text-gray-400 hover:text-orange-600 flex items-center gap-1">
-              + Agregar nivel
-            </button>
+              <button *ngIf="esRolAutorizado() && puedeAgregarElemento(nodo)"
+                      (click)="abrirModalNuevo(nodo)"
+                      class="text-xs font-semibold text-gray-400 hover:text-orange-600 flex items-center gap-1">
+                Agregar elemento dentro
+              </button>
+
+              <button *ngIf="esRolAutorizado() && puedeAgregarUnidad(nodo)"
+                      (click)="abrirUnidadNueva(nodo)"
+                      class="text-xs font-semibold text-green-700 dark:text-green-400 hover:text-green-800 flex items-center gap-1">
+                Agregar unidad dentro
+              </button>
+            </div>
           </div>
 
         </div>
 
         <!-- Tarjeta Rápida "+ Agregar elemento" -->
-        <div *ngIf="esRolAutorizado()"
+        <div *ngIf="esRolAutorizado() && (!nodoActual || puedeAgregarElemento(nodoActual))"
              (click)="abrirModalNuevo(nodoActual || undefined)"
              class="border-2 border-dashed border-gray-200 dark:border-slate-800 hover:border-orange-400 dark:hover:border-orange-500 rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer group transition-all min-h-[10rem]">
           <div class="p-3 bg-orange-50 dark:bg-orange-950/30 text-orange-600 rounded-xl group-hover:scale-110 transition-transform">
@@ -293,7 +312,7 @@
             </svg>
           </div>
           <span class="text-xs font-bold text-gray-800 dark:text-gray-200 mt-3 group-hover:text-orange-600">
-            {{ nodoActual ? '+ Agregar dentro de ' + nodoActual.nombre : '+ Agregar elemento raíz' }}
+            {{ nodoActual ? '+ Agregar elemento dentro de ' + nodoActual.nombre : '+ Agregar elemento raíz' }}
           </span>
           <span class="text-[10px] text-gray-400 mt-0.5">Crear un nuevo nivel en esta vista</span>
         </div>
@@ -340,6 +359,10 @@
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2 flex-wrap">
               <span class="font-bold text-gray-900 dark:text-white text-sm tracking-tight truncate">{{ nodo.nombre }}</span>
+              <button *ngIf="esUnidad(nodo)" (click)="verUnidad(nodo); $event.stopPropagation()"
+                      class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400">
+                Unidad · {{ unidadDeNodo(nodo)?.codigo }}
+              </button>
               
               <span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded-md tracking-wider border"
                     [ngClass]="{
@@ -366,14 +389,23 @@
         <!-- 4. ACCIONES EN HOVER Y MENÚ CONTEXTUAL ⋮ -->
         <div class="flex items-center gap-1.5 flex-shrink-0">
           
-          <!-- Botón de acción rápida visible en hover: [+] Agregar dentro -->
-          <button *ngIf="esRolAutorizado()" (click)="abrirModalNuevo(nodo); $event.stopPropagation()"
+          <!-- Botón de acción rápida visible en hover: [+] Agregar elemento dentro -->
+          <button *ngIf="esRolAutorizado() && puedeAgregarElemento(nodo)" (click)="abrirModalNuevo(nodo); $event.stopPropagation()"
                   class="hidden sm:inline-flex items-center gap-1 text-xs font-semibold text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/50 px-2.5 py-1 rounded-lg border border-orange-200/60 dark:border-orange-800/40 transition-colors"
                   title="Agregar elemento dentro de {{ nodo.nombre }}">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
             </svg>
-            Agregar dentro
+            Agregar elemento dentro
+          </button>
+
+          <button *ngIf="esRolAutorizado() && puedeAgregarUnidad(nodo)" (click)="abrirUnidadNueva(nodo); $event.stopPropagation()"
+                  class="hidden sm:inline-flex items-center gap-1 text-xs font-semibold text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-slate-700 px-2.5 py-1 rounded-lg border border-green-300 transition-colors"
+                  title="Agregar unidad dentro de {{ nodo.nombre }}">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            Agregar unidad dentro
           </button>
 
           <!-- Botón de acción rápida: [✏️] Editar -->
@@ -400,11 +432,20 @@
                  (click)="$event.stopPropagation()"
                  class="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-gray-100 dark:border-slate-700 py-1.5 z-30 text-xs">
               
-              <button (click)="abrirModalNuevo(nodo); cerrarMenu()" class="w-full text-left px-3.5 py-2 hover:bg-orange-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 flex items-center gap-2">
+              <button *ngIf="puedeAgregarElemento(nodo)" (click)="abrirModalNuevo(nodo); cerrarMenu()" class="w-full text-left px-3.5 py-2 hover:bg-orange-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 flex items-center gap-2">
                 <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
-                Agregar dentro
+                Agregar elemento dentro
+              </button>
+              <button *ngIf="puedeAgregarUnidad(nodo)" (click)="abrirUnidadNueva(nodo)" class="w-full text-left px-3.5 py-2 hover:bg-green-50 dark:hover:bg-slate-700 text-green-700 dark:text-green-400">
+                Agregar unidad dentro
+              </button>
+              <button *ngIf="puedeConvertirEnUnidad(nodo)" (click)="convertirNodoEnUnidad(nodo)" class="w-full text-left px-3.5 py-2 hover:bg-green-50 dark:hover:bg-slate-700 text-green-700 dark:text-green-400">
+                Convertir en unidad
+              </button>
+              <button *ngIf="esUnidad(nodo)" (click)="verUnidad(nodo)" class="w-full text-left px-3.5 py-2 hover:bg-green-50 dark:hover:bg-slate-700 text-green-700 dark:text-green-400">
+                Ver unidad
               </button>
 
               <button (click)="abrirModalEditar(nodo); cerrarMenu()" class="w-full text-left px-3.5 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 flex items-center gap-2">
@@ -444,7 +485,7 @@
                 <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                 </svg>
-                Eliminar
+                {{ esUnidad(nodo) ? 'Eliminar unidad' : 'Eliminar' }}
               </button>
             </div>
           </div>
@@ -545,23 +586,37 @@
           </svg>
         </div>
         <div>
-          <h3 class="text-base font-bold text-gray-900 dark:text-white">Eliminar "{{ nodoAEliminar.nombre }}"</h3>
+          <h3 class="text-base font-bold text-gray-900 dark:text-white">
+            {{ esUnidad(nodoAEliminar) ? 'Eliminar unidad' : 'Eliminar' }} "{{ nodoAEliminar.nombre }}"
+          </h3>
           <p class="text-xs text-gray-500">Esta acción no se puede deshacer.</p>
         </div>
       </div>
 
       <div class="text-sm text-gray-600 dark:text-gray-300">
-        ¿Estás seguro de eliminar este elemento?
-        
-        <div *ngIf="contarDescendientes(nodoAEliminar) > 0" class="mt-3 p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 rounded-xl text-xs text-red-700 dark:text-red-400 leading-relaxed">
-          <strong>Advertencia:</strong> Este elemento contiene <strong>{{ contarDescendientes(nodoAEliminar) }}</strong> elementos dentro. La eliminación afectará toda su estructura.
-        </div>
+        <ng-container *ngIf="esUnidad(nodoAEliminar); else confirmacionElemento">
+          ¿Estás seguro de eliminar esta unidad? Se eliminarán sus ambientes, características,
+          personalizaciones, seguimiento y materiales asociados, además de su nodo estructural.
+
+          <div *ngIf="contarDescendientes(nodoAEliminar) > 0" class="mt-3 p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 rounded-xl text-xs text-red-700 dark:text-red-400 leading-relaxed">
+            <strong>No se puede eliminar:</strong> La unidad contiene <strong>{{ contarDescendientes(nodoAEliminar) }}</strong> elementos dentro.
+          </div>
+        </ng-container>
+
+        <ng-template #confirmacionElemento>
+          ¿Estás seguro de eliminar este elemento?
+
+          <div *ngIf="contarDescendientes(nodoAEliminar) > 0" class="mt-3 p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 rounded-xl text-xs text-red-700 dark:text-red-400 leading-relaxed">
+            <strong>Advertencia:</strong> Este elemento contiene <strong>{{ contarDescendientes(nodoAEliminar) }}</strong> elementos dentro. La eliminación afectará toda su estructura.
+          </div>
+        </ng-template>
       </div>
 
       <div class="flex justify-end gap-2 pt-2">
         <button (click)="cerrarModalEliminar()" class="btn-outline text-xs" [disabled]="guardando">Cancelar</button>
-        <button (click)="ejecutarEliminacion()" class="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-colors" [disabled]="guardando">
-          <span *ngIf="!guardando">Eliminar</span>
+        <button (click)="ejecutarEliminacion()" class="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-colors"
+                [disabled]="guardando || (esUnidad(nodoAEliminar) && contarDescendientes(nodoAEliminar) > 0)">
+          <span *ngIf="!guardando">{{ esUnidad(nodoAEliminar) ? 'Eliminar unidad' : 'Eliminar' }}</span>
           <span *ngIf="guardando">Eliminando...</span>
         </button>
       </div>
@@ -608,6 +663,180 @@
         <button (click)="cerrarModalDetalle()" class="btn-outline text-xs">Cerrar</button>
         <button *ngIf="esRolAutorizado()" (click)="abrirModalEditar(nodoDetalle); cerrarModalDetalle()" class="btn-primary text-xs">Editar</button>
       </div>
+    </div>
+  </div>
+
+  <!-- CU12: FORMULARIO INTEGRAL DE UNIDAD -->
+  <div *ngIf="mostrarPanelUnidad" class="modal-backdrop">
+    <div class="modal-card bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto p-6 space-y-6">
+      <div class="flex justify-between items-start border-b border-gray-100 dark:border-slate-800 pb-4">
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-widest text-green-600">CU12 · Unidad de construcción</span>
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white">{{ editandoUnidad ? 'Modificar unidad' : (unidadForm.id_estructura ? 'Convertir nodo en unidad' : 'Registrar unidad') }}</h3>
+          <p class="text-xs text-gray-500 mt-1">El nodo y la unidad se guardan en una sola transacción.</p>
+        </div>
+        <button (click)="cerrarPanelUnidad()" class="text-gray-400 hover:text-gray-700 text-xl">×</button>
+      </div>
+
+      <section class="space-y-3">
+        <h4 class="text-xs font-black uppercase tracking-wider text-gray-500">Identificación</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Código automático</label>
+            <input class="form-input w-full bg-gray-50 dark:bg-slate-800" [value]="unidadForm.codigo || 'Se generará al guardar'" readonly>
+          </div>
+          <div>
+            <label class="form-label">Nombre *</label>
+            <input class="form-input w-full" [(ngModel)]="unidadForm.nombre"
+                   [readonly]="convirtiendoNodo"
+                   [ngClass]="{'bg-gray-50 dark:bg-slate-800': convirtiendoNodo}" placeholder="Departamento 101">
+          </div>
+          <div>
+            <label class="form-label">Tipo de unidad *</label>
+            <select class="form-select w-full" [(ngModel)]="unidadForm.tipo_unidad">
+              <option *ngFor="let tipo of tiposUnidad" [value]="tipo">{{ formatearEtiqueta(tipo) }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Estado individual *</label>
+            <select class="form-select w-full" [(ngModel)]="unidadForm.estado" [disabled]="editandoUnidad">
+              <option *ngFor="let estado of estadosUnidad" [value]="estado">{{ formatearEtiqueta(estado) }}</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Descripción</label>
+          <textarea class="form-input w-full" rows="2" [(ngModel)]="unidadForm.descripcion"
+                    [readonly]="convirtiendoNodo"
+                    [ngClass]="{'bg-gray-50 dark:bg-slate-800': convirtiendoNodo}" placeholder="Descripción opcional"></textarea>
+          <p *ngIf="convirtiendoNodo" class="text-xs text-gray-400 mt-1">
+            La conversión conserva el nombre y la descripción del nodo de estructura.
+          </p>
+        </div>
+      </section>
+
+      <section class="space-y-3 border-t border-gray-100 dark:border-slate-800 pt-5">
+        <div class="flex justify-between items-center">
+          <h4 class="text-xs font-black uppercase tracking-wider text-gray-500">Modelo y características base</h4>
+          <div *ngIf="esRolAutorizado()" class="flex gap-3">
+            <button *ngIf="unidadForm.id_modelo" (click)="editarModeloSeleccionado()" class="text-xs font-bold text-blue-600">Editar modelo seleccionado</button>
+            <button (click)="abrirNuevoModelo()" class="text-xs font-bold text-orange-600">+ Nuevo modelo</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="form-label">Modelo opcional</label>
+            <select class="form-select w-full" [(ngModel)]="unidadForm.id_modelo" (ngModelChange)="aplicarModelo()">
+              <option [ngValue]="null">Sin modelo</option>
+              <option *ngFor="let modelo of modelos" [ngValue]="modelo.id_modelo">{{ modelo.nombre }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Superficie (m²) *</label>
+            <input type="number" min="0" step="0.01" class="form-input w-full" [(ngModel)]="unidadForm.superficie">
+          </div>
+          <div>
+            <label class="form-label">Cantidad de plantas *</label>
+            <input type="number" min="0" step="1" class="form-input w-full" [(ngModel)]="unidadForm.cantidad_plantas">
+          </div>
+        </div>
+      </section>
+
+      <section class="space-y-3 border-t border-gray-100 dark:border-slate-800 pt-5">
+        <div class="flex justify-between items-center">
+          <h4 class="text-xs font-black uppercase tracking-wider text-gray-500">Ambientes</h4>
+          <button (click)="agregarAmbiente()" class="text-xs font-bold text-orange-600">+ Agregar ambiente</button>
+        </div>
+        <div *ngFor="let ambiente of unidadForm.ambientes || []; let i = index" class="grid grid-cols-[1fr_8rem_auto] gap-2 items-end">
+          <div><label class="form-label">Nombre/tipo</label><input class="form-input w-full" [(ngModel)]="ambiente.nombre" placeholder="Dormitorio"></div>
+          <div><label class="form-label">Cantidad</label><input type="number" min="1" class="form-input w-full" [(ngModel)]="ambiente.cantidad"></div>
+          <button (click)="quitarAmbiente(i)" class="btn-outline text-red-600">Quitar</button>
+        </div>
+        <p *ngIf="(unidadForm.ambientes || []).length === 0" class="text-xs text-gray-400">No se registraron ambientes.</p>
+      </section>
+
+      <section class="space-y-3 border-t border-gray-100 dark:border-slate-800 pt-5">
+        <div class="flex justify-between items-center">
+          <h4 class="text-xs font-black uppercase tracking-wider text-gray-500">Características constructivas</h4>
+          <button (click)="agregarCaracteristica()" class="text-xs font-bold text-orange-600">+ Agregar característica</button>
+        </div>
+        <div *ngFor="let caracteristica of unidadForm.caracteristicas || []; let i = index" class="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
+          <div><label class="form-label">Característica</label><input class="form-input w-full" [(ngModel)]="caracteristica.nombre" placeholder="Sistema constructivo"></div>
+          <div><label class="form-label">Valor</label><input class="form-input w-full" [(ngModel)]="caracteristica.valor" placeholder="Hormigón armado"></div>
+          <button (click)="quitarCaracteristica(i)" class="btn-outline text-red-600">Quitar</button>
+        </div>
+      </section>
+
+      <div class="flex justify-end gap-2 border-t border-gray-100 dark:border-slate-800 pt-4">
+        <button (click)="cerrarPanelUnidad()" class="btn-outline" [disabled]="guardando">Cancelar</button>
+        <button (click)="guardarUnidad()" class="btn-primary" [disabled]="guardando">{{ guardando ? 'Guardando...' : 'Guardar unidad' }}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CU12: DETALLE INDIVIDUAL -->
+  <div *ngIf="mostrarDetalleUnidad && unidadDetalle" class="modal-backdrop">
+    <div class="modal-card bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] overflow-y-auto p-6 space-y-6">
+      <div class="flex justify-between items-start border-b border-gray-100 dark:border-slate-800 pb-4">
+        <div>
+          <div class="flex gap-2 items-center"><span class="font-mono text-xs font-bold text-orange-600">{{ unidadDetalle.codigo }}</span><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700">{{ formatearEtiqueta(unidadDetalle.estado) }}</span></div>
+          <h3 class="text-2xl font-black text-gray-900 dark:text-white mt-1">{{ unidadDetalle.nombre }}</h3>
+          <p class="text-xs text-gray-500">{{ unidadDetalle.ruta_jerarquica }}</p>
+        </div>
+        <button (click)="cerrarDetalleUnidad()" class="text-gray-400 hover:text-gray-700 text-xl">×</button>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="p-3 rounded-xl bg-gray-50 dark:bg-slate-800"><span class="text-[10px] uppercase font-bold text-gray-400 block">Tipo</span><strong>{{ formatearEtiqueta(unidadDetalle.tipo_unidad) }}</strong></div>
+        <div class="p-3 rounded-xl bg-gray-50 dark:bg-slate-800"><span class="text-[10px] uppercase font-bold text-gray-400 block">Superficie</span><strong>{{ unidadDetalle.superficie | number:'1.2-2' }} m²</strong></div>
+        <div class="p-3 rounded-xl bg-gray-50 dark:bg-slate-800"><span class="text-[10px] uppercase font-bold text-gray-400 block">Plantas</span><strong>{{ unidadDetalle.cantidad_plantas }}</strong></div>
+        <div class="p-3 rounded-xl bg-gray-50 dark:bg-slate-800"><span class="text-[10px] uppercase font-bold text-gray-400 block">Modelo</span><strong>{{ unidadDetalle.modelo_nombre || 'Sin modelo' }}</strong></div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <section class="space-y-2"><h4 class="font-bold">Ambientes</h4><div *ngFor="let a of unidadDetalle.ambientes" class="flex justify-between text-sm border-b border-gray-100 dark:border-slate-800 py-1"><span>{{ a.nombre }}</span><strong>{{ a.cantidad }}</strong></div><p *ngIf="unidadDetalle.ambientes.length === 0" class="text-xs text-gray-400">Sin ambientes.</p></section>
+        <section class="space-y-2"><h4 class="font-bold">Características</h4><div *ngFor="let c of unidadDetalle.caracteristicas" class="flex justify-between gap-3 text-sm border-b border-gray-100 dark:border-slate-800 py-1"><span>{{ c.nombre }}</span><strong class="text-right">{{ c.valor }}</strong></div><p *ngIf="unidadDetalle.caracteristicas.length === 0" class="text-xs text-gray-400">Sin características adicionales.</p></section>
+      </div>
+
+      <section class="space-y-3 border-t border-gray-100 dark:border-slate-800 pt-4">
+        <h4 class="font-bold">Estado y seguimiento individual</h4>
+        <div *ngIf="esRolAutorizado()" class="grid grid-cols-1 md:grid-cols-[14rem_1fr_auto] gap-2">
+          <select class="form-select" [ngModel]="unidadDetalle.estado" #estadoUnidad><option *ngFor="let estado of estadosUnidad" [value]="estado">{{ formatearEtiqueta(estado) }}</option></select>
+          <input class="form-input" [(ngModel)]="estadoObservacion" placeholder="Observación del cambio">
+          <button class="btn-primary" (click)="cambiarEstadoUnidad(estadoUnidad.value)">Actualizar estado</button>
+        </div>
+        <div *ngFor="let s of unidadDetalle.seguimiento || []" class="text-xs border-l-2 border-orange-400 pl-3 py-1"><strong>{{ formatearEtiqueta(s.estado_nuevo) }}</strong><span class="text-gray-400"> · {{ s.fecha | date:'dd/MM/yyyy HH:mm' }}</span><p *ngIf="s.observacion" class="text-gray-600 dark:text-gray-300">{{ s.observacion }}</p></div>
+      </section>
+
+      <section class="space-y-3 border-t border-gray-100 dark:border-slate-800 pt-4">
+        <h4 class="font-bold">Personalizaciones</h4>
+        <div *ngFor="let p of unidadDetalle.personalizaciones || []" class="flex justify-between gap-3 p-3 bg-gray-50 dark:bg-slate-800 rounded-xl text-sm"><div><strong>{{ formatearEtiqueta(p.tipo) }}</strong><p>{{ p.descripcion }}</p></div><button *ngIf="esRolAutorizado()" (click)="eliminarPersonalizacion(p.id_personalizacion)" class="text-red-600 text-xs">Eliminar</button></div>
+        <div *ngIf="esRolAutorizado()" class="grid grid-cols-1 md:grid-cols-[12rem_1fr_auto] gap-2"><select class="form-select" [(ngModel)]="personalizacionForm.tipo"><option value="MATERIAL">Material</option><option value="ACABADO">Acabado</option><option value="AMBIENTE">Ambiente</option><option value="SUPERFICIE">Superficie</option><option value="CONSTRUCTIVO">Cambio constructivo</option><option value="OTRO">Otro</option></select><input class="form-input" [(ngModel)]="personalizacionForm.descripcion" placeholder="Descripción de la personalización"><button class="btn-primary" (click)="agregarPersonalizacion()">Agregar</button></div>
+      </section>
+
+      <section class="space-y-3 border-t border-gray-100 dark:border-slate-800 pt-4">
+        <div><h4 class="font-bold">Materiales y acabados</h4><p class="text-xs text-gray-400">Asociación a materiales existentes; el catálogo y almacén corresponden a CU14.</p></div>
+        <div *ngFor="let m of unidadDetalle.materiales || []; let i=index" class="grid grid-cols-[1fr_auto] gap-3 p-3 bg-gray-50 dark:bg-slate-800 rounded-xl text-sm"><div><strong>{{ m.nombre_material }}</strong><p>{{ m.cantidad }} {{ m.unidad_medida || '' }} · {{ m.uso_ubicacion || 'Uso no especificado' }}<span *ngIf="m.acabado"> · Acabado: {{ m.acabado }}</span></p></div><button *ngIf="esRolAutorizado()" (click)="quitarMaterialUnidad(i)" class="text-red-600 text-xs">Quitar</button></div>
+        <div *ngIf="esRolAutorizado() && materialesDisponibles.length > 0" class="grid grid-cols-2 md:grid-cols-7 gap-2"><select class="form-select" [(ngModel)]="materialForm.id_material"><option [ngValue]="0">Material...</option><option *ngFor="let material of materialesDisponibles" [ngValue]="material.id_material">{{ material.nombre_material }}</option></select><input type="number" min="0.001" class="form-input" [(ngModel)]="materialForm.cantidad" placeholder="Cantidad"><input class="form-input" [(ngModel)]="materialForm.unidad_medida" placeholder="Unidad de medida"><input class="form-input" [(ngModel)]="materialForm.uso_ubicacion" placeholder="Uso/ubicación"><input class="form-input" [(ngModel)]="materialForm.acabado" placeholder="Acabado"><input class="form-input" [(ngModel)]="materialForm.observacion" placeholder="Observación"><button class="btn-primary" (click)="agregarMaterialUnidad()">Asociar</button></div>
+        <p *ngIf="materialesDisponibles.length === 0" class="text-xs text-amber-600">CU14 aún no dispone de materiales en el catálogo.</p>
+      </section>
+
+      <section class="grid grid-cols-1 md:grid-cols-3 gap-3 border-t border-gray-100 dark:border-slate-800 pt-4 text-xs text-gray-500"><div class="p-3 border rounded-xl dark:border-slate-700"><strong class="block text-gray-700 dark:text-gray-200">Actividades</strong>Integración pendiente del módulo canónico.</div><div class="p-3 border rounded-xl dark:border-slate-700"><strong class="block text-gray-700 dark:text-gray-200">Recursos</strong>Integración pendiente del módulo canónico.</div><div class="p-3 border rounded-xl dark:border-slate-700"><strong class="block text-gray-700 dark:text-gray-200">Presupuesto</strong>No se reutiliza el presupuesto general como presupuesto de unidad.</div></section>
+
+      <div class="flex justify-end gap-2"><button (click)="cerrarDetalleUnidad()" class="btn-outline">Cerrar</button><button *ngIf="esRolAutorizado()" (click)="editarUnidad()" class="btn-primary">Editar unidad</button></div>
+    </div>
+  </div>
+
+  <!-- CU12: MODELO BÁSICO POR EMPRESA -->
+  <div *ngIf="mostrarModalModelo" class="modal-backdrop">
+    <div class="modal-card bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-800 w-full max-w-xl p-6 space-y-4">
+      <div class="flex justify-between"><div><span class="text-[10px] uppercase font-bold text-orange-600">Modelo de unidad</span><h3 class="text-lg font-bold">{{ editandoModelo ? 'Editar modelo base' : 'Nuevo modelo base' }}</h3></div><button (click)="cerrarModalModelo()" class="text-xl text-gray-400">×</button></div>
+      <input class="form-input w-full" [(ngModel)]="modeloForm.nombre" placeholder="Nombre del modelo *">
+      <div class="grid grid-cols-3 gap-2"><select class="form-select" [(ngModel)]="modeloForm.tipo_unidad"><option *ngFor="let tipo of tiposUnidad" [value]="tipo">{{ formatearEtiqueta(tipo) }}</option></select><input type="number" min="0" class="form-input" [(ngModel)]="modeloForm.superficie_base" placeholder="Superficie"><input type="number" min="0" class="form-input" [(ngModel)]="modeloForm.cantidad_plantas_base" placeholder="Plantas"></div>
+      <textarea class="form-input w-full" [(ngModel)]="modeloForm.descripcion" placeholder="Descripción"></textarea>
+      <div class="flex justify-between"><strong class="text-xs uppercase text-gray-500">Características base</strong><button (click)="agregarCaracteristicaModelo()" class="text-xs text-orange-600 font-bold">+ Agregar</button></div>
+      <div *ngFor="let c of modeloForm.caracteristicas || []; let i = index" class="grid grid-cols-[1fr_1fr_auto] gap-2"><input class="form-input" [(ngModel)]="c.nombre" placeholder="Característica"><input class="form-input" [(ngModel)]="c.valor" placeholder="Valor"><button (click)="quitarCaracteristicaModelo(i)" class="btn-outline text-red-600">Quitar</button></div>
+      <div class="flex justify-end gap-2"><button (click)="cerrarModalModelo()" class="btn-outline" [disabled]="guardandoModelo">Cancelar</button><button (click)="guardarModelo()" class="btn-primary" [disabled]="guardandoModelo">{{ guardandoModelo ? 'Guardando...' : (editandoModelo ? 'Actualizar modelo' : 'Guardar modelo') }}</button></div>
     </div>
   </div>
 
