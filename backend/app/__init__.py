@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import Config
 
-from app.routes import main_routes, auth_routes, users_routes, tenant_routes, roles_routes, backup_routes, profile_routes, notificaciones_routes, password_recovery_routes, bitacora_routes, obra_routes, estructura_routes, unidad_routes, material_routes
+from app.routes import main_routes, auth_routes, users_routes, tenant_routes, roles_routes, backup_routes, profile_routes, notificaciones_routes, password_recovery_routes, bitacora_routes, obra_routes, estructura_routes, unidad_routes, material_routes, proveedor_routes
 
 
 
@@ -40,5 +40,6 @@ def create_app() -> FastAPI:
     app.include_router(estructura_routes.router)
     app.include_router(unidad_routes.router)
     app.include_router(material_routes.router,prefix='/api/materiales')
+    app.include_router(proveedor_routes.router,prefix='/api/proveedores')
     
     return app
