@@ -1,4 +1,3 @@
-//api_client.dart
 import 'package:dio/dio.dart';
 import '../config/app_config.dart';
 import 'token_storage.dart';
@@ -7,8 +6,8 @@ class ApiClient {
   static final Dio dio = Dio(
     BaseOptions(
       baseUrl: AppConfig.apiBaseUrl,
-      connectTimeout: const Duration(seconds: 20),
-      receiveTimeout: const Duration(seconds: 20),
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -17,18 +16,22 @@ class ApiClient {
   )..interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          // Inyectar el token automáticamente en CADA petición que hagas
+          final customUrl = await TokenStorage.getValue('custom_api_url');
+          if (customUrl != null && customUrl.trim().isNotEmpty) {
+            options.baseUrl = customUrl.trim();
+          } else {
+            options.baseUrl = AppConfig.apiBaseUrl;
+          }
+
           final token = await TokenStorage.getToken();
-          if (token != null) {
+          if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
           }
           return handler.next(options);
         },
         onError: (DioException e, handler) async {
-          // Si el token expira (401), aquí podrías forzar el cierre de sesión
           if (e.response?.statusCode == 401) {
             await TokenStorage.clearToken();
-            // TODO: Redirigir al LoginScreen
           }
           return handler.next(e);
         },

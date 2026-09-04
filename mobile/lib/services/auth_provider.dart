@@ -1,4 +1,3 @@
-//auth_provider.dart
 import 'package:flutter/material.dart';
 import 'token_storage.dart';
 
@@ -9,10 +8,29 @@ class AuthProvider extends ChangeNotifier {
   bool get estaAutenticado => _estaAutenticado;
   Map<String, String>? get datosUsuario => _datosUsuario;
 
+  String? get usuarioCompleto => _datosUsuario?['nombre_completo'] ?? _datosUsuario?['nombre'];
+  String? get rol => _datosUsuario?['nombre_rol'] ?? _datosUsuario?['rol'];
+  String? get correo => _datosUsuario?['correo'];
+  String? get ci => _datosUsuario?['ci'];
+  String? get idEmpresa => _datosUsuario?['id_empresa'];
+
   Future<void> verificarSesion() async {
     final token = await TokenStorage.getToken();
-    if (token != null) {
+    if (token != null && token.isNotEmpty) {
       _estaAutenticado = true;
+      final nombre = await TokenStorage.getValue('nombre_completo') ?? '';
+      final rol = await TokenStorage.getValue('nombre_rol') ?? '';
+      final correo = await TokenStorage.getValue('correo') ?? '';
+      final ci = await TokenStorage.getValue('ci') ?? '';
+      final idEmpresa = await TokenStorage.getValue('id_empresa') ?? '';
+
+      _datosUsuario = {
+        'nombre_completo': nombre,
+        'nombre_rol': rol,
+        'correo': correo,
+        'ci': ci,
+        'id_empresa': idEmpresa,
+      };
       notifyListeners();
     }
   }
@@ -23,10 +41,14 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void logout() {
+  Future<void> cerrarSesion() async {
     _estaAutenticado = false;
     _datosUsuario = null;
-    TokenStorage.clearToken();
+    await TokenStorage.clearToken();
     notifyListeners();
+  }
+
+  void logout() {
+    cerrarSesion();
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'theme/app_theme.dart';
+import 'theme/theme_provider.dart';
 import 'services/auth_provider.dart';
 import 'screens/auth_screens.dart';
 import 'screens/home_screen.dart';
@@ -9,24 +10,19 @@ import 'screens/home_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-    ),
-  );
-
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);
 
-  // Verificar sesión antes de arrancar
   final authProvider = AuthProvider();
   await authProvider.verificarSesion();
 
   runApp(
-    ChangeNotifierProvider.value(
-      value: authProvider,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: authProvider),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+      ],
       child: const ConstructorApp(),
     ),
   );
@@ -37,10 +33,14 @@ class ConstructorApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProv = context.watch<ThemeProvider>();
+
     return MaterialApp(
-      title: 'Plataforma de Gestión Base',
+      title: 'OBRATEC Mobile — Gestión de Obras',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.theme,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeProv.themeMode,
       home: const _RootRouter(),
     );
   }

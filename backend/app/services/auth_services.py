@@ -6,7 +6,7 @@ from datetime import datetime, timezone, timedelta
 import hashlib
 
 def loguear_usuario(data: dict, user_agent: str = None, client_ip: str = None):
-    identificador = data.get('ci')
+    identificador = data.get('ci') or data.get('identificador') or data.get('usuario') or data.get('correo')
     password = data.get('password')
 
     if not identificador or not password:
@@ -14,8 +14,6 @@ def loguear_usuario(data: dict, user_agent: str = None, client_ip: str = None):
 
     if isinstance(identificador, str):
         identificador = identificador.strip()
-        if "@" not in identificador:
-            identificador = identificador.upper()
 
     db = PostgreSQL()
     db.create_connection()
@@ -127,7 +125,13 @@ def registrar_nuevo_usuario(data: dict):
     persona_existe = auth_repos.existe_persona_por_ci(ci)
             
     #PREPARAR DATOS Y ENCRIPTAR LA CONSTRASEÑA
-    password_plana = data.get('password')
+    password_plana = data.get('password') or ''
+    if len(password_plana) < 8:
+        raise ValueError("La contraseña debe tener al menos 8 caracteres.")
+    import re
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\/`~;]', password_plana):
+        raise ValueError("La contraseña debe contener al menos 1 símbolo especial (ej. @, #, $, %, *, !).")
+
     data['password_hash'] = generate_password_hash(password_plana)
     data['estado'] = 'ACTIVO'
     
