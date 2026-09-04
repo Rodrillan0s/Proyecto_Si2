@@ -46,6 +46,8 @@ export interface MaterialListResponse { success: boolean; data: Material[]; pagi
 export interface ApiResponse<T> { success: boolean; data: T; message?: string; }
 export interface MaterialMutationResponse { success: boolean; message: string; id_material?: number; }
 export interface MaterialFilters { q?: string; id_categoria?: number; estado?: EstadoMaterial; stock_bajo?: boolean; page?: number; limit?: number; }
+export interface CategoriaCreatePayload { nombre: string; descripcion: string | null; }
+export interface CategoriaMutationResponse { success: boolean; data: CategoriaMaterial; message: string; }
 
 @Injectable({ providedIn: 'root' })
 export class MaterialsService {
@@ -65,5 +67,6 @@ export class MaterialsService {
   modificar(id: number, payload: MaterialUpdatePayload): Observable<MaterialMutationResponse> { return this.http.put<MaterialMutationResponse>(`${this.url}/${id}`, payload); }
   cambiarEstado(id: number, estado: EstadoMaterial): Observable<MaterialMutationResponse> { return this.http.patch<MaterialMutationResponse>(`${this.url}/${id}/estado`, { estado }); }
   categorias(): Observable<ApiResponse<CategoriaMaterial[]>> { return this.http.get<ApiResponse<CategoriaMaterial[]>>(`${this.url}/categorias`); }
+  crearCategoria(payload: CategoriaCreatePayload): Observable<CategoriaMutationResponse> { return this.http.post<CategoriaMutationResponse>(`${this.url}/categorias`, payload); }
   unidadesMedida(): Observable<ApiResponse<UnidadMedida[]>> { return this.http.get<ApiResponse<UnidadMedida[]>>(`${this.url}/unidades-medida`); }
 }

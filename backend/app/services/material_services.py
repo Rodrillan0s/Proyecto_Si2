@@ -113,5 +113,22 @@ def categorias(token):
     _empresa(token); return {"success":True,"data":material_repos.catalogo_activo("categorias")}
 
 
+def _validar_categoria(data):
+    if not isinstance(data, dict): raise MaterialError("El cuerpo debe ser un objeto válido.")
+    nombre = str(data.get("nombre") or "").strip()
+    if not nombre: raise MaterialError("El nombre de la categoría es obligatorio.")
+    descripcion = str(data.get("descripcion") or "").strip() or None
+    return nombre, descripcion
+
+
+def crear_categoria(data, token, ip="unknown"):
+    _empresa(token)
+    nombre, descripcion = _validar_categoria(data)
+    try: categoria = material_repos.crear_categoria(nombre, descripcion)
+    except material_repos.MaterialConflictError as exc: raise MaterialError(str(exc), 409)
+    _log(token,"REGISTRAR_CATEGORIA_MATERIAL",f"Categoría {categoria['id_categoria']} ({nombre}) registrada.",ip)
+    return {"success":True,"data":categoria,"message":"Categoría registrada exitosamente."}
+
+
 def unidades_medida(token):
     _empresa(token); return {"success":True,"data":material_repos.catalogo_activo("unidades")}

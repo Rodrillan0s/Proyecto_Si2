@@ -51,6 +51,19 @@ def referencia_activa(tabla, id_value):
     finally: db.close_connection()
 
 
+def crear_categoria(nombre, descripcion):
+    db = PostgreSQL(); db.create_connection()
+    try:
+        row = db.execute_query(
+            """INSERT INTO obras.t_categoria_material(nombre,descripcion,estado)
+               VALUES(%s,%s,'ACTIVO') RETURNING id_categoria,nombre,descripcion""",
+            (nombre, descripcion), fetchone=True, commit=True)
+        return {"id_categoria": row[0], "nombre": row[1], "descripcion": row[2]}
+    except errors.UniqueViolation as exc:
+        raise MaterialConflictError("Ya existe una categoría con ese nombre.") from exc
+    finally: db.close_connection()
+
+
 def crear(id_empresa, data):
     db = PostgreSQL(); db.create_connection()
     try:

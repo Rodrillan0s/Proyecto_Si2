@@ -23,6 +23,12 @@ def get_unidades_medida(token=Depends(exigir_permiso("Visualizar_materiales"))):
     except material_services.MaterialError as exc: _raise(exc)
 
 
+@router.post("/categorias", status_code=201)
+def post_categoria(request: Request, data: dict = Body(...), token=Depends(exigir_permiso("Registrar_materiales"))):
+    try: return material_services.crear_categoria(data, token, _ip(request))
+    except material_services.MaterialError as exc: _raise(exc)
+
+
 @router.get("")
 def get_materiales(q: str = None, id_categoria: int = None, estado: str = None,
                    stock_bajo: bool = None, page: int = 1, limit: int = Query(20, le=100),
