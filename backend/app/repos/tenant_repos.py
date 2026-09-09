@@ -6,9 +6,8 @@ def obtener_todas_las_empresas():
     db = PostgreSQL()
     db.create_connection()
     try:
-        # Se quitó el filtro WHERE estado = 'ACTIVO' para mostrar todo
         query = f"""
-            SELECT id_empresa, nombre_empresa
+            SELECT id_empresa, nombre_empresa, nit, descripcion
             FROM {Config.SCHEMA}.t_empresa
             ORDER BY id_empresa ASC;
         """
@@ -20,7 +19,8 @@ def obtener_todas_las_empresas():
                 empresas.append({
                     "id_empresa": r[0],
                     "nombre_empresa": r[1],
-                    "nit": None,
+                    "nit": r[2],
+                    "descripcion": r[3],
                     "estado": "ACTIVO"
                 })
         return empresas
@@ -28,33 +28,34 @@ def obtener_todas_las_empresas():
         db.close_connection()
 
 # --- CREAR EMPRESA ---
-def crear_empresa_db(nombre_empresa, nit):
+def crear_empresa_db(nombre_empresa, nit=None, descripcion=None):
     db = PostgreSQL()
     db.create_connection()
     try:
         query = f"""
-            INSERT INTO {Config.SCHEMA}.t_empresa (nombre_empresa)
-            VALUES (%s)
+            INSERT INTO {Config.SCHEMA}.t_empresa (nombre_empresa, nit, descripcion)
+            VALUES (%s, %s, %s)
             RETURNING id_empresa;
         """
-        resultado = db.execute_query(query, (nombre_empresa,), fetchone=True, commit=True)
+        resultado = db.execute_query(query, (nombre_empresa, nit, descripcion), fetchone=True, commit=True)
         return resultado[0] if resultado else None
     finally:
         db.close_connection()
 
 # --- ACTUALIZAR EMPRESA ---
-def actualizar_empresa_db(id_empresa, nombre_empresa, nit, estado):
+def actualizar_empresa_db(id_empresa, nombre_empresa, nit=None, descripcion=None, estado=None):
     db = PostgreSQL()
     db.create_connection()
     try:
         query = f"""
             UPDATE {Config.SCHEMA}.t_empresa
-            SET nombre_empresa = %s
+            SET nombre_empresa = %s,
+                nit = %s,
+                descripcion = %s
             WHERE id_empresa = %s;
         """
-        # Guardamos cuántas filas se actualizaron realmente
-        filas_afectadas = db.execute_query(query, (nombre_empresa, id_empresa), commit=True)
-        return filas_afectadas > 0 # Retorna True si afectó al menos 1 fila, False si es 0
+        filas_afectadas = db.execute_query(query, (nombre_empresa, nit, descripcion, id_empresa), commit=True)
+        return filas_afectadas > 0
     finally:
         db.close_connection()
 

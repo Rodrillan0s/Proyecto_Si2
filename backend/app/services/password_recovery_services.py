@@ -11,6 +11,7 @@ from werkzeug.security import generate_password_hash
 from app.config import Config
 from app.repos import password_recovery_repos
 from app.services import email_service
+from app.utils import security
 
 
 MENSAJE_SOLICITUD_GENERICO = (
@@ -255,14 +256,7 @@ def _validar_password_cu04(
             "Las contraseñas no coinciden."
         )
 
-    cumple_requisitos = (
-        len(password_nueva) >= 8
-        and re.search(r"[A-Z]", password_nueva)
-        and re.search(r"[a-z]", password_nueva)
-        and re.search(r"[0-9]", password_nueva)
-        and re.search(r"[^A-Za-z0-9\s]", password_nueva)
-    )
-    if not cumple_requisitos:
+    if not security.password_cumple_requisitos(password_nueva):
         raise PasswordRecuperacionInvalidoError(
             "La nueva contraseña no cumple los requisitos de seguridad."
         )

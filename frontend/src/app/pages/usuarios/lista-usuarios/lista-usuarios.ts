@@ -89,7 +89,9 @@ export class ListaUsuariosComponent implements OnInit {
   ];
 
   esAdministradorSistema(): boolean {
-    return this.authService.obtenerUsuario()?.nombre_rol === 'ADMINISTRADOR';
+    const usuario = this.authService.obtenerUsuario();
+    const nombreEmpresa = (usuario?.nombre_empresa || '').toUpperCase();
+    return usuario?.nombre_rol === 'ADMINISTRADOR' && nombreEmpresa.includes('OBRATEC');
   }
 
   rolesVisibles() {

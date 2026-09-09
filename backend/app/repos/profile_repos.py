@@ -10,8 +10,9 @@ def get_profile(nro_usuario):
         query=f'''
             SELECT B.ci, A.username, NULL AS fecha_registro, A.id_usuario,
                    'ACTIVO' AS estado, A.id_rol, A.id_empresa, E.nombre_empresa,
-                   B.nombre_completo, B.telefono, A.correo, B.direccion,
-                   C.nombre_rol, 0 AS cant_vehiculos
+                   E.descripcion AS descripcion_empresa, B.nombre_completo,
+                   B.telefono, A.correo, B.direccion, C.nombre_rol,
+                   0 AS cant_vehiculos
             FROM {Config.SCHEMA}.t_usuario A
             LEFT JOIN {Config.SCHEMA}.t_persona B ON A.id_persona = B.id_persona
             LEFT JOIN {Config.SCHEMA}.t_rol C ON A.id_rol = C.id_rol
@@ -40,7 +41,6 @@ def update_profile(data:dict):
     try:
         db.create_connection()
 
-       #PREPARAR INSERT PERSONA
         query=f"""
             UPDATE {Config.SCHEMA}.t_persona
             SET telefono=%s, direccion=%s
@@ -65,6 +65,25 @@ def update_profile(data:dict):
             """
             param_user=(data['password_hash'],data['nro_usuario'])
             db.execute_query(query_user,param_user)
+
+        empresa_id = data.get('id_empresa')
+        if empresa_id is None:
+            query_empresa_id = f"""
+                SELECT id_empresa
+                FROM {Config.SCHEMA}.t_usuario
+                WHERE id_usuario = %s
+            """
+            res_empresa = db.execute_query(query_empresa_id, (data['nro_usuario'],), fetchone=True)
+            if res_empresa:
+                empresa_id = res_empresa[0]
+
+        if empresa_id is not None and 'descripcion_empresa' in data:
+            query_empresa = f"""
+                UPDATE {Config.SCHEMA}.t_empresa
+                SET descripcion = %s
+                WHERE id_empresa = %s
+            """
+            db.execute_query(query_empresa, (data.get('descripcion_empresa'), empresa_id))
 
         db.conn.commit()
         
