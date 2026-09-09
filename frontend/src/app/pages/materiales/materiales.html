@@ -1,0 +1,128 @@
+<section class="materials-page">
+  <div class="toast toast-success" *ngIf="exito" role="status">{{ exito }}</div>
+  <div class="toast toast-error" *ngIf="error" role="alert">{{ error }}</div>
+
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">CATÁLOGO</p>
+      <h1>Gestión de Materiales</h1>
+      <p>Administra el catálogo y disponibilidad de materiales de la empresa.</p>
+    </div>
+    <button *ngIf="puedeRegistrar()" type="button" class="btn-primary" (click)="abrirNuevo()" [disabled]="savingMaterial">
+      <span aria-hidden="true">＋</span> Nuevo material
+    </button>
+  </header>
+
+  <div class="filters-card">
+    <div class="search-field">
+      <label for="buscar-material">Buscar materiales</label>
+      <div class="search-wrap">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
+        <input id="buscar-material" type="search" [(ngModel)]="q" (ngModelChange)="buscar()" placeholder="Buscar por código o nombre...">
+      </div>
+    </div>
+    <div>
+      <label for="filtro-categoria">Categoría</label>
+      <select id="filtro-categoria" [(ngModel)]="categoria" (change)="filtrar()">
+        <option value="">Todas</option><option *ngFor="let c of categorias" [value]="c.id_categoria">{{ c.nombre }}</option>
+      </select>
+    </div>
+    <div>
+      <label for="filtro-estado">Estado</label>
+      <select id="filtro-estado" [(ngModel)]="estado" (change)="filtrar()">
+        <option value="">Todos</option><option value="ACTIVO">Activo</option><option value="INACTIVO">Inactivo</option>
+      </select>
+    </div>
+    <div>
+      <label for="filtro-stock">Stock</label>
+      <select id="filtro-stock" [(ngModel)]="stock" (change)="filtrar()">
+        <option value="">Todos</option><option value="normal">Stock normal</option><option value="bajo">Stock bajo</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="table-card" [attr.aria-busy]="loadingMaterials">
+    <div class="loading" *ngIf="loadingMaterials"><span class="spinner"></span><span>Cargando materiales...</span></div>
+    <ng-container *ngIf="!loadingMaterials">
+      <div class="empty" *ngIf="materiales.length === 0">
+        <div class="empty-icon" aria-hidden="true">▦</div>
+        <h2>{{ total === 0 && !q && !categoria && !estado && !stock ? 'No hay materiales registrados.' : 'No se encontraron materiales con los filtros seleccionados.' }}</h2>
+        <button *ngIf="total === 0 && !q && !categoria && !estado && !stock && puedeRegistrar()" class="btn-primary" (click)="abrirNuevo()">Registrar primer material</button>
+        <button *ngIf="q || categoria || estado || stock" class="btn-secondary" (click)="limpiarFiltros()">Limpiar filtros</button>
+      </div>
+      <div class="table-scroll" *ngIf="materiales.length > 0">
+        <table>
+          <thead><tr><th>Código</th><th>Material</th><th>Categoría</th><th>Unidad</th><th>Stock actual</th><th>Stock mínimo</th><th>Estado</th><th class="actions-head">Acciones</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let m of materiales">
+              <td><span class="code">{{ m.codigo }}</span></td>
+              <td><strong>{{ m.nombre_material }}</strong><span class="stock-label" [ngClass]="'stock-' + stockEstado(m)">{{ stockEstado(m) === 'sin' ? 'Sin stock' : stockEstado(m) === 'bajo' ? 'Stock bajo' : 'Stock normal' }}</span></td>
+              <td>{{ m.categoria.nombre }}</td><td>{{ m.unidad_medida.nombre }} <small>({{ m.unidad_medida.abreviatura }})</small></td>
+              <td class="number">{{ m.stock_actual }}</td><td class="number">{{ m.stock_minimo }}</td>
+              <td><span class="badge" [class.active]="m.estado === 'ACTIVO'" [class.inactive]="m.estado === 'INACTIVO'">{{ m.estado === 'ACTIVO' ? 'Activo' : 'Inactivo' }}</span></td>
+              <td class="actions">
+                <button type="button" (click)="abrirDetalle(m)" [disabled]="loadingDetail">Ver</button>
+                <button *ngIf="puedeModificar()" type="button" (click)="abrirEditar(m)" [disabled]="loadingDetail">Editar</button>
+                <button *ngIf="puedeCambiarEstado()" type="button" [class.danger]="m.estado === 'ACTIVO'" [class.reactivate]="m.estado === 'INACTIVO'" (click)="confirmarEstado(m)" [disabled]="changingStatus">{{ m.estado === 'ACTIVO' ? 'Desactivar' : 'Reactivar' }}</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <footer class="pagination" *ngIf="materiales.length > 0">
+        <p>{{ total }} material{{ total === 1 ? '' : 'es' }}</p>
+        <div><button (click)="cambiarPagina(pagina - 1)" [disabled]="pagina <= 1">Anterior</button><span>Página {{ pagina }} de {{ totalPaginas }}</span><button (click)="cambiarPagina(pagina + 1)" [disabled]="pagina >= totalPaginas">Siguiente</button></div>
+      </footer>
+    </ng-container>
+  </div>
+</section>
+
+<div class="modal-backdrop" *ngIf="modal" (click)="cerrarModal()">
+  <section class="modal" [class.modal-wide]="modal === 'formulario'" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" [attr.aria-labelledby]="modal === 'formulario' ? 'form-title' : modal === 'detalle' ? 'detail-title' : 'confirm-title'">
+    <ng-container *ngIf="modal === 'formulario'">
+      <header class="modal-header"><div><p class="eyebrow">{{ editando ? 'HU46' : 'HU45' }}</p><h2 id="form-title">{{ editando ? 'Modificar material' : 'Registrar material' }}</h2></div><button class="close" (click)="cerrarModal()" aria-label="Cerrar">×</button></header>
+      <form class="modal-form" (ngSubmit)="guardar()" #materialForm="ngForm">
+        <div class="modal-body">
+          <fieldset><legend>Datos generales</legend><div class="form-grid">
+            <div><label for="codigo">Código *</label><input id="codigo" name="codigo" [(ngModel)]="form.codigo" required maxlength="50"></div>
+            <div><label for="nombre">Nombre *</label><input id="nombre" name="nombre" [(ngModel)]="form.nombre_material" required maxlength="150"></div>
+            <div class="span-2"><label for="descripcion">Descripción</label><textarea id="descripcion" name="descripcion" [(ngModel)]="form.descripcion" rows="2"></textarea></div>
+            <div><label for="categoria-form">Categoría *</label><select id="categoria-form" name="id_categoria" [(ngModel)]="form.id_categoria" required><option [ngValue]="0" disabled>Selecciona una categoría</option><option *ngFor="let c of categorias" [ngValue]="c.id_categoria">{{ c.nombre }}</option></select></div>
+            <div><label for="unidad-form">Unidad de medida *</label><select id="unidad-form" name="id_unidad_medida" [(ngModel)]="form.id_unidad_medida" required><option [ngValue]="0" disabled>Selecciona una unidad</option><option *ngFor="let u of unidades" [ngValue]="u.id_unidad_medida">{{ u.nombre }} ({{ u.abreviatura }})</option></select></div>
+            <div><label for="precio">Precio</label><input id="precio" name="precio" type="number" min="0" step="0.01" [(ngModel)]="form.precio"></div>
+            <div *ngIf="editando"><label>Stock actual</label><div class="readonly-value">{{ form.stock_actual }} <span>Solo lectura</span></div></div>
+          </div></fieldset>
+          <fieldset><div class="legend-row"><legend>Características</legend><button type="button" class="btn-link" (click)="agregarCaracteristica()">＋ Agregar característica</button></div>
+            <p class="hint" *ngIf="form.caracteristicas.length === 0">Agrega datos como marca, peso o presentación.</p>
+            <div class="feature-row" *ngFor="let c of form.caracteristicas; let i = index; trackBy: trackCaracteristica"><input [id]="'car-nombre-'+i" [name]="'car-nombre-'+i" aria-label="Nombre de característica" placeholder="Nombre característica" [(ngModel)]="c.nombre"><input [name]="'car-valor-'+i" aria-label="Valor de característica" placeholder="Valor" [(ngModel)]="c.valor"><button type="button" (click)="quitarCaracteristica(i)" aria-label="Quitar característica">Quitar</button></div>
+          </fieldset>
+          <fieldset><legend>Información de almacén</legend><div class="form-grid">
+            <div *ngIf="!editando"><label for="cantidad-inicial">Cantidad inicial *</label><input id="cantidad-inicial" name="cantidad_inicial" type="number" min="0" step="0.01" [(ngModel)]="form.cantidad_inicial" required><p class="hint">Cantidad disponible al registrar el material.</p></div>
+            <div><label for="stock-minimo">Stock mínimo *</label><input id="stock-minimo" name="stock_minimo" type="number" min="0" step="0.01" [(ngModel)]="form.stock_minimo" required><p class="hint">Umbral para identificar materiales con bajo stock.</p></div>
+            <div *ngIf="!editando"><label for="fecha-ingreso">Fecha de ingreso *</label><input id="fecha-ingreso" name="fecha_ingreso" type="date" [(ngModel)]="form.fecha_ingreso" required></div>
+          </div></fieldset>
+        </div>
+        <footer class="modal-footer"><button type="button" class="btn-secondary" (click)="cerrarModal()" [disabled]="operacionFormularioActiva">Cancelar</button><button type="submit" class="btn-primary" [disabled]="operacionFormularioActiva || materialForm.invalid"><span class="spinner small" *ngIf="operacionFormularioActiva"></span>{{ operacionFormularioActiva ? 'Guardando...' : editando ? 'Guardar cambios' : 'Registrar material' }}</button></footer>
+      </form>
+    </ng-container>
+
+    <ng-container *ngIf="modal === 'detalle' && detalle">
+      <header class="modal-header"><div><p class="eyebrow">DETALLE</p><h2 id="detail-title">{{ detalle.nombre_material }}</h2><p class="code">{{ detalle.codigo }}</p></div><button class="close" (click)="cerrarModal()" aria-label="Cerrar">×</button></header>
+      <div class="modal-body detail-grid">
+        <div><span>Categoría</span><strong>{{ detalle.categoria.nombre }}</strong></div><div><span>Unidad</span><strong>{{ detalle.unidad_medida.nombre }} ({{ detalle.unidad_medida.abreviatura }})</strong></div>
+        <div><span>Precio</span><strong>{{ detalle.precio | number:'1.2-2' }}</strong></div><div><span>Estado</span><strong>{{ detalle.estado === 'ACTIVO' ? 'Activo' : 'Inactivo' }}</strong></div>
+        <div><span>Stock actual</span><strong>{{ detalle.stock_actual }}</strong></div><div><span>Stock mínimo</span><strong>{{ detalle.stock_minimo }}</strong></div>
+        <div class="span-2"><span>Disponibilidad</span><strong class="stock-label" [ngClass]="'stock-' + stockEstado(detalle)">{{ stockEstado(detalle) === 'sin' ? 'Sin stock' : stockEstado(detalle) === 'bajo' ? 'Stock bajo' : 'Stock normal' }}</strong></div>
+        <div class="span-2" *ngIf="detalle.descripcion"><span>Descripción</span><p>{{ detalle.descripcion }}</p></div>
+        <div class="span-2" *ngIf="detalle.caracteristicas?.length"><span>Características</span><ul><li *ngFor="let c of detalle.caracteristicas"><strong>{{ c.nombre }}:</strong> {{ c.valor }}</li></ul></div>
+        <div *ngIf="detalle.created_at"><span>Registrado</span><strong>{{ detalle.created_at | date:'dd/MM/yyyy HH:mm' }}</strong></div><div *ngIf="detalle.updated_at"><span>Última actualización</span><strong>{{ detalle.updated_at | date:'dd/MM/yyyy HH:mm' }}</strong></div>
+      </div><footer class="modal-footer"><button class="btn-secondary" (click)="cerrarModal()">Cerrar</button></footer>
+    </ng-container>
+
+    <ng-container *ngIf="modal === 'confirmacion' && objetivoEstado">
+      <header class="modal-header"><h2 id="confirm-title">{{ objetivoEstado.estado === 'ACTIVO' ? '¿Deseas desactivar este material?' : '¿Deseas reactivar este material?' }}</h2><button class="close" (click)="cerrarModal()" aria-label="Cerrar">×</button></header>
+      <div class="modal-body"><p *ngIf="objetivoEstado.estado === 'ACTIVO'">El material permanecerá registrado para conservar la trazabilidad, pero ya no estará disponible para nuevas asociaciones.</p><p *ngIf="objetivoEstado.estado === 'INACTIVO'">El material volverá a estar disponible para nuevas asociaciones.</p><p class="confirm-name">{{ objetivoEstado.codigo }} · {{ objetivoEstado.nombre_material }}</p></div>
+      <footer class="modal-footer"><button class="btn-secondary" (click)="cerrarModal()" [disabled]="changingStatus">Cancelar</button><button class="btn-primary" [class.btn-danger]="objetivoEstado.estado === 'ACTIVO'" (click)="cambiarEstado()" [disabled]="changingStatus">{{ changingStatus ? 'Procesando...' : objetivoEstado.estado === 'ACTIVO' ? 'Desactivar' : 'Reactivar' }}</button></footer>
+    </ng-container>
+  </section>
+</div>

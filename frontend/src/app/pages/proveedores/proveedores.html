@@ -1,0 +1,357 @@
+<section class="suppliers-page">
+  <!-- TOASTS -->
+  <div class="toast toast-success" *ngIf="exito" role="status">{{ exito }}</div>
+  <div class="toast toast-error"   *ngIf="error"  role="alert">{{ error }}</div>
+
+  <!-- ENCABEZADO -->
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">CU15</p>
+      <h1>Gestión de Proveedores</h1>
+      <p>Administra los proveedores de la empresa y sus materiales asociados.</p>
+    </div>
+    <button
+      *ngIf="puedeRegistrar()"
+      id="btn-nuevo-proveedor"
+      type="button"
+      class="btn-primary"
+      (click)="abrirNuevo()"
+      [disabled]="savingProveedor">
+      <span aria-hidden="true">＋</span> Nuevo proveedor
+    </button>
+  </header>
+
+  <!-- FILTROS -->
+  <div class="filters-card">
+    <div class="search-field">
+      <label for="buscar-proveedor">Buscar proveedores</label>
+      <div class="search-wrap">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
+        <input
+          id="buscar-proveedor"
+          type="search"
+          [(ngModel)]="q"
+          (ngModelChange)="buscar()"
+          placeholder="Buscar por nombre, NIT, email o contacto...">
+      </div>
+    </div>
+    <div>
+      <label for="filtro-estado-prov">Estado</label>
+      <select id="filtro-estado-prov" [(ngModel)]="estado" (change)="filtrar()">
+        <option value="">Todos</option>
+        <option value="ACTIVO">Activo</option>
+        <option value="INACTIVO">Inactivo</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <div class="table-card" [attr.aria-busy]="loadingProveedores">
+
+    <!-- CARGANDO -->
+    <div class="loading" *ngIf="loadingProveedores">
+      <span class="spinner"></span>
+      <span>Cargando proveedores...</span>
+    </div>
+
+    <ng-container *ngIf="!loadingProveedores">
+
+      <!-- LISTA VACÍA -->
+      <div class="empty" *ngIf="proveedores.length === 0">
+        <div class="empty-icon" aria-hidden="true">🏭</div>
+        <h2>{{ total === 0 && !q && !estado ? 'No hay proveedores registrados.' : 'No se encontraron proveedores con los filtros seleccionados.' }}</h2>
+        <button
+          *ngIf="total === 0 && !q && !estado && puedeRegistrar()"
+          class="btn-primary"
+          (click)="abrirNuevo()">
+          Registrar primer proveedor
+        </button>
+        <button
+          *ngIf="q || estado"
+          class="btn-secondary"
+          (click)="limpiarFiltros()">
+          Limpiar filtros
+        </button>
+      </div>
+
+      <!-- TABLA DE RESULTADOS -->
+      <div class="table-scroll" *ngIf="proveedores.length > 0">
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre / Razón social</th>
+              <th>NIT</th>
+              <th>Teléfono</th>
+              <th>Email</th>
+              <th>Contacto</th>
+              <th>Estado</th>
+              <th class="actions-head">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of proveedores">
+              <td><strong>{{ p.nombre }}</strong></td>
+              <td><span class="code">{{ p.nit }}</span></td>
+              <td>{{ p.telefono || '—' }}</td>
+              <td>{{ p.email    || '—' }}</td>
+              <td>{{ p.contacto || '—' }}</td>
+              <td>
+                <span class="badge" [class.active]="p.estado === 'ACTIVO'" [class.inactive]="p.estado === 'INACTIVO'">
+                  {{ p.estado === 'ACTIVO' ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td class="actions">
+                <button type="button" (click)="abrirDetalle(p)" [disabled]="loadingDetalle">Ver</button>
+                <button *ngIf="puedeModificar()"     type="button" (click)="abrirEditar(p)"             [disabled]="loadingDetalle">Editar</button>
+                <button *ngIf="puedeRegistrar()"     type="button" class="associate" (click)="abrirAsociarMateriales(p)">Materiales</button>
+                <button *ngIf="puedeCambiarEstado()" type="button"
+                  [class.danger]="p.estado === 'ACTIVO'"
+                  [class.reactivate]="p.estado === 'INACTIVO'"
+                  (click)="confirmarEstado(p)"
+                  [disabled]="changingStatus">
+                  {{ p.estado === 'ACTIVO' ? 'Desactivar' : 'Reactivar' }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PAGINACIÓN -->
+      <footer class="pagination" *ngIf="proveedores.length > 0">
+        <p>{{ total }} proveedor{{ total === 1 ? '' : 'es' }}</p>
+        <div>
+          <button (click)="cambiarPagina(pagina - 1)" [disabled]="pagina <= 1">Anterior</button>
+          <span>Página {{ pagina }} de {{ totalPaginas }}</span>
+          <button (click)="cambiarPagina(pagina + 1)" [disabled]="pagina >= totalPaginas">Siguiente</button>
+        </div>
+      </footer>
+
+    </ng-container>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     MODALES
+═══════════════════════════════════════════════════════════════════════════ -->
+<div class="modal-backdrop" *ngIf="modal" (click)="cerrarModal()">
+  <section
+    class="modal"
+    [class.modal-wide]="modal === 'formulario' || modal === 'materiales'"
+    (click)="$event.stopPropagation()"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="modal === 'formulario' ? 'form-title' : modal === 'detalle' ? 'detail-title' : modal === 'confirmacion' ? 'confirm-title' : 'mat-title'">
+
+    <!-- ── FORMULARIO CREAR / EDITAR ─────────────────────────────────────── -->
+    <ng-container *ngIf="modal === 'formulario'">
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">{{ editando ? 'HU-71' : 'HU-70' }}</p>
+          <h2 id="form-title">{{ editando ? 'Modificar proveedor' : 'Registrar proveedor' }}</h2>
+        </div>
+        <button class="close" (click)="cerrarModal()" aria-label="Cerrar">×</button>
+      </header>
+
+      <form class="modal-form" (ngSubmit)="guardar()" #provForm="ngForm">
+        <div class="modal-body">
+          <fieldset>
+            <legend>Datos del proveedor</legend>
+            <div class="form-grid">
+
+              <div class="span-2">
+                <label for="prov-nombre">Nombre / Razón social *</label>
+                <input id="prov-nombre" name="nombre" [(ngModel)]="form.nombre" required maxlength="200"
+                  placeholder="Ej.: Distribuidora del Norte S.A.">
+              </div>
+
+              <div>
+                <label for="prov-nit">NIT *</label>
+                <input id="prov-nit" name="nit" [(ngModel)]="form.nit" required maxlength="50"
+                  placeholder="Ej.: 1234567-8">
+              </div>
+
+              <div>
+                <label for="prov-telefono">Teléfono</label>
+                <input id="prov-telefono" name="telefono" [(ngModel)]="form.telefono" maxlength="30"
+                  placeholder="Ej.: +591 2 2345678">
+              </div>
+
+              <div>
+                <label for="prov-email">Correo electrónico</label>
+                <input id="prov-email" name="email" type="email" [(ngModel)]="form.email" maxlength="150"
+                  placeholder="contacto@proveedor.com">
+              </div>
+
+              <div>
+                <label for="prov-contacto">Persona de contacto</label>
+                <input id="prov-contacto" name="contacto" [(ngModel)]="form.contacto" maxlength="150"
+                  placeholder="Ej.: Juan Pérez">
+              </div>
+
+              <div class="span-2">
+                <label for="prov-direccion">Dirección</label>
+                <textarea id="prov-direccion" name="direccion" [(ngModel)]="form.direccion" rows="2"
+                  placeholder="Calle, ciudad, departamento..."></textarea>
+              </div>
+
+            </div>
+          </fieldset>
+        </div>
+
+        <footer class="modal-footer">
+          <button type="button" class="btn-secondary" (click)="cerrarModal()" [disabled]="operacionFormularioActiva">
+            Cancelar
+          </button>
+          <button type="submit" class="btn-primary" [disabled]="operacionFormularioActiva || provForm.invalid">
+            <span class="spinner small" *ngIf="operacionFormularioActiva"></span>
+            {{ operacionFormularioActiva ? 'Guardando...' : editando ? 'Guardar cambios' : 'Registrar proveedor' }}
+          </button>
+        </footer>
+      </form>
+    </ng-container>
+
+    <!-- ── DETALLE ──────────────────────────────────────────────────────── -->
+    <ng-container *ngIf="modal === 'detalle' && detalle">
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">DETALLE</p>
+          <h2 id="detail-title">{{ detalle.nombre }}</h2>
+          <p class="code">{{ detalle.nit }}</p>
+        </div>
+        <button class="close" (click)="cerrarModal()" aria-label="Cerrar">×</button>
+      </header>
+      <div class="modal-body detail-grid">
+        <div><span>NIT</span><strong>{{ detalle.nit }}</strong></div>
+        <div><span>Estado</span>
+          <strong>
+            <span class="badge" [class.active]="detalle.estado==='ACTIVO'" [class.inactive]="detalle.estado==='INACTIVO'">
+              {{ detalle.estado === 'ACTIVO' ? 'Activo' : 'Inactivo' }}
+            </span>
+          </strong>
+        </div>
+        <div><span>Teléfono</span><strong>{{ detalle.telefono || '—' }}</strong></div>
+        <div><span>Email</span><strong>{{ detalle.email    || '—' }}</strong></div>
+        <div><span>Contacto</span><strong>{{ detalle.contacto || '—' }}</strong></div>
+        <div *ngIf="detalle.created_at"><span>Registrado</span><strong>{{ detalle.created_at | date:'dd/MM/yyyy HH:mm' }}</strong></div>
+        <div class="span-2" *ngIf="detalle.direccion"><span>Dirección</span><p>{{ detalle.direccion }}</p></div>
+      </div>
+      <footer class="modal-footer">
+        <button class="btn-secondary" (click)="cerrarModal()">Cerrar</button>
+      </footer>
+    </ng-container>
+
+    <!-- ── CONFIRMACIÓN ESTADO ──────────────────────────────────────────── -->
+    <ng-container *ngIf="modal === 'confirmacion' && objetivoEstado">
+      <header class="modal-header">
+        <h2 id="confirm-title">
+          {{ objetivoEstado.estado === 'ACTIVO' ? '¿Deseas desactivar este proveedor?' : '¿Deseas reactivar este proveedor?' }}
+        </h2>
+        <button class="close" (click)="cerrarModal()" aria-label="Cerrar">×</button>
+      </header>
+      <div class="modal-body">
+        <p *ngIf="objetivoEstado.estado === 'ACTIVO'">
+          El proveedor permanecerá registrado para conservar la trazabilidad, pero ya no estará disponible para nuevas asociaciones.
+        </p>
+        <p *ngIf="objetivoEstado.estado === 'INACTIVO'">
+          El proveedor volverá a estar disponible en el sistema.
+        </p>
+        <p class="confirm-name">{{ objetivoEstado.nit }} · {{ objetivoEstado.nombre }}</p>
+      </div>
+      <footer class="modal-footer">
+        <button class="btn-secondary" (click)="cerrarModal()" [disabled]="changingStatus">Cancelar</button>
+        <button class="btn-primary"
+          [class.btn-danger]="objetivoEstado.estado === 'ACTIVO'"
+          (click)="cambiarEstado()"
+          [disabled]="changingStatus">
+          {{ changingStatus ? 'Procesando...' : objetivoEstado.estado === 'ACTIVO' ? 'Desactivar' : 'Reactivar' }}
+        </button>
+      </footer>
+    </ng-container>
+
+    <!-- ── ASOCIAR MATERIALES (HU-73) ──────────────────────────────────── -->
+    <ng-container *ngIf="modal === 'materiales' && proveedorActivo">
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">HU-73</p>
+          <h2 id="mat-title">Materiales de {{ proveedorActivo.nombre }}</h2>
+          <p>Selecciona los materiales que deseas asociar a este proveedor.</p>
+        </div>
+        <button class="close" (click)="cerrarModal()" aria-label="Cerrar">×</button>
+      </header>
+
+      <div class="modal-body">
+
+        <!-- Cargando -->
+        <div class="loading small-loading" *ngIf="loadingMateriales">
+          <span class="spinner"></span><span>Cargando materiales...</span>
+        </div>
+
+        <ng-container *ngIf="!loadingMateriales">
+
+          <!-- Materiales ya asociados -->
+          <fieldset>
+            <legend>Materiales asociados ({{ proveedorMateriales.length }})</legend>
+            <div class="empty-hint" *ngIf="proveedorMateriales.length === 0">
+              Este proveedor no tiene materiales asociados aún.
+            </div>
+            <div class="associated-list" *ngIf="proveedorMateriales.length > 0">
+              <div class="assoc-item" *ngFor="let m of proveedorMateriales">
+                <div>
+                  <strong>{{ m.nombre_material }}</strong>
+                  <span class="code">{{ m.codigo }}</span>
+                </div>
+                <button
+                  *ngIf="puedeModificar()"
+                  type="button"
+                  class="btn-remove"
+                  (click)="desasociarMaterial(m.id_material)"
+                  [disabled]="asociando"
+                  title="Quitar asociación">
+                  ✕
+                </button>
+              </div>
+            </div>
+          </fieldset>
+
+          <!-- Selector de materiales disponibles -->
+          <fieldset *ngIf="puedeRegistrar()" style="margin-top:1.5rem">
+            <legend>Agregar materiales del catálogo</legend>
+            <p class="hint" *ngIf="materialesDisponibles.length === 0">No hay materiales activos en el catálogo.</p>
+            <div class="material-selector" *ngIf="materialesDisponibles.length > 0">
+              <div
+                class="mat-option"
+                *ngFor="let m of materialesDisponibles"
+                [class.ya-asociado]="materialYaAsociado(m.id_material)"
+                [class.seleccionado]="seleccionMateriales.has(m.id_material)"
+                (click)="toggleSeleccion(m.id_material)"
+                [attr.title]="materialYaAsociado(m.id_material) ? 'Ya está asociado' : ''">
+                <span class="mat-check">{{ seleccionMateriales.has(m.id_material) ? '✔' : '' }}</span>
+                <div>
+                  <strong>{{ m.nombre_material }}</strong>
+                  <span class="code">{{ m.codigo }}</span>
+                </div>
+                <span *ngIf="materialYaAsociado(m.id_material)" class="badge active small-badge">Asociado</span>
+              </div>
+            </div>
+          </fieldset>
+
+        </ng-container>
+      </div>
+
+      <footer class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="cerrarModal()" [disabled]="asociando">Cerrar</button>
+        <button
+          *ngIf="puedeRegistrar()"
+          type="button"
+          class="btn-primary"
+          (click)="asociarSeleccionados()"
+          [disabled]="asociando || seleccionMateriales.size === 0">
+          <span class="spinner small" *ngIf="asociando"></span>
+          {{ asociando ? 'Asociando...' : 'Asociar (' + seleccionMateriales.size + ')' }}
+        </button>
+      </footer>
+    </ng-container>
+
+  </section>
+</div>

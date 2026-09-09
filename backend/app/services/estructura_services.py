@@ -48,6 +48,15 @@ def crear_elemento(id_obra: int, data: dict, token_data: dict, client_ip: str = 
     id_padre = data.get('id_padre') or None
     orden = data.get('orden') or 0
 
+    if id_padre is not None:
+        padre = estructura_repos.obtener_contexto_nodo(id_padre, id_obra, id_empresa)
+        if not padre:
+            raise ValueError("El elemento padre seleccionado no pertenece a este proyecto.")
+        if padre.get('id_unidad') is not None:
+            raise ValueError("No se pueden crear elementos dentro de una unidad de construcción.")
+        if str(padre.get('tipo') or '').strip().casefold() == 'ambiente':
+            raise ValueError("No se pueden crear elementos dentro de un Ambiente.")
+
     res = estructura_repos.registrar_estructura_fn(
         id_obra=id_obra,
         id_padre=id_padre,
