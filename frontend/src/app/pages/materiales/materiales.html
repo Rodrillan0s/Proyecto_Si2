@@ -87,7 +87,12 @@
             <div><label for="codigo">Código *</label><input id="codigo" name="codigo" [(ngModel)]="form.codigo" required maxlength="50"></div>
             <div><label for="nombre">Nombre *</label><input id="nombre" name="nombre" [(ngModel)]="form.nombre_material" required maxlength="150"></div>
             <div class="span-2"><label for="descripcion">Descripción</label><textarea id="descripcion" name="descripcion" [(ngModel)]="form.descripcion" rows="2"></textarea></div>
-            <div><label for="categoria-form">Categoría *</label><select id="categoria-form" name="id_categoria" [(ngModel)]="form.id_categoria" required><option [ngValue]="0" disabled>Selecciona una categoría</option><option *ngFor="let c of categorias" [ngValue]="c.id_categoria">{{ c.nombre }}</option></select></div>
+            <div class="span-2"><label for="categoria-form">Categoría *</label>
+              <div class="categoria-row">
+                <select id="categoria-form" name="id_categoria" [(ngModel)]="form.id_categoria" required><option [ngValue]="0" disabled>Selecciona una categoría</option><option *ngFor="let c of categorias" [ngValue]="c.id_categoria">{{ c.nombre }}</option></select>
+                <button type="button" class="btn-secondary btn-nueva-categoria" (click)="abrirNuevaCategoria()">＋ Nueva categoría</button>
+              </div>
+            </div>
             <div><label for="unidad-form">Unidad de medida *</label><select id="unidad-form" name="id_unidad_medida" [(ngModel)]="form.id_unidad_medida" required><option [ngValue]="0" disabled>Selecciona una unidad</option><option *ngFor="let u of unidades" [ngValue]="u.id_unidad_medida">{{ u.nombre }} ({{ u.abreviatura }})</option></select></div>
             <div><label for="precio">Precio</label><input id="precio" name="precio" type="number" min="0" step="0.01" [(ngModel)]="form.precio"></div>
             <div *ngIf="editando"><label>Stock actual</label><div class="readonly-value">{{ form.stock_actual }} <span>Solo lectura</span></div></div>
@@ -124,5 +129,21 @@
       <div class="modal-body"><p *ngIf="objetivoEstado.estado === 'ACTIVO'">El material permanecerá registrado para conservar la trazabilidad, pero ya no estará disponible para nuevas asociaciones.</p><p *ngIf="objetivoEstado.estado === 'INACTIVO'">El material volverá a estar disponible para nuevas asociaciones.</p><p class="confirm-name">{{ objetivoEstado.codigo }} · {{ objetivoEstado.nombre_material }}</p></div>
       <footer class="modal-footer"><button class="btn-secondary" (click)="cerrarModal()" [disabled]="changingStatus">Cancelar</button><button class="btn-primary" [class.btn-danger]="objetivoEstado.estado === 'ACTIVO'" (click)="cambiarEstado()" [disabled]="changingStatus">{{ changingStatus ? 'Procesando...' : objetivoEstado.estado === 'ACTIVO' ? 'Desactivar' : 'Reactivar' }}</button></footer>
     </ng-container>
+  </section>
+</div>
+
+<div class="modal-backdrop category-modal-backdrop" *ngIf="categoriaModalAbierto" (click)="cerrarModalCategoria()">
+  <section class="modal modal-category" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="category-title">
+    <header class="modal-header"><h2 id="category-title">Nueva categoría</h2><button class="close" (click)="cerrarModalCategoria()" [disabled]="savingCategory" aria-label="Cerrar">×</button></header>
+    <form class="modal-form" (ngSubmit)="guardarCategoria()" #categoriaFormRef="ngForm">
+      <div class="modal-body">
+        <p class="form-error" *ngIf="categoriaError" role="alert">{{ categoriaError }}</p>
+        <div class="form-grid">
+          <div class="span-2"><label for="categoria-nombre">Nombre *</label><input id="categoria-nombre" name="categoria_nombre" [(ngModel)]="categoriaForm.nombre" required maxlength="120"></div>
+          <div class="span-2"><label for="categoria-descripcion">Descripción</label><textarea id="categoria-descripcion" name="categoria_descripcion" [(ngModel)]="categoriaForm.descripcion" rows="2" maxlength="500"></textarea></div>
+        </div>
+      </div>
+      <footer class="modal-footer"><button type="button" class="btn-secondary" (click)="cerrarModalCategoria()" [disabled]="savingCategory">Cancelar</button><button type="submit" class="btn-primary" [disabled]="savingCategory || categoriaFormRef.invalid"><span class="spinner small" *ngIf="savingCategory"></span>{{ savingCategory ? 'Guardando...' : 'Guardar categoría' }}</button></footer>
+    </form>
   </section>
 </div>

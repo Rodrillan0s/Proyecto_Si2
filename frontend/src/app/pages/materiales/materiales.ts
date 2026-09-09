@@ -42,13 +42,17 @@ export class MaterialesComponent implements OnInit {
   savingMaterial = false;
   updatingMaterial = false;
   changingStatus = false;
+  savingCategory = false;
   error = '';
   exito = '';
   modal: 'formulario' | 'detalle' | 'confirmacion' | null = null;
+  categoriaModalAbierto = false;
+  categoriaError = '';
   editando = false;
   detalle?: Material;
   objetivoEstado?: Material;
   form: MaterialFormModel = this.formularioVacio();
+  categoriaForm = { nombre: '', descripcion: '' };
 
   ngOnInit(): void {
     this.busqueda$.pipe(debounceTime(400), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
@@ -116,6 +120,47 @@ export class MaterialesComponent implements OnInit {
   quitarCaracteristica(index: number): void { this.form.caracteristicas.splice(index, 1); }
   trackCaracteristica(index: number, item: MaterialCaracteristica): number { return index; }
 
+  abrirNuevaCategoria(): void {
+    if (this.savingCategory) return;
+    this.categoriaError = '';
+    this.categoriaForm = { nombre: '', descripcion: '' };
+    this.categoriaModalAbierto = true;
+  }
+
+  cerrarModalCategoria(): void {
+    if (this.savingCategory) return;
+    this.categoriaModalAbierto = false;
+    this.categoriaError = '';
+  }
+
+  guardarCategoria(): void {
+    if (this.savingCategory) return;
+    const nombre = this.categoriaForm.nombre.trim();
+    if (!nombre) { this.categoriaError = 'El nombre de la categoría es obligatorio.'; return; }
+    this.savingCategory = true;
+    this.categoriaError = '';
+    this.cdr.detectChanges();
+    this.service.crearCategoria({ nombre, descripcion: this.categoriaForm.descripcion.trim() || null })
+      .pipe(finalize(() => { this.savingCategory = false; this.cdr.detectChanges(); })).subscribe({
+        next: res => {
+          const nueva = res.data;
+          this.categorias = [...this.categorias, nueva].sort((a, b) => a.nombre.localeCompare(b.nombre));
+          this.form.id_categoria = nueva.id_categoria;
+          this.categoriaModalAbierto = false;
+          this.mostrarExito('Categoría registrada correctamente.');
+          this.cdr.detectChanges();
+        },
+        error: err => { this.categoriaError = this.mensajeErrorCategoria(err); this.cdr.detectChanges(); }
+      });
+  }
+
+  private mensajeErrorCategoria(err: any): string {
+    if (err?.status === 403) return 'No tienes permisos para crear categorías.';
+    if (err?.status === 409) return 'Ya existe una categoría con ese nombre.';
+    if (err?.status >= 500) return 'No se pudo completar la operación. Intenta nuevamente.';
+    return err?.error?.detail || err?.error?.message || 'No se pudo registrar la categoría.';
+  }
+
   guardar(): void {
     if (this.operacionFormularioActiva) return;
     const validacion = this.validar();
@@ -174,7 +219,7 @@ export class MaterialesComponent implements OnInit {
   }
 
   cerrarModal(): void {
-    if (this.operacionFormularioActiva || this.changingStatus) return;
+    if (this.operacionFormularioActiva || this.changingStatus || this.categoriaModalAbierto) return;
     this.modal = null; this.detalle = undefined; this.objetivoEstado = undefined; this.error = '';
     if (!this.editando) this.form = this.formularioVacio();
     this.cdr.detectChanges();
