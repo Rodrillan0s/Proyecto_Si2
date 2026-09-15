@@ -9,12 +9,12 @@ def test_empresa_obratec_es_global():
     assert es_admin_sistema(token_data) is True
 
 
-def test_empresa_distinta_no_es_global():
+def test_administrador_cualquier_empresa_es_global():
     token_data = {
         "nombre_rol": "ADMINISTRADOR",
         "nombre_empresa": "CONSTRUCTORA EL GRAN PIRAI",
     }
-    assert es_admin_sistema(token_data) is False
+    assert es_admin_sistema(token_data) is True
 
 
 def test_admin_empresa_no_es_global():

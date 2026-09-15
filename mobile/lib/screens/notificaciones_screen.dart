@@ -290,7 +290,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                               children: [
                                 Container(
                                   padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
+                                  decoration: const BoxDecoration(
                                     color: AppTheme.primaryLight,
                                     shape: BoxShape.circle,
                                   ),

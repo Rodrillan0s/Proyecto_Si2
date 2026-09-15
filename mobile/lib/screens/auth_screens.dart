@@ -44,6 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
         'ci': usuario['ci']?.toString() ?? '',
         'correo': usuario['correo']?.toString() ?? '',
         'id_empresa': usuario['id_empresa']?.toString() ?? '',
+        'nombre_empresa': usuario['nombre_empresa']?.toString() ?? '',
       });
     } catch (e) {
       if (!mounted) return;
@@ -139,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 8),
 
-                          // Enlace Recuperar Contraseña (CU08)
+                          // Enlace Recuperar Contraseña
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(

@@ -76,6 +76,7 @@ export class ListaUsuariosComponent implements OnInit {
   totalUsuarios: number = 0;
   usuariosActivos: number = 0;
   usuariosInactivos: number = 0;
+  empresaActiva: any = null;
 
   rolesDisponibles = [
     { id: 1, nombre: 'ADMINISTRADOR' },
@@ -88,10 +89,12 @@ export class ListaUsuariosComponent implements OnInit {
     { id: 8, nombre: 'ALBAÑIL' }
   ];
 
+  hasPermission(permiso: string): boolean {
+    return this.authService.hasPermission(permiso);
+  }
+
   esAdministradorSistema(): boolean {
-    const usuario = this.authService.obtenerUsuario();
-    const nombreEmpresa = (usuario?.nombre_empresa || '').toUpperCase();
-    return usuario?.nombre_rol === 'ADMINISTRADOR' && nombreEmpresa.includes('OBRATEC');
+    return this.authService.obtenerRolNormalizado() === 'ADMINISTRADOR';
   }
 
   rolesVisibles() {
@@ -100,6 +103,19 @@ export class ListaUsuariosComponent implements OnInit {
 
   async ngOnInit() {
     this.cargando = true;
+    
+    // Escuchar cambios en la empresa activa
+    this.authService.empresaActiva$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(emp => {
+        this.empresaActiva = emp;
+        if (emp && emp.id_empresa) {
+          this.filtroEmpresa = String(emp.id_empresa);
+        } else {
+          this.filtroEmpresa = '';
+        }
+        this.aplicarFiltro();
+      });
     
     // Esperar a que el token esté disponible (esto evita la petición 401 inicial)
     let intentos = 0;
@@ -114,15 +130,15 @@ export class ListaUsuariosComponent implements OnInit {
       this.cargarUsuarios();
     } else {
       this.cargando = false;
-      this.mensajeError = "No se pudo iniciar sesión. Por favor recarga.";
+      this.mensajeError = 'No se pudo iniciar sesión correctamente. Por favor, recarga la página.';
     }
   }
 
   // --- LÓGICA DE FILTRADO Y MÉTRICAS ---
   
-  aplicarFiltros() {
-    if (this.filtroEmpresa === '') {
-      // Si no hay filtro, mostramos todos
+  aplicarFiltro() {
+    if (!this.filtroEmpresa) {
+      // Si está vacío, mostramos todos los usuarios
       this.usuariosFiltrados = [...this.usuarios];
     } else {
       // Si hay filtro, convertimos el ID a número y filtramos
@@ -131,6 +147,10 @@ export class ListaUsuariosComponent implements OnInit {
     }
     // Actualizamos las métricas basándonos EN LO FILTRADO, no en el total general
     this.actualizarMetricas();
+  }
+
+  aplicarFiltros() {
+    this.aplicarFiltro();
   }
 
   actualizarMetricas() {
@@ -149,10 +169,11 @@ export class ListaUsuariosComponent implements OnInit {
   }
 
   inicializarUsuario(): Usuario {
+    const idEmpresaActiva = this.authService.obtenerIdEmpresaActiva();
     return {
       ci: '', nombre_usuario: '', nombre_completo: '', correo: '',
       telefono: '', direccion: '', estado: 'ACTIVO', nro_rol: 4, 
-      id_empresa: null 
+      id_empresa: idEmpresaActiva || null 
     };
   }
 

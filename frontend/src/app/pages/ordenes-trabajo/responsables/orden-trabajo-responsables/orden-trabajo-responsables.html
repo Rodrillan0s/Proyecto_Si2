@@ -1,0 +1,187 @@
+<div class="responsables-container">
+
+  <div class="responsables-header">
+    <div>
+      <p class="responsables-subtitle">Orden de trabajo</p>
+
+      <h2>
+        Responsables
+      </h2>
+
+      <p class="orden-info" *ngIf="orden">
+        OT-{{ orden.orden_nro }}
+        <span *ngIf="orden.tipo_trab">
+          · {{ orden.tipo_trab }}
+        </span>
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="btn-close"
+      (click)="cerrarFormulario()"
+      [disabled]="asignando"
+    >
+      ×
+    </button>
+  </div>
+
+  <div
+    *ngIf="mensajeError"
+    class="error-message"
+  >
+    {{ mensajeError }}
+  </div>
+
+  <div
+    *ngIf="mensajeExito"
+    class="success-message"
+  >
+    {{ mensajeExito }}
+  </div>
+
+  <section class="asignar-section">
+
+    <div class="section-heading">
+      <h3>Asignar responsable</h3>
+      <p>
+        Seleccione un usuario activo para asignarlo a esta orden de trabajo.
+      </p>
+    </div>
+
+    <div class="asignar-form">
+
+      <div class="form-group">
+
+        <label for="usuario">
+          Usuario
+        </label>
+
+        <select
+          id="usuario"
+          [(ngModel)]="usuarioSeleccionado"
+          name="usuario"
+          [disabled]="asignando"
+        >
+
+          <option [ngValue]="null">
+            Seleccione un usuario
+          </option>
+
+          <option
+            *ngFor="let usuario of usuariosDisponibles"
+            [ngValue]="usuario.nro_usuario"
+          >
+            {{ usuario.nombre_completo }}
+            <span *ngIf="usuario.nombre_rol">
+              - {{ usuario.nombre_rol }}
+            </span>
+          </option>
+
+        </select>
+
+      </div>
+
+      <button
+        type="button"
+        class="btn-primary"
+        (click)="asignarResponsable()"
+        [disabled]="asignando || !usuarioSeleccionado"
+      >
+        {{ asignando ? 'Asignando...' : 'Asignar responsable' }}
+      </button>
+
+    </div>
+
+  </section>
+
+  <section class="responsables-section">
+
+    <div class="section-heading">
+      <h3>Responsables asignados</h3>
+      <p>
+        Usuarios responsables actualmente asignados a esta orden.
+      </p>
+    </div>
+
+    <div
+      *ngIf="cargando"
+      class="loading-message"
+    >
+      Cargando responsables...
+    </div>
+
+    <div
+      *ngIf="!cargando && responsables.length === 0"
+      class="empty-message"
+    >
+      No hay responsables asignados a esta orden.
+    </div>
+
+    <div
+      *ngIf="!cargando && responsables.length > 0"
+      class="responsables-list"
+    >
+
+      <div
+        *ngFor="let responsable of responsables"
+        class="responsable-card"
+      >
+
+        <div class="responsable-info">
+
+          <div class="responsable-avatar">
+            {{ responsable.nombre_completo?.charAt(0)?.toUpperCase() || '?' }}
+          </div>
+
+          <div class="responsable-data">
+
+            <h4>
+              {{ responsable.nombre_completo }}
+            </h4>
+
+            <p>
+              {{ responsable.nombre_rol || 'Sin rol' }}
+            </p>
+
+            <span>
+              {{ responsable.correo }}
+            </span>
+
+            <span *ngIf="responsable.telefono">
+              {{ responsable.telefono }}
+            </span>
+
+          </div>
+
+        </div>
+
+        <button
+          type="button"
+          class="btn-remove"
+          (click)="eliminarResponsable(responsable)"
+          [disabled]="asignando"
+        >
+          Retirar
+        </button>
+
+      </div>
+
+    </div>
+
+  </section>
+
+  <div class="form-actions">
+
+    <button
+      type="button"
+      class="btn-secondary"
+      (click)="cerrarFormulario()"
+      [disabled]="asignando"
+    >
+      Cerrar
+    </button>
+
+  </div>
+
+</div>

@@ -259,6 +259,22 @@ export class ProyectoDetalleComponent implements OnInit, OnDestroy {
     this.router.navigate(['/proyectos']);
   }
 
+  irAEstructura() {
+    this.seleccionarTab('estructura');
+  }
+
+  irAMateriales() {
+    this.router.navigate(['/materiales']);
+  }
+
+  irAOrdenesTrabajo() {
+    this.router.navigate(['/ordenes-trabajo']);
+  }
+
+  irAProveedores() {
+    this.router.navigate(['/proveedores']);
+  }
+
   esRolAutorizado(): boolean {
     const rol = this.authService.obtenerUsuario()?.nombre_rol;
     return rol === 'ADMINISTRADOR' || rol === 'ADMINISTRADOR_EMPRESA';

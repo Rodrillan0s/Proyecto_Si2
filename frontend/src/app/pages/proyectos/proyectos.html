@@ -6,12 +6,22 @@
       <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Proyectos de Construcción</h1>
       <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Administra la estructura básica, localización y responsables de las obras de tu empresa.</p>
     </div>
-    <button *ngIf="esRolAutorizado()" (click)="abrirModalNuevo()" class="btn-primary flex items-center gap-2">
+    <button *ngIf="esRolAutorizado()" (click)="abrirModalNuevo()" class="btn-primary flex items-center gap-2 shadow-sm">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
       </svg>
-      Nuevo Proyecto
+      + Nuevo Proyecto
     </button>
+  </div>
+
+  <!-- BADGE CONTEXTO EMPRESA ACTIVA -->
+  <div *ngIf="empresaActiva" class="flex items-center justify-between px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs">
+    <div class="flex items-center gap-2">
+      <span class="font-bold text-amber-800 dark:text-amber-400">🏢 Contexto Activo:</span>
+      <span class="font-bold text-slate-900 dark:text-white">{{ empresaActiva.nombre_empresa }}</span>
+      <span class="text-slate-500 dark:text-slate-400 font-mono">(ID: {{ empresaActiva.id_empresa }})</span>
+    </div>
+    <span class="font-bold text-amber-700 dark:text-amber-300">{{ proyectosFiltrados.length }} obra(s) asociada(s)</span>
   </div>
 
   <!-- TARJETAS DE ESTADÍSTICAS -->
@@ -53,8 +63,8 @@
     </div>
   </div>
 
-  <!-- BARRAS DE BÚSQUEDA Y FILTROS -->
-  <div class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-4 rounded-2xl shadow-sm flex flex-col md:flex-row gap-4 items-stretch md:items-center">
+  <!-- BARRAS DE BÚSQUEDA, FILTROS Y SELECTOR DE VISTA -->
+  <div class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-4 rounded-2xl shadow-sm flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
     <div class="flex-1 relative">
       <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -64,7 +74,7 @@
       <input type="text" [(ngModel)]="busqueda" (input)="aplicarFiltros()" placeholder="Buscar por código, nombre o dirección de obra..." class="form-input pl-10 w-full">
     </div>
     
-    <div class="flex flex-wrap sm:flex-nowrap gap-3">
+    <div class="flex flex-wrap sm:flex-nowrap gap-3 items-center">
       <select [(ngModel)]="filtroEstado" (change)="aplicarFiltros()" class="form-select w-full sm:w-44">
         <option value="">Todos los Estados</option>
         <option value="PLANIFICACION">Planificación</option>
@@ -78,6 +88,28 @@
         <option value="">Todos los Tipos</option>
         <option *ngFor="let t of tiposProyecto" [value]="t.id_tipo_obra">{{ t.nombre_obra }}</option>
       </select>
+
+      <!-- Selector de Vista: Tarjetas / Tabla -->
+      <div class="inline-flex p-1 bg-gray-100 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 text-xs font-semibold">
+        <button (click)="modoVista = 'tarjetas'"
+                type="button"
+                class="px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all"
+                [ngClass]="modoVista === 'tarjetas' ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-xs' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+          </svg>
+          Tarjetas
+        </button>
+        <button (click)="modoVista = 'tabla'"
+                type="button"
+                class="px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all"
+                [ngClass]="modoVista === 'tabla' ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-xs' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+          </svg>
+          Tabla
+        </button>
+      </div>
     </div>
   </div>
 
@@ -94,8 +126,119 @@
     <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-600"></div>
   </div>
 
-  <!-- TABLA DE PROYECTOS -->
-  <div *ngIf="!cargando" class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+  <!-- VISTA 1: CUADRÍCULA DE TARJETAS DE PROYECTOS (CU11) -->
+  <div *ngIf="!cargando && modoVista === 'tarjetas'">
+    
+    <div *ngIf="proyectosFiltrados.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div *ngFor="let p of proyectosFiltrados" 
+           class="proyecto-card bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-orange-300 dark:hover:border-orange-800/60 transition-all flex flex-col justify-between group">
+        
+        <div class="space-y-4">
+          <!-- Cabecera de la tarjeta: Código y Estado -->
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-mono text-xs font-bold px-2.5 py-1 rounded-md bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 border border-orange-200/60 dark:border-orange-800/40">
+              {{ p.codigo }}
+            </span>
+            <span class="status-badge text-[11px]" [class]="p.estado_obra.toLowerCase()">
+              {{ p.estado_obra }}
+            </span>
+          </div>
+
+          <!-- Nombre y Tipo -->
+          <div>
+            <h3 class="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
+              {{ p.nombre }}
+            </h3>
+            <div class="mt-1 flex items-center gap-2">
+              <span class="px-2 py-0.5 text-[11px] font-semibold bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 rounded-md">
+                {{ p.tipo_obra_nombre }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Fechas y Presupuesto -->
+          <div class="p-3.5 bg-gray-50 dark:bg-slate-800/40 rounded-xl space-y-2 text-xs border border-gray-100 dark:border-slate-800/60">
+            <div class="flex justify-between items-center text-gray-600 dark:text-gray-300">
+              <span class="text-gray-400 font-medium">Inicio:</span>
+              <span class="font-semibold">{{ p.fecha_inicio | date:'dd/MM/yyyy' }}</span>
+            </div>
+            <div class="flex justify-between items-center text-gray-600 dark:text-gray-300">
+              <span class="text-gray-400 font-medium">Fin estimado:</span>
+              <span class="font-semibold">{{ (p.fecha_fin | date:'dd/MM/yyyy') || 'Por definir' }}</span>
+            </div>
+            <div class="flex justify-between items-center pt-2 border-t border-gray-200/60 dark:border-slate-700/60">
+              <span class="text-gray-400 font-medium">Presupuesto estimado:</span>
+              <span class="font-bold text-gray-900 dark:text-white">
+                <span *ngIf="p.valor_estimado !== undefined && p.valor_estimado !== null">
+                  {{ p.moneda }} {{ p.valor_estimado | number:'1.2-2' }}
+                </span>
+                <span *ngIf="p.valor_estimado === undefined || p.valor_estimado === null" class="text-gray-400">
+                  Sin presupuesto
+                </span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Ubicación condensada -->
+          <div class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5 truncate">
+            <svg class="w-4 h-4 text-orange-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+            <span class="truncate">{{ p.ubicacion || (p.zona ? p.zona + ', ' + p.distrito : 'Santa Cruz de la Sierra') }}</span>
+          </div>
+        </div>
+
+        <!-- Acciones de la Tarjeta -->
+        <div class="pt-5 mt-5 border-t border-gray-100 dark:border-slate-800/80 flex items-center justify-between gap-3">
+          <button (click)="verProyecto(p.id_obra)" class="btn-primary flex-1 text-center justify-center flex items-center gap-2 py-2 text-xs font-bold">
+            <span>Ver proyecto</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+            </svg>
+          </button>
+
+          <div class="flex items-center gap-1">
+            <button (click)="verEstructura(p.id_obra, $event)" 
+                    class="p-2 text-gray-500 hover:text-green-600 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+                    title="Estructura de la Obra">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+              </svg>
+            </button>
+            <button *ngIf="esRolAutorizado()" (click)="abrirModalEditar(p, $event)"
+                    class="p-2 text-gray-500 hover:text-blue-600 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+                    title="Editar Proyecto">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ESTADO VACÍO EN TARJETAS -->
+    <div *ngIf="proyectosFiltrados.length === 0" class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-12 text-center max-w-lg mx-auto shadow-sm my-6 space-y-4">
+      <div class="inline-flex p-4 bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 rounded-2xl">
+        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+        </svg>
+      </div>
+      <div>
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white">No se encontraron proyectos</h3>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Prueba cambiando los filtros de búsqueda o registra un nuevo proyecto.</p>
+      </div>
+      <button *ngIf="esRolAutorizado()" (click)="abrirModalNuevo()" class="btn-primary text-xs inline-flex items-center gap-2">
+        + Nuevo Proyecto
+      </button>
+    </div>
+
+  </div>
+
+  <!-- VISTA 2: TABLA DE PROYECTOS -->
+  <div *ngIf="!cargando && modoVista === 'tabla'" class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
     <div class="overflow-x-auto">
       <table class="w-full text-left border-collapse">
         <thead>
@@ -164,7 +307,7 @@
     </div>
   </div>
 
-  <!-- MODAL: REGISTRO DE PROYECTO (AJUSTE EXACTO HU30) -->
+  <!-- MODAL: REGISTRO / EDICIÓN DE PROYECTO DIVIDIDO POR SECCIONES (CU11) -->
   <div *ngIf="mostrarModal" class="modal-backdrop">
     <div class="modal-card bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden">
       
@@ -174,7 +317,7 @@
           <h2 class="text-xl font-extrabold text-gray-900 dark:text-white uppercase tracking-wide">
             {{ modoEdicion ? 'MODIFICAR PROYECTO' : 'NUEVO PROYECTO' }}
           </h2>
-          <p class="text-xs text-gray-500 mt-0.5">Identidad y configuración básica de la obra</p>
+          <p class="text-xs text-gray-500 mt-0.5">Configuración estructurada de la obra por etapas</p>
         </div>
         <button (click)="cerrarModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -183,18 +326,54 @@
         </button>
       </div>
 
-      <!-- Cuerpo del Formulario estructurado exactamente por secciones -->
-      <div class="p-6 overflow-y-auto space-y-6">
+      <!-- Barra de navegación por secciones (Tabs visuales del Formulario) -->
+      <div class="grid grid-cols-4 border-b border-gray-200 dark:border-slate-800 bg-gray-50/70 dark:bg-slate-800/40 text-xs font-bold">
+        <button (click)="irASeccion(1)"
+                type="button"
+                class="py-3 px-2 text-center border-b-2 transition-all flex flex-col sm:flex-row items-center justify-center gap-1"
+                [ngClass]="seccionModal === 1 ? 'border-orange-600 text-orange-600 dark:text-orange-400 bg-white dark:bg-slate-900 font-extrabold' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'">
+          <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 font-black">1</span>
+          <span class="truncate">General</span>
+        </button>
 
-        <!-- 1. INFORMACIÓN GENERAL -->
-        <div class="space-y-4">
-          <div class="flex items-center gap-2 border-b border-gray-100 dark:border-slate-800 pb-2">
-            <span class="text-xs font-extrabold text-orange-600 uppercase tracking-wider">INFORMACIÓN GENERAL</span>
+        <button (click)="irASeccion(2)"
+                type="button"
+                class="py-3 px-2 text-center border-b-2 transition-all flex flex-col sm:flex-row items-center justify-center gap-1"
+                [ngClass]="seccionModal === 2 ? 'border-orange-600 text-orange-600 dark:text-orange-400 bg-white dark:bg-slate-900 font-extrabold' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'">
+          <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 font-black">2</span>
+          <span class="truncate">Economía</span>
+        </button>
+
+        <button (click)="irASeccion(3)"
+                type="button"
+                class="py-3 px-2 text-center border-b-2 transition-all flex flex-col sm:flex-row items-center justify-center gap-1"
+                [ngClass]="seccionModal === 3 ? 'border-orange-600 text-orange-600 dark:text-orange-400 bg-white dark:bg-slate-900 font-extrabold' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'">
+          <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 font-black">3</span>
+          <span class="truncate">Planificación</span>
+        </button>
+
+        <button (click)="irASeccion(4)"
+                type="button"
+                class="py-3 px-2 text-center border-b-2 transition-all flex flex-col sm:flex-row items-center justify-center gap-1"
+                [ngClass]="seccionModal === 4 ? 'border-orange-600 text-orange-600 dark:text-orange-400 bg-white dark:bg-slate-900 font-extrabold' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'">
+          <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 font-black">4</span>
+          <span class="truncate">Ubicación</span>
+        </button>
+      </div>
+
+      <!-- Cuerpo del Formulario estructurado por secciones -->
+      <div class="p-6 overflow-y-auto space-y-6 flex-1">
+
+        <!-- SECCIÓN 1: INFORMACIÓN GENERAL -->
+        <div *ngIf="seccionModal === 1" class="space-y-4">
+          <div class="border-b border-gray-100 dark:border-slate-800 pb-2">
+            <h3 class="text-sm font-extrabold text-orange-600 dark:text-orange-500 uppercase tracking-wider">1. Información General</h3>
+            <p class="text-xs text-gray-500 mt-0.5">Identidad principal y tipo de obra</p>
           </div>
 
           <div>
             <label class="form-label">Nombre del Proyecto *</label>
-            <input type="text" [(ngModel)]="proyectoForm.nombre" placeholder="Ej. Condominio Los Pinos, Edificio Solaris, Tramo Norte..." class="form-input w-full font-bold text-sm">
+            <input type="text" [(ngModel)]="proyectoForm.nombre" placeholder="Ej. Residencial Los Álamos, Edificio Solaris, Condominio del Bosque..." class="form-input w-full font-bold text-sm">
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -211,40 +390,53 @@
             <div>
               <label class="form-label">Tipo de Proyecto *</label>
               <select [(ngModel)]="proyectoForm.id_tipo_obra" class="form-select w-full">
-                <option [value]="1">Obras Civiles</option>
-                <option [value]="2">Remodelaciones</option>
-                <option [value]="3">Infraestructura</option>
-                <option [value]="4">Edificaciones</option>
-                <option [value]="5">Otros</option>
+                <option *ngFor="let t of tiposProyecto" [value]="t.id_tipo_obra">{{ t.nombre_obra }}</option>
+                <option *ngIf="tiposProyecto.length === 0" [value]="1">Obras Civiles</option>
+                <option *ngIf="tiposProyecto.length === 0" [value]="4">Edificaciones</option>
               </select>
             </div>
           </div>
 
           <div>
             <label class="form-label">Descripción (Opcional)</label>
-            <textarea [(ngModel)]="proyectoForm.descripcion" rows="2" placeholder="Resumen del alcance general del proyecto..." class="form-input w-full"></textarea>
+            <textarea [(ngModel)]="proyectoForm.descripcion" rows="3" placeholder="Resumen del alcance general del proyecto, especificaciones preliminares..." class="form-input w-full"></textarea>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 2: INFORMACIÓN ECONÓMICA -->
+        <div *ngIf="seccionModal === 2" class="space-y-4">
+          <div class="border-b border-gray-100 dark:border-slate-800 pb-2">
+            <h3 class="text-sm font-extrabold text-orange-600 dark:text-orange-500 uppercase tracking-wider">2. Información Económica</h3>
+            <p class="text-xs text-gray-500 mt-0.5">Presupuesto inicial y moneda operativa de la obra</p>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="form-label">Moneda *</label>
-              <select [(ngModel)]="proyectoForm.moneda" class="form-select w-full">
-                <option value="BOB">Bolivianos (BOB)</option>
-                <option value="USD">Dólares (USD)</option>
+              <label class="form-label">Moneda Operativa *</label>
+              <select [(ngModel)]="proyectoForm.moneda" class="form-select w-full font-bold">
+                <option value="BOB">Bolivianos (BOB - Bs)</option>
+                <option value="USD">Dólares Estadounidenses (USD - $)</option>
               </select>
             </div>
 
             <div>
-              <label class="form-label">Presupuesto Inicial Estimado (Opcional)</label>
-              <input type="number" min="0" [(ngModel)]="proyectoForm.valor_estimado" placeholder="0.00" class="form-input w-full">
+              <label class="form-label">Presupuesto Inicial Estimado</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-xs font-bold text-gray-400">
+                  {{ proyectoForm.moneda === 'BOB' ? 'Bs' : '$' }}
+                </span>
+                <input type="number" min="0" [(ngModel)]="proyectoForm.valor_estimado" placeholder="0.00" class="form-input pl-10 w-full font-bold">
+              </div>
+              <span class="text-[11px] text-gray-400 mt-1 block">Monto proyectado para la ejecución total del proyecto.</span>
             </div>
           </div>
         </div>
 
-        <!-- 2. PLANIFICACIÓN -->
-        <div class="space-y-4">
-          <div class="flex items-center gap-2 border-b border-gray-100 dark:border-slate-800 pb-2">
-            <span class="text-xs font-extrabold text-orange-600 uppercase tracking-wider">PLANIFICACIÓN</span>
+        <!-- SECCIÓN 3: PLANIFICACIÓN -->
+        <div *ngIf="seccionModal === 3" class="space-y-4">
+          <div class="border-b border-gray-100 dark:border-slate-800 pb-2">
+            <h3 class="text-sm font-extrabold text-orange-600 dark:text-orange-500 uppercase tracking-wider">3. Planificación de Fechas</h3>
+            <p class="text-xs text-gray-500 mt-0.5">Cronograma estimado de inicio y culminación de obras</p>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -254,32 +446,44 @@
             </div>
 
             <div>
-              <label class="form-label">Fin Estimado (Opcional)</label>
+              <label class="form-label">Fecha Estimada de Fin (Opcional)</label>
               <input type="date" [(ngModel)]="proyectoForm.fecha_fin" class="form-input w-full">
             </div>
           </div>
+
+          <div *ngIf="modoEdicion">
+            <label class="form-label">Estado de la Obra</label>
+            <select [(ngModel)]="proyectoForm.estado_obra" class="form-select w-full">
+              <option value="PLANIFICACION">Planificación</option>
+              <option value="ACTIVO">Activo</option>
+              <option value="PAUSADO">Pausado</option>
+              <option value="FINALIZADO">Finalizado</option>
+              <option value="CANCELADO">Cancelado</option>
+            </select>
+          </div>
         </div>
 
-        <!-- 3. UBICACIÓN Y GEORREFERENCIACIÓN -->
-        <div class="space-y-4">
-          <div class="flex items-center gap-2 border-b border-gray-100 dark:border-slate-800 pb-2">
-            <span class="text-xs font-extrabold text-orange-600 uppercase tracking-wider">UBICACIÓN Y GEORREFERENCIACIÓN</span>
+        <!-- SECCIÓN 4: UBICACIÓN Y MAPA INTERACTIVO -->
+        <div [style.display]="seccionModal === 4 ? 'block' : 'none'" class="space-y-4">
+          <div class="border-b border-gray-100 dark:border-slate-800 pb-2">
+            <h3 class="text-sm font-extrabold text-orange-600 dark:text-orange-500 uppercase tracking-wider">4. Ubicación y Georreferenciación</h3>
+            <p class="text-xs text-gray-500 mt-0.5">Localización geográfica y datos catastrales en Santa Cruz</p>
           </div>
 
           <div>
             <label class="form-label">Dirección (Opcional)</label>
-            <input type="text" [(ngModel)]="proyectoForm.ubicacion" placeholder="Ej. Av. San Martín #450" class="form-input w-full">
+            <input type="text" [(ngModel)]="proyectoForm.ubicacion" placeholder="Ej. Av. San Martín esquina Calle 4 #210" class="form-input w-full">
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="form-label">Zona (Opcional)</label>
-              <input type="text" [(ngModel)]="proyectoForm.zona" placeholder="Ej. Equipetrol" class="form-input w-full">
+              <input type="text" [(ngModel)]="proyectoForm.zona" placeholder="Ej. Equipetrol, Las Palmas, Urubó..." class="form-input w-full">
             </div>
 
             <div>
               <label class="form-label">Distrito Municipal (Opcional)</label>
-              <input type="text" [(ngModel)]="proyectoForm.distrito" placeholder="Ej. DM 1" class="form-input w-full">
+              <input type="text" [(ngModel)]="proyectoForm.distrito" placeholder="Ej. DM 1, DM 4..." class="form-input w-full">
             </div>
           </div>
 
@@ -297,31 +501,48 @@
 
           <!-- GEOLOCALIZACIÓN: MAPA INTERACTIVO LEAFLET -->
           <div class="space-y-2 pt-2">
-            <label class="form-label mb-0">Geolocalización (Mapa Interactivo)</label>
-            <p class="text-xs text-gray-500 dark:text-gray-400">Desplaza el marcador o haz clic sobre el mapa para fijar la ubicación exacta del proyecto.</p>
+            <label class="form-label mb-0">Ubicación en el Mapa</label>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Haz clic o arrastra el marcador para fijar las coordenadas exactas de la obra.</p>
             
             <div id="mapa-registro-proyecto" class="w-full h-64 rounded-xl overflow-hidden border border-gray-200 dark:border-slate-700 shadow-sm relative z-0"></div>
 
-            <!-- COORDENADAS OBTENIDAS MOSTRADAS DEBAJO DEL MAPA -->
             <div class="flex items-center justify-between p-2.5 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-100 dark:border-slate-800 text-xs">
-              <span class="text-gray-500 dark:text-gray-400 font-medium">Coordenadas obtenidas del mapa:</span>
+              <span class="text-gray-500 dark:text-gray-400 font-medium">Coordenadas:</span>
               <span class="font-mono font-bold text-orange-600 dark:text-orange-400">
-                Latitud: {{ (proyectoForm.latitud | number:'1.6-6') || 'No fijada' }} &nbsp;|&nbsp; Longitud: {{ (proyectoForm.longitud | number:'1.6-6') || 'No fijada' }}
+                Lat: {{ (proyectoForm.latitud | number:'1.5-5') || 'No fijada' }} &nbsp;|&nbsp; Lng: {{ (proyectoForm.longitud | number:'1.5-5') || 'No fijada' }}
               </span>
             </div>
           </div>
-
         </div>
 
       </div>
 
-      <!-- Pie del modal -->
-      <div class="p-4 border-t border-gray-100 dark:border-slate-800 flex justify-end gap-3 bg-gray-50/50 dark:bg-slate-800/30">
-        <button (click)="cerrarModal()" class="btn-outline" [disabled]="guardando">Cancelar</button>
-        <button (click)="guardarProyecto()" class="btn-primary" [disabled]="guardando">
-          <span *ngIf="!guardando">{{ modoEdicion ? 'Actualizar Proyecto' : 'Crear Proyecto' }}</span>
-          <span *ngIf="guardando">Guardando...</span>
-        </button>
+      <!-- Pie del modal con navegación entre secciones -->
+      <div class="p-4 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between bg-gray-50/50 dark:bg-slate-800/30">
+        <div>
+          <button *ngIf="seccionModal > 1" (click)="anteriorSeccion()" type="button" class="btn-outline text-xs flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
+            Anterior
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button (click)="cerrarModal()" class="btn-outline text-xs" [disabled]="guardando">Cancelar</button>
+
+          <button *ngIf="seccionModal < 4" (click)="siguienteSeccion()" type="button" class="btn-primary text-xs flex items-center gap-1.5">
+            Siguiente
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </button>
+
+          <button (click)="guardarProyecto()" class="btn-primary text-xs" [disabled]="guardando">
+            <span *ngIf="!guardando">{{ modoEdicion ? 'Actualizar Proyecto' : 'Guardar Proyecto' }}</span>
+            <span *ngIf="guardando">Guardando...</span>
+          </button>
+        </div>
       </div>
 
     </div>

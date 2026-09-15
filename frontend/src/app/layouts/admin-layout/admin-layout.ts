@@ -14,10 +14,13 @@ import { AuthService } from '../../services/auth';
 import { NotificacionesService, Notificacion } from '../../services/notificaciones';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
+import { FormsModule } from '@angular/forms';
+import { EmpresaService } from '../../services/empresa';
+
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterModule],
+  imports: [CommonModule, RouterOutlet, RouterModule, FormsModule],
   templateUrl: './admin-layout.html',
   styleUrl: './admin-layout.css'
 })
@@ -25,6 +28,7 @@ export class AdminLayoutComponent implements OnInit {
 
   private authService           = inject(AuthService);
   private notificacionesService  = inject(NotificacionesService);
+  private empresaService        = inject(EmpresaService);
   private router                = inject(Router);
   private platformId            = inject(PLATFORM_ID);
   private cdr                   = inject(ChangeDetectorRef);
@@ -36,6 +40,13 @@ export class AdminLayoutComponent implements OnInit {
   modoOscuro: boolean     = false;
   sidebarAbierto: boolean   = false;
   sidebarColapsado: boolean = false;
+  empresaSeleccionada: any  = null;
+
+  // ---- Selector de Empresa Activa ----
+  mostrarSelectorEmpresas: boolean = false;
+  listaEmpresas: any[] = [];
+  empresasFiltradasSelector: any[] = [];
+  busquedaEmpresa: string = '';
 
   // ---- Estado notificaciones ----
   mostrarNotificaciones: boolean = false;
@@ -71,19 +82,125 @@ export class AdminLayoutComponent implements OnInit {
           this.cdr.detectChanges();
         });
       });
+
+    // Suscribirse a la empresa seleccionada en el contexto de sesión
+    this.authService.empresaSeleccionada$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((empresa) => {
+        this.ngZone.run(() => {
+          this.empresaSeleccionada = empresa;
+          this.cdr.detectChanges();
+        });
+      });
   }
 
+  menuObrasAbierto: boolean = true;
+  menuConfiguracionAbierto: boolean = false;
+
+  hasPermission(permiso: string): boolean {
+    return this.authService.hasPermission(permiso);
+  }
+
+  hasAnyPermission(permisos: string[]): boolean {
+    return this.authService.hasAnyPermission(permisos);
+  }
+
+  toggleSubmenuObras() {
+    this.menuObrasAbierto = !this.menuObrasAbierto;
+  }
+
+  esAdministradorGlobal(): boolean {
+    return this.authService.obtenerRolNormalizado() === 'ADMINISTRADOR';
+  }
+
+  limpiarEmpresaContexto() {
+    this.authService.limpiarEmpresaSeleccionada();
+  }
+
+  irAEmpresaActual() {
+    if (this.empresaSeleccionada) {
+      this.router.navigate(['/empresas', this.empresaSeleccionada.id_empresa]);
+    }
+  }
+
+  irAEmpresaOLista() {
+    if (this.esAdministradorGlobal()) {
+      this.navegarA('/empresas');
+    } else if (this.usuarioActual?.id_empresa) {
+      this.navegarA(`/empresas/${this.usuarioActual.id_empresa}`);
+    } else {
+      this.navegarA('/empresas');
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // GESTION DE SELECTOR DE EMPRESA ACTIVA (MULTI-TENANT)
+  // ------------------------------------------------------------------
+
+  toggleSelectorEmpresas() {
+    this.mostrarSelectorEmpresas = !this.mostrarSelectorEmpresas;
+    if (this.mostrarSelectorEmpresas && this.listaEmpresas.length === 0) {
+      this.cargarEmpresasParaSelector();
+    }
+  }
+
+  cargarEmpresasParaSelector() {
+    this.empresaService.listarEmpresas().subscribe({
+      next: (res) => {
+        this.ngZone.run(() => {
+          if (res && res.data) {
+            this.listaEmpresas = res.data;
+            this.filtrarEmpresasSelector();
+            this.cdr.detectChanges();
+          }
+        });
+      },
+      error: () => {}
+    });
+  }
+
+  filtrarEmpresasSelector() {
+    const q = (this.busquedaEmpresa || '').toLowerCase().trim();
+    if (!q) {
+      this.empresasFiltradasSelector = [...this.listaEmpresas];
+    } else {
+      this.empresasFiltradasSelector = this.listaEmpresas.filter(e => 
+        (e.nombre_empresa && e.nombre_empresa.toLowerCase().includes(q)) ||
+        (e.nit && e.nit.toLowerCase().includes(q))
+      );
+    }
+  }
+
+  seleccionarEmpresa(empresa: any | null) {
+    this.authService.seleccionarEmpresaActiva(empresa);
+    this.mostrarSelectorEmpresas = false;
+    this.cdr.detectChanges();
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (this.mostrarSelectorEmpresas && !target.closest('[data-company-selector]')) {
+      this.mostrarSelectorEmpresas = false;
+      this.cdr.detectChanges();
+    }
+    if (this.mostrarNotificaciones && !target.closest('[data-notif-panel]')) {
+      this.mostrarNotificaciones = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  // Compatibilidad hacia atrás
   esAdministrador(): boolean {
-    return ['ADMINISTRADOR', 'ADMINISTRADOR_EMPRESA'].includes(this.usuarioActual?.nombre_rol);
+    return this.hasPermission('Visualizar_usuarios');
   }
 
   esAdministradorSistema(): boolean {
-    const nombreEmpresa = (this.usuarioActual?.nombre_empresa || '').toUpperCase();
-    return this.usuarioActual?.nombre_rol === 'ADMINISTRADOR' && nombreEmpresa.includes('OBRATEC');
+    return this.esAdministradorGlobal();
   }
 
   puedeVerProyectos(): boolean {
-    return ['ADMINISTRADOR', 'ADMINISTRADOR_EMPRESA', 'JEFE DE OBRA'].includes(this.usuarioActual?.nombre_rol);
+    return this.hasPermission('Visualizar_obras');
   }
 
   // ------------------------------------------------------------------

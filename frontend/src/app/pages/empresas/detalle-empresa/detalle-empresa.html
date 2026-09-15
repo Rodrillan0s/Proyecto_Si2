@@ -1,0 +1,403 @@
+<div class="space-y-6">
+
+  <!-- ========================================================================= -->
+  <!-- RETORNO Y BREADCRUMB                                                      -->
+  <!-- ========================================================================= -->
+  <div>
+    <button
+      (click)="volverAEmpresas()"
+      class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition mb-2"
+    >
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+      ← Volver a Directorio de Empresas
+    </button>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- CABECERA DEL TENANT SELECCIONADO                                          -->
+  <!-- ========================================================================= -->
+  <app-page-header
+    [titulo]="empresa?.nombre_empresa || 'Detalle de Empresa'"
+    [subtitulo]="empresa?.descripcion || 'Portal de gestión y consulta integral del tenant corporativo'"
+    categoria="EMPRESA / TENANT"
+    [codigo]="empresa?.nit ? 'NIT: ' + empresa?.nit : undefined"
+  >
+    <div badge class="ml-2">
+      <app-status-badge [estado]="empresa?.estado || 'ACTIVO'"></app-status-badge>
+    </div>
+
+    <div actions class="flex items-center gap-2">
+      <button
+        *ngIf="hasPermission('Modificar_empresa')"
+        (click)="irA('/empresas')"
+        class="px-3.5 py-1.5 text-xs font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+      >
+        Editar Datos Empresa
+      </button>
+
+      <button
+        (click)="irA('/panel')"
+        class="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition shadow-xs"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        Ir a Dashboard Operativo
+      </button>
+    </div>
+  </app-page-header>
+
+  <!-- ========================================================================= -->
+  <!-- BANNER DE CONTEXTO MULTI-TENANT                                           -->
+  <!-- ========================================================================= -->
+  <div class="rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/60 dark:bg-blue-950/30 p-4 flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-sm">
+        🏢
+      </div>
+      <div>
+        <p class="text-xs font-bold text-blue-900 dark:text-blue-200 uppercase tracking-wider">
+          Contexto Activo de Empresa
+        </p>
+        <p class="text-xs text-blue-700 dark:text-blue-300">
+          Estás consultando los módulos operativos de: <strong>{{ empresa?.nombre_empresa }}</strong> (ID: {{ idEmpresa }}).
+        </p>
+      </div>
+    </div>
+    <span class="text-[11px] font-mono px-2 py-1 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shrink-0">
+      MODO ADMINISTRADOR GLOBAL
+    </span>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TARJETAS DE INDICADORES (KPIS)                                            -->
+  <!-- ========================================================================= -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <app-dashboard-card
+      titulo="Obras / Proyectos"
+      [valor]="totalObras"
+      subtitulo="Proyectos del tenant"
+      [detalle]="obrasActivas + ' en ejecución'"
+      tipo="amber"
+      [clickable]="true"
+      (click)="cambiarTab('obras')"
+    >
+      <svg icon class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+    </app-dashboard-card>
+
+    <app-dashboard-card
+      titulo="Usuarios / Personal"
+      [valor]="totalUsuarios"
+      subtitulo="Colaboradores asignados"
+      detalle="Roles empresariales"
+      tipo="blue"
+      [clickable]="true"
+      (click)="cambiarTab('usuarios')"
+    >
+      <svg icon class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+    </app-dashboard-card>
+
+    <app-dashboard-card
+      titulo="Insumos / Inventario"
+      [valor]="totalMateriales"
+      subtitulo="Catálogo disponible"
+      detalle="Materiales de construcción"
+      tipo="emerald"
+      [clickable]="true"
+      (click)="cambiarTab('materiales')"
+    >
+      <svg icon class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+    </app-dashboard-card>
+
+    <app-dashboard-card
+      titulo="Proveedores"
+      [valor]="totalProveedores"
+      subtitulo="Cadena de suministro"
+      detalle="Proveedores activos"
+      tipo="default"
+      [clickable]="true"
+      (click)="cambiarTab('proveedores')"
+    >
+      <svg icon class="w-5 h-5 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+    </app-dashboard-card>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- NAVEGACIÓN POR PESTAÑAS (TABS CORPORATIVOS)                               -->
+  <!-- ========================================================================= -->
+  <div class="border-b border-slate-200 dark:border-slate-800">
+    <nav class="flex space-x-6">
+      <button
+        (click)="cambiarTab('resumen')"
+        [class.border-amber-500]="tabActiva === 'resumen'"
+        [class.text-amber-600]="tabActiva === 'resumen'"
+        [class.dark:text-amber-400]="tabActiva === 'resumen'"
+        class="py-3 px-1 border-b-2 font-bold text-xs uppercase tracking-wider transition text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+      >
+        Resumen & Navegación
+      </button>
+
+      <button
+        (click)="cambiarTab('obras')"
+        [class.border-amber-500]="tabActiva === 'obras'"
+        [class.text-amber-600]="tabActiva === 'obras'"
+        [class.dark:text-amber-400]="tabActiva === 'obras'"
+        class="py-3 px-1 border-b-2 font-bold text-xs uppercase tracking-wider transition text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 flex items-center gap-2"
+      >
+        Obras
+        <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 dark:bg-slate-800">{{ totalObras }}</span>
+      </button>
+
+      <button
+        (click)="cambiarTab('usuarios')"
+        [class.border-amber-500]="tabActiva === 'usuarios'"
+        [class.text-amber-600]="tabActiva === 'usuarios'"
+        [class.dark:text-amber-400]="tabActiva === 'usuarios'"
+        class="py-3 px-1 border-b-2 font-bold text-xs uppercase tracking-wider transition text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 flex items-center gap-2"
+      >
+        Usuarios
+        <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 dark:bg-slate-800">{{ totalUsuarios }}</span>
+      </button>
+
+      <button
+        (click)="cambiarTab('materiales')"
+        [class.border-amber-500]="tabActiva === 'materiales'"
+        [class.text-amber-600]="tabActiva === 'materiales'"
+        [class.dark:text-amber-400]="tabActiva === 'materiales'"
+        class="py-3 px-1 border-b-2 font-bold text-xs uppercase tracking-wider transition text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 flex items-center gap-2"
+      >
+        Inventario & Materiales
+        <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 dark:bg-slate-800">{{ totalMateriales }}</span>
+      </button>
+
+      <button
+        (click)="cambiarTab('proveedores')"
+        [class.border-amber-500]="tabActiva === 'proveedores'"
+        [class.text-amber-600]="tabActiva === 'proveedores'"
+        [class.dark:text-amber-400]="tabActiva === 'proveedores'"
+        class="py-3 px-1 border-b-2 font-bold text-xs uppercase tracking-wider transition text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 flex items-center gap-2"
+      >
+        Proveedores
+        <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 dark:bg-slate-800">{{ totalProveedores }}</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- CONTENIDO: TAB 1 RESUMEN                                                  -->
+  <!-- ========================================================================= -->
+  <div *ngIf="tabActiva === 'resumen'" class="space-y-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div
+        (click)="cambiarTab('obras')"
+        class="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-amber-500 transition cursor-pointer group shadow-xs space-y-2"
+      >
+        <div class="flex items-center justify-between">
+          <span class="text-2xl">🏗</span>
+          <span class="text-xs font-bold text-amber-600 dark:text-amber-400 group-hover:translate-x-1 transition">Ver módulo →</span>
+        </div>
+        <h4 class="text-sm font-bold text-slate-900 dark:text-white">Obras de la Empresa</h4>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Consulta los proyectos civiles y edificación en curso.</p>
+      </div>
+
+      <div
+        (click)="cambiarTab('usuarios')"
+        class="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-500 transition cursor-pointer group shadow-xs space-y-2"
+      >
+        <div class="flex items-center justify-between">
+          <span class="text-2xl">👥</span>
+          <span class="text-xs font-bold text-blue-600 dark:text-blue-400 group-hover:translate-x-1 transition">Ver módulo →</span>
+        </div>
+        <h4 class="text-sm font-bold text-slate-900 dark:text-white">Colaboradores</h4>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Personal técnico, jefes de obra y supervisores.</p>
+      </div>
+
+      <div
+        (click)="cambiarTab('materiales')"
+        class="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-500 transition cursor-pointer group shadow-xs space-y-2"
+      >
+        <div class="flex items-center justify-between">
+          <span class="text-2xl">📦</span>
+          <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400 group-hover:translate-x-1 transition">Ver módulo →</span>
+        </div>
+        <h4 class="text-sm font-bold text-slate-900 dark:text-white">Materiales e Inventario</h4>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Insumos y stock de almacén de la constructora.</p>
+      </div>
+
+      <div
+        (click)="cambiarTab('proveedores')"
+        class="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-amber-500 transition cursor-pointer group shadow-xs space-y-2"
+      >
+        <div class="flex items-center justify-between">
+          <span class="text-2xl">🚚</span>
+          <span class="text-xs font-bold text-amber-600 dark:text-amber-400 group-hover:translate-x-1 transition">Ver módulo →</span>
+        </div>
+        <h4 class="text-sm font-bold text-slate-900 dark:text-white">Proveedores</h4>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Aliados y suministros de construcción.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- CONTENIDO: TAB 2 OBRAS DEL TENANT                                         -->
+  <!-- ========================================================================= -->
+  <div *ngIf="tabActiva === 'obras'" class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-4">
+    <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+      <div>
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Obras de {{ empresa?.nombre_empresa }}</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Proyectos activos y en planificación</p>
+      </div>
+      <button
+        *ngIf="hasPermission('Registrar_obras')"
+        (click)="irA('/proyectos', { action: 'nuevo' })"
+        class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition shadow-xs"
+      >
+        + Nueva Obra para esta Empresa
+      </button>
+    </div>
+
+    <div *ngIf="obras.length === 0" class="py-8">
+      <app-empty-state
+        titulo="No hay obras en esta empresa"
+        descripcion="Esta empresa aún no tiene obras registradas."
+        accionTexto="Registrar Obra"
+        (onAccion)="irA('/proyectos', { action: 'nuevo' })"
+      ></app-empty-state>
+    </div>
+
+    <div *ngIf="obras.length > 0" class="divide-y divide-slate-100 dark:divide-slate-800/60">
+      <div *ngFor="let o of obras" class="py-3 flex items-center justify-between">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-mono font-bold text-amber-600 dark:text-amber-400">{{ o.codigo }}</span>
+            <app-status-badge [estado]="o.estado_obra"></app-status-badge>
+          </div>
+          <h5 class="text-sm font-bold text-slate-900 dark:text-white mt-1">{{ o.nombre }}</h5>
+          <p class="text-xs text-slate-500 dark:text-slate-400">{{ o.tipo_obra_nombre }} • {{ o.ubicacion || o.zona || 'Ubicación registrada' }}</p>
+        </div>
+        <button
+          (click)="verObra(o.id_obra)"
+          class="px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-900 dark:bg-slate-800 text-white hover:bg-amber-600 transition shadow-xs"
+        >
+          Ver Proyecto →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- CONTENIDO: TAB 3 USUARIOS DEL TENANT                                      -->
+  <!-- ========================================================================= -->
+  <div *ngIf="tabActiva === 'usuarios'" class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-4">
+    <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+      <div>
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Personal de {{ empresa?.nombre_empresa }}</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Colaboradores registrados en este tenant</p>
+      </div>
+      <button
+        *ngIf="hasPermission('Registrar_usuarios')"
+        (click)="irA('/usuarios')"
+        class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition shadow-xs"
+      >
+        + Asignar Nuevo Usuario
+      </button>
+    </div>
+
+    <div *ngIf="usuarios.length === 0" class="py-8">
+      <app-empty-state
+        titulo="Sin colaboradores asignados"
+        descripcion="No hay usuarios vinculados a esta empresa."
+        accionTexto="Gestionar Usuarios"
+        (onAccion)="irA('/usuarios')"
+      ></app-empty-state>
+    </div>
+
+    <div *ngIf="usuarios.length > 0" class="divide-y divide-slate-100 dark:divide-slate-800/60">
+      <div *ngFor="let u of usuarios" class="py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold flex items-center justify-center text-xs">
+            {{ u.nombre_completo ? u.nombre_completo.substring(0, 1).toUpperCase() : 'U' }}
+          </div>
+          <div>
+            <h5 class="text-sm font-bold text-slate-900 dark:text-white">{{ u.nombre_completo }}</h5>
+            <p class="text-xs text-slate-500 dark:text-slate-400">{{ u.correo }} • CI: {{ u.ci }}</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-bold px-2.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+            {{ u.nombre_rol }}
+          </span>
+          <app-status-badge [estado]="u.estado"></app-status-badge>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- CONTENIDO: TAB 4 MATERIALES & INVENTARIO                                  -->
+  <!-- ========================================================================= -->
+  <div *ngIf="tabActiva === 'materiales'" class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-4">
+    <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+      <div>
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Catálogo e Inventario de Insumos</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Materiales disponibles para obras</p>
+      </div>
+      <button
+        *ngIf="hasPermission('Registrar_materiales')"
+        (click)="irA('/materiales')"
+        class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition shadow-xs"
+      >
+        Ver Catálogo Completo
+      </button>
+    </div>
+
+    <div *ngIf="materiales.length === 0" class="py-8">
+      <app-empty-state titulo="Sin materiales" descripcion="No se registran materiales en el catálogo."></app-empty-state>
+    </div>
+
+    <div *ngIf="materiales.length > 0" class="divide-y divide-slate-100 dark:divide-slate-800/60">
+      <div *ngFor="let m of materiales" class="py-3 flex items-center justify-between">
+        <div>
+          <h5 class="text-sm font-bold text-slate-900 dark:text-white">{{ m.nombre_material }}</h5>
+          <p class="text-xs text-slate-500 dark:text-slate-400 font-mono">{{ m.codigo }} • {{ m.categoria.nombre || 'General' }}</p>
+        </div>
+        <div class="text-right">
+          <span class="font-mono font-bold text-sm text-slate-800 dark:text-slate-200">{{ m.stock_actual }} {{ m.unidad_medida.abreviatura || 'u' }}</span>
+          <app-status-badge [estado]="m.estado" class="ml-2"></app-status-badge>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- CONTENIDO: TAB 5 PROVEEDORES                                              -->
+  <!-- ========================================================================= -->
+  <div *ngIf="tabActiva === 'proveedores'" class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-4">
+    <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+      <div>
+        <h4 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Directorio de Proveedores</h4>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Proveedores habilitados para suministro a este tenant</p>
+      </div>
+      <button
+        *ngIf="hasPermission('Registrar_proveedores')"
+        (click)="irA('/proveedores')"
+        class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition shadow-xs"
+      >
+        Ver Directorio Completo
+      </button>
+    </div>
+
+    <div *ngIf="proveedores.length === 0" class="py-8">
+      <app-empty-state titulo="Sin proveedores" descripcion="No se registran proveedores activos."></app-empty-state>
+    </div>
+
+    <div *ngIf="proveedores.length > 0" class="divide-y divide-slate-100 dark:divide-slate-800/60">
+      <div *ngFor="let prov of proveedores" class="py-3 flex items-center justify-between">
+        <div>
+          <h5 class="text-sm font-bold text-slate-900 dark:text-white">{{ prov.nombre }}</h5>
+          <p class="text-xs text-slate-500 dark:text-slate-400">NIT: {{ prov.nit || 'No registrado' }} • Tel: {{ prov.telefono || 'Sin teléfono' }}</p>
+        </div>
+        <app-status-badge [estado]="prov.estado"></app-status-badge>
+      </div>
+    </div>
+  </div>
+
+</div>

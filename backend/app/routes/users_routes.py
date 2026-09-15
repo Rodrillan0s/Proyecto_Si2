@@ -5,9 +5,9 @@ from app.utils.security import verificar_token
 router = APIRouter(tags=["Usuarios"])
 
 @router.get('/')
-def get_users(token_data: dict = Depends(verificar_token)):
+def get_users(id_empresa: int = None, token_data: dict = Depends(verificar_token)):
     try:
-        return users_services.listar_usuarios(token_data)
+        return users_services.listar_usuarios(token_data, id_empresa)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 

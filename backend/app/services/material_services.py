@@ -13,7 +13,18 @@ class MaterialError(ValueError):
         super().__init__(message); self.status_code = status_code
 
 
-def _empresa(token):
+def _empresa(token, id_empresa_solicitada=None, obligatorio=True):
+    from app.utils.security import es_admin_sistema
+    es_admin = es_admin_sistema(token)
+    if es_admin:
+        if id_empresa_solicitada is not None and str(id_empresa_solicitada).strip() != "":
+            try:
+                return int(id_empresa_solicitada)
+            except (ValueError, TypeError):
+                pass
+        if not obligatorio:
+            return None
+        return token.get("id_empresa") or 1
     value = token.get("id_empresa")
     if not value:
         raise MaterialError("El token no identifica una empresa.", 403)
@@ -69,48 +80,53 @@ def _log(token, accion, descripcion, ip):
 
 def registrar(data, token, ip="unknown"):
     clean = _validar(data, True)
-    try: material_id = material_repos.crear(_empresa(token), clean)
+    empresa_target = _empresa(token, data.get("id_empresa"), obligatorio=True)
+    try: material_id = material_repos.crear(empresa_target, clean)
     except material_repos.MaterialConflictError as exc: raise MaterialError(str(exc), 409)
     _log(token,"REGISTRAR_MATERIAL",f"Material {material_id} registrado.",ip)
     return {"success":True,"id_material":material_id,"message":"Material registrado exitosamente."}
 
 
 def modificar(material_id, data, token, ip="unknown"):
-    if not material_repos.obtener(_empresa(token), material_id): raise MaterialError("Material no encontrado.",404)
+    empresa_target = _empresa(token, data.get("id_empresa"), obligatorio=False)
+    if not material_repos.obtener(empresa_target, material_id): raise MaterialError("Material no encontrado.",404)
     clean = _validar(data, False)
-    try: saved = material_repos.actualizar(_empresa(token), material_id, clean)
+    try: saved = material_repos.actualizar(empresa_target, material_id, clean)
     except material_repos.MaterialConflictError as exc: raise MaterialError(str(exc),409)
     if not saved: raise MaterialError("Material no encontrado.",404)
     _log(token,"MODIFICAR_MATERIAL",f"Material {material_id} modificado.",ip)
     return {"success":True,"message":"Material actualizado exitosamente."}
 
 
-def listar(token, q=None, id_categoria=None, estado=None, stock_bajo=None, page=1, limit=20):
+def listar(token, q=None, id_categoria=None, estado=None, stock_bajo=None, page=1, limit=20, id_empresa=None):
     if estado:
         estado = estado.upper()
         if estado not in ESTADOS: raise MaterialError("Estado inválido.")
     if page < 1 or limit < 1 or limit > 100: raise MaterialError("Paginación inválida; limit debe estar entre 1 y 100.")
-    rows,total = material_repos.listar(_empresa(token),q.strip() if q else None,id_categoria,estado,stock_bajo,page,limit)
+    empresa_target = _empresa(token, id_empresa, obligatorio=False)
+    rows,total = material_repos.listar(empresa_target,q.strip() if q else None,id_categoria,estado,stock_bajo,page,limit)
     return {"success":True,"data":rows,"pagination":{"page":page,"limit":limit,"total":total,"total_pages":(total+limit-1)//limit}}
 
 
-def detalle(material_id, token):
-    data = material_repos.obtener(_empresa(token),material_id)
+def detalle(material_id, token, id_empresa=None):
+    empresa_target = _empresa(token, id_empresa, obligatorio=False)
+    data = material_repos.obtener(empresa_target,material_id)
     if not data: raise MaterialError("Material no encontrado.",404)
     return {"success":True,"data":data}
 
 
-def cambiar_estado(material_id, estado, token, ip="unknown"):
+def cambiar_estado(material_id, estado, token, ip="unknown", id_empresa=None):
     estado = str(estado or "").strip().upper()
     if estado not in ESTADOS: raise MaterialError("Estado inválido.")
-    if not material_repos.cambiar_estado(_empresa(token),material_id,estado): raise MaterialError("Material no encontrado.",404)
+    empresa_target = _empresa(token, id_empresa, obligatorio=False)
+    if not material_repos.cambiar_estado(empresa_target,material_id,estado): raise MaterialError("Material no encontrado.",404)
     accion = "DESACTIVAR_MATERIAL" if estado == "INACTIVO" else "REACTIVAR_MATERIAL"
     _log(token,accion,f"Material {material_id} cambiado a {estado}.",ip)
     return {"success":True,"message":"Estado actualizado exitosamente."}
 
 
 def categorias(token):
-    _empresa(token); return {"success":True,"data":material_repos.catalogo_activo("categorias")}
+    _empresa(token, obligatorio=False); return {"success":True,"data":material_repos.catalogo_activo("categorias")}
 
 
 def _validar_categoria(data):
@@ -122,7 +138,7 @@ def _validar_categoria(data):
 
 
 def crear_categoria(data, token, ip="unknown"):
-    _empresa(token)
+    _empresa(token, obligatorio=False)
     nombre, descripcion = _validar_categoria(data)
     try: categoria = material_repos.crear_categoria(nombre, descripcion)
     except material_repos.MaterialConflictError as exc: raise MaterialError(str(exc), 409)
@@ -131,4 +147,4 @@ def crear_categoria(data, token, ip="unknown"):
 
 
 def unidades_medida(token):
-    _empresa(token); return {"success":True,"data":material_repos.catalogo_activo("unidades")}
+    _empresa(token, obligatorio=False); return {"success":True,"data":material_repos.catalogo_activo("unidades")}

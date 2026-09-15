@@ -13,6 +13,25 @@
     </button>
   </header>
 
+  <!-- BADGE CONTEXTO EMPRESA ACTIVA -->
+  <div *ngIf="empresaActiva" class="flex items-center justify-between px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs">
+    <div class="flex items-center gap-2">
+      <span class="font-bold text-amber-800 dark:text-amber-400">🏢 Insumos de:</span>
+      <span class="font-bold text-slate-900 dark:text-white">{{ empresaActiva.nombre_empresa }}</span>
+      <span class="text-slate-500 dark:text-slate-400 font-mono">(ID: {{ empresaActiva.id_empresa }})</span>
+    </div>
+    <span class="font-bold text-amber-700 dark:text-amber-300">{{ total }} material(es) en catálogo</span>
+  </div>
+
+  <!-- BADGE CONTEXTO VISTA GLOBAL -->
+  <div *ngIf="!empresaActiva && esVistaGlobal()" class="flex items-center justify-between px-4 py-2.5 bg-blue-500/10 border border-blue-500/30 rounded-lg text-xs">
+    <div class="flex items-center gap-2">
+      <span class="font-bold text-blue-700 dark:text-blue-400">🌐 Vista Global:</span>
+      <span class="text-slate-700 dark:text-slate-300">Catálogo e inventario general consolidado de todas las empresas</span>
+    </div>
+    <span class="font-bold text-blue-700 dark:text-blue-300">{{ total }} material(es) en total</span>
+  </div>
+
   <div class="filters-card">
     <div class="search-field">
       <label for="buscar-material">Buscar materiales</label>
@@ -52,11 +71,12 @@
       </div>
       <div class="table-scroll" *ngIf="materiales.length > 0">
         <table>
-          <thead><tr><th>Código</th><th>Material</th><th>Categoría</th><th>Unidad</th><th>Stock actual</th><th>Stock mínimo</th><th>Estado</th><th class="actions-head">Acciones</th></tr></thead>
+          <thead><tr><th>Código</th><th>Material</th><th *ngIf="esVistaGlobal()">Empresa</th><th>Categoría</th><th>Unidad</th><th>Stock actual</th><th>Stock mínimo</th><th>Estado</th><th class="actions-head">Acciones</th></tr></thead>
           <tbody>
             <tr *ngFor="let m of materiales">
               <td><span class="code">{{ m.codigo }}</span></td>
               <td><strong>{{ m.nombre_material }}</strong><span class="stock-label" [ngClass]="'stock-' + stockEstado(m)">{{ stockEstado(m) === 'sin' ? 'Sin stock' : stockEstado(m) === 'bajo' ? 'Stock bajo' : 'Stock normal' }}</span></td>
+              <td *ngIf="esVistaGlobal()"><span class="text-xs font-semibold text-slate-700 dark:text-slate-300">🏢 {{ m.nombre_empresa || 'Empresa #' + m.id_empresa }}</span></td>
               <td>{{ m.categoria.nombre }}</td><td>{{ m.unidad_medida.nombre }} <small>({{ m.unidad_medida.abreviatura }})</small></td>
               <td class="number">{{ m.stock_actual }}</td><td class="number">{{ m.stock_minimo }}</td>
               <td><span class="badge" [class.active]="m.estado === 'ACTIVO'" [class.inactive]="m.estado === 'INACTIVO'">{{ m.estado === 'ACTIVO' ? 'Activo' : 'Inactivo' }}</span></td>

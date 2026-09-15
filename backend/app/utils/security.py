@@ -38,10 +38,9 @@ def create_access_token(nro_usuario, username, nombre_rol, id_empresa, nombre_em
 
 
 def es_admin_sistema(token_data: dict) -> bool:
-    """Define si el usuario tiene permisos de plataforma usando el nombre de la empresa."""
-    nombre_rol = (token_data.get('nombre_rol') or '').upper()
-    nombre_empresa = (token_data.get('nombre_empresa') or '').upper().strip()
-    return nombre_rol == 'ADMINISTRADOR' and 'OBRATEC' in nombre_empresa
+    """Define si el usuario tiene permisos de plataforma global."""
+    nombre_rol = (token_data.get('nombre_rol') or '').upper().strip()
+    return nombre_rol == 'ADMINISTRADOR'
 
 
 def decode_access_token(token: str):

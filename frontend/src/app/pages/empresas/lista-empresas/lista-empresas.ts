@@ -36,9 +36,31 @@ export class ListaEmpresasComponent implements OnInit {
   totalEmpresas: number = 0;
   empresasActivas: number = 0;
   empresasInactivas: number = 0;
+  empresaActiva: Empresa | null = null;
+
+  hasPermission(permiso: string): boolean {
+    return this.authService.hasPermission(permiso);
+  }
+
+  activarEmpresa(e: Empresa) {
+    this.authService.seleccionarEmpresaActiva(e);
+  }
+
+  desactivarEmpresaActiva() {
+    this.authService.seleccionarEmpresaActiva(null);
+  }
 
   async ngOnInit() {
     this.cargando = true;
+
+    this.authService.empresaActiva$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((emp) => {
+        this.ngZone.run(() => {
+          this.empresaActiva = emp;
+          this.cdr.detectChanges();
+        });
+      });
 
     let intentos = 0;
 

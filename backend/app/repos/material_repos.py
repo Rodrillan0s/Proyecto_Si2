@@ -9,7 +9,8 @@ class MaterialConflictError(Exception):
 def _material(row):
     fields = ("id_material", "codigo", "nombre_material", "descripcion", "id_categoria",
               "categoria_nombre", "id_unidad_medida", "unidad_nombre", "unidad_abreviatura",
-              "precio", "stock_actual", "stock_minimo", "estado", "created_at", "updated_at")
+              "precio", "stock_actual", "stock_minimo", "estado", "created_at", "updated_at",
+              "id_empresa", "nombre_empresa")
     data = dict(zip(fields, row))
     data["categoria"] = {"id_categoria": data.pop("id_categoria"), "nombre": data.pop("categoria_nombre")}
     data["unidad_medida"] = {"id_unidad_medida": data.pop("id_unidad_medida"),
@@ -22,11 +23,13 @@ BASE = """
  SELECT m.id_material,m.codigo,m.nombre_material,m.descripcion,c.id_categoria,c.nombre,
         um.id_unidad_medida,um.nombre,um.abreviatura,m.precio,
         COALESCE(SUM(a.cantidad_actual),0) AS stock_actual,
-        COALESCE(MAX(a.stock_minimo),0) AS stock_minimo,m.estado,m.created_at,m.updated_at
+        COALESCE(MAX(a.stock_minimo),0) AS stock_minimo,m.estado,m.created_at,m.updated_at,
+        m.id_empresa,COALESCE(e.nombre_empresa, 'Sin Empresa') AS nombre_empresa
  FROM obras.t_material m
  JOIN obras.t_categoria_material c ON c.id_categoria=m.id_categoria
  JOIN obras.t_unidad_medida um ON um.id_unidad_medida=m.id_unidad_medida
  LEFT JOIN obras.t_materiales_almacen a ON a.id_material=m.id_material
+ LEFT JOIN obras.t_empresa e ON e.id_empresa=m.id_empresa
 """
 
 
@@ -90,8 +93,12 @@ def crear(id_empresa, data):
     finally: db.close_connection()
 
 
-def listar(id_empresa, q=None, id_categoria=None, estado=None, stock_bajo=None, page=1, limit=20):
-    filtros = ["m.id_empresa=%s"]; params = [id_empresa]
+def listar(id_empresa=None, q=None, id_categoria=None, estado=None, stock_bajo=None, page=1, limit=20):
+    filtros = []
+    params = []
+    if id_empresa is not None:
+        filtros.append("m.id_empresa=%s")
+        params.append(id_empresa)
     if q: filtros.append("(m.codigo ILIKE %s OR m.nombre_material ILIKE %s)"); params += [f"%{q}%", f"%{q}%"]
     if id_categoria: filtros.append("m.id_categoria=%s"); params.append(id_categoria)
     if estado: filtros.append("m.estado=%s"); params.append(estado)
@@ -99,12 +106,13 @@ def listar(id_empresa, q=None, id_categoria=None, estado=None, stock_bajo=None, 
     if stock_bajo is not None:
         having = "HAVING (COALESCE(SUM(a.cantidad_actual),0) <= COALESCE(MAX(a.stock_minimo),0)) = %s"
         params.append(stock_bajo)
-    group = " GROUP BY m.id_material,c.id_categoria,c.nombre,um.id_unidad_medida,um.nombre,um.abreviatura "
+    group = " GROUP BY m.id_material,c.id_categoria,c.nombre,um.id_unidad_medida,um.nombre,um.abreviatura,m.id_empresa,e.nombre_empresa "
+    where_sql = (" WHERE " + " AND ".join(filtros)) if filtros else ""
     db = PostgreSQL(); db.create_connection()
     try:
-        count_sql = "SELECT COUNT(*) FROM (" + BASE + " WHERE " + " AND ".join(filtros) + group + having + ") x"
+        count_sql = "SELECT COUNT(*) FROM (" + BASE + where_sql + group + having + ") x"
         total = db.execute_query(count_sql, tuple(params), fetchone=True)[0]
-        rows = db.execute_query(BASE + " WHERE " + " AND ".join(filtros) + group + having +
+        rows = db.execute_query(BASE + where_sql + group + having +
                                 " ORDER BY m.nombre_material,m.id_material LIMIT %s OFFSET %s",
                                 tuple(params + [limit,(page-1)*limit]), fetchall=True) or []
         return [_material(r) for r in rows], total
@@ -114,9 +122,15 @@ def listar(id_empresa, q=None, id_categoria=None, estado=None, stock_bajo=None, 
 def obtener(id_empresa, id_material):
     db = PostgreSQL(); db.create_connection()
     try:
-        row = db.execute_query(BASE + " WHERE m.id_empresa=%s AND m.id_material=%s " +
-            " GROUP BY m.id_material,c.id_categoria,c.nombre,um.id_unidad_medida,um.nombre,um.abreviatura",
-            (id_empresa,id_material), fetchone=True)
+        filtros = ["m.id_material=%s"]
+        params = [id_material]
+        if id_empresa is not None:
+            filtros.append("m.id_empresa=%s")
+            params.append(id_empresa)
+        where_sql = " WHERE " + " AND ".join(filtros)
+        row = db.execute_query(BASE + where_sql +
+            " GROUP BY m.id_material,c.id_categoria,c.nombre,um.id_unidad_medida,um.nombre,um.abreviatura,m.id_empresa,e.nombre_empresa",
+            tuple(params), fetchone=True)
         if not row: return None
         data = _material(row)
         chars = db.execute_query("SELECT id_caracteristica,nombre,valor FROM obras.t_material_caracteristica WHERE id_material=%s ORDER BY nombre", (id_material,), fetchall=True) or []
@@ -128,10 +142,14 @@ def obtener(id_empresa, id_material):
 def actualizar(id_empresa, id_material, data):
     db = PostgreSQL(); db.create_connection()
     try:
-        row = db.execute_query("""UPDATE obras.t_material SET codigo=%s,nombre_material=%s,descripcion=%s,
-            id_categoria=%s,id_unidad_medida=%s,precio=COALESCE(%s,precio) WHERE id_material=%s AND id_empresa=%s RETURNING id_material""",
-            (data["codigo"],data["nombre_material"],data.get("descripcion"),data["id_categoria"],data["id_unidad_medida"],
-             data.get("precio"),id_material,id_empresa), fetchone=True)
+        where_cond = "id_material=%s"
+        params = [data["codigo"],data["nombre_material"],data.get("descripcion"),data["id_categoria"],data["id_unidad_medida"],data.get("precio"),id_material]
+        if id_empresa is not None:
+            where_cond += " AND id_empresa=%s"
+            params.append(id_empresa)
+        row = db.execute_query(f"""UPDATE obras.t_material SET codigo=%s,nombre_material=%s,descripcion=%s,
+            id_categoria=%s,id_unidad_medida=%s,precio=COALESCE(%s,precio) WHERE {where_cond} RETURNING id_material""",
+            tuple(params), fetchone=True)
         if not row: db.conn.rollback(); return False
         db.execute_query("DELETE FROM obras.t_material_caracteristica WHERE id_material=%s", (id_material,))
         for item in data["caracteristicas"]:
@@ -149,7 +167,12 @@ def actualizar(id_empresa, id_material, data):
 def cambiar_estado(id_empresa, id_material, estado):
     db = PostgreSQL(); db.create_connection()
     try:
-        row = db.execute_query("UPDATE obras.t_material SET estado=%s WHERE id_material=%s AND id_empresa=%s RETURNING id_material",
-                               (estado,id_material,id_empresa), fetchone=True, commit=True)
+        where_cond = "id_material=%s"
+        params = [estado, id_material]
+        if id_empresa is not None:
+            where_cond += " AND id_empresa=%s"
+            params.append(id_empresa)
+        row = db.execute_query(f"UPDATE obras.t_material SET estado=%s WHERE {where_cond} RETURNING id_material",
+                               tuple(params), fetchone=True, commit=True)
         return bool(row)
     finally: db.close_connection()

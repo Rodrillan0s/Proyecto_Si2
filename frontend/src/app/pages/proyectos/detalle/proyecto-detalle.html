@@ -44,6 +44,71 @@
     </div>
   </div>
 
+  <!-- SECCIÓN CENTRAL DE NAVEGACIÓN: ¿QUÉ DESEAS GESTIONAR? (HUB DEL PROYECTO) -->
+  <div *ngIf="proyecto" class="bg-gradient-to-r from-orange-50/60 via-amber-50/30 to-white dark:from-slate-900 dark:via-slate-900/80 dark:to-slate-900 p-6 rounded-2xl border border-orange-100 dark:border-slate-800 shadow-sm space-y-4">
+    <div>
+      <h2 class="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-orange-600"></span>
+        ¿Qué deseas gestionar en este proyecto?
+      </h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Acceso directo a las áreas operativas clave del proyecto</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- 1. Estructura del proyecto -->
+      <button (click)="irAEstructura()" 
+              type="button"
+              class="flex items-center gap-3.5 p-4 rounded-xl bg-white dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700/80 hover:border-orange-500 dark:hover:border-orange-500 shadow-xs hover:shadow-md transition-all text-left group">
+        <div class="p-3 rounded-xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 group-hover:scale-110 transition-transform">
+          <span class="text-xl">🏗️</span>
+        </div>
+        <div>
+          <div class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">Estructura</div>
+          <div class="text-[11px] text-gray-500 dark:text-gray-400">Torres, pisos y unidades</div>
+        </div>
+      </button>
+
+      <!-- 2. Materiales -->
+      <button (click)="irAMateriales()" 
+              type="button"
+              class="flex items-center gap-3.5 p-4 rounded-xl bg-white dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700/80 hover:border-orange-500 dark:hover:border-orange-500 shadow-xs hover:shadow-md transition-all text-left group">
+        <div class="p-3 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+          <span class="text-xl">📦</span>
+        </div>
+        <div>
+          <div class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">Materiales</div>
+          <div class="text-[11px] text-gray-500 dark:text-gray-400">Catálogo e inventario</div>
+        </div>
+      </button>
+
+      <!-- 3. Órdenes de trabajo -->
+      <button (click)="irAOrdenesTrabajo()" 
+              type="button"
+              class="flex items-center gap-3.5 p-4 rounded-xl bg-white dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700/80 hover:border-orange-500 dark:hover:border-orange-500 shadow-xs hover:shadow-md transition-all text-left group">
+        <div class="p-3 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform">
+          <span class="text-xl">📋</span>
+        </div>
+        <div>
+          <div class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">Órdenes de Trabajo</div>
+          <div class="text-[11px] text-gray-500 dark:text-gray-400">Asignación y tareas</div>
+        </div>
+      </button>
+
+      <!-- 4. Proveedores -->
+      <button (click)="irAProveedores()" 
+              type="button"
+              class="flex items-center gap-3.5 p-4 rounded-xl bg-white dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700/80 hover:border-orange-500 dark:hover:border-orange-500 shadow-xs hover:shadow-md transition-all text-left group">
+        <div class="p-3 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
+          <span class="text-xl">👥</span>
+        </div>
+        <div>
+          <div class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">Proveedores</div>
+          <div class="text-[11px] text-gray-500 dark:text-gray-400">Suministros y contactos</div>
+        </div>
+      </button>
+    </div>
+  </div>
+
   <!-- BARRA DE PESTAÑAS (TABS) -->
   <div *ngIf="proyecto" class="flex items-center gap-2 border-b border-gray-200 dark:border-slate-800">
     <button (click)="seleccionarTab('general')" 
@@ -60,7 +125,7 @@
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
       </svg>
-      Estructura de la Obra
+      Estructura de la Obra (WBS)
     </button>
   </div>
 

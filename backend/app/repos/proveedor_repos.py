@@ -12,7 +12,7 @@ class ProveedorConflictError(Exception):
 _FIELDS = (
     "id_proveedor", "nombre", "nit", "telefono", "email",
     "direccion", "contacto", "estado", "id_empresa",
-    "created_at", "updated_at",
+    "created_at", "updated_at", "nombre_empresa",
 )
 
 
@@ -23,9 +23,12 @@ def _proveedor(row):
 # ─────────────────────────────────────────────────────────────────────────────
 # LISTAR (paginado)
 # ─────────────────────────────────────────────────────────────────────────────
-def listar(id_empresa, q=None, estado=None, page=1, limit=20):
-    filtros = ["p.id_empresa = %s"]
-    params = [id_empresa]
+def listar(id_empresa=None, q=None, estado=None, page=1, limit=20):
+    filtros = []
+    params = []
+    if id_empresa is not None:
+        filtros.append("p.id_empresa = %s")
+        params.append(id_empresa)
 
     if q:
         filtros.append(
@@ -37,20 +40,22 @@ def listar(id_empresa, q=None, estado=None, page=1, limit=20):
         filtros.append("p.estado = %s")
         params.append(estado)
 
-    where = " AND ".join(filtros)
+    where = (" WHERE " + " AND ".join(filtros)) if filtros else ""
 
     base_sql = f"""
         SELECT p.id_proveedor, p.nombre, p.nit, p.telefono, p.email,
                p.direccion, p.contacto, p.estado, p.id_empresa,
-               p.created_at, p.updated_at
+               p.created_at, p.updated_at,
+               COALESCE(e.nombre_empresa, 'Sin Empresa') AS nombre_empresa
         FROM obras.t_proveedor p
-        WHERE {where}
+        LEFT JOIN obras.t_empresa e ON e.id_empresa = p.id_empresa
+        {where}
     """
 
     db = PostgreSQL()
     db.create_connection()
     try:
-        count_sql = f"SELECT COUNT(*) FROM obras.t_proveedor p WHERE {where}"
+        count_sql = f"SELECT COUNT(*) FROM obras.t_proveedor p {where}"
         total = db.execute_query(count_sql, tuple(params), fetchone=True)[0]
 
         rows = db.execute_query(
@@ -70,15 +75,22 @@ def obtener(id_empresa, id_proveedor):
     db = PostgreSQL()
     db.create_connection()
     try:
+        where = "WHERE p.id_proveedor = %s"
+        params = [id_proveedor]
+        if id_empresa is not None:
+            where += " AND p.id_empresa = %s"
+            params.append(id_empresa)
         row = db.execute_query(
-            """
+            f"""
             SELECT p.id_proveedor, p.nombre, p.nit, p.telefono, p.email,
                    p.direccion, p.contacto, p.estado, p.id_empresa,
-                   p.created_at, p.updated_at
+                   p.created_at, p.updated_at,
+                   COALESCE(e.nombre_empresa, 'Sin Empresa') AS nombre_empresa
             FROM obras.t_proveedor p
-            WHERE p.id_empresa = %s AND p.id_proveedor = %s
+            LEFT JOIN obras.t_empresa e ON e.id_empresa = p.id_empresa
+            {where}
             """,
-            (id_empresa, id_proveedor),
+            tuple(params),
             fetchone=True,
         )
         if not row:
@@ -130,8 +142,18 @@ def actualizar(id_empresa, id_proveedor, data):
     db = PostgreSQL()
     db.create_connection()
     try:
+        where = "id_proveedor = %s"
+        params = [
+            data["nombre"], data["nit"],
+            data.get("telefono"), data.get("email"),
+            data.get("direccion"), data.get("contacto"),
+            id_proveedor,
+        ]
+        if id_empresa is not None:
+            where += " AND id_empresa = %s"
+            params.append(id_empresa)
         row = db.execute_query(
-            """
+            f"""
             UPDATE obras.t_proveedor
             SET nombre    = %s,
                 nit       = %s,
@@ -139,15 +161,10 @@ def actualizar(id_empresa, id_proveedor, data):
                 email     = %s,
                 direccion = %s,
                 contacto  = %s
-            WHERE id_proveedor = %s AND id_empresa = %s
+            WHERE {where}
             RETURNING id_proveedor
             """,
-            (
-                data["nombre"], data["nit"],
-                data.get("telefono"), data.get("email"),
-                data.get("direccion"), data.get("contacto"),
-                id_proveedor, id_empresa,
-            ),
+            tuple(params),
             fetchone=True,
         )
         if not row:
@@ -173,14 +190,19 @@ def cambiar_estado(id_empresa, id_proveedor, estado):
     db = PostgreSQL()
     db.create_connection()
     try:
+        where = "id_proveedor = %s"
+        params = [estado, id_proveedor]
+        if id_empresa is not None:
+            where += " AND id_empresa = %s"
+            params.append(id_empresa)
         row = db.execute_query(
-            """
+            f"""
             UPDATE obras.t_proveedor
             SET estado = %s
-            WHERE id_proveedor = %s AND id_empresa = %s
+            WHERE {where}
             RETURNING id_proveedor
             """,
-            (estado, id_proveedor, id_empresa),
+            tuple(params),
             fetchone=True,
             commit=True,
         )
@@ -192,20 +214,25 @@ def cambiar_estado(id_empresa, id_proveedor, estado):
 # ─────────────────────────────────────────────────────────────────────────────
 # MATERIALES DE UN PROVEEDOR
 # ─────────────────────────────────────────────────────────────────────────────
-def listar_materiales_de_proveedor(id_proveedor, id_empresa):
+def listar_materiales_de_proveedor(id_proveedor, id_empresa=None):
     db = PostgreSQL()
     db.create_connection()
     try:
+        where = "WHERE pm.id_proveedor = %s"
+        params = [id_proveedor]
+        if id_empresa is not None:
+            where += " AND m.id_empresa = %s"
+            params.append(id_empresa)
         rows = db.execute_query(
-            """
+            f"""
             SELECT m.id_material, m.codigo, m.nombre_material, m.descripcion,
                    m.estado, pm.created_at AS asociado_en
             FROM obras.t_proveedor_material pm
             JOIN obras.t_material m ON m.id_material = pm.id_material
-            WHERE pm.id_proveedor = %s AND m.id_empresa = %s
+            {where}
             ORDER BY m.nombre_material, m.id_material
             """,
-            (id_proveedor, id_empresa),
+            tuple(params),
             fetchall=True,
         ) or []
         fields = ("id_material", "codigo", "nombre_material", "descripcion", "estado", "asociado_en")
@@ -266,14 +293,19 @@ def desasociar_material(id_proveedor, id_material):
 # ─────────────────────────────────────────────────────────────────────────────
 # VERIFICAR EXISTENCIA DE MATERIAL
 # ─────────────────────────────────────────────────────────────────────────────
-def material_existe(id_material, id_empresa):
+def material_existe(id_material, id_empresa=None):
     db = PostgreSQL()
     db.create_connection()
     try:
+        where = "WHERE id_material=%s"
+        params = [id_material]
+        if id_empresa is not None:
+            where += " AND id_empresa=%s"
+            params.append(id_empresa)
         return bool(
             db.execute_query(
-                "SELECT 1 FROM obras.t_material WHERE id_material=%s AND id_empresa=%s",
-                (id_material, id_empresa),
+                f"SELECT 1 FROM obras.t_material {where}",
+                tuple(params),
                 fetchone=True,
             )
         )

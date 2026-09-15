@@ -2,10 +2,10 @@ from app.repos import users_repos
 from app.utils import security
 from werkzeug.security import generate_password_hash
 
-def listar_usuarios(token_data: dict):
+def listar_usuarios(token_data: dict, id_empresa_solicitada: int = None):
     es_superadmin = security.es_admin_sistema(token_data)
-    id_empresa = None if es_superadmin else token_data.get('id_empresa')
-    usuarios = users_repos.obtener_todos_los_usuarios(id_empresa)
+    filtro_empresa = id_empresa_solicitada if es_superadmin else token_data.get('id_empresa')
+    usuarios = users_repos.obtener_todos_los_usuarios(filtro_empresa)
     return {
         "success": True,
         "message": "Usuarios recuperados exitosamente",

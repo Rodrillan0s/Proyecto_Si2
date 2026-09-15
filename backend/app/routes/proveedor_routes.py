@@ -24,10 +24,11 @@ def get_proveedores(
     estado: str = None,
     page: int = 1,
     limit: int = Query(20, le=100),
+    id_empresa: int = None,
     token=Depends(exigir_permiso("Visualizar_proveedores")),
 ):
     try:
-        return proveedor_services.listar(token, q, estado, page, limit)
+        return proveedor_services.listar(token, q, estado, page, limit, id_empresa)
     except proveedor_services.ProveedorError as exc:
         _raise(exc)
 
@@ -53,10 +54,11 @@ def post_proveedor(
 @router.get("/{id_proveedor}")
 def get_proveedor(
     id_proveedor: int,
+    id_empresa: int = None,
     token=Depends(exigir_permiso("Visualizar_proveedores")),
 ):
     try:
-        return proveedor_services.detalle(id_proveedor, token)
+        return proveedor_services.detalle(id_proveedor, token, id_empresa)
     except proveedor_services.ProveedorError as exc:
         _raise(exc)
 
@@ -101,10 +103,11 @@ def patch_estado(
 @router.get("/{id_proveedor}/materiales")
 def get_materiales_proveedor(
     id_proveedor: int,
+    id_empresa: int = None,
     token=Depends(exigir_permiso("Visualizar_proveedores")),
 ):
     try:
-        return proveedor_services.listar_materiales(id_proveedor, token)
+        return proveedor_services.listar_materiales(id_proveedor, token, id_empresa)
     except proveedor_services.ProveedorError as exc:
         _raise(exc)
 

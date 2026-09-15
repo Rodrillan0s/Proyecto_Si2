@@ -53,10 +53,20 @@ export class MaterialesComponent implements OnInit {
   objetivoEstado?: Material;
   form: MaterialFormModel = this.formularioVacio();
   categoriaForm = { nombre: '', descripcion: '' };
+  empresaActiva: any = null;
 
   ngOnInit(): void {
     this.busqueda$.pipe(debounceTime(400), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => { this.pagina = 1; this.cargarMateriales(); });
+
+    this.auth.empresaActiva$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((emp) => {
+        this.empresaActiva = emp;
+        this.pagina = 1;
+        this.cargarMateriales();
+      });
+
     this.loadingCatalogs = true;
     forkJoin({ categorias: this.service.categorias(), unidades: this.service.unidadesMedida() })
       .pipe(finalize(() => { this.loadingCatalogs = false; this.cdr.detectChanges(); })).subscribe({
@@ -74,14 +84,24 @@ export class MaterialesComponent implements OnInit {
 
   cargarMateriales(): void {
     this.loadingMaterials = true; this.error = '';
-    this.service.listar({ q: this.q.trim() || undefined, id_categoria: this.categoria ? +this.categoria : undefined,
+    const idEmpresa = this.auth.obtenerIdEmpresaActiva();
+    this.service.listar({
+      q: this.q.trim() || undefined,
+      id_categoria: this.categoria ? +this.categoria : undefined,
       estado: (this.estado || undefined) as EstadoMaterial | undefined,
       stock_bajo: this.stock === 'bajo' ? true : this.stock === 'normal' ? false : undefined,
-      page: this.pagina, limit: this.limite })
+      page: this.pagina,
+      limit: this.limite,
+      id_empresa: idEmpresa || undefined
+    })
       .pipe(finalize(() => { this.loadingMaterials = false; this.cdr.detectChanges(); })).subscribe({
         next: res => { this.materiales = res.data || []; this.total = res.pagination.total; this.totalPaginas = res.pagination.total_pages; this.cdr.detectChanges(); },
         error: err => this.mostrarError(this.mensajeError(err, 'No se pudo cargar el catálogo de materiales.'))
       });
+  }
+
+  esVistaGlobal(): boolean {
+    return this.auth.esVistaGlobal();
   }
 
   buscar(): void { this.busqueda$.next(this.q.trim()); }
@@ -173,9 +193,10 @@ export class MaterialesComponent implements OnInit {
       id_unidad_medida: +this.form.id_unidad_medida, precio: this.form.precio === null ? null : +this.form.precio,
       stock_minimo: +this.form.stock_minimo,
       caracteristicas: this.form.caracteristicas.map(c => ({ nombre: c.nombre.trim(), valor: c.valor.trim() })) };
+    const idEmpresa = this.auth.obtenerIdEmpresaActiva() || this.auth.obtenerUsuario()?.id_empresa;
     const request = this.editando && this.form.id_material
-      ? this.service.modificar(this.form.id_material, base as MaterialUpdatePayload)
-      : this.service.registrar({ ...base, cantidad_inicial: +this.form.cantidad_inicial, fecha_ingreso: this.form.fecha_ingreso } as MaterialCreatePayload);
+      ? this.service.modificar(this.form.id_material, { ...base, id_empresa: idEmpresa } as MaterialUpdatePayload)
+      : this.service.registrar({ ...base, cantidad_inicial: +this.form.cantidad_inicial, fecha_ingreso: this.form.fecha_ingreso, id_empresa: idEmpresa } as MaterialCreatePayload);
     request.pipe(finalize(() => { this.liberarOperacionFormulario(); this.cdr.detectChanges(); })).subscribe({
       next: () => {
         this.liberarOperacionFormulario();
@@ -226,10 +247,10 @@ export class MaterialesComponent implements OnInit {
   }
   stockEstado(m: Material): 'sin' | 'bajo' | 'normal' { return +m.stock_actual === 0 ? 'sin' : +m.stock_actual <= +m.stock_minimo ? 'bajo' : 'normal'; }
 
-  puedeRegistrar(): boolean { return this.rolGestion(); }
-  puedeModificar(): boolean { return this.rolGestion(); }
-  puedeCambiarEstado(): boolean { return this.rolGestion(); }
-  private rolGestion(): boolean { return ['ADMINISTRADOR', 'ADMINISTRADOR_EMPRESA'].includes(this.auth.obtenerUsuario()?.nombre_rol); }
+  hasPermission(permiso: string): boolean { return this.auth.hasPermission(permiso); }
+  puedeRegistrar(): boolean { return this.auth.hasPermission('Registrar_materiales'); }
+  puedeModificar(): boolean { return this.auth.hasPermission('Modificar_materiales'); }
+  puedeCambiarEstado(): boolean { return this.auth.hasPermission('Desactivar_materiales'); }
 
   private mensajeError(err: any, fallback: string): string {
     if (err?.status === 403) return 'No tienes permisos para realizar esta acción.';

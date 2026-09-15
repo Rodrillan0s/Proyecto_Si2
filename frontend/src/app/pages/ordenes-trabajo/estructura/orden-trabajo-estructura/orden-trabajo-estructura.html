@@ -1,0 +1,194 @@
+<div class="estructura-container">
+
+  <div class="estructura-header">
+    <div>
+      <p class="estructura-subtitle">Gestión de órdenes</p>
+
+      <h2>
+        {{ modoEdicion ? 'Editar orden de trabajo' : 'Nueva orden de trabajo' }}
+      </h2>
+    </div>
+
+    <button
+      type="button"
+      class="btn-close"
+      (click)="cerrarFormulario()"
+      [disabled]="guardando"
+    >
+      ×
+    </button>
+  </div>
+
+  <div
+    *ngIf="mensajeError"
+    class="error-message"
+  >
+    {{ mensajeError }}
+  </div>
+
+  <form
+    class="estructura-form"
+    (ngSubmit)="guardar()"
+  >
+
+    <section class="form-section">
+
+      <div class="section-heading">
+        <h3>Información de la orden</h3>
+
+        <p>
+          Complete los datos principales de la orden de trabajo.
+        </p>
+      </div>
+
+      <div class="form-grid">
+
+        <div class="form-group">
+          <label for="id_obra">
+            ID de obra *
+          </label>
+
+          <input
+            id="id_obra"
+            type="number"
+            [(ngModel)]="formulario.id_obra"
+            name="id_obra"
+            min="1"
+            placeholder="Ingrese el ID de la obra"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="tipo_trab">
+            Tipo de trabajo *
+          </label>
+
+          <input
+            id="tipo_trab"
+            type="text"
+            [(ngModel)]="formulario.tipo_trab"
+            name="tipo_trab"
+            maxlength="100"
+            placeholder="Ej. Instalación eléctrica"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="cuadrilla">
+            Cuadrilla
+          </label>
+
+          <input
+            id="cuadrilla"
+            type="number"
+            [(ngModel)]="formulario.cuadrilla"
+            name="cuadrilla"
+            min="0"
+            placeholder="Cantidad"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="estado">
+            Estado *
+          </label>
+
+          <select
+            id="estado"
+            [(ngModel)]="formulario.estado"
+            name="estado"
+            required
+          >
+            <option value="PENDIENTE">
+              Pendiente
+            </option>
+
+            <option value="EN_PROCESO">
+              En proceso
+            </option>
+
+            <option value="FINALIZADO">
+              Finalizado
+            </option>
+
+            <option value="CANCELADO">
+              Cancelado
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="fecha_inicio">
+            Fecha de inicio *
+          </label>
+
+          <input
+            id="fecha_inicio"
+            type="date"
+            [(ngModel)]="formulario.fecha_inicio"
+            name="fecha_inicio"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="fecha_fin">
+            Fecha de fin
+          </label>
+
+          <input
+            id="fecha_fin"
+            type="date"
+            [(ngModel)]="formulario.fecha_fin"
+            name="fecha_fin"
+          />
+        </div>
+
+        <div class="form-group full-width">
+          <label for="observacion">
+            Observación
+          </label>
+
+          <textarea
+            id="observacion"
+            [(ngModel)]="formulario.observacion"
+            name="observacion"
+            rows="4"
+            placeholder="Ingrese una observación..."
+          ></textarea>
+        </div>
+
+      </div>
+
+    </section>
+
+    <div class="form-actions">
+
+      <button
+        type="button"
+        class="btn-secondary"
+        (click)="cerrarFormulario()"
+        [disabled]="guardando"
+      >
+        Cancelar
+      </button>
+
+      <button
+        type="submit"
+        class="btn-primary"
+        [disabled]="guardando"
+      >
+        {{
+          guardando
+            ? 'Guardando...'
+            : (modoEdicion ? 'Guardar cambios' : 'Crear orden')
+        }}
+      </button>
+
+    </div>
+
+  </form>
+
+</div>

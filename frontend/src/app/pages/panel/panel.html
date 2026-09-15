@@ -1,199 +1,860 @@
-<!-- Sub-header -->
-<div class="panel-subheader">
-  <div class="panel-subheader-left">
-    <h2 class="panel-title-text" *ngIf="vistaActiva === 'resumen'">
-      {{ esAdministrador() ? 'Panel Ejecutivo & Control General' : 'Panel de Operaciones en Campo' }}
-    </h2>
-    <h2 class="panel-title-text" *ngIf="vistaActiva === 'preferencias'">Preferencias del Sistema</h2>
-    <h2 class="panel-title-text" *ngIf="vistaActiva === 'seguridad'">Seguridad y Auditoria</h2>
-  </div>
-  <div class="panel-subheader-right">
-    <button class="btn-create-project" *ngIf="vistaActiva === 'resumen' && esAdministrador()" (click)="irAProyectos()">
-      + Gestionar Obras
-    </button>
-  </div>
-</div>
+<div class="view-panel space-y-6">
 
-<!-- 1. VISTA RESUMEN GENERAL -->
-<div class="view-panel space-y-6" *ngIf="vistaActiva === 'resumen'">
-  
-  <!-- KPI CARDS EN TIEMPO REAL -->
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-    <div class="kpi-card bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm">
-      <div class="text-xs font-bold text-gray-500 uppercase tracking-wider">Obras Totales</div>
-      <div class="text-3xl font-black text-gray-900 dark:text-white mt-1">{{ totalProyectos }}</div>
-      <div class="text-[11px] text-orange-600 font-semibold mt-1">Tenant Activo</div>
+  <!-- ========================================================================= -->
+  <!-- CABECERA DEL PANEL (PAGE HEADER)                                         -->
+  <!-- ========================================================================= -->
+  <app-page-header
+    [titulo]="'Panel de Control — ' + (usuarioActual?.nombre_empresa || 'OBRATEC')"
+    [subtitulo]="'Vista consolidada de operaciones para ' + usuarioActual?.nombre_completo"
+    [categoria]="rolUsuario"
+    [codigo]="usuarioActual?.ci ? 'CI: ' + usuarioActual?.ci : undefined"
+  >
+    <div badge class="ml-2">
+      <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+        {{ rolUsuario.replace('_', ' ') }}
+      </span>
     </div>
 
-    <div class="kpi-card bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm">
-      <div class="text-xs font-bold text-gray-500 uppercase tracking-wider">En Ejecución Activa</div>
-      <div class="text-3xl font-black text-green-600 mt-1">{{ proyectosActivos }}</div>
-      <div class="text-[11px] text-gray-400 mt-1">Personal en terreno</div>
-    </div>
+    <div actions class="flex items-center gap-2">
+      <!-- Botón de acción contextual según permisos -->
+      <button
+        *ngIf="hasPermission('Registrar_obras')"
+        (click)="navegarA('/proyectos', { action: 'nuevo' })"
+        class="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition shadow-xs"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Nueva Obra
+      </button>
 
-    <div class="kpi-card bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm">
-      <div class="text-xs font-bold text-gray-500 uppercase tracking-wider">En Planificación</div>
-      <div class="text-3xl font-black text-blue-600 mt-1">{{ proyectosPlanificacion }}</div>
-      <div class="text-[11px] text-gray-400 mt-1">Cotizaciones y permisos</div>
-    </div>
+      <button
+        *ngIf="hasPermission('Registrar_materiales') && !hasPermission('Registrar_obras')"
+        (click)="navegarA('/materiales')"
+        class="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-white transition shadow-xs"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Registrar Material
+      </button>
 
-    <div class="kpi-card bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm">
-      <div class="text-xs font-bold text-gray-500 uppercase tracking-wider">Obras Concluidas</div>
-      <div class="text-3xl font-black text-gray-600 dark:text-gray-300 mt-1">{{ proyectosFinalizados }}</div>
-      <div class="text-[11px] text-gray-400 mt-1">Listas para entrega</div>
+      <button
+        (click)="alternarModoOscuro()"
+        class="p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+        title="Cambiar tema"
+      >
+        <svg *ngIf="!modoOscuro" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+        <svg *ngIf="modoOscuro" class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+      </button>
     </div>
-  </div>
+  </app-page-header>
 
-  <!-- ROW 1: CHARTS AND INDICATORS -->
-  <div class="grid-2-cols">
-    <!-- Card Chart 1 -->
-    <div class="dashboard-card">
-      <div class="card-header">
-        <h3 class="card-title">Avance Fisico de Obra (Bid Win-Loss)</h3>
-        <span class="card-tag">Ultimos 12 meses</span>
-      </div>
-      <div class="chart-mockup">
-        <div class="bar-chart-container">
-          <div class="bar-column">
-            <div class="bar-segment won" style="height: 60%;"></div>
-            <div class="bar-segment lost" style="height: 25%;"></div>
-            <span class="bar-label">Q1 '26</span>
+  <!-- ========================================================================= -->
+  <!-- VISTA: RESUMEN / DASHBOARDS SEGÚN ROL                                     -->
+  <!-- ========================================================================= -->
+  <div *ngIf="vistaActiva === 'resumen'" class="space-y-6">
+
+    <!-- --------------------------------------------------------------------- -->
+    <!-- 1. DASHBOARD: ADMINISTRADOR (GESTIÓN GLOBAL DE PLATAFORMA)            -->
+    <!-- --------------------------------------------------------------------- -->
+    <ng-container *ngIf="rolUsuario === 'ADMINISTRADOR'">
+      <!-- ===================================================================== -->
+      <!-- CASO A: DASHBOARD GLOBAL DE PLATAFORMA (Sin empresa activa)           -->
+      <!-- ===================================================================== -->
+      <div *ngIf="esVistaGlobal()" class="space-y-6">
+        <!-- Banner de Bienvenida Global -->
+        <div class="rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/60 dark:bg-blue-950/30 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-lg">
+              🌐
+            </div>
+            <div>
+              <p class="text-xs font-bold text-blue-900 dark:text-blue-200 uppercase tracking-wider">
+                VISTA GLOBAL DE PLATAFORMA
+              </p>
+              <p class="text-xs text-blue-700 dark:text-blue-300">
+                Visualizando indicadores consolidados de todas las empresas. Selecciona una empresa en el encabezado o abajo para ingresar a su dashboard operativo.
+              </p>
+            </div>
           </div>
-          <div class="bar-column">
-            <div class="bar-segment won" style="height: 70%;"></div>
-            <div class="bar-segment lost" style="height: 15%;"></div>
-            <span class="bar-label">Q2 '26</span>
-          </div>
-          <div class="bar-column">
-            <div class="bar-segment won" style="height: 45%;"></div>
-            <div class="bar-segment lost" style="height: 40%;"></div>
-            <span class="bar-label">Q3 '26</span>
-          </div>
-          <div class="bar-column">
-            <div class="bar-segment won" style="height: 80%;"></div>
-            <div class="bar-segment lost" style="height: 10%;"></div>
-            <span class="bar-label">Q4 '26</span>
-          </div>
+          <button (click)="navegarA('/empresas')" class="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition shadow-xs shrink-0">
+            Ver Directorio de Empresas
+          </button>
         </div>
-      </div>
-    </div>
 
-    <!-- Card Chart 2 -->
-    <div class="dashboard-card">
-      <div class="card-header">
-        <h3 class="card-title">Horas de Mano de Obra (Manpower Hours)</h3>
-        <span class="card-tag">Ultimos 30 dias</span>
-      </div>
-      <div class="chart-mockup">
-        <svg viewBox="0 0 400 150" class="svg-chart">
-          <defs>
-            <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#ea580c" stop-opacity="0.3"/>
-              <stop offset="100%" stop-color="#ea580c" stop-opacity="0.0"/>
-            </linearGradient>
-          </defs>
-          <path d="M 0 100 Q 80 40 160 80 T 320 20 L 400 60 L 400 150 L 0 150 Z" fill="url(#chartGrad)"/>
-          <path d="M 0 100 Q 80 40 160 80 T 320 20 L 400 60" fill="none" stroke="#ea580c" stroke-width="3"/>
-          <circle cx="320" cy="20" r="5" fill="#ea580c"/>
-        </svg>
-        <div class="chart-tooltip">70 Horas Registradas</div>
-      </div>
-    </div>
-  </div>
+        <!-- Tarjetas Métricas Globales -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <app-dashboard-card
+            titulo="Tenants / Empresas"
+            [valor]="totalEmpresas"
+            subtitulo="Empresas registradas"
+            [detalle]="empresasActivas + ' activas'"
+            tipo="amber"
+            [clickable]="true"
+            (click)="navegarA('/empresas')"
+          >
+            <svg icon class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+          </app-dashboard-card>
 
-  <!-- ROW 2: PROYECTOS RECIENTES EN EL PANEL -->
-  <div class="dashboard-card">
-    <div class="card-header">
-      <h3 class="card-title">Obras y Proyectos Recientes</h3>
-      <button (click)="irAProyectos()" class="text-xs font-bold text-orange-600 hover:underline">Ver todos &rarr;</button>
-    </div>
-    
-    <div class="overflow-x-auto mt-2">
-      <table class="w-full text-left text-xs border-collapse">
-        <thead>
-          <tr class="text-gray-400 uppercase font-bold border-b border-gray-100 dark:border-slate-800 pb-2">
-            <th class="py-2">Código</th>
-            <th class="py-2">Nombre</th>
-            <th class="py-2">Tipo</th>
-            <th class="py-2">Estado</th>
-            <th class="py-2">Ubicación</th>
-            <th class="py-2 text-right">Acción</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-50 dark:divide-slate-800/50">
-          <tr *ngFor="let p of proyectos.slice(0, 5)" class="hover:bg-gray-50 dark:hover:bg-slate-800/30 cursor-pointer" (click)="verProyecto(p.id_obra)">
-            <td class="py-3 font-mono font-bold text-orange-600">{{ p.codigo }}</td>
-            <td class="py-3 font-bold text-gray-800 dark:text-white">{{ p.nombre }}</td>
-            <td class="py-3 text-gray-500">{{ p.tipo_obra_nombre }}</td>
-            <td class="py-3">
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase"
-                    [ngClass]="{
-                      'bg-green-100 text-green-700': p.estado_obra === 'ACTIVO',
-                      'bg-blue-100 text-blue-700': p.estado_obra === 'PLANIFICACION',
-                      'bg-amber-100 text-amber-700': p.estado_obra === 'PAUSADO',
-                      'bg-gray-100 text-gray-700': p.estado_obra === 'FINALIZADO'
-                    }">
-                {{ p.estado_obra }}
-              </span>
-            </td>
-            <td class="py-3 text-gray-500">{{ p.zona || p.ubicacion || 'Santa Cruz' }}</td>
-            <td class="py-3 text-right">
-              <button (click)="verProyecto(p.id_obra); $event.stopPropagation()" class="text-blue-600 font-bold hover:underline">
-                Ficha &rarr;
+          <app-dashboard-card
+            titulo="Usuarios Globales"
+            [valor]="totalUsuarios"
+            subtitulo="Cuentas del ecosistema"
+            detalle="Todos los roles"
+            tipo="blue"
+            [clickable]="true"
+            (click)="navegarA('/usuarios')"
+          >
+            <svg icon class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          </app-dashboard-card>
+
+          <app-dashboard-card
+            titulo="Obras en Plataforma"
+            [valor]="totalProyectos"
+            subtitulo="Proyectos globales"
+            [detalle]="proyectosActivos + ' activos'"
+            tipo="emerald"
+            [clickable]="true"
+            (click)="navegarA('/proyectos')"
+          >
+            <svg icon class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+          </app-dashboard-card>
+
+          <app-dashboard-card
+            titulo="Auditoría / Bitácora"
+            [valor]="totalEventosBitacora"
+            subtitulo="Eventos monitoreados"
+            detalle="Seguridad activa"
+            tipo="default"
+            [clickable]="true"
+            (click)="navegarA('/bitacora')"
+          >
+            <svg icon class="w-5 h-5 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          </app-dashboard-card>
+        </div>
+
+        <!-- Sección de Gestión Global (Empresas & Bitácora) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Empresas Registradas -->
+          <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Empresas / Tenants Activos</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Selecciona una empresa para operar en su contexto</p>
+              </div>
+              <button (click)="navegarA('/empresas')" class="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline">
+                Gestionar empresas →
               </button>
-            </td>
-          </tr>
-          <tr *ngIf="proyectos.length === 0">
-            <td colspan="6" class="py-6 text-center text-gray-400">No hay proyectos registrados aún.</td>
-          </tr>
-        </tbody>
-      </table>
+            </div>
+
+            <div *ngIf="cargandoEmpresas" class="py-12 text-center text-xs text-slate-500">
+              Cargando empresas...
+            </div>
+
+            <div *ngIf="!cargandoEmpresas && empresas.length === 0" class="py-8">
+              <app-empty-state titulo="Sin empresas registradas" descripcion="No se encontraron empresas en la plataforma."></app-empty-state>
+            </div>
+
+            <div *ngIf="!cargandoEmpresas && empresas.length > 0" class="divide-y divide-slate-100 dark:divide-slate-800/60 mt-2">
+              <div *ngFor="let emp of empresas.slice(0, 5)" class="py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/30 px-2 rounded-lg transition">
+                <div>
+                  <h4 class="text-xs font-bold text-slate-900 dark:text-white">{{ emp.nombre_empresa }}</h4>
+                  <p class="text-[11px] text-slate-500 dark:text-slate-400">NIT: {{ emp.nit || 'No especificado' }} • ID: {{ emp.id_empresa }}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <app-status-badge [estado]="emp.estado"></app-status-badge>
+                  <button 
+                    (click)="activarEmpresa(emp)"
+                    class="px-2.5 py-1 text-xs font-bold rounded bg-amber-500 hover:bg-amber-600 text-slate-950 transition shadow-xs"
+                    title="Establecer como Empresa Activa">
+                    Activar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bitácora Reciente -->
+          <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Monitor de Auditoría & Bitácora</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Últimos accesos y acciones operativas</p>
+              </div>
+              <button (click)="navegarA('/bitacora')" class="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline">
+                Ver bitácora completa →
+              </button>
+            </div>
+
+            <div *ngIf="cargandoBitacora" class="py-12 text-center text-xs text-slate-500">
+              Cargando registros de auditoría...
+            </div>
+
+            <div *ngIf="!cargandoBitacora && eventosBitacora.length === 0" class="py-8">
+              <app-empty-state titulo="Sin eventos recientes" descripcion="No se registran eventos en la bitácora actualmente."></app-empty-state>
+            </div>
+
+            <div *ngIf="!cargandoBitacora && eventosBitacora.length > 0" class="divide-y divide-slate-100 dark:divide-slate-800/60 mt-2">
+              <div *ngFor="let ev of eventosBitacora" class="py-2.5 flex items-start justify-between text-xs">
+                <div class="space-y-0.5">
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-slate-800 dark:text-slate-200">{{ ev.accion }}</span>
+                    <span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">{{ ev.modulo }}</span>
+                  </div>
+                  <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-sm">{{ ev.descripcion }}</p>
+                  <p class="text-[10px] text-slate-400 font-mono">{{ ev.nombre }} • IP: {{ ev.ip }}</p>
+                </div>
+                <div class="text-right shrink-0">
+                  <app-status-badge [estado]="ev.estado"></app-status-badge>
+                  <p class="text-[10px] text-slate-400 mt-1 font-mono">{{ ev.hora || ev.fecha }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================================================================== -->
+      <!-- CASO B: DASHBOARD OPERATIVO DE LA EMPRESA ACTIVA                      -->
+      <!-- ===================================================================== -->
+      <div *ngIf="!esVistaGlobal()" class="space-y-6">
+        <!-- Banner Contextual de Empresa Activa -->
+        <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 dark:bg-amber-500/15 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-amber-500 text-slate-950 font-bold text-xl shadow-xs">
+              🏢
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-800 dark:text-amber-300 uppercase tracking-wider">
+                  EMPRESA ACTIVA
+                </span>
+                <span class="text-xs font-mono text-slate-500 dark:text-slate-400">NIT: {{ empresaActiva?.nit || 'Sin NIT' }} • ID: {{ empresaActiva?.id_empresa }}</span>
+              </div>
+              <h2 class="text-lg font-bold text-slate-900 dark:text-white mt-0.5">
+                {{ empresaActiva?.nombre_empresa }}
+              </h2>
+              <p class="text-xs text-slate-600 dark:text-slate-400">
+                Operando en el contexto exclusivo de este tenant. Los módulos mostrarán los datos asociados a esta constructora.
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button 
+              (click)="volverAVistaGlobal()" 
+              class="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+              title="Regresar a la Vista Global de la Plataforma">
+              🌐 Vista Global
+            </button>
+            <button 
+              (click)="navegarA('/empresas')" 
+              class="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition shadow-xs">
+              Cambiar Empresa
+            </button>
+          </div>
+        </div>
+
+        <!-- Tarjetas Métricas del Tenant -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <app-dashboard-card
+            titulo="Obras del Tenant"
+            [valor]="obrasFiltradasPorEmpresa.length"
+            subtitulo="Proyectos registrados"
+            [detalle]="obrasActivasEmpresa + ' en ejecución'"
+            tipo="amber"
+            [clickable]="true"
+            (click)="navegarA('/proyectos')"
+          >
+            <svg icon class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+          </app-dashboard-card>
+
+          <app-dashboard-card
+            titulo="Insumos & Materiales"
+            [valor]="materialesFiltradosPorEmpresa.length"
+            subtitulo="Catálogo del tenant"
+            detalle="Gestión de inventario"
+            tipo="emerald"
+            [clickable]="true"
+            (click)="navegarA('/materiales')"
+          >
+            <svg icon class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+          </app-dashboard-card>
+
+          <app-dashboard-card
+            titulo="Alertas de Stock"
+            [valor]="materialesStockBajoEmpresa"
+            subtitulo="Materiales en mínimo"
+            [detalle]="materialesStockBajoEmpresa > 0 ? 'Reposición requerida' : 'Stock óptimo'"
+            [tipo]="materialesStockBajoEmpresa > 0 ? 'rose' : 'default'"
+            [clickable]="true"
+            (click)="navegarA('/materiales')"
+          >
+            <svg icon class="w-5 h-5" [ngClass]="materialesStockBajoEmpresa > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          </app-dashboard-card>
+
+          <app-dashboard-card
+            titulo="Usuarios / Personal"
+            valor="Consultar"
+            subtitulo="Colaboradores asignados"
+            detalle="Directorio del tenant"
+            tipo="blue"
+            [clickable]="true"
+            (click)="navegarA('/usuarios')"
+          >
+            <svg icon class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          </app-dashboard-card>
+        </div>
+
+        <!-- Grilla de Obras Prioritarias e Insumos del Tenant -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Obras del Tenant -->
+          <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs flex flex-col">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Obras de {{ empresaActiva?.nombre_empresa }}</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Proyectos registrados bajo esta constructora</p>
+              </div>
+              <button (click)="navegarA('/proyectos')" class="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline">
+                Ver todas ({{ obrasFiltradasPorEmpresa.length }}) →
+              </button>
+            </div>
+
+            <div *ngIf="cargandoProyectos" class="py-12 text-center text-xs text-slate-500">
+              Cargando obras...
+            </div>
+
+            <div *ngIf="!cargandoProyectos && obrasFiltradasPorEmpresa.length === 0" class="py-8">
+              <app-empty-state titulo="Sin obras registradas" descripcion="No se encontraron obras para esta empresa."></app-empty-state>
+            </div>
+
+            <div *ngIf="!cargandoProyectos && obrasFiltradasPorEmpresa.length > 0" class="divide-y divide-slate-100 dark:divide-slate-800/60 mt-2 flex-1">
+              <div *ngFor="let p of obrasFiltradasPorEmpresa.slice(0, 5)" class="py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/30 px-2 rounded-lg transition cursor-pointer" (click)="verProyecto(p.id_obra)">
+                <div>
+                  <h4 class="text-xs font-bold text-slate-900 dark:text-white">{{ p.nombre }}</h4>
+                  <p class="text-[11px] text-slate-500 dark:text-slate-400 font-mono">{{ p.codigo }} • {{ p.tipo_obra_nombre || 'General' }}</p>
+                </div>
+                <div class="flex items-center gap-3">
+                  <app-status-badge [estado]="p.estado_obra"></app-status-badge>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Insumos & Materiales del Tenant -->
+          <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs flex flex-col">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Insumos & Stock</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Catálogo de insumos de este tenant</p>
+              </div>
+              <button (click)="navegarA('/materiales')" class="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline">
+                Ver catálogo →
+              </button>
+            </div>
+
+            <div *ngIf="cargandoMateriales" class="py-12 text-center text-xs text-slate-500">
+              Cargando materiales...
+            </div>
+
+            <div *ngIf="!cargandoMateriales && materialesFiltradosPorEmpresa.length === 0" class="py-8">
+              <app-empty-state titulo="Sin materiales" descripcion="No se registran materiales para esta empresa."></app-empty-state>
+            </div>
+
+            <div *ngIf="!cargandoMateriales && materialesFiltradosPorEmpresa.length > 0" class="divide-y divide-slate-100 dark:divide-slate-800/60 mt-2 flex-1">
+              <div *ngFor="let m of materialesFiltradosPorEmpresa.slice(0, 5)" class="py-2.5 flex items-center justify-between text-xs">
+                <div>
+                  <h5 class="font-bold text-slate-900 dark:text-white">{{ m.nombre_material }}</h5>
+                  <p class="text-[11px] text-slate-500 dark:text-slate-400 font-mono">{{ m.codigo }} • {{ m.categoria.nombre || 'General' }}</p>
+                </div>
+                <div class="text-right">
+                  <span class="font-mono font-bold" [ngClass]="(m.stock_actual || 0) <= (m.stock_minimo || 0) ? 'text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-slate-300'">
+                    {{ m.stock_actual || 0 }} {{ m.unidad_medida.abreviatura || 'u' }}
+                  </span>
+                  <p *ngIf="(m.stock_actual || 0) <= (m.stock_minimo || 0)" class="text-[10px] text-rose-500 font-bold">¡Stock Bajo!</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- --------------------------------------------------------------------- -->
+    <!-- 2. DASHBOARD: ADMINISTRADOR_EMPRESA (GESTIÓN DE LA EMPRESA)          -->
+    <!-- --------------------------------------------------------------------- -->
+    <ng-container *ngIf="rolUsuario === 'ADMINISTRADOR_EMPRESA'">
+      <!-- Tarjetas Métricas Empresa -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <app-dashboard-card
+          titulo="Obras en Ejecución"
+          [valor]="proyectosActivos"
+          [subtitulo]="'De ' + totalProyectos + ' obras totales'"
+          detalle="Progreso en campo"
+          tipo="amber"
+          [clickable]="true"
+          (click)="navegarA('/proyectos')"
+        >
+          <svg icon class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+        </app-dashboard-card>
+
+        <app-dashboard-card
+          titulo="Catálogo Materiales"
+          [valor]="totalMateriales"
+          subtitulo="Insumos catalogados"
+          [detalle]="materialesStockBajo + ' en alerta stock'"
+          tipo="blue"
+          [clickable]="true"
+          (click)="navegarA('/materiales')"
+        >
+          <svg icon class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+        </app-dashboard-card>
+
+        <app-dashboard-card
+          titulo="Proveedores Activos"
+          [valor]="totalProveedores"
+          subtitulo="Empresas proveedoras"
+          detalle="Cadena de suministro"
+          tipo="emerald"
+          [clickable]="true"
+          (click)="navegarA('/proveedores')"
+        >
+          <svg icon class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </app-dashboard-card>
+
+        <app-dashboard-card
+          titulo="Colaboradores"
+          [valor]="totalUsuarios"
+          subtitulo="Personal de la empresa"
+          detalle="Jefes, supervisores y operarios"
+          tipo="default"
+          [clickable]="true"
+          (click)="navegarA('/usuarios')"
+        >
+          <svg icon class="w-5 h-5 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        </app-dashboard-card>
+      </div>
+
+      <!-- Obras de la Empresa y Materiales -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Obras Prioritarias (2 columnas) -->
+        <div class="lg:col-span-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs">
+          <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Obras Principales</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Proyectos activos y estado de avance</p>
+            </div>
+            <button (click)="navegarA('/proyectos')" class="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline">
+              Ver todas las obras ({{ totalProyectos }}) →
+            </button>
+          </div>
+
+          <div *ngIf="cargandoProyectos" class="py-12 text-center text-xs text-slate-500">Cargando obras...</div>
+
+          <div *ngIf="!cargandoProyectos && proyectos.length === 0" class="py-8">
+            <app-empty-state
+              titulo="No hay obras registradas"
+              descripcion="Comienza creando la primera obra para tu empresa."
+              accionTexto="Crear Nueva Obra"
+              (onAccion)="navegarA('/proyectos', { action: 'nuevo' })"
+            ></app-empty-state>
+          </div>
+
+          <div *ngIf="!cargandoProyectos && proyectos.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div
+              *ngFor="let p of proyectos.slice(0, 4)"
+              (click)="verProyecto(p.id_obra)"
+              class="group p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:border-amber-500/50 transition cursor-pointer"
+            >
+              <div class="flex items-start justify-between gap-2 mb-2">
+                <span class="text-xs font-mono font-bold text-amber-600 dark:text-amber-400">{{ p.codigo }}</span>
+                <app-status-badge [estado]="p.estado_obra"></app-status-badge>
+              </div>
+              <h4 class="text-sm font-bold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition line-clamp-1">
+                {{ p.nombre }}
+              </h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">
+                {{ p.tipo_obra_nombre || 'Edificación Civil' }} • {{ p.ubicacion || p.zona || 'Ubicación registrada' }}
+              </p>
+              <div class="mt-3 pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-xs">
+                <span class="text-slate-500 dark:text-slate-400 font-mono">{{ (p.valor_estimado || 0) | currency:'BOB ':'symbol':'1.0-0' }}</span>
+                <span class="text-amber-600 dark:text-amber-400 font-bold group-hover:translate-x-1 transition">Ver detalle →</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Insumos & Alertas de Inventario (1 columna) -->
+        <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs flex flex-col">
+          <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Insumos Críticos</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Monitoreo de stock</p>
+            </div>
+            <button (click)="navegarA('/materiales')" class="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline">
+              Catálogo →
+            </button>
+          </div>
+
+          <div *ngIf="cargandoMateriales" class="py-12 text-center text-xs text-slate-500">Cargando insumos...</div>
+
+          <div *ngIf="!cargandoMateriales && materiales.length === 0" class="py-8">
+            <app-empty-state titulo="Sin materiales" descripcion="No se han registrado insumos en el catálogo."></app-empty-state>
+          </div>
+
+          <div *ngIf="!cargandoMateriales && materiales.length > 0" class="divide-y divide-slate-100 dark:divide-slate-800/60 mt-2 flex-1">
+            <div *ngFor="let m of materiales.slice(0, 5)" class="py-2.5 flex items-center justify-between text-xs">
+              <div>
+                <h5 class="font-bold text-slate-900 dark:text-white">{{ m.nombre_material }}</h5>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 font-mono">{{ m.codigo }} • {{ m.categoria.nombre || 'General' }}</p>
+              </div>
+              <div class="text-right">
+                <span class="font-mono font-bold" [ngClass]="(m.stock_actual || 0) <= (m.stock_minimo || 0) ? 'text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-slate-300'">
+                  {{ m.stock_actual || 0 }} {{ m.unidad_medida.abreviatura || 'u' }}
+                </span>
+                <p *ngIf="(m.stock_actual || 0) <= (m.stock_minimo || 0)" class="text-[10px] text-rose-500 font-bold">¡Stock Bajo!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- --------------------------------------------------------------------- -->
+    <!-- 3. DASHBOARD: JEFE_DE_OBRA (GESTIÓN OPERATIVA DE OBRAS)               -->
+    <!-- --------------------------------------------------------------------- -->
+    <ng-container *ngIf="rolUsuario === 'JEFE_DE_OBRA'">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <app-dashboard-card
+          titulo="Obras Asignadas"
+          [valor]="totalProyectos"
+          subtitulo="Bajo su coordinación técnica"
+          [detalle]="proyectosActivos + ' en ejecución'"
+          tipo="amber"
+          [clickable]="true"
+          (click)="navegarA('/proyectos')"
+        >
+          <svg icon class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+        </app-dashboard-card>
+
+        <app-dashboard-card
+          titulo="Insumos Disponibles"
+          [valor]="totalMateriales"
+          subtitulo="Materiales para la obra"
+          detalle="Verificar requerimientos"
+          tipo="blue"
+          [clickable]="true"
+          (click)="navegarA('/materiales')"
+        >
+          <svg icon class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+        </app-dashboard-card>
+
+        <app-dashboard-card
+          titulo="Proveedores Habilitados"
+          [valor]="totalProveedores"
+          subtitulo="Contacto para suministros"
+          detalle="Despacho en terreno"
+          tipo="emerald"
+          [clickable]="true"
+          (click)="navegarA('/proveedores')"
+        >
+          <svg icon class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </app-dashboard-card>
+      </div>
+
+      <!-- Tablero Operativo de Obras -->
+      <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Gestión de Obras en Terreno</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Accede directamente a la estructura (CU12) y los materiales de cada obra (CU14)</p>
+          </div>
+          <button (click)="navegarA('/proyectos')" class="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline">
+            Ver todas →
+          </button>
+        </div>
+
+        <div *ngIf="cargandoProyectos" class="py-12 text-center text-xs text-slate-500">Cargando obras asignadas...</div>
+
+        <div *ngIf="!cargandoProyectos && proyectos.length > 0" class="divide-y divide-slate-100 dark:divide-slate-800/60 mt-2">
+          <div *ngFor="let p of proyectos" class="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 px-3 rounded-lg transition">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">{{ p.codigo }}</span>
+                <app-status-badge [estado]="p.estado_obra"></app-status-badge>
+              </div>
+              <h4 class="text-sm font-bold text-slate-900 dark:text-white">{{ p.nombre }}</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400">
+                Fecha inicio: {{ p.fecha_inicio || 'No definida' }} • Fin estimado: {{ p.fecha_fin || 'En curso' }}
+              </p>
+            </div>
+
+            <!-- Accesos directos para el Jefe de Obra -->
+            <div class="flex items-center gap-2 shrink-0">
+              <button
+                (click)="verProyecto(p.id_obra)"
+                class="px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition shadow-xs"
+              >
+                🏗 Gestionar Estructura (CU12)
+              </button>
+              <button
+                (click)="navegarA('/materiales')"
+                class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+              >
+                📦 Materiales (CU14)
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- --------------------------------------------------------------------- -->
+    <!-- 4. DASHBOARD: SUPERVISOR_OBRA (SUPERVISIÓN TÉCNICA E INSPECCIÓN)     -->
+    <!-- --------------------------------------------------------------------- -->
+    <ng-container *ngIf="rolUsuario === 'SUPERVISOR_OBRA'">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <app-dashboard-card
+          titulo="Obras en Supervisión"
+          [valor]="totalProyectos"
+          subtitulo="Puntos de inspección activa"
+          [detalle]="proyectosActivos + ' en ejecución'"
+          tipo="amber"
+          [clickable]="true"
+          (click)="navegarA('/proyectos')"
+        >
+          <svg icon class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </app-dashboard-card>
+
+        <app-dashboard-card
+          titulo="Materiales para Verificación"
+          [valor]="totalMateriales"
+          subtitulo="Insumos catalogados"
+          detalle="Control de calidad"
+          tipo="blue"
+          [clickable]="true"
+          (click)="navegarA('/materiales')"
+        >
+          <svg icon class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+        </app-dashboard-card>
+
+        <app-dashboard-card
+          titulo="Hitos de Obra"
+          valor="100%"
+          subtitulo="Inspecciones al día"
+          detalle="Control normativo"
+          tipo="emerald"
+        >
+          <svg icon class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+        </app-dashboard-card>
+      </div>
+
+      <!-- Lista de Inspección -->
+      <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Bitácora de Supervisión Técnica</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Verifica el avance constructivo y la correcta ejecución en obra</p>
+          </div>
+        </div>
+
+        <div *ngIf="cargandoProyectos" class="py-12 text-center text-xs text-slate-500">Cargando obras para supervisión...</div>
+
+        <div *ngIf="!cargandoProyectos && proyectos.length > 0" class="divide-y divide-slate-100 dark:divide-slate-800/60 mt-2">
+          <div *ngFor="let p of proyectos" class="py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/30 px-3 rounded-lg transition">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-mono font-bold text-amber-600 dark:text-amber-400">{{ p.codigo }}</span>
+                <app-status-badge [estado]="p.estado_obra"></app-status-badge>
+              </div>
+              <h4 class="text-sm font-bold text-slate-900 dark:text-white mt-0.5">{{ p.nombre }}</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400">{{ p.tipo_obra_nombre || 'Obra' }} • Ubicación: {{ p.ubicacion || p.zona || 'En registro' }}</p>
+            </div>
+            <button
+              (click)="verProyecto(p.id_obra)"
+              class="px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-900 dark:bg-slate-800 text-white hover:bg-amber-600 dark:hover:bg-amber-500 transition shadow-xs"
+            >
+              Auditar Obra →
+            </button>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- --------------------------------------------------------------------- -->
+    <!-- 5. DASHBOARD: CLIENTE (PORTAL DE SEGUIMIENTO DE PROYECTOS)           -->
+    <!-- --------------------------------------------------------------------- -->
+    <ng-container *ngIf="rolUsuario === 'CLIENTE'">
+      <!-- Bienvenida Ejecutiva -->
+      <div class="rounded-xl border border-amber-200/60 dark:border-amber-900/40 bg-linear-to-r from-amber-50/60 to-white dark:from-slate-900 dark:to-slate-900/80 p-6 shadow-xs">
+        <div class="max-w-2xl space-y-2">
+          <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+            Bienvenido a su Portal de Proyecto, {{ usuarioActual?.nombre_completo }}
+          </h3>
+          <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+            Aquí puede realizar el seguimiento en tiempo real del progreso de sus construcciones contratadas con {{ usuarioActual?.nombre_empresa || 'OBRATEC' }}, consultar hitos concluidos y ponerse en contacto con su equipo a cargo.
+          </p>
+        </div>
+      </div>
+
+      <!-- Tarjetas Métricas Cliente -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <app-dashboard-card
+          titulo="Mis Proyectos"
+          [valor]="totalProyectos"
+          subtitulo="Obras contratadas"
+          detalle="Seguimiento activo"
+          tipo="amber"
+        >
+          <svg icon class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+        </app-dashboard-card>
+
+        <app-dashboard-card
+          titulo="Obras Activas"
+          [valor]="proyectosActivos"
+          subtitulo="En fase de construcción"
+          detalle="En ejecución continua"
+          tipo="emerald"
+        >
+          <svg icon class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        </app-dashboard-card>
+
+        <app-dashboard-card
+          titulo="Finalizadas"
+          [valor]="proyectosFinalizados"
+          subtitulo="Entregadas a satisfacción"
+          detalle="Proyectos concluidos"
+          tipo="blue"
+        >
+          <svg icon class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </app-dashboard-card>
+      </div>
+
+      <!-- Detalle de Obras del Cliente -->
+      <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs">
+        <h4 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+          Mis Obras en Curso
+        </h4>
+
+        <div *ngIf="cargandoProyectos" class="py-12 text-center text-xs text-slate-500">Cargando sus proyectos...</div>
+
+        <div *ngIf="!cargandoProyectos && proyectos.length === 0" class="py-8">
+          <app-empty-state titulo="Sin obras activas" descripcion="No tiene proyectos asociados en este momento."></app-empty-state>
+        </div>
+
+        <div *ngIf="!cargandoProyectos && proyectos.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div *ngFor="let p of proyectos" class="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-amber-600 dark:text-amber-400">{{ p.codigo }}</span>
+              <app-status-badge [estado]="p.estado_obra"></app-status-badge>
+            </div>
+            <h5 class="text-base font-bold text-slate-900 dark:text-white">{{ p.nombre }}</h5>
+            <p class="text-xs text-slate-500 dark:text-slate-400">{{ p.descripcion || 'Proyecto constructivo en ejecución formal con OBRATEC.' }}</p>
+
+            <div class="pt-3 border-t border-slate-200 dark:border-slate-700/60 flex items-center justify-between text-xs">
+              <span class="text-slate-500 dark:text-slate-400">Entrega Estimada: <strong class="text-slate-800 dark:text-slate-200">{{ p.fecha_fin || 'En cronograma' }}</strong></span>
+              <button (click)="verProyecto(p.id_obra)" class="text-amber-600 dark:text-amber-400 font-bold hover:underline">
+                Ver estado de avance →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- --------------------------------------------------------------------- -->
+    <!-- 6. DASHBOARD: OPERATIVO (ELECTRICO, PLOMERO, MAESTRO_ALBANIL, ALBANIL)-->
+    <!-- --------------------------------------------------------------------- -->
+    <ng-container *ngIf="['ELECTRICO', 'PLOMERO', 'MAESTRO_ALBANIL', 'ALBANIL'].includes(rolUsuario)">
+      <!-- Tarjetas Operativas -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <app-dashboard-card
+          titulo="Obras Asignadas"
+          [valor]="totalProyectos"
+          subtitulo="Lugar de trabajo asignado"
+          detalle="Jornada operativa"
+          tipo="amber"
+          [clickable]="true"
+          (click)="navegarA('/proyectos')"
+        >
+          <svg icon class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+        </app-dashboard-card>
+
+        <app-dashboard-card
+          titulo="Materiales en Terreno"
+          [valor]="totalMateriales"
+          subtitulo="Insumos de trabajo"
+          detalle="Verificar existencias"
+          tipo="blue"
+          [clickable]="true"
+          (click)="navegarA('/materiales')"
+        >
+          <svg icon class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+        </app-dashboard-card>
+
+        <app-dashboard-card
+          titulo="Rol de Campo"
+          [valor]="rolUsuario.replace('_', ' ')"
+          subtitulo="Especialidad técnica"
+          detalle="Equipo operativo"
+          tipo="emerald"
+        >
+          <svg icon class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/></svg>
+        </app-dashboard-card>
+      </div>
+
+      <!-- Obras del Operario -->
+      <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs">
+        <h4 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+          Mis Frentes de Trabajo Asignados
+        </h4>
+
+        <div *ngIf="cargandoProyectos" class="py-12 text-center text-xs text-slate-500">Cargando frentes de obra...</div>
+
+        <div *ngIf="!cargandoProyectos && proyectos.length > 0" class="divide-y divide-slate-100 dark:divide-slate-800/60">
+          <div *ngFor="let p of proyectos" class="py-3.5 flex items-center justify-between">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-mono font-bold text-amber-600 dark:text-amber-400">{{ p.codigo }}</span>
+                <app-status-badge [estado]="p.estado_obra"></app-status-badge>
+              </div>
+              <h5 class="text-sm font-bold text-slate-900 dark:text-white mt-1">{{ p.nombre }}</h5>
+              <p class="text-xs text-slate-500 dark:text-slate-400">📍 {{ p.ubicacion || p.zona || 'Dirección de obra en planificación' }}</p>
+            </div>
+            <button
+              (click)="verProyecto(p.id_obra)"
+              class="px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition shadow-xs"
+            >
+              Ver Tareas →
+            </button>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- VISTA: SEGURIDAD E HISTORIAL DE SESIÓN (PRESERVADA Y ESTILIZADA)           -->
+  <!-- ========================================================================= -->
+  <div *ngIf="vistaActiva === 'seguridad'" class="space-y-6">
+    <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs">
+      <h3 class="text-base font-bold text-slate-900 dark:text-white mb-2">Dispositivos y Seguridad de Sesión</h3>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mb-6">
+        Información criptográfica de sesión y huellas digitales de dispositivos autorizados.
+      </p>
+
+      <div class="space-y-4">
+        <div *ngFor="let disp of dispositivosConocidos" class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span class="text-xs font-bold text-slate-900 dark:text-white">{{ disp.navegador }}</span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800">Sesión Actual</span>
+            </div>
+            <p class="text-xs font-mono text-slate-500 dark:text-slate-400 break-all">{{ disp.hash }}</p>
+          </div>
+          <span class="text-xs text-slate-400 shrink-0 font-mono">{{ disp.fecha | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+        </div>
+      </div>
     </div>
   </div>
 
-</div>
-
-<!-- 2. VISTA PREFERENCIAS -->
-<div class="view-panel space-y-6" *ngIf="vistaActiva === 'preferencias'">
-  <div class="dashboard-card">
-    <div class="card-header">
-      <h3 class="card-title">Configuracion General del Entorno</h3>
-    </div>
-    <div class="pref-options-list">
-      <div class="pref-item">
-        <div class="pref-text">
-          <strong>Modo Oscuro</strong>
-          <p>Activa la interfaz con fondo oscuro para menor fatiga visual</p>
-        </div>
-        <button class="toggle-theme-btn" (click)="alternarModoOscuro()">
-          {{ modoOscuro ? 'Desactivar Modo Oscuro' : 'Activar Modo Oscuro' }}
-        </button>
-      </div>
-      <div class="pref-item">
-        <div class="pref-text">
-          <strong>Idioma del Sistema</strong>
-          <p>Espanol (Bolivia - Santa Cruz)</p>
-        </div>
-        <span class="badge-active">Por Defecto</span>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- 3. VISTA SEGURIDAD -->
-<div class="view-panel space-y-6" *ngIf="vistaActiva === 'seguridad'">
-  <div class="dashboard-card">
-    <div class="card-header">
-      <h3 class="card-title">Dispositivos y Sesiones Conectadas</h3>
-    </div>
-    <div class="space-y-4">
-      <div *ngFor="let d of dispositivosConocidos" class="device-item flex justify-between items-center bg-gray-50 dark:bg-slate-800 p-4 rounded-xl">
-        <div>
-          <h4 class="font-bold">{{ d.navegador }}</h4>
-          <span class="text-xs text-gray-400 font-mono">{{ d.hash }}</span>
-        </div>
-        <span class="badge-active">Sesion Actual</span>
-      </div>
-    </div>
-  </div>
 </div>

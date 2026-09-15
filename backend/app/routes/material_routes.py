@@ -32,8 +32,9 @@ def post_categoria(request: Request, data: dict = Body(...), token=Depends(exigi
 @router.get("")
 def get_materiales(q: str = None, id_categoria: int = None, estado: str = None,
                    stock_bajo: bool = None, page: int = 1, limit: int = Query(20, le=100),
+                   id_empresa: int = None,
                    token=Depends(exigir_permiso("Visualizar_materiales"))):
-    try: return material_services.listar(token,q,id_categoria,estado,stock_bajo,page,limit)
+    try: return material_services.listar(token,q,id_categoria,estado,stock_bajo,page,limit,id_empresa)
     except material_services.MaterialError as exc: _raise(exc)
 
 
