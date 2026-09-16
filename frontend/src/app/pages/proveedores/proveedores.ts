@@ -70,6 +70,7 @@ export class ProveedoresComponent implements OnInit {
   materialesDisponibles: Material[]  = [];
   seleccionMateriales: Set<number>   = new Set();
   proveedorActivo?: Proveedor;
+  empresaActiva: any = null;
 
   // ─────────────────────────────────────────────────────────────────────────
   // LIFECYCLE
@@ -78,6 +79,15 @@ export class ProveedoresComponent implements OnInit {
     this.busqueda$
       .pipe(debounceTime(400), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => { this.pagina = 1; this.cargarProveedores(); });
+
+    this.auth.empresaActiva$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((emp) => {
+        this.empresaActiva = emp;
+        this.pagina = 1;
+        this.cargarProveedores();
+      });
+
     this.cargarProveedores();
   }
 
@@ -87,12 +97,14 @@ export class ProveedoresComponent implements OnInit {
   cargarProveedores(): void {
     this.loadingProveedores = true;
     this.error = '';
+    const idEmpresa = this.auth.obtenerIdEmpresaActiva();
     this.service
       .listar({
         q: this.q.trim() || undefined,
         estado: (this.estado || undefined) as EstadoProveedor | undefined,
         page: this.pagina,
         limit: this.limite,
+        id_empresa: idEmpresa || undefined,
       })
       .pipe(finalize(() => { this.loadingProveedores = false; this.cdr.detectChanges(); }))
       .subscribe({
@@ -104,6 +116,10 @@ export class ProveedoresComponent implements OnInit {
         },
         error: err => this.mostrarError(this.mensajeError(err, 'No se pudo cargar la lista de proveedores.')),
       });
+  }
+
+  esVistaGlobal(): boolean {
+    return this.auth.esVistaGlobal();
   }
 
   buscar(): void { this.busqueda$.next(this.q.trim()); }
@@ -176,6 +192,7 @@ export class ProveedoresComponent implements OnInit {
     else               this.savingProveedor   = true;
     this.cdr.detectChanges();
 
+    const idEmpresa = this.auth.obtenerIdEmpresaActiva() || this.auth.obtenerUsuario()?.id_empresa;
     const payload: ProveedorCreatePayload = {
       nombre:    this.form.nombre.trim(),
       nit:       this.form.nit.trim(),
@@ -183,6 +200,7 @@ export class ProveedoresComponent implements OnInit {
       email:     this.form.email?.trim()     || null,
       direccion: this.form.direccion?.trim() || null,
       contacto:  this.form.contacto?.trim()  || null,
+      id_empresa: idEmpresa,
     };
 
     const request = this.editando && this.form.id_proveedor
@@ -253,12 +271,13 @@ export class ProveedoresComponent implements OnInit {
     let done = 0;
     const check = () => { if (++done === 2) { this.loadingMateriales = false; this.cdr.detectChanges(); } };
 
-    this.service.listarMateriales(proveedor.id_proveedor).subscribe({
+    const targetEmpresa = this.auth.obtenerIdEmpresaActiva() || proveedor.id_empresa;
+    this.service.listarMateriales(proveedor.id_proveedor, targetEmpresa).subscribe({
       next: res => { this.proveedorMateriales = res.data || []; check(); },
       error: () => { this.mostrarError('No se pudieron cargar los materiales del proveedor.'); check(); },
     });
 
-    this.matSvc.listar({ estado: 'ACTIVO', limit: 100 }).subscribe({
+    this.matSvc.listar({ estado: 'ACTIVO', limit: 100, id_empresa: targetEmpresa }).subscribe({
       next: res => { this.materialesDisponibles = res.data || []; check(); },
       error: () => { this.mostrarError('No se pudo cargar el catálogo de materiales.'); check(); },
     });
@@ -328,12 +347,10 @@ export class ProveedoresComponent implements OnInit {
   // ─────────────────────────────────────────────────────────────────────────
   // PERMISOS
   // ─────────────────────────────────────────────────────────────────────────
-  puedeRegistrar(): boolean { return this.rolGestion(); }
-  puedeModificar(): boolean { return this.rolGestion(); }
-  puedeCambiarEstado(): boolean { return this.rolGestion(); }
-  private rolGestion(): boolean {
-    return ['ADMINISTRADOR', 'ADMINISTRADOR_EMPRESA'].includes(this.auth.obtenerUsuario()?.nombre_rol);
-  }
+  hasPermission(permiso: string): boolean { return this.auth.hasPermission(permiso); }
+  puedeRegistrar(): boolean { return this.auth.hasPermission('Registrar_proveedores'); }
+  puedeModificar(): boolean { return this.auth.hasPermission('Modificar_proveedores'); }
+  puedeCambiarEstado(): boolean { return this.auth.hasPermission('Modificar_proveedores'); }
 
   // ─────────────────────────────────────────────────────────────────────────
   // MENSAJES

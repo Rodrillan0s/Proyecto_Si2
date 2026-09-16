@@ -377,7 +377,43 @@ export class ProyectoEstructuraComponent implements OnInit {
     this.menuAbiertoId = null;
   }
 
-  // --- CREAR Y EDITAR (DRAWER LATERAL) ---
+  // Control de pertenencia del elemento
+  esElementoPrincipal: boolean = false;
+
+  getIconoNodo(nodo: EstructuraNodo): string {
+    if (this.esUnidad(nodo)) return '🏠';
+    const tipo = this.normalizarTipoEstructura(nodo.tipo);
+    const nombre = (nodo.nombre || '').toLowerCase();
+    
+    if (nombre.includes('estacionamiento') || nombre.includes('garaje') || nombre.includes('parqueo') || nombre.includes('cochera')) return '🚗';
+    if (nombre.includes('entrada') || nombre.includes('ingreso') || nombre.includes('puerta')) return '🚪';
+    if (nombre.includes('recepcion') || nombre.includes('hall') || nombre.includes('lobby')) return '🏢';
+    if (nombre.includes('departamento') || nombre.includes('depto') || nombre.includes('vivienda') || nombre.includes('suite')) return '🏠';
+    if (nombre.includes('lote') || nombre.includes('terreno')) return '🏗️';
+    
+    switch (tipo) {
+      case 'TORRE':
+      case 'BLOQUE':
+      case 'NIVEL':
+      case 'SECTOR':
+      case 'ETAPA':
+        return '📁';
+      case 'AMBIENTE':
+        return '🚪';
+      case 'AREA':
+        return '🏢';
+      default:
+        return '📁';
+    }
+  }
+
+  // --- ACCIÓN CONTEXTUAL DIRECTA: AGREGAR INTERIOR ---
+  agregarInterior(nodo: EstructuraNodo, event?: Event) {
+    if (event) event.stopPropagation();
+    this.abrirModalNuevo(nodo);
+  }
+
+  // --- CREAR Y EDITAR (DRAWER / MODAL) ---
   abrirModalNuevo(padre?: EstructuraNodo) {
     if (padre && !this.puedeAgregarElemento(padre)) {
       this.mostrarError('Este nodo es una hoja y no permite agregar elementos dentro.');
@@ -386,6 +422,7 @@ export class ProyectoEstructuraComponent implements OnInit {
     }
     this.modoEdicion = false;
     this.padreSeleccionado = padre || null;
+    this.esElementoPrincipal = !padre;
     this.elementoForm = {
       id_obra: this.idObra,
       id_padre: padre ? padre.id_estructura : null,
@@ -395,6 +432,19 @@ export class ProyectoEstructuraComponent implements OnInit {
     };
     this.mostrarPanelLateral = true;
     this.cerrarMenu();
+  }
+
+  onCambioDondePertenece(valor: any) {
+    if (valor === 'PRINCIPAL' || !valor) {
+      this.esElementoPrincipal = true;
+      this.elementoForm.id_padre = null;
+      this.padreSeleccionado = null;
+    } else {
+      this.esElementoPrincipal = false;
+      const id = Number(valor);
+      this.elementoForm.id_padre = id;
+      this.padreSeleccionado = this.nodosPlanos.find(n => n.id_estructura === id) || null;
+    }
   }
 
   sugerirTipoHijo(tipoPadre: string): string {
@@ -411,6 +461,7 @@ export class ProyectoEstructuraComponent implements OnInit {
 
   abrirModalEditar(nodo: EstructuraNodo) {
     this.modoEdicion = true;
+    this.esElementoPrincipal = !nodo.id_padre;
     this.padreSeleccionado = nodo.id_padre 
       ? (this.nodosPlanos.find(n => n.id_estructura === nodo.id_padre) || null) 
       : null;
@@ -431,6 +482,7 @@ export class ProyectoEstructuraComponent implements OnInit {
     this.mostrarPanelLateral = false;
     this.elementoForm = {};
     this.padreSeleccionado = null;
+    this.esElementoPrincipal = false;
     this.guardando = false;
   }
 
@@ -439,6 +491,10 @@ export class ProyectoEstructuraComponent implements OnInit {
     if (!nombre) {
       this.mostrarError('El nombre del elemento es obligatorio.');
       return;
+    }
+
+    if (this.esElementoPrincipal) {
+      this.elementoForm.id_padre = null;
     }
 
     this.guardando = true;

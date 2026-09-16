@@ -23,7 +23,18 @@ class ProveedorError(ValueError):
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers
 # ─────────────────────────────────────────────────────────────────────────────
-def _empresa(token):
+def _empresa(token, id_empresa_solicitada=None, obligatorio=True):
+    from app.utils.security import es_admin_sistema
+    es_admin = es_admin_sistema(token)
+    if es_admin:
+        if id_empresa_solicitada is not None and str(id_empresa_solicitada).strip() != "":
+            try:
+                return int(id_empresa_solicitada)
+            except (ValueError, TypeError):
+                pass
+        if not obligatorio:
+            return None
+        return token.get("id_empresa") or 1
     value = token.get("id_empresa")
     if not value:
         raise ProveedorError("El token no identifica una empresa.", 403)
@@ -79,8 +90,9 @@ def _validar(data, creando):
 # ─────────────────────────────────────────────────────────────────────────────
 def registrar(data, token, ip="unknown"):
     clean = _validar(data, True)
+    empresa_target = _empresa(token, data.get("id_empresa"), obligatorio=True)
     try:
-        id_proveedor = proveedor_repos.crear(_empresa(token), clean)
+        id_proveedor = proveedor_repos.crear(empresa_target, clean)
     except proveedor_repos.ProveedorConflictError as exc:
         raise ProveedorError(str(exc), 409)
     _log(token, "REGISTRAR_PROVEEDOR", f"Proveedor {id_proveedor} registrado.", ip)
@@ -92,7 +104,7 @@ def registrar(data, token, ip="unknown"):
 
 
 def modificar(id_proveedor, data, token, ip="unknown"):
-    id_empresa = _empresa(token)
+    id_empresa = _empresa(token, data.get("id_empresa"), obligatorio=False)
     if not proveedor_repos.obtener(id_empresa, id_proveedor):
         raise ProveedorError("Proveedor no encontrado.", 404)
     clean = _validar(data, False)
@@ -106,15 +118,16 @@ def modificar(id_proveedor, data, token, ip="unknown"):
     return {"success": True, "message": "Proveedor actualizado exitosamente."}
 
 
-def listar(token, q=None, estado=None, page=1, limit=20):
+def listar(token, q=None, estado=None, page=1, limit=20, id_empresa=None):
     if estado:
         estado = estado.upper()
         if estado not in ESTADOS:
             raise ProveedorError("Estado inválido. Use ACTIVO o INACTIVO.")
     if page < 1 or limit < 1 or limit > 100:
         raise ProveedorError("Paginación inválida; limit debe estar entre 1 y 100.")
+    empresa_target = _empresa(token, id_empresa, obligatorio=False)
     rows, total = proveedor_repos.listar(
-        _empresa(token),
+        empresa_target,
         q.strip() if q else None,
         estado,
         page,
@@ -132,30 +145,31 @@ def listar(token, q=None, estado=None, page=1, limit=20):
     }
 
 
-def detalle(id_proveedor, token):
-    data = proveedor_repos.obtener(_empresa(token), id_proveedor)
+def detalle(id_proveedor, token, id_empresa=None):
+    empresa_target = _empresa(token, id_empresa, obligatorio=False)
+    data = proveedor_repos.obtener(empresa_target, id_proveedor)
     if not data:
         raise ProveedorError("Proveedor no encontrado.", 404)
     return {"success": True, "data": data}
 
 
-def cambiar_estado(id_proveedor, estado, token, ip="unknown"):
+def cambiar_estado(id_proveedor, estado, token, ip="unknown", id_empresa=None):
     estado = str(estado or "").strip().upper()
     if estado not in ESTADOS:
         raise ProveedorError("Estado inválido.")
-    id_empresa = _empresa(token)
-    if not proveedor_repos.cambiar_estado(id_empresa, id_proveedor, estado):
+    id_empresa_target = _empresa(token, id_empresa, obligatorio=False)
+    if not proveedor_repos.cambiar_estado(id_empresa_target, id_proveedor, estado):
         raise ProveedorError("Proveedor no encontrado.", 404)
     accion = "DESACTIVAR_PROVEEDOR" if estado == "INACTIVO" else "REACTIVAR_PROVEEDOR"
     _log(token, accion, f"Proveedor {id_proveedor} cambiado a {estado}.", ip)
     return {"success": True, "message": "Estado actualizado exitosamente."}
 
 
-def listar_materiales(id_proveedor, token):
-    id_empresa = _empresa(token)
-    if not proveedor_repos.obtener(id_empresa, id_proveedor):
+def listar_materiales(id_proveedor, token, id_empresa=None):
+    empresa_target = _empresa(token, id_empresa, obligatorio=False)
+    if not proveedor_repos.obtener(empresa_target, id_proveedor):
         raise ProveedorError("Proveedor no encontrado.", 404)
-    data = proveedor_repos.listar_materiales_de_proveedor(id_proveedor, id_empresa)
+    data = proveedor_repos.listar_materiales_de_proveedor(id_proveedor, empresa_target)
     return {"success": True, "data": data}
 
 
@@ -168,7 +182,7 @@ def asociar_materiales(id_proveedor, ids_material, token, ip="unknown"):
     if not isinstance(ids_material, list) or len(ids_material) == 0:
         raise ProveedorError("Debe proporcionar al menos un id_material.")
 
-    id_empresa = _empresa(token)
+    id_empresa = _empresa(token, obligatorio=False)
     if not proveedor_repos.obtener(id_empresa, id_proveedor):
         raise ProveedorError("Proveedor no encontrado.", 404)
 
@@ -197,7 +211,7 @@ def asociar_materiales(id_proveedor, ids_material, token, ip="unknown"):
 
 
 def desasociar_material(id_proveedor, id_material, token, ip="unknown"):
-    id_empresa = _empresa(token)
+    id_empresa = _empresa(token, obligatorio=False)
     if not proveedor_repos.obtener(id_empresa, id_proveedor):
         raise ProveedorError("Proveedor no encontrado.", 404)
     if not proveedor_repos.material_existe(id_material, id_empresa):

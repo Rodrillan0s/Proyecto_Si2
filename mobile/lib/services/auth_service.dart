@@ -22,7 +22,7 @@ class AuthService {
     );
   }
 
-  // ── LOGIN (CU02) ──────────────────────────────────────────────────────────
+  // ── INICIO DE SESIÓN ──────────────────────────────────────────────────────────
   Future<Map<String, dynamic>> login({
     required String identificador,
     required String password,
@@ -56,6 +56,7 @@ class AuthService {
         nombreRol: usuario['nombre_rol']?.toString() ?? '',
         telefono: usuario['telefono']?.toString() ?? '',
         idEmpresa: usuario['id_empresa']?.toString() ?? '',
+        nombreEmpresa: usuario['nombre_empresa']?.toString() ?? '',
       );
 
       return usuario;
@@ -64,7 +65,7 @@ class AuthService {
     }
   }
 
-  // ── REGISTER (CU01) ───────────────────────────────────────────────────────
+  // ── REGISTRO DE USUARIO ───────────────────────────────────────────────────────
   Future<void> register({
     required String ci,
     required String nombreCompleto,
@@ -101,7 +102,7 @@ class AuthService {
     }
   }
 
-  // ── LOGOUT (CU03) ────────────────────────────────────────────────────────
+  // ── CIERRE DE SESIÓN ────────────────────────────────────────────────────────
   Future<void> logout() async {
     await TokenStorage.clearToken();
   }

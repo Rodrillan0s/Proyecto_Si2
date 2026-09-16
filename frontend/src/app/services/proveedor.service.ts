@@ -18,6 +18,7 @@ export interface Proveedor {
   contacto?: string | null;
   estado: EstadoProveedor;
   id_empresa: number;
+  nombre_empresa?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -38,6 +39,7 @@ export interface ProveedorCreatePayload {
   email?: string | null;
   direccion?: string | null;
   contacto?: string | null;
+  id_empresa?: number;
 }
 
 export type ProveedorUpdatePayload = ProveedorCreatePayload;
@@ -78,6 +80,7 @@ export interface ProveedorFilters {
   estado?: EstadoProveedor;
   page?: number;
   limit?: number;
+  id_empresa?: number;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -98,8 +101,10 @@ export class ProveedorService {
     return this.http.get<ProveedorListResponse>(this.url, { params });
   }
 
-  obtener(id: number): Observable<ApiResponse<Proveedor>> {
-    return this.http.get<ApiResponse<Proveedor>>(`${this.url}/${id}`);
+  obtener(id: number, id_empresa?: number): Observable<ApiResponse<Proveedor>> {
+    let params = new HttpParams();
+    if (id_empresa) params = params.set('id_empresa', String(id_empresa));
+    return this.http.get<ApiResponse<Proveedor>>(`${this.url}/${id}`, { params });
   }
 
   registrar(payload: ProveedorCreatePayload): Observable<ProveedorMutationResponse> {
@@ -114,8 +119,10 @@ export class ProveedorService {
     return this.http.patch<ProveedorMutationResponse>(`${this.url}/${id}/estado`, { estado });
   }
 
-  listarMateriales(id: number): Observable<ApiResponse<ProveedorMaterial[]>> {
-    return this.http.get<ApiResponse<ProveedorMaterial[]>>(`${this.url}/${id}/materiales`);
+  listarMateriales(id: number, id_empresa?: number): Observable<ApiResponse<ProveedorMaterial[]>> {
+    let params = new HttpParams();
+    if (id_empresa) params = params.set('id_empresa', String(id_empresa));
+    return this.http.get<ApiResponse<ProveedorMaterial[]>>(`${this.url}/${id}/materiales`, { params });
   }
 
   asociarMateriales(id: number, ids_material: number[]): Observable<AsociarMaterialesResponse> {

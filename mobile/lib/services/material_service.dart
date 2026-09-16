@@ -4,11 +4,15 @@ import 'api_client.dart';
 class MaterialService {
   final Dio _dio = ApiClient.dio;
 
-  Future<List<Map<String, dynamic>>> listarMateriales({String? q}) async {
+  Future<List<Map<String, dynamic>>> listarMateriales({String? q, int? idEmpresa}) async {
     try {
+      final queryParams = <String, dynamic>{};
+      if (q != null && q.trim().isNotEmpty) queryParams['q'] = q.trim();
+      if (idEmpresa != null) queryParams['id_empresa'] = idEmpresa;
+
       final response = await _dio.get(
         '/api/materiales',
-        queryParameters: q != null && q.isNotEmpty ? {'q': q} : null,
+        queryParameters: queryParams.isNotEmpty ? queryParams : null,
       );
 
       final data = response.data;

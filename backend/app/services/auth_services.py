@@ -83,6 +83,7 @@ def loguear_usuario(data: dict, user_agent: str = None, client_ip: str = None):
             res_db['username'],
             res_db["nombre_rol"],
             res_db['id_empresa'],
+            res_db['nombre_empresa'],
             res_db['nombre_completo'],
             None
         )
@@ -114,6 +115,9 @@ def registrar_nuevo_usuario(data: dict):
     for campo in campos_obligatorios:
         if not data.get(campo):
             raise ValueError(f"El campo '{campo}' es obligatorio.")
+
+    if not security.password_cumple_requisitos(data.get('password')):
+        raise ValueError("La contraseña no cumple los requisitos de seguridad.")
             
     #VALIDAR QUE EL NOMBRE DE USUARIO NO ESTE EN USO
     nombre_usuario = data.get('nombre_usuario').upper()

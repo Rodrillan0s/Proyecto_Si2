@@ -21,6 +21,8 @@ export interface Material {
   stock_minimo: number;
   stock_bajo: boolean;
   estado: EstadoMaterial;
+  id_empresa?: number;
+  nombre_empresa?: string;
   caracteristicas?: MaterialCaracteristica[];
   fecha_ingreso?: string;
   created_at?: string;
@@ -38,6 +40,7 @@ export interface MaterialCreatePayload {
   cantidad_inicial: number;
   stock_minimo: number;
   fecha_ingreso: string;
+  id_empresa?: number;
 }
 
 export type MaterialUpdatePayload = Omit<MaterialCreatePayload, 'cantidad_inicial' | 'fecha_ingreso'>;
@@ -45,7 +48,7 @@ export interface MaterialPagination { page: number; limit: number; total: number
 export interface MaterialListResponse { success: boolean; data: Material[]; pagination: MaterialPagination; }
 export interface ApiResponse<T> { success: boolean; data: T; message?: string; }
 export interface MaterialMutationResponse { success: boolean; message: string; id_material?: number; }
-export interface MaterialFilters { q?: string; id_categoria?: number; estado?: EstadoMaterial; stock_bajo?: boolean; page?: number; limit?: number; }
+export interface MaterialFilters { q?: string; id_categoria?: number; estado?: EstadoMaterial; stock_bajo?: boolean; page?: number; limit?: number; id_empresa?: number; }
 export interface CategoriaCreatePayload { nombre: string; descripcion: string | null; }
 export interface CategoriaMutationResponse { success: boolean; data: CategoriaMaterial; message: string; }
 

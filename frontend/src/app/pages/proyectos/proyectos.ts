@@ -1,7 +1,8 @@
-import { Component, OnInit, inject, ChangeDetectorRef, NgZone, PLATFORM_ID, OnDestroy } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef, NgZone, PLATFORM_ID, OnDestroy, DestroyRef } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ProyectosService, Proyecto, TipoProyecto } from '../../services/proyectos';
 import { AuthService } from '../../services/auth';
 
@@ -19,15 +20,24 @@ export class ProyectosComponent implements OnInit, OnDestroy {
   private cdr = inject(ChangeDetectorRef);
   private ngZone = inject(NgZone);
   private platformId = inject(PLATFORM_ID);
+  private destroyRef = inject(DestroyRef);
 
   proyectos: Proyecto[] = [];
   proyectosFiltrados: Proyecto[] = [];
   tiposProyecto: TipoProyecto[] = [];
+  empresaActiva: any = null;
 
   // Filtros
   busqueda: string = '';
   filtroEstado: string = '';
   filtroTipo: string = '';
+
+  // Vista: 'tarjetas' por defecto, con opción a 'tabla'
+  modoVista: 'tarjetas' | 'tabla' = 'tarjetas';
+
+  // Secciones del modal de Nuevo / Editar Proyecto:
+  // 1: Información General, 2: Información Económica, 3: Planificación, 4: Ubicación
+  seccionModal: number = 1;
 
   // Estado del UI
   cargando: boolean = false;
@@ -50,7 +60,25 @@ export class ProyectosComponent implements OnInit, OnDestroy {
   proyectosPlanificacion = 0;
 
   ngOnInit() {
+    this.authService.empresaActiva$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(emp => {
+        this.ngZone.run(() => {
+          this.empresaActiva = emp;
+          this.aplicarFiltros();
+          this.calcularEstadisticas();
+          this.cdr.detectChanges();
+        });
+      });
     this.cargarDatos();
+  }
+
+  hasPermission(permiso: string): boolean {
+    return this.authService.hasPermission(permiso);
+  }
+
+  esRolAutorizado(): boolean {
+    return this.hasPermission('Registrar_obras');
   }
 
   ngOnDestroy() {
@@ -58,10 +86,12 @@ export class ProyectosComponent implements OnInit, OnDestroy {
   }
 
   inicializarFormulario(): Proyecto {
+    const idEmpresaActiva = this.authService.obtenerIdEmpresaActiva();
     return {
       codigo: '',
       nombre: '',
       id_tipo_obra: 1, // 1: Obras Civiles por defecto
+      id_empresa: idEmpresaActiva || undefined,
       descripcion: '',
       moneda: 'BOB', // BOB por defecto
       valor_estimado: undefined,
@@ -116,7 +146,9 @@ export class ProyectosComponent implements OnInit, OnDestroy {
 
   aplicarFiltros() {
     const q = this.busqueda.toLowerCase().trim();
+    const idEmpresaActiva = this.authService.obtenerIdEmpresaActiva();
     this.proyectosFiltrados = this.proyectos.filter(p => {
+      const cumpleEmpresa = !idEmpresaActiva || p.id_empresa === idEmpresaActiva || !p.id_empresa;
       const cumpleBusqueda = !q || 
         (p.nombre && p.nombre.toLowerCase().includes(q)) || 
         (p.codigo && p.codigo.toLowerCase().includes(q)) || 
@@ -124,14 +156,18 @@ export class ProyectosComponent implements OnInit, OnDestroy {
         (p.zona && p.zona.toLowerCase().includes(q));
       const cumpleEstado = !this.filtroEstado || p.estado_obra === this.filtroEstado;
       const cumpleTipo = !this.filtroTipo || p.id_tipo_obra === Number(this.filtroTipo);
-      return cumpleBusqueda && cumpleEstado && cumpleTipo;
+      return cumpleEmpresa && cumpleBusqueda && cumpleEstado && cumpleTipo;
     });
   }
 
   calcularEstadisticas() {
-    this.totalProyectos = this.proyectos.length;
-    this.proyectosActivos = this.proyectos.filter(p => p.estado_obra === 'ACTIVO').length;
-    this.proyectosPlanificacion = this.proyectos.filter(p => p.estado_obra === 'PLANIFICACION').length;
+    const idEmpresaActiva = this.authService.obtenerIdEmpresaActiva();
+    const base = idEmpresaActiva 
+      ? this.proyectos.filter(p => p.id_empresa === idEmpresaActiva || !p.id_empresa)
+      : this.proyectos;
+    this.totalProyectos = base.length;
+    this.proyectosActivos = base.filter(p => p.estado_obra === 'ACTIVO').length;
+    this.proyectosPlanificacion = base.filter(p => p.estado_obra === 'PLANIFICACION').length;
   }
 
   verProyecto(id?: number) {
@@ -149,6 +185,7 @@ export class ProyectosComponent implements OnInit, OnDestroy {
 
   abrirModalNuevo() {
     this.modoEdicion = false;
+    this.seccionModal = 1;
     this.proyectoForm = this.inicializarFormulario();
     this.mostrarModal = true;
 
@@ -169,6 +206,7 @@ export class ProyectosComponent implements OnInit, OnDestroy {
   abrirModalEditar(p: Proyecto, event: Event) {
     event.stopPropagation();
     this.modoEdicion = true;
+    this.seccionModal = 1;
     this.proyectoForm = { 
       ...p,
       fecha_inicio: p.fecha_inicio ? p.fecha_inicio.substring(0, 10) : '',
@@ -181,10 +219,32 @@ export class ProyectosComponent implements OnInit, OnDestroy {
     this.iniciarMapaConRetraso(lat, lng);
   }
 
+  irASeccion(sec: number) {
+    this.seccionModal = sec;
+    if (sec === 4) {
+      setTimeout(() => {
+        this.mapa?.invalidateSize();
+      }, 150);
+    }
+  }
+
+  siguienteSeccion() {
+    if (this.seccionModal < 4) {
+      this.irASeccion(this.seccionModal + 1);
+    }
+  }
+
+  anteriorSeccion() {
+    if (this.seccionModal > 1) {
+      this.irASeccion(this.seccionModal - 1);
+    }
+  }
+
   cerrarModal() {
     this.destruirMapa();
     this.mostrarModal = false;
     this.guardando = false;
+    this.seccionModal = 1;
   }
 
   // --- MAPA INTERACTIVO LEAFLET ---
@@ -346,10 +406,7 @@ export class ProyectosComponent implements OnInit, OnDestroy {
     }
   }
 
-  esRolAutorizado(): boolean {
-    const rol = this.authService.obtenerUsuario()?.nombre_rol;
-    return rol === 'ADMINISTRADOR' || rol === 'ADMINISTRADOR_EMPRESA';
-  }
+
 
   mostrarError(mensaje: string) {
     this.mensajeError = mensaje;

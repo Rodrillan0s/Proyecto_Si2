@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:provider/provider.dart';
 
+import '../services/auth_provider.dart';
 import '../services/obra_service.dart';
 import '../services/unidad_service.dart';
 import '../theme/app_theme.dart';
@@ -140,7 +142,240 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
     return false;
   }
 
-  // ── MODAL DETALLE Y CAMBIO DE ESTADO DE UNIDAD (CU12) ──────────────────────
+  bool _puedeModificarObra() {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    return auth.hasPermission('Modificar_obras') ||
+        auth.esAdminGlobal ||
+        auth.esAdminEmpresa ||
+        auth.esJefeObra;
+  }
+
+  // ── GESTIÓN DE ELEMENTOS DE ESTRUCTURA ────────────────────────────────────
+  void _mostrarModalElementoEstructura({
+    int? idEstructura,
+    int? idPadre,
+    String? nombrePadre,
+    Map<String, dynamic>? elementoExistente,
+  }) {
+    final esEdicion = elementoExistente != null;
+    final nombreCtrl = TextEditingController(
+      text: elementoExistente?['nombre']?.toString() ?? '',
+    );
+    final descCtrl = TextEditingController(
+      text: elementoExistente?['descripcion']?.toString() ?? '',
+    );
+    final ordenCtrl = TextEditingController(
+      text: elementoExistente?['orden']?.toString() ?? '0',
+    );
+    String tipoSeleccionado = (elementoExistente?['tipo'] ?? 'NIVEL')
+        .toString()
+        .toUpperCase();
+    final tiposDisponibles = [
+      'TORRE',
+      'BLOQUE',
+      'NIVEL',
+      'SECTOR',
+      'AREA',
+      'ETAPA',
+      'AMBIENTE',
+      'OTRO'
+    ];
+    if (!tiposDisponibles.contains(tipoSeleccionado)) {
+      tiposDisponibles.add(tipoSeleccionado);
+    }
+    bool guardando = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            final sheetBg = isDark ? const Color(0xFF131D31) : Colors.white;
+            final titleColor =
+                isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
+
+            return Container(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                16,
+                20,
+                24 + MediaQuery.of(context).viewInsets.bottom,
+              ),
+              decoration: BoxDecoration(
+                color: sheetBg,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF334155)
+                              : const Color(0xFFCBD5E1),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      esEdicion
+                          ? 'Editar Elemento'
+                          : (nombrePadre != null
+                              ? 'Agregar Sub-elemento a "$nombrePadre"'
+                              : 'Nuevo Elemento Principal'),
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: titleColor,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: nombreCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Nombre del elemento *',
+                        hintText: 'Ej: Torre A, Piso 1, Sector Norte',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: tipoSeleccionado,
+                      decoration:
+                          const InputDecoration(labelText: 'Tipo de elemento *'),
+                      items: tiposDisponibles
+                          .map((t) =>
+                              DropdownMenuItem(value: t, child: Text(t)))
+                          .toList(),
+                      onChanged: (v) =>
+                          setModalState(() => tipoSeleccionado = v ?? 'NIVEL'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: descCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Descripción (Opcional)',
+                        hintText: 'Detalles adicionales del sector o nivel',
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ObratecPrimaryButton(
+                      label:
+                          esEdicion ? 'Actualizar Elemento' : 'Guardar Elemento',
+                      loading: guardando,
+                      onPressed: () async {
+                        final nombre = nombreCtrl.text.trim();
+                        if (nombre.isEmpty) return;
+                        setModalState(() => guardando = true);
+                        try {
+                          final payload = <String, dynamic>{
+                            'id_obra': widget.idObra,
+                            'nombre': nombre,
+                            'tipo': tipoSeleccionado,
+                            'descripcion': descCtrl.text.trim(),
+                            'orden': int.tryParse(ordenCtrl.text.trim()) ?? 0,
+                          };
+                          if (esEdicion) {
+                            await _obraService.actualizarElementoEstructura(
+                              widget.idObra,
+                              idEstructura!,
+                              payload,
+                            );
+                          } else {
+                            if (idPadre != null) payload['id_padre'] = idPadre;
+                            await _obraService.crearElementoEstructura(
+                              widget.idObra,
+                              payload,
+                            );
+                          }
+                          if (!ctx.mounted) return;
+                          Navigator.pop(ctx);
+                          setState(() {
+                            _futureEstructura =
+                                _obraService.obtenerEstructura(widget.idObra);
+                          });
+                        } catch (e) {
+                          setModalState(() => guardando = false);
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text(
+                                e.toString().replaceAll('Exception: ', '')),
+                            backgroundColor: AppTheme.error,
+                          ));
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmarEliminarElemento(Map<String, dynamic> nodo) async {
+    final idEstructura =
+        int.tryParse(nodo['id_estructura']?.toString() ?? '');
+    if (idEstructura == null) return;
+    final nombre = nodo['nombre'] ?? 'Elemento';
+
+    final conf = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Eliminar Elemento'),
+        content: Text(
+          '¿Está seguro de eliminar "$nombre"? Los sub-elementos interiores también serán eliminados.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Eliminar',
+                style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (conf == true) {
+      try {
+        await _obraService.eliminarElementoEstructura(
+            widget.idObra, idEstructura);
+        setState(() {
+          _futureEstructura = _obraService.obtenerEstructura(widget.idObra);
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Elemento eliminado correctamente.'),
+            backgroundColor: AppTheme.success,
+          ));
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: AppTheme.error,
+          ));
+        }
+      }
+    }
+  }
+
+  // ── MODAL DETALLE Y CAMBIO DE ESTADO DE UNIDAD ──────────────────────────────
   void _mostrarModalDetalleUnidad(Map<String, dynamic> unidad) {
     final idUnidad = int.tryParse(unidad['id_unidad']?.toString() ?? '0') ?? 0;
     String estadoActual = (unidad['estado'] ?? 'PLANIFICADO').toString().toUpperCase();
@@ -237,11 +472,12 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
                     ),
                     const SizedBox(height: 16),
 
-                    // Cambiar Estado (CU12)
-                    Text(
-                      'ACTUALIZAR ESTADO DE CONSTRUCCIÓN',
-                      style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w800, color: AppTheme.primary),
-                    ),
+                    // Cambiar Estado
+                    if (_puedeModificarObra())
+                      Text(
+                        'ACTUALIZAR ESTADO DE CONSTRUCCIÓN',
+                        style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w800, color: AppTheme.primary),
+                      ),
                     const SizedBox(height: 8),
 
                     Wrap(
@@ -470,36 +706,49 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
                         unselectedLabelColor: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                         labelStyle: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w800),
                         unselectedLabelStyle: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w600),
+                        labelPadding: const EdgeInsets.symmetric(horizontal: 4),
                         dividerColor: Colors.transparent,
                         tabs: const [
                           Tab(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.account_tree_outlined, size: 14),
-                                SizedBox(width: 4),
-                                Text('Estructura'),
-                              ],
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.account_tree_outlined, size: 14),
+                                  SizedBox(width: 4),
+                                  Text('Estructura'),
+                                ],
+                              ),
                             ),
                           ),
                           Tab(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.meeting_room_outlined, size: 14),
-                                SizedBox(width: 4),
-                                Text('Unidades (CU12)'),
-                              ],
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.meeting_room_outlined, size: 14),
+                                  SizedBox(width: 4),
+                                  Text('Unidades'),
+                                ],
+                              ),
                             ),
                           ),
                           Tab(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.map_outlined, size: 14),
-                                SizedBox(width: 4),
-                                Text('Mapa & Ficha'),
-                              ],
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.map_outlined, size: 14),
+                                  SizedBox(width: 4),
+                                  Text('Mapa & Ficha'),
+                                ],
+                              ),
                             ),
                           ),
                         ],
@@ -617,15 +866,30 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
               ),
               const SizedBox(height: 10),
 
-              TextField(
-                controller: _searchCtrl,
-                onChanged: (v) => setState(() => _filtroTexto = v.trim().toLowerCase()),
-                style: GoogleFonts.inter(fontSize: 13),
-                decoration: InputDecoration(
-                  hintText: 'Filtrar elemento...',
-                  prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF94A3B8)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _searchCtrl,
+                      onChanged: (v) => setState(() => _filtroTexto = v.trim().toLowerCase()),
+                      style: GoogleFonts.inter(fontSize: 13),
+                      decoration: const InputDecoration(
+                        hintText: 'Filtrar elemento...',
+                        prefixIcon: Icon(Icons.search_rounded, size: 18, color: Color(0xFF94A3B8)),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      ),
+                    ),
+                  ),
+                  if (_puedeModificarObra()) ...[
+                    const SizedBox(width: 8),
+                    IconButton.filled(
+                      tooltip: 'Nuevo Elemento Principal',
+                      icon: const Icon(Icons.add_rounded, size: 20),
+                      style: IconButton.styleFrom(backgroundColor: AppTheme.primary),
+                      onPressed: () => _mostrarModalElementoEstructura(),
+                    ),
+                  ],
+                ],
               ),
               const SizedBox(height: 12),
 
@@ -643,6 +907,59 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
       children: [
         Text(valor, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w900, color: titleColor)),
         Text(label, style: GoogleFonts.inter(fontSize: 10.5, color: const Color(0xFF94A3B8), fontWeight: FontWeight.w600)),
+      ],
+    );
+  }
+
+  Widget _buildNodoActions(Map<String, dynamic> nodo, bool isDark) {
+    if (!_puedeModificarObra()) return const SizedBox.shrink();
+    final nombre = (nodo['nombre'] ?? 'Elemento').toString();
+    final idEstructura = int.tryParse(nodo['id_estructura']?.toString() ?? '');
+
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert_rounded, size: 18, color: Color(0xFF94A3B8)),
+      padding: EdgeInsets.zero,
+      tooltip: 'Opciones',
+      onSelected: (value) {
+        if (value == 'sub') {
+          _mostrarModalElementoEstructura(idPadre: idEstructura, nombrePadre: nombre);
+        } else if (value == 'edit') {
+          _mostrarModalElementoEstructura(idEstructura: idEstructura, elementoExistente: nodo);
+        } else if (value == 'delete') {
+          _confirmarEliminarElemento(nodo);
+        }
+      },
+      itemBuilder: (ctx) => [
+        const PopupMenuItem(
+          value: 'sub',
+          child: Row(
+            children: [
+              Icon(Icons.subdirectory_arrow_right_rounded, size: 18, color: AppTheme.primary),
+              SizedBox(width: 8),
+              Text('Agregar Sub-elemento', style: TextStyle(fontSize: 12.5)),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'edit',
+          child: Row(
+            children: [
+              Icon(Icons.edit_outlined, size: 18, color: Color(0xFF64748B)),
+              SizedBox(width: 8),
+              Text('Editar Elemento', style: TextStyle(fontSize: 12.5)),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete_outline_rounded, size: 18, color: AppTheme.error),
+              SizedBox(width: 8),
+              Text('Eliminar', style: TextStyle(fontSize: 12.5, color: AppTheme.error)),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -673,7 +990,7 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
           border: Border.all(color: borderColor),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
             children: [
               Icon(iconTipo, size: 16, color: colorTipo),
@@ -695,6 +1012,7 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
                   style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w800, color: colorTipo),
                 ),
               ),
+              _buildNodoActions(nodo, isDark),
             ],
           ),
         ),
@@ -723,16 +1041,22 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
             '${hijos.length} elemento${hijos.length == 1 ? '' : 's'}',
             style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF94A3B8), fontWeight: FontWeight.w500),
           ),
-          trailing: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: colorTipo.withValues(alpha: isDark ? 0.15 : 0.08),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              tipo.toUpperCase(),
-              style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w800, color: colorTipo),
-            ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: colorTipo.withValues(alpha: isDark ? 0.15 : 0.08),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  tipo.toUpperCase(),
+                  style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w800, color: colorTipo),
+                ),
+              ),
+              _buildNodoActions(nodo, isDark),
+            ],
           ),
           children: hijos.map((hijo) => _buildNodoJerarquico(hijo, profundidad + 1, isDark)).toList(),
         ),
@@ -741,7 +1065,7 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // TAB 2: UNIDADES DE CONSTRUCCIÓN (CU12)
+  // TAB 2: UNIDADES DE CONSTRUCCIÓN
   // ──────────────────────────────────────────────────────────────────────────
   Widget _buildTabUnidades(bool isDark) {
     final cardBg = isDark ? const Color(0xFF131D31) : Colors.white;

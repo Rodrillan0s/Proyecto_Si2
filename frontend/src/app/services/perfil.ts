@@ -12,6 +12,7 @@ export interface PerfilUsuario {
   nro_rol: number;
   id_empresa?: number;
   nombre_empresa?: string;
+  descripcion_empresa?: string;
   nombre_completo: string;
   telefono: string;
   correo: string;

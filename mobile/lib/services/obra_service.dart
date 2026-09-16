@@ -43,7 +43,7 @@ class ObraService {
     }
   }
 
-  /// Obtiene el árbol jerárquico de la estructura WBS de una obra (HU35)
+  /// Obtiene el árbol jerárquico de la estructura WBS de una obra
   Future<List<Map<String, dynamic>>> obtenerEstructura(int idObra) async {
     try {
       final response = await ApiClient.dio.get('$_basePath/$idObra/estructuras/');
@@ -57,6 +57,67 @@ class ObraService {
       if (rawList is! List) return [];
 
       return rawList.map((item) => Map<String, dynamic>.from(item as Map)).toList();
+    } on DioException catch (e) {
+      throw Exception(_parsearError(e));
+    }
+  }
+
+  /// Crea un nuevo elemento en la estructura de la obra (raíz o hijo con id_padre)
+  Future<Map<String, dynamic>> crearElementoEstructura(
+    int idObra,
+    Map<String, dynamic> datos,
+  ) async {
+    try {
+      final response = await ApiClient.dio.post(
+        '$_basePath/$idObra/estructuras/',
+        data: datos,
+      );
+      final data = response.data;
+
+      if (data is! Map || data['success'] != true) {
+        throw Exception(data?['message'] ?? 'Error al crear el elemento.');
+      }
+
+      return Map<String, dynamic>.from(data);
+    } on DioException catch (e) {
+      throw Exception(_parsearError(e));
+    }
+  }
+
+  /// Actualiza un elemento existente de la estructura
+  Future<Map<String, dynamic>> actualizarElementoEstructura(
+    int idObra,
+    int idEstructura,
+    Map<String, dynamic> datos,
+  ) async {
+    try {
+      final response = await ApiClient.dio.put(
+        '$_basePath/$idObra/estructuras/$idEstructura',
+        data: datos,
+      );
+      final data = response.data;
+
+      if (data is! Map || data['success'] != true) {
+        throw Exception(data?['message'] ?? 'Error al actualizar el elemento.');
+      }
+
+      return Map<String, dynamic>.from(data);
+    } on DioException catch (e) {
+      throw Exception(_parsearError(e));
+    }
+  }
+
+  /// Elimina un elemento de la estructura
+  Future<void> eliminarElementoEstructura(int idObra, int idEstructura) async {
+    try {
+      final response = await ApiClient.dio.delete(
+        '$_basePath/$idObra/estructuras/$idEstructura',
+      );
+      final data = response.data;
+
+      if (data is! Map || data['success'] != true) {
+        throw Exception(data?['message'] ?? 'Error al eliminar el elemento.');
+      }
     } on DioException catch (e) {
       throw Exception(_parsearError(e));
     }

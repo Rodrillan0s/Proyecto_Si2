@@ -1,7 +1,6 @@
 from app.repos import profile_repos
 from app.utils import security
 from werkzeug.security import check_password_hash, generate_password_hash
-import re
 
 def obtener_perfil_usuario(nro_usuario):
 
@@ -44,14 +43,7 @@ def cambiar_password_usuario(nro_usuario: int, datos: dict):
     if password_nueva != confirmar_password:
         raise ValueError('Las contraseñas no coinciden')
 
-    cumple_requisitos = (
-        len(password_nueva) >= 8
-        and re.search(r'[A-Z]', password_nueva)
-        and re.search(r'[a-z]', password_nueva)
-        and re.search(r'[0-9]', password_nueva)
-        and re.search(r'[^A-Za-z0-9\s]', password_nueva)
-    )
-    if not cumple_requisitos:
+    if not security.password_cumple_requisitos(password_nueva):
         raise ValueError('La nueva contraseña no cumple los requisitos de seguridad')
 
     password_hash = profile_repos.get_password_hash(nro_usuario)

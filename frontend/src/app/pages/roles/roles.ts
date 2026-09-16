@@ -44,7 +44,7 @@ export class RolesComponent implements OnInit {
   totalRoles: number = 0;
 
   esAdministradorSistema(): boolean {
-    return this.authService.obtenerUsuario()?.nombre_rol === 'ADMINISTRADOR';
+    return this.authService.obtenerRolNormalizado() === 'ADMINISTRADOR';
   }
 
   ngOnInit() {

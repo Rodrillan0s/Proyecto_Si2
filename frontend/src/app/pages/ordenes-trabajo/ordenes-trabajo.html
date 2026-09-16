@@ -1,0 +1,704 @@
+<div class="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 md:p-6">
+
+  <!-- ENCABEZADO -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+        Órdenes de Trabajo
+      </h1>
+
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        Gestión y seguimiento de las órdenes de trabajo de las obras
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="btn-primary"
+      (click)="abrirModalNuevo()"
+      [disabled]="guardando"
+    >
+      <span>+ Nueva Orden de Trabajo</span>
+    </button>
+
+  </div>
+
+  <!-- BADGE CONTEXTO EMPRESA ACTIVA -->
+  <div *ngIf="empresaActiva" class="flex items-center justify-between px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs mb-6">
+    <div class="flex items-center gap-2">
+      <span class="font-bold text-amber-800 dark:text-amber-400">🏢 Órdenes de trabajo de:</span>
+      <span class="font-bold text-slate-900 dark:text-white">{{ empresaActiva.nombre_empresa }}</span>
+      <span class="text-slate-500 dark:text-slate-400 font-mono">(ID: {{ empresaActiva.id_empresa }})</span>
+    </div>
+    <span class="font-bold text-amber-700 dark:text-amber-300">{{ ordenesFiltradas.length }} orden(es) registrada(s)</span>
+  </div>
+
+  <!-- BADGE CONTEXTO VISTA GLOBAL -->
+  <div *ngIf="!empresaActiva && esVistaGlobal()" class="flex items-center justify-between px-4 py-2.5 bg-blue-500/10 border border-blue-500/30 rounded-lg text-xs mb-6">
+    <div class="flex items-center gap-2">
+      <span class="font-bold text-blue-700 dark:text-blue-400">🌐 Vista Global:</span>
+      <span class="text-slate-700 dark:text-slate-300">Consolidado de órdenes de trabajo de todas las empresas</span>
+    </div>
+    <span class="font-bold text-blue-700 dark:text-blue-300">{{ ordenesFiltradas.length }} orden(es) en total</span>
+  </div>
+
+
+  <!-- ESTADÍSTICAS -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
+    <!-- TOTAL -->
+    <div class="stat-card">
+      <div>
+        <p class="stat-label">Total de órdenes</p>
+        <p class="stat-value">
+          {{ estadisticas.total }}
+        </p>
+      </div>
+
+      <div class="stat-icon">
+        OT
+      </div>
+    </div>
+
+    <!-- PENDIENTES -->
+    <div class="stat-card">
+      <div>
+        <p class="stat-label">Pendientes</p>
+        <p class="stat-value">
+          {{ estadisticas.pendientes }}
+        </p>
+      </div>
+
+      <div class="stat-icon">
+        P
+      </div>
+    </div>
+
+    <!-- EN PROCESO -->
+    <div class="stat-card">
+      <div>
+        <p class="stat-label">En proceso</p>
+        <p class="stat-value">
+          {{ estadisticas.enProceso }}
+        </p>
+      </div>
+
+      <div class="stat-icon">
+        EP
+      </div>
+    </div>
+
+    <!-- FINALIZADAS -->
+    <div class="stat-card">
+      <div>
+        <p class="stat-label">Finalizadas</p>
+        <p class="stat-value">
+          {{ estadisticas.finalizadas }}
+        </p>
+      </div>
+
+      <div class="stat-icon">
+        ✓
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- FILTROS -->
+  <div class="filter-card mb-6">
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
+      <!-- BUSCAR -->
+      <div class="lg:col-span-2">
+
+        <label class="form-label">
+          Buscar
+        </label>
+
+        <input
+          type="text"
+          class="form-input"
+          [(ngModel)]="busqueda"
+          (ngModelChange)="aplicarFiltros()"
+          placeholder="Buscar por número, obra, código o tipo de trabajo..."
+        />
+
+      </div>
+
+
+      <!-- ESTADO -->
+      <div>
+
+        <label class="form-label">
+          Estado
+        </label>
+
+        <select
+          class="form-select"
+          [(ngModel)]="filtroEstado"
+          (ngModelChange)="aplicarFiltros()"
+        >
+
+          <option value="">
+            Todos los estados
+          </option>
+
+          <option
+            *ngFor="let estado of obtenerEstados()"
+            [value]="estado"
+          >
+            {{ obtenerTextoEstado(estado) }}
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <!-- TIPO -->
+      <div>
+
+        <label class="form-label">
+          Tipo de trabajo
+        </label>
+
+        <select
+          class="form-select"
+          [(ngModel)]="filtroTipo"
+          (ngModelChange)="aplicarFiltros()"
+        >
+
+          <option value="">
+            Todos los tipos
+          </option>
+
+          <option
+            *ngFor="let tipo of obtenerTiposTrabajo()"
+            [value]="tipo"
+          >
+            {{ tipo }}
+          </option>
+
+        </select>
+
+      </div>
+
+    </div>
+
+
+    <!-- LIMPIAR -->
+    <div class="flex justify-end mt-4">
+
+      <button
+        type="button"
+        class="btn-outline"
+        (click)="limpiarFiltros()"
+      >
+        Limpiar filtros
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- MENSAJE ERROR -->
+  <div
+    *ngIf="mensajeError"
+    class="alert-error mb-5"
+  >
+    <span>{{ mensajeError }}</span>
+
+    <button
+      type="button"
+      (click)="mensajeError = ''"
+      class="alert-close"
+    >
+      ×
+    </button>
+  </div>
+
+
+  <!-- MENSAJE ÉXITO -->
+  <div
+    *ngIf="mensajeExito"
+    class="alert-success mb-5"
+  >
+    <span>{{ mensajeExito }}</span>
+
+    <button
+      type="button"
+      (click)="mensajeExito = ''"
+      class="alert-close"
+    >
+      ×
+    </button>
+  </div>
+
+
+  <!-- CARGANDO -->
+  <div
+    *ngIf="cargando"
+    class="loading-container"
+  >
+    <div class="loading-spinner"></div>
+
+    <p>
+      Cargando órdenes de trabajo...
+    </p>
+  </div>
+
+
+  <!-- TABLA -->
+  <div
+    *ngIf="!cargando"
+    class="table-card"
+  >
+
+    <div class="table-header">
+
+      <div>
+        <h2>
+          Órdenes registradas
+        </h2>
+
+        <p>
+          {{ ordenesFiltradas.length }} resultado(s)
+        </p>
+      </div>
+
+    </div>
+
+
+    <!-- SIN RESULTADOS -->
+    <div
+      *ngIf="ordenesFiltradas.length === 0"
+      class="empty-state"
+    >
+
+      <div class="empty-icon">
+        OT
+      </div>
+
+      <h3>
+        No se encontraron órdenes de trabajo
+      </h3>
+
+      <p>
+        No existen órdenes que coincidan con los filtros seleccionados.
+      </p>
+
+      <button
+        type="button"
+        class="btn-primary mt-4"
+        (click)="abrirModalNuevo()"
+      >
+        Crear primera orden
+      </button>
+
+    </div>
+
+
+    <!-- TABLA CON DATOS -->
+    <div
+      *ngIf="ordenesFiltradas.length > 0"
+      class="overflow-x-auto"
+    >
+
+      <table class="data-table">
+
+        <thead>
+
+          <tr>
+
+            <th>
+              N.º OT
+            </th>
+
+            <th>
+              Obra
+            </th>
+
+            <th *ngIf="esVistaGlobal()">
+              Empresa
+            </th>
+
+            <th>
+              Tipo de trabajo
+            </th>
+
+            <th>
+              Cuadrilla
+            </th>
+
+            <th>
+              Fecha inicio
+            </th>
+
+            <th>
+              Fecha fin
+            </th>
+
+            <th>
+              Estado
+            </th>
+
+            <th class="text-center">
+              Acciones
+            </th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          <tr
+            *ngFor="let orden of ordenesFiltradas"
+          >
+
+            <!-- NÚMERO -->
+            <td>
+
+              <span class="font-semibold text-gray-900 dark:text-white">
+                OT-{{ orden.orden_nro }}
+              </span>
+
+            </td>
+
+
+            <!-- OBRA -->
+            <td>
+
+              <div>
+
+                <p class="font-medium text-gray-900 dark:text-white">
+                  {{ orden.nombre || 'Sin nombre' }}
+                </p>
+
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ orden.codigo || 'Sin código' }}
+                </p>
+
+              </div>
+
+            </td>
+
+
+            <!-- EMPRESA (VISTA GLOBAL) -->
+            <td *ngIf="esVistaGlobal()">
+
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300">
+                🏢 {{ orden.nombre_empresa || 'Empresa #' + orden.id_empresa }}
+              </span>
+
+            </td>
+
+
+            <!-- TIPO -->
+            <td>
+
+              <span class="text-gray-700 dark:text-gray-300">
+                {{ orden.tipo_trab || '—' }}
+              </span>
+
+            </td>
+
+
+            <!-- CUADRILLA -->
+            <td>
+
+              <span class="text-gray-700 dark:text-gray-300">
+                {{ orden.cuadrilla || 0 }}
+              </span>
+
+            </td>
+
+
+            <!-- FECHA INICIO -->
+            <td>
+
+              <span class="text-gray-700 dark:text-gray-300">
+                {{ orden.fecha_inicio || '—' }}
+              </span>
+
+            </td>
+
+
+            <!-- FECHA FIN -->
+            <td>
+
+              <span class="text-gray-700 dark:text-gray-300">
+                {{ orden.fecha_fin || '—' }}
+              </span>
+
+            </td>
+
+
+            <!-- ESTADO -->
+            <td>
+
+              <span
+                class="status-badge"
+                [ngClass]="obtenerClaseEstado(orden.estado)"
+              >
+                {{ obtenerTextoEstado(orden.estado) }}
+              </span>
+
+            </td>
+
+
+            <!-- ACCIONES -->
+           <!-- ACCIONES -->
+<td>
+
+  <div class="flex items-center justify-center gap-2">
+
+    <button
+      type="button"
+      class="action-btn action-view"
+      (click)="verOrden(orden)"
+      title="Ver detalle"
+    >
+      Ver
+    </button>
+
+    <button
+      type="button"
+      class="action-btn action-view"
+      (click)="abrirResponsables(orden)"
+      title="Gestionar responsables"
+    >
+      Responsables
+    </button>
+
+    <button
+      type="button"
+      class="action-btn action-edit"
+      (click)="abrirModalEditar(orden)"
+      [disabled]="orden.estado === 'CANCELADO'"
+      title="Editar orden"
+    >
+      Editar
+    </button>
+
+    <button
+      type="button"
+      class="action-btn action-delete"
+      (click)="eliminarOrden(orden)"
+      [disabled]="orden.estado === 'CANCELADO'"
+      title="Cancelar orden"
+    >
+      Cancelar
+    </button>
+
+  </div>
+
+</td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+
+  <!-- DETALLE DE ORDEN -->
+  <div
+    *ngIf="ordenSeleccionada && !mostrarModal"
+    class="detail-card mt-6"
+  >
+
+    <div class="detail-header">
+
+      <div>
+
+        <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+          Orden de trabajo
+        </p>
+
+        <h2>
+          OT-{{ ordenSeleccionada.orden_nro }}
+        </h2>
+
+      </div>
+
+      <button
+        type="button"
+        class="btn-outline"
+        (click)="ordenSeleccionada = null"
+      >
+        Cerrar
+      </button>
+
+    </div>
+
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+      <div class="detail-item" *ngIf="ordenSeleccionada.nombre_empresa">
+
+        <span>
+          Empresa
+        </span>
+
+        <strong>
+          {{ ordenSeleccionada.nombre_empresa }}
+        </strong>
+
+      </div>
+
+      <div class="detail-item">
+
+        <span>
+          Obra
+        </span>
+
+        <strong>
+          {{ ordenSeleccionada.nombre_empresa ? ordenSeleccionada.nombre : (ordenSeleccionada.nombre || 'Sin nombre') }}
+        </strong>
+
+      </div>
+
+
+      <div class="detail-item">
+
+        <span>
+          Código de obra
+        </span>
+
+        <strong>
+          {{ ordenSeleccionada.codigo || '—' }}
+        </strong>
+
+      </div>
+
+
+      <div class="detail-item">
+
+        <span>
+          Tipo de trabajo
+        </span>
+
+        <strong>
+          {{ ordenSeleccionada.tipo_trab || '—' }}
+        </strong>
+
+      </div>
+
+
+      <div class="detail-item">
+
+        <span>
+          Cuadrilla
+        </span>
+
+        <strong>
+          {{ ordenSeleccionada.cuadrilla || 0 }}
+        </strong>
+
+      </div>
+
+
+      <div class="detail-item">
+
+        <span>
+          Fecha de inicio
+        </span>
+
+        <strong>
+          {{ ordenSeleccionada.fecha_inicio || '—' }}
+        </strong>
+
+      </div>
+
+
+      <div class="detail-item">
+
+        <span>
+          Fecha de fin
+        </span>
+
+        <strong>
+          {{ ordenSeleccionada.fecha_fin || '—' }}
+        </strong>
+
+      </div>
+
+
+      <div class="detail-item lg:col-span-3">
+
+        <span>
+          Observación
+        </span>
+
+        <strong>
+          {{ ordenSeleccionada.observacion || 'Sin observaciones' }}
+        </strong>
+
+      </div>
+
+
+      <div class="detail-item">
+
+        <span>
+          Estado
+        </span>
+
+        <span
+          class="status-badge"
+          [ngClass]="obtenerClaseEstado(ordenSeleccionada.estado)"
+        >
+          {{ obtenerTextoEstado(ordenSeleccionada.estado) }}
+        </span>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- MODAL CREAR / EDITAR -->
+
+<div
+  *ngIf="mostrarModal"
+  class="modal-backdrop"
+>
+  <div class="modal-card">
+
+    <app-orden-trabajo-estructura
+      [orden]="ordenSeleccionada"
+      [modoEdicion]="modoEdicion"
+      (cerrar)="cerrarModal()"
+      (guardado)="ordenGuardada()"
+    >
+    </app-orden-trabajo-estructura>
+
+  </div>
+</div>
+
+
+<!-- MODAL RESPONSABLES -->
+<div
+  *ngIf="mostrarResponsables"
+  class="modal-backdrop"
+>
+  <div class="modal-card">
+
+    <app-orden-trabajo-responsables
+      [orden]="ordenSeleccionada"
+      (cerrar)="cerrarResponsables()"
+    >
+    </app-orden-trabajo-responsables>
+
+  </div>
+</div>

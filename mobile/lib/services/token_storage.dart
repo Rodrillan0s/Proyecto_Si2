@@ -23,6 +23,7 @@ class TokenStorage {
         required String nombreRol,
         required String telefono,
         required String idEmpresa,
+        String? nombreEmpresa,
     }) async {
         await _storage.write(key: 'nro_usuario', value: nroUsuario);
         await _storage.write(key: 'ci', value: ci);
@@ -31,6 +32,21 @@ class TokenStorage {
         await _storage.write(key: 'nombre_rol', value: nombreRol);
         await _storage.write(key: 'telefono', value: telefono);
         await _storage.write(key: 'id_empresa', value: idEmpresa);
+        if (nombreEmpresa != null) {
+            await _storage.write(key: 'nombre_empresa', value: nombreEmpresa);
+        }
+    }
+
+    static Future<void> saveEmpresaActiva(String? empresaJson) async {
+        if (empresaJson != null) {
+            await _storage.write(key: 'empresa_activa', value: empresaJson);
+        } else {
+            await _storage.delete(key: 'empresa_activa');
+        }
+    }
+
+    static Future<String?> getEmpresaActiva() async {
+        return _storage.read(key: 'empresa_activa');
     }
 
     static Future<void> setBiometriaHabilitada(bool habilitado) async {
