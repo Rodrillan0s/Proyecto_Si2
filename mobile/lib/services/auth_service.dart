@@ -1,33 +1,41 @@
-//auth_service.dart
 import 'package:dio/dio.dart';
 import '../config/app_config.dart';
 import 'token_storage.dart';
 
 class AuthService {
-  final Dio _dio = Dio(
-    BaseOptions(
-      baseUrl: AppConfig.apiBaseUrl,
-      connectTimeout: const Duration(seconds: 20),
-      receiveTimeout: const Duration(seconds: 20),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    ),
-  );
+  Future<Dio> _createDio() async {
+    final customUrl = await TokenStorage.getValue('custom_api_url');
+    final baseUrl = (customUrl != null && customUrl.trim().isNotEmpty)
+        ? customUrl.trim()
+        : AppConfig.apiBaseUrl;
 
-  // ── LOGIN ──────────────────────────────────────────────────────────────
-  // POST /api/auth/login
-  // Body: { "ci": "...", "password": "..." }
-  // Response: { "success": true, "token": "...", "usuario": { ... } }
+    return Dio(
+      BaseOptions(
+        baseUrl: baseUrl,
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ),
+    );
+  }
+
+  // ── LOGIN (CU02) ──────────────────────────────────────────────────────────
   Future<Map<String, dynamic>> login({
-    required String ci,
+    required String identificador,
     required String password,
   }) async {
     try {
-      final response = await _dio.post(
+      final dio = await _createDio();
+      final response = await dio.post(
         '/api/auth/login',
-        data: {'ci': ci, 'password': password},
+        data: {
+          'ci': identificador.trim(),
+          'identificador': identificador.trim(),
+          'password': password,
+        },
       );
 
       final data = response.data;
@@ -39,15 +47,14 @@ class AuthService {
       final token = data['token'] as String;
       final usuario = data['usuario'] as Map<String, dynamic>;
 
-      // Guardamos token y todos los datos del usuario en secure storage
       await TokenStorage.saveToken(token);
       await TokenStorage.saveUserData(
-        nroUsuario: usuario['nro_usuario'].toString(),
-        ci: usuario['ci'].toString(),
-        nombreCompleto: usuario['nombre_completo'].toString(),
-        correo: usuario['correo'].toString(),
-        nombreRol: usuario['nombre_rol'].toString(),
-        telefono: usuario['telefono'].toString(),
+        nroUsuario: usuario['nro_usuario']?.toString() ?? '',
+        ci: usuario['ci']?.toString() ?? '',
+        nombreCompleto: usuario['nombre_completo']?.toString() ?? '',
+        correo: usuario['correo']?.toString() ?? '',
+        nombreRol: usuario['nombre_rol']?.toString() ?? '',
+        telefono: usuario['telefono']?.toString() ?? '',
         idEmpresa: usuario['id_empresa']?.toString() ?? '',
       );
 
@@ -57,44 +64,30 @@ class AuthService {
     }
   }
 
-  // ── REGISTER ───────────────────────────────────────────────────────────
-  // POST /api/auth/register
-  // Body: {
-  //   "ci": "...",
-  //   "nombre_completo": "...",
-  //   "nombre_usuario": "...",
-  //   "password": "...",
-  //   "nro_rol": 3,           ← 3 = Cliente (ajustá según tu BD)
-  //   "telefono": "...",
-  //   "correo": "...",
-  //   "direccion": "",        ← opcional
-  //   "id_empresa": null      ← null para clientes sin empresa
-  // }
-  // Response: { "success": true, "message": "...", "data": { ... } }
-  Future<Map<String, dynamic>> register({
+  // ── REGISTER (CU01) ───────────────────────────────────────────────────────
+  Future<void> register({
     required String ci,
     required String nombreCompleto,
     required String nombreUsuario,
-    required String password,
-    required String telefono,
     required String correo,
-    required int nroRol,
-    String direccion = '',
-    int? idEmpresa,
+    required String password,
+    String? telefono,
+    String? direccion,
+    String? nombreEmpresa,
   }) async {
     try {
-      final response = await _dio.post(
+      final dio = await _createDio();
+      final response = await dio.post(
         '/api/auth/register',
         data: {
-          'ci': ci,
-          'nombre_completo': nombreCompleto,
-          'nombre_usuario': nombreUsuario,
+          'ci': ci.trim(),
+          'nombre_completo': nombreCompleto.trim(),
+          'nombre_usuario': nombreUsuario.trim(),
+          'correo': correo.trim(),
           'password': password,
-          'nro_rol': nroRol,
-          'telefono': telefono,
-          'correo': correo,
-          'direccion': direccion,
-          'id_empresa': idEmpresa,
+          'telefono': telefono?.trim() ?? '',
+          'direccion': direccion?.trim() ?? '',
+          'nombre_empresa': nombreEmpresa?.trim() ?? '',
         },
       );
 
@@ -103,56 +96,45 @@ class AuthService {
       if (data == null || data['success'] != true) {
         throw Exception(data?['message'] ?? 'Error al registrar usuario.');
       }
-
-      return data;
     } on DioException catch (e) {
       throw Exception(_parsearErrorDio(e));
     }
   }
 
-  // ── Parser de errores Dio ──────────────────────────────────────────────
-  // FastAPI siempre devuelve errores en response.data['detail']
+  // ── LOGOUT (CU03) ────────────────────────────────────────────────────────
+  Future<void> logout() async {
+    await TokenStorage.clearToken();
+  }
+
+  // ── PARSEAR ERRORES DIO ────────────────────────────────────────────────
   String _parsearErrorDio(DioException e) {
-    // Primero intentamos leer el 'detail' que manda FastAPI
-    if (e.response?.data != null) {
-      final data = e.response!.data;
-
-      // Caso normal: { "detail": "mensaje del backend" }
-      if (data is Map && data['detail'] != null) {
-        return data['detail'].toString();
-      }
-
-      // Caso raro: FastAPI manda detail como lista de validaciones
-      if (data is Map && data['detail'] is List) {
-        final errores = data['detail'] as List;
-        return errores.map((e) => e['msg'] ?? e.toString()).join('\n');
-      }
-    }
-
-    // Errores de red (sin respuesta del servidor)
     switch (e.type) {
       case DioExceptionType.connectionTimeout:
-      case DioExceptionType.receiveTimeout:
       case DioExceptionType.sendTimeout:
-        return 'Tiempo de espera agotado. Verificá tu conexión a internet.';
-      case DioExceptionType.connectionError:
-        return 'No se pudo conectar al servidor. Verificá tu conexión.';
-      default:
-        break;
-    }
+      case DioExceptionType.receiveTimeout:
+        return 'Tiempo de espera agotado. Verifica tu conexión a internet o el estado del servidor.';
+      case DioExceptionType.badResponse:
+        final statusCode = e.response?.statusCode;
+        final responseData = e.response?.data;
 
-    // Fallback por código HTTP
-    switch (e.response?.statusCode) {
-      case 400:
-        return 'Datos inválidos. Revisá el formulario.';
-      case 401:
-        return 'Credenciales incorrectas.';
-      case 404:
-        return 'Servicio no encontrado.';
-      case 500:
-        return 'Error interno del servidor. Intentá más tarde.';
+        if (responseData is Map) {
+          final detail = responseData['detail'] ?? responseData['error'] ?? responseData['message'];
+          if (detail != null) return detail.toString();
+        }
+
+        if (statusCode == 400) return 'Datos inválidos. Verifica la información ingresada.';
+        if (statusCode == 401) return 'Credenciales incorrectas o usuario no encontrado.';
+        if (statusCode == 403) return 'Acceso denegado. No tienes permisos para realizar esta acción.';
+        if (statusCode == 404) return 'Recurso no encontrado (404).';
+        if (statusCode == 500) return 'Error interno del servidor. Intenta de nuevo más tarde.';
+
+        return 'Error del servidor: $statusCode';
+      case DioExceptionType.connectionError:
+        return 'No se pudo conectar con el servidor. Revisa tu conexión de red o la IP del servidor.';
+      case DioExceptionType.cancel:
+        return 'La petición fue cancelada.';
       default:
-        return 'Ocurrió un error inesperado. Intentá de nuevo.';
+        return 'Ocurrió un error inesperado. Intenta de nuevo.';
     }
   }
 }

@@ -69,6 +69,31 @@ class ProfileService {
     }
   }
 
+  Future<void> cambiarPassword({
+    required String passwordActual,
+    required String passwordNueva,
+    required String confirmarPassword,
+  }) async {
+    try {
+      final response = await ApiClient.dio.put(
+        '$_basePath/cambiar-password',
+        data: {
+          'password_actual': passwordActual,
+          'password_nueva': passwordNueva,
+          'confirmar_password': confirmarPassword,
+        },
+      );
+
+      final data = response.data;
+
+      if (data is! Map || data['success'] != true) {
+        throw Exception(data?['message'] ?? 'No se pudo cambiar la contraseña.');
+      }
+    } on DioException catch (e) {
+      throw Exception(_parsearErrorDio(e));
+    }
+  }
+
   String _parsearErrorDio(DioException e) {
     if (e.response?.data != null) {
       final data = e.response!.data;
@@ -94,7 +119,7 @@ class ProfileService {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.receiveTimeout:
       case DioExceptionType.sendTimeout:
-        return 'Tiempo de espera agotado. Verificá tu conexión.';
+        return 'Tiempo de espera agotado. Verifique su conexión.';
       case DioExceptionType.connectionError:
         return 'No se pudo conectar al servidor.';
       default:
@@ -103,11 +128,11 @@ class ProfileService {
 
     switch (e.response?.statusCode) {
       case 400:
-        return 'Datos inválidos. Revisá el formulario.';
+        return 'Datos inválidos. Verifique la información ingresada.';
       case 401:
-        return 'Tu sesión expiró. Iniciá sesión nuevamente.';
+        return 'Sesión expirada o credenciales incorrectas.';
       case 403:
-        return 'No tienes permiso para esta acción.';
+        return 'No tiene permisos para esta acción.';
       case 404:
         return 'Servicio no encontrado.';
       case 500:
