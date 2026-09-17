@@ -19,6 +19,7 @@ import { ProyectoDetalleComponent } from './pages/proyectos/detalle/proyecto-det
 import { MaterialesComponent } from './pages/materiales/materiales';
 import { ProveedoresComponent } from './pages/proveedores/proveedores';             
 import { OrdenesTrabajoComponent } from './pages/ordenes-trabajo/ordenes-trabajo';
+import { EstimacionesComponent } from './pages/estimaciones/estimaciones';
 
 //LAYOUTS
 import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout';
@@ -114,6 +115,12 @@ export const routes: Routes = [
                 component: OrdenesTrabajoComponent, 
                 canActivate: [roleGuard], 
                 data: { permissions: ['Visualizar_obras'] } 
+            },
+            {
+                path: 'estimaciones',
+                component: EstimacionesComponent,
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_estimaciones'] }
             },
             { 
                 path: 'perfil', 

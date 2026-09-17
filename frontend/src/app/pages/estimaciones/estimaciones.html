@@ -1,0 +1,225 @@
+<main class="estimaciones-page">
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">PRESUPUESTOS / APU</p>
+      <h1>Estimación de costos</h1>
+      <p class="lede">Partidas con costos unitarios calculados, insumos (materiales y mano de obra) y versiones de presupuesto por obra.</p>
+    </div>
+    <div class="heading-actions">
+      <button class="primary-action" type="button" (click)="abrirNuevaPartida()">+ Nueva partida</button>
+      <button class="secondary-action" type="button" (click)="abrirNuevaEstimacion()" [disabled]="!obras.length">+ Nueva estimación</button>
+    </div>
+  </header>
+
+  <p *ngIf="error" class="alert">{{ error }}</p>
+  <p *ngIf="mensaje" class="alert success">{{ mensaje }}</p>
+
+  <section class="toolbar" aria-label="Filtros de partidas">
+    <select [(ngModel)]="idObra" (change)="cambiarObra($any($event.target).value)" aria-label="Filtrar por obra">
+      <option [ngValue]="undefined">Todas las obras (plantillas)</option>
+      <option *ngFor="let o of obras" [ngValue]="o.id_obra">{{ o.nombre }}</option>
+    </select>
+    <input [(ngModel)]="filtro.texto" placeholder="Buscar partida..." aria-label="Buscar partida">
+    <select [(ngModel)]="filtro.tipo" (change)="cargar()" aria-label="Filtrar por tipo">
+      <option value="">Todos los tipos</option><option value="OBRA_GRIS">Obra gris</option><option value="EXCAVACION">Excavación</option><option value="ACABADO">Acabado</option><option value="SUBCONTRATO">Subcontrato</option>
+    </select>
+    <select [(ngModel)]="filtro.calidad" (change)="cargar()" aria-label="Filtrar por calidad">
+      <option value="">Todas las calidades</option><option value="NORMAL">Normal</option><option value="LUJO">Lujo</option>
+    </select>
+  </section>
+
+  <section class="content-grid">
+    <div class="panel">
+      <div class="panel-title"><div><span class="section-kicker">CATÁLOGO</span><h2>Partidas APU</h2></div><span class="count">{{ apusFiltradas.length }}</span></div>
+      <div *ngIf="cargando" class="empty">Cargando partidas...</div>
+      <div *ngIf="!cargando && !apusFiltradas.length" class="empty">No hay partidas para estos filtros.</div>
+      <div class="table-wrap" *ngIf="!cargando && apusFiltradas.length">
+        <table>
+          <thead><tr><th>Partida</th><th>Tipo</th><th>Calidad</th><th>Unidad</th><th class="numeric">Costo directo</th><th class="numeric">Acciones</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let apu of apusFiltradas">
+              <td><strong>{{ apu.nombre }}</strong><small>{{ apu.descripcion || 'Sin descripción' }}</small></td>
+              <td><span class="tag">{{ apu.tipo_analisis_precio_unitario }}</span></td>
+              <td>{{ apu.calidad || '—' }}</td>
+              <td>{{ apu.abreviatura || '—' }}</td>
+              <td class="numeric price">{{ apu.costo_directo_unitario | number:'1.2-2' }}</td>
+              <td class="numeric row-actions">
+                <button class="mini-action" type="button" (click)="abrirEditar(apu)" title="Editar partida e insumos">Editar</button>
+                <button class="mini-action" type="button" (click)="duplicarApu(apu)" title="Duplicar (comparativa Normal/Lujo)">Duplicar</button>
+                <button class="mini-action danger" type="button" (click)="desactivarApu(apu)" title="Desactivar" *ngIf="apu.activo">Desactivar</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <aside class="panel estimates-panel">
+      <div class="panel-title"><div><span class="section-kicker">VERSIONES</span><h2>Estimaciones</h2></div></div>
+      <button class="secondary-action full" type="button" (click)="abrirNuevaEstimacion()" [disabled]="!obras.length">Nueva estimación</button>
+      <div *ngIf="!estimaciones.length" class="empty">Todavía no hay estimaciones para esta obra.</div>
+      <div class="estimate-row" *ngFor="let estimacion of estimaciones">
+        <button class="estimate-link" type="button" (click)="verDetalle(estimacion)">
+          <strong>{{ estimacion.nombre }}</strong>
+          <small>Versión {{ estimacion.version }} · {{ estimacion.estado }} · {{ obraNombre(estimacion.id_obra) }}</small>
+        </button>
+        <b>{{ (estimacion.calculo?.monto_total ?? estimacion.monto_total ?? 0) | number:'1.2-2' }}</b>
+      </div>
+    </aside>
+  </section>
+
+  <!-- ======= Modal: Editor de partida / APU ======= -->
+  <div class="modal-backdrop" *ngIf="editor.abierto">
+    <section class="modal modal-lg">
+      <div class="modal-header">
+        <div><span class="section-kicker">{{ editor.editar ? 'EDITAR APU' : 'NUEVA PARTIDA' }}</span><h2>{{ editor.editar ? 'Editar partida' : 'Crear APU' }}</h2></div>
+        <button class="close" type="button" (click)="cerrarEditor()">×</button>
+      </div>
+
+      <div class="form-row">
+        <label>Nombre<input [(ngModel)]="editor.form.nombre"></label>
+        <label>Unidad de medida<select [(ngModel)]="editor.form.id_unidad_medida"><option [ngValue]="undefined" disabled>Selecciona...</option><option *ngFor="let u of unidades" [ngValue]="u.id_unidad_medida">{{ u.nombre }} ({{ u.abreviatura }})</option></select></label>
+      </div>
+      <label>Descripción<textarea [(ngModel)]="editor.form.descripcion" rows="2"></textarea></label>
+      <div class="form-row">
+        <label>Tipo<select [(ngModel)]="editor.form.tipo_analisis_precio_unitario"><option value="OBRA_GRIS">Obra gris</option><option value="EXCAVACION">Excavación</option><option value="ACABADO">Acabado</option><option value="SUBCONTRATO">Subcontrato</option></select></label>
+        <label *ngIf="editor.form.tipo_analisis_precio_unitario === 'ACABADO'">Calidad<select [(ngModel)]="editor.form.calidad"><option value="NORMAL">Normal</option><option value="LUJO">Lujo</option></select></label>
+      </div>
+
+      <div class="insumos-block">
+        <div class="insumos-head">
+          <span class="section-kicker">INSUMOS</span>
+          <span class="insumos-total">Costo directo / unidad: <b>{{ costoTemporal | number:'1.2-2' }}</b></span>
+        </div>
+
+        <div *ngIf="!insumos.length && editor.editar" class="empty">Sin insumos todavía. Agrega materiales o mano de obra.</div>
+        <div *ngIf="!insumos.length && !editor.editar" class="insumos-hint">Guarda primero la partida y luego agrega sus insumos, o edítala desde el listado.</div>
+
+        <div class="insumo-row" *ngFor="let row of insumos">
+          <div class="insumo-grid">
+            <select [(ngModel)]="row.tipo_insumo" (change)="cambiarTipoInsumo(row)" [disabled]="row.id !== undefined && !row.editing" aria-label="Tipo de insumo">
+              <option value="MATERIAL">Material</option><option value="MANO_OBRA">Mano de obra</option><option value="OTRO">Otro</option>
+            </select>
+            <select *ngIf="row.tipo_insumo === 'MATERIAL'" [(ngModel)]="row.id_material" (change)="onMaterial($event, row)" aria-label="Material">
+              <option [ngValue]="null">Selecciona material...</option>
+              <option *ngFor="let m of materiales" [ngValue]="m.id_material">{{ m.nombre_material }} · {{ m.precio }}</option>
+            </select>
+            <select *ngIf="row.tipo_insumo === 'MANO_OBRA'" [(ngModel)]="row.id_mano_obra" (change)="onManoObra($event, row)" aria-label="Mano de obra">
+              <option [ngValue]="null">Selecciona cuadrilla...</option>
+              <option *ngFor="let mo of manoObra" [ngValue]="mo.id_mano_obra">{{ mo.nombre }} · {{ mo.costo_unitario }}/{{ unidadAbr(mo.id_unidad_medida) }}</option>
+            </select>
+            <span *ngIf="row.tipo_insumo === 'OTRO'" class="otro-tag">Insumo genérico</span>
+            <input *ngIf="row.tipo_insumo !== 'MATERIAL' && row.tipo_insumo !== 'MANO_OBRA'" [(ngModel)]="row.nombre" placeholder="Nombre del insumo" aria-label="Nombre">
+            <input *ngIf="row.tipo_insumo === 'MATERIAL'" [(ngModel)]="row.nombre" placeholder="Nombre (se autocompleta)" aria-label="Nombre">
+            <input *ngIf="row.tipo_insumo === 'MANO_OBRA'" [(ngModel)]="row.nombre" placeholder="Nombre de la cuadrilla" aria-label="Nombre">
+            <select [(ngModel)]="row.id_unidad_medida" aria-label="Unidad">
+              <option [ngValue]="undefined" disabled>Unidad...</option>
+              <option *ngFor="let u of unidades" [ngValue]="u.id_unidad_medida">{{ u.abreviatura }}</option>
+            </select>
+            <input type="number" min="0" step="0.0001" [(ngModel)]="row.cantidad" placeholder="Cantidad" aria-label="Cantidad">
+            <input type="number" min="0" step="0.01" [(ngModel)]="row.precio_unitario" placeholder="Precio unitario" aria-label="Precio unitario">
+            <span class="insumo-total">{{ totalInsumo(row) | number:'1.2-2' }}</span>
+          </div>
+          <div class="insumo-actions">
+            <button *ngIf="row.editing || row.nuevo" class="mini-action" type="button" [disabled]="row.guardando" (click)="guardarInsumo(row)">{{ row.guardando ? 'Guardando...' : 'Guardar' }}</button>
+            <button *ngIf="!row.editing && !row.nuevo" class="mini-action" type="button" (click)="row.editing = true">Editar</button>
+            <button class="mini-action danger" type="button" (click)="eliminarInsumo(row)">Eliminar</button>
+            <button *ngIf="row.editing && !row.nuevo" class="mini-action" type="button" (click)="cancelarInsumo(row)">Cancelar</button>
+          </div>
+          <p *ngIf="row.error" class="row-error">{{ row.error }}</p>
+        </div>
+
+        <div class="insumos-tools">
+          <button class="secondary-action" type="button" (click)="agregarInsumo()">+ Agregar insumo</button>
+          <button class="secondary-action" type="button" (click)="mo.abierto = true">+ Nueva cuadrilla</button>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="secondary-action" (click)="cerrarEditor()">Cancelar</button>
+        <button type="button" class="primary-action" [disabled]="guardando" (click)="guardarPartida()">{{ guardando ? 'Guardando...' : (editor.editar ? 'Guardar cambios' : 'Guardar partida') }}</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- ======= Modal: Nueva cuadrilla ======= -->
+  <div class="modal-backdrop" *ngIf="mo.abierto">
+    <section class="modal modal-sm">
+      <div class="modal-header"><div><span class="section-kicker">MANO DE OBRA</span><h2>Nueva cuadrilla</h2></div><button class="close" type="button" (click)="mo.abierto = false">×</button></div>
+      <label>Nombre / descripción de la cuadrilla<input [(ngModel)]="mo.nombre" placeholder="Ej. Cuadrilla 1 Albañil + 2 Ayudantes"></label>
+      <label>Costo por jornal (USD)<input type="number" min="0" step="0.01" [(ngModel)]="mo.costo_unitario"></label>
+      <div class="modal-actions">
+        <button type="button" class="secondary-action" (click)="mo.abierto = false">Cancelar</button>
+        <button type="button" class="primary-action" [disabled]="guardando" (click)="crearManoObra()">Guardar cuadrilla</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- ======= Modal: Nueva estimación ======= -->
+  <div class="modal-backdrop" *ngIf="est.abierto">
+    <section class="modal">
+      <div class="modal-header"><div><span class="section-kicker">PRESUPUESTO</span><h2>Nueva estimación</h2></div><button class="close" type="button" (click)="est.abierto = false">×</button></div>
+      <label>Obra<select [(ngModel)]="est.form.id_obra"><option [ngValue]="undefined" disabled>Selecciona obra...</option><option *ngFor="let o of obras" [ngValue]="o.id_obra">{{ o.nombre }}</option></select></label>
+      <label>Nombre<input [(ngModel)]="est.form.nombre"></label>
+      <label>Descripción<textarea [(ngModel)]="est.form.descripcion" rows="2"></textarea></label>
+      <div class="form-row">
+        <label>% Ganancia (0.10 = 10%)<input type="number" min="0" step="0.0001" [(ngModel)]="est.form.factor_utilidad"></label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="secondary-action" (click)="est.abierto = false">Cancelar</button>
+        <button type="button" class="primary-action" [disabled]="guardando" (click)="crearEstimacion()">{{ guardando ? 'Creando...' : 'Crear estimación' }}</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- ======= Modal: Detalle de estimación ======= -->
+  <div class="modal-backdrop" *ngIf="mostrarDetalle">
+    <section class="modal modal-lg">
+      <div class="modal-header">
+        <div><span class="section-kicker">PRESUPUESTO {{ detalle?.estado }}</span><h2>{{ detalle?.nombre }} · V{{ detalle?.version }}</h2></div>
+        <button class="close" type="button" (click)="cerrarDetalle()">×</button>
+      </div>
+
+      <div class="estimate-totals">
+        <div><span>Subtotal directo</span><b>{{ detalle?.calculo?.subtotal_directo ?? 0 | number:'1.2-2' }}</b></div>
+        <div><span>Ganancia</span><b>{{ detalle?.calculo?.utilidad ?? 0 | number:'1.2-2' }}</b></div>
+        <div class="grand"><span>Monto total</span><b>{{ detalle?.calculo?.monto_total ?? 0 | number:'1.2-2' }}</b></div>
+      </div>
+
+      <div class="insumos-block">
+        <div class="insumos-head">
+          <span class="section-kicker">PARTIDAS DEL PRESUPUESTO</span>
+          <span class="insumos-total">{{ detallePartidas.length }} partida(s)</span>
+        </div>
+        <div *ngIf="!detallePartidas.length" class="empty">Sin partidas. Agrega partidas APU al presupuesto.</div>
+        <div class="table-wrap" *ngIf="detallePartidas.length">
+          <table>
+            <thead><tr><th>Partida</th><th>Unidad</th><th class="numeric">Costo unitario</th><th class="numeric">Cantidad</th><th class="numeric">Subtotal</th><th></th></tr></thead>
+            <tbody>
+              <tr *ngFor="let d of detallePartidas">
+                <td>{{ d.nombre }}</td><td>{{ d.unidad }}</td>
+                <td class="numeric">{{ d.costo_unitario | number:'1.2-2' }}</td>
+                <td class="numeric">{{ d.cantidad | number:'1.2-2' }}</td>
+                <td class="numeric price">{{ d.subtotal | number:'1.2-2' }}</td>
+                <td class="numeric"><button class="mini-action danger" type="button" (click)="quitarApuEstimacion(d)">Quitar</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="insumos-tools" *ngIf="!agregarApu">
+          <button class="secondary-action" type="button" [disabled]="!apusParaAgregar.length" (click)="agregarApu = true; apuSeleccionado = undefined; cantidadApu = 1">+ Agregar partida APU</button>
+          <button class="primary-action" type="button" [disabled]="detalle?.estado === 'APROBADA'" (click)="aprobar()">{{ detalle?.estado === 'APROBADA' ? 'Aprobada' : 'Aprobar estimación' }}</button>
+        </div>
+        <div class="add-apu-row" *ngIf="agregarApu">
+          <select [(ngModel)]="apuSeleccionado" aria-label="Partida APU">
+            <option [ngValue]="undefined" disabled>Selecciona partida APU...</option>
+            <option *ngFor="let a of apusParaAgregar" [ngValue]="a.id_analisis_precio_unitario">{{ a.nombre }} · {{ a.abreviatura }} · {{ a.costo_directo_unitario }}</option>
+          </select>
+          <input type="number" min="0" step="0.001" [(ngModel)]="cantidadApu" placeholder="Cantidad" aria-label="Cantidad">
+          <button class="primary-action" type="button" [disabled]="guardandoDetalle" (click)="agregarApuAEstimacion()">{{ guardandoDetalle ? 'Agregando...' : 'Agregar' }}</button>
+          <button class="secondary-action" type="button" (click)="agregarApu = false">Cancelar</button>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>

@@ -28,7 +28,13 @@ export type PermisoNombre =
   | 'Desactivar_materiales'
   | 'Visualizar_proveedores'
   | 'Registrar_proveedores'
-  | 'Modificar_proveedores';
+  | 'Modificar_proveedores'
+  | 'Visualizar_estimaciones'
+  | 'Registrar_estimaciones'
+  | 'Modificar_estimaciones'
+  | 'Eliminar_estimaciones'
+  | 'Visualizar_mano_obra'
+  | 'Registrar_mano_obra';
 
 export const PERMISOS_OFICIALES: PermisoNombre[] = [
   'Visualizar_usuarios', 'Registrar_usuarios', 'Modificar_usuarios', 'Eliminar_usuarios',
@@ -36,7 +42,8 @@ export const PERMISOS_OFICIALES: PermisoNombre[] = [
   'Visualizar_empresa', 'Registrar_empresa', 'Modificar_empresa', 'Eliminar_empresa',
   'Visualizar_inventario', 'Registrar_inventario', 'Modificar_inventario', 'Eliminar_inventario',
   'Visualizar_materiales', 'Registrar_materiales', 'Modificar_materiales', 'Desactivar_materiales',
-  'Visualizar_proveedores', 'Registrar_proveedores', 'Modificar_proveedores'
+  'Visualizar_proveedores', 'Registrar_proveedores', 'Modificar_proveedores',
+  'Visualizar_estimaciones', 'Registrar_estimaciones', 'Modificar_estimaciones', 'Eliminar_estimaciones', 'Visualizar_mano_obra', 'Registrar_mano_obra'
 ];
 
 export const MAPA_PERMISOS_POR_ROL: Record<string, PermisoNombre[]> = {
@@ -48,6 +55,7 @@ export const MAPA_PERMISOS_POR_ROL: Record<string, PermisoNombre[]> = {
     'Visualizar_inventario', 'Registrar_inventario', 'Modificar_inventario', 'Eliminar_inventario',
     'Visualizar_materiales', 'Registrar_materiales', 'Modificar_materiales', 'Desactivar_materiales',
     'Visualizar_proveedores', 'Registrar_proveedores', 'Modificar_proveedores'
+    , 'Visualizar_estimaciones', 'Registrar_estimaciones', 'Modificar_estimaciones', 'Eliminar_estimaciones', 'Visualizar_mano_obra', 'Registrar_mano_obra'
   ],
   'JEFE_DE_OBRA': [
     'Visualizar_obras', 'Registrar_obras', 'Modificar_obras',
