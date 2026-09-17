@@ -6,7 +6,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../services/auth';
 import {
   CategoriaMaterial, EstadoMaterial, Material, MaterialCaracteristica, MaterialCreatePayload,
-  MaterialUpdatePayload, MaterialsService, UnidadMedida
+  MaterialUpdatePayload, MaterialsService, UnidadMedida, MaterialBase, MaterialAdoptarPayload
 } from '../../services/materials.service';
 
 interface MaterialFormModel extends MaterialCreatePayload { id_material?: number; stock_actual?: number; }
@@ -54,6 +54,17 @@ export class MaterialesComponent implements OnInit {
   form: MaterialFormModel = this.formularioVacio();
   categoriaForm = { nombre: '', descripcion: '' };
   empresaActiva: any = null;
+
+  // CU14 REDEFINIDO: Catálogo Base de Bolivia y Adopción
+  vistaActiva: 'empresa' | 'base' = 'empresa';
+  materialesBase: MaterialBase[] = [];
+  loadingBase = false;
+  totalBase = 0;
+  modalAdopcionAbierto = false;
+  materialBaseSeleccionado?: MaterialBase;
+  formAdopcion: MaterialAdoptarPayload = { id_material_base: 0, precio: null, codigo_interno: '', stock_minimo: 0 };
+  adoptingMaterial = false;
+  adopcionError = '';
 
   ngOnInit(): void {
     this.busqueda$.pipe(debounceTime(400), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
@@ -108,6 +119,85 @@ export class MaterialesComponent implements OnInit {
   filtrar(): void { this.pagina = 1; this.cargarMateriales(); }
   limpiarFiltros(): void { this.q = ''; this.categoria = ''; this.estado = ''; this.stock = ''; this.pagina = 1; this.cargarMateriales(); }
   cambiarPagina(pagina: number): void { if (!this.loadingMaterials && pagina >= 1 && pagina <= this.totalPaginas) { this.pagina = pagina; this.cargarMateriales(); } }
+
+  // Gestión de Catálogo Base (CU14)
+  cambiarVista(vista: 'empresa' | 'base'): void {
+    this.vistaActiva = vista;
+    this.q = '';
+    this.categoria = '';
+    this.pagina = 1;
+    if (vista === 'base') {
+      this.cargarMaterialesBase();
+    } else {
+      this.cargarMateriales();
+    }
+  }
+
+  cargarMaterialesBase(): void {
+    this.loadingBase = true;
+    this.error = '';
+    const idEmpresa = this.auth.obtenerIdEmpresaActiva();
+    this.service.listarBase({
+      q: this.q.trim() || undefined,
+      id_categoria: this.categoria ? +this.categoria : undefined,
+      id_empresa: idEmpresa || undefined,
+      limit: 100
+    })
+      .pipe(finalize(() => { this.loadingBase = false; this.cdr.detectChanges(); }))
+      .subscribe({
+        next: res => {
+          this.materialesBase = res.data || [];
+          this.totalBase = res.pagination.total;
+          this.cdr.detectChanges();
+        },
+        error: err => this.mostrarError(this.mensajeError(err, 'No se pudo cargar el catálogo base de la plataforma.'))
+      });
+  }
+
+  abrirAdopcion(mat: MaterialBase): void {
+    if (mat.adoptado) return;
+    this.materialBaseSeleccionado = mat;
+    this.adopcionError = '';
+    this.formAdopcion = {
+      id_material_base: mat.id_material_base,
+      codigo_interno: mat.codigo,
+      precio: mat.precio_referencial || null,
+      stock_minimo: 0,
+      id_empresa: this.auth.obtenerIdEmpresaActiva() || undefined
+    };
+    this.modalAdopcionAbierto = true;
+    this.cdr.detectChanges();
+  }
+
+  cerrarAdopcion(): void {
+    if (this.adoptingMaterial) return;
+    this.modalAdopcionAbierto = false;
+    this.materialBaseSeleccionado = undefined;
+    this.adopcionError = '';
+    this.cdr.detectChanges();
+  }
+
+  confirmarAdopcion(): void {
+    if (!this.materialBaseSeleccionado || this.adoptingMaterial) return;
+    this.adopcionError = '';
+    this.adoptingMaterial = true;
+
+    this.service.adoptar(this.formAdopcion)
+      .pipe(finalize(() => { this.adoptingMaterial = false; this.cdr.detectChanges(); }))
+      .subscribe({
+        next: res => {
+          this.modalAdopcionAbierto = false;
+          this.materialBaseSeleccionado = undefined;
+          this.mostrarExito(res.message || 'Material incorporado con éxito a su catálogo.');
+          this.cargarMaterialesBase();
+          this.cdr.detectChanges();
+        },
+        error: err => {
+          this.adopcionError = this.mensajeError(err, 'Error al incorporar el material.');
+          this.cdr.detectChanges();
+        }
+      });
+  }
 
   abrirNuevo(): void { if (this.operacionFormularioActiva) return; this.error = ''; this.editando = false; this.form = this.formularioVacio(); this.modal = 'formulario'; }
   abrirEditar(material: Material): void {

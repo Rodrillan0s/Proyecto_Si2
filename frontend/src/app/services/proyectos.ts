@@ -11,6 +11,59 @@ export interface ResponsableObra {
   fecha_asignacion?: string;
 }
 
+export interface RequisitosEstimacion {
+  tipo_obra: string;
+  superficie_m2: number;
+  niveles: number;
+  tipo_terreno: string;
+  complejidad: string;
+  ubicacion?: string;
+  caracteristicas_generales?: string;
+  moneda?: string;
+}
+
+export interface CalculoEstimacion {
+  tipo_obra: string;
+  codigo_tipo_obra: string;
+  superficie_m2: number;
+  niveles: number;
+  clave_niveles: string;
+  tipo_terreno: string;
+  codigo_tipo_terreno: string;
+  complejidad: string;
+  codigo_complejidad: string;
+  ubicacion?: string;
+  caracteristicas_generales?: string;
+  costo_referencial_m2: number;
+  factor_niveles: number;
+  factor_terreno: number;
+  factor_complejidad: number;
+  factor_combinado: number;
+  costo_base: number;
+  monto_estimado: number;
+  moneda: string;
+}
+
+export interface EstimacionObra {
+  id_estimacion: number;
+  id_obra: number;
+  tipo_obra: string;
+  superficie_m2: number;
+  niveles: number;
+  tipo_terreno: string;
+  complejidad: string;
+  ubicacion?: string;
+  caracteristicas_generales?: string;
+  costo_referencial_m2: number;
+  factor_niveles: number;
+  factor_terreno: number;
+  factor_complejidad: number;
+  costo_base: number;
+  monto_estimado: number;
+  moneda: string;
+  fecha_estimacion?: string;
+}
+
 export interface Proyecto {
   id_obra?: number;
   codigo: string;
@@ -40,6 +93,8 @@ export interface Proyecto {
   descripcion_cliente?: string;
   observacion?: string;
   responsables?: ResponsableObra[];
+  estimacion?: EstimacionObra | CalculoEstimacion;
+  requisitos_estimacion?: RequisitosEstimacion;
 }
 
 export interface TipoProyecto {
@@ -66,7 +121,10 @@ export interface ApiResponseSimple {
   success: boolean;
   message: string;
   id_obra?: number;
+  id_estimacion?: number;
+  estimacion?: CalculoEstimacion;
 }
+
 
 @Injectable({
   providedIn: 'root'
@@ -124,6 +182,28 @@ export class ProyectosService {
   retirarResponsable(idObra: number, idUsuario: number): Observable<ApiResponseSimple> {
     return this.http.delete<ApiResponseSimple>(
       `${this.apiUrl}/api/proyectos/${idObra}/responsables/${idUsuario}`,
+      { headers: this.getHeaders() }
+    );
+  }
+
+  obtenerParametrosEstimacion(): Observable<{ success: boolean; data: any }> {
+    return this.http.get<{ success: boolean; data: any }>(
+      `${this.apiUrl}/api/proyectos/estimacion/parametros`,
+      { headers: this.getHeaders() }
+    );
+  }
+
+  calcularPreviewEstimacion(requisitos: RequisitosEstimacion): Observable<{ success: boolean; data: CalculoEstimacion }> {
+    return this.http.post<{ success: boolean; data: CalculoEstimacion }>(
+      `${this.apiUrl}/api/proyectos/estimar-preview`,
+      requisitos,
+      { headers: this.getHeaders() }
+    );
+  }
+
+  obtenerEstimacionObra(idObra: number): Observable<{ success: boolean; data: EstimacionObra }> {
+    return this.http.get<{ success: boolean; data: EstimacionObra }>(
+      `${this.apiUrl}/api/proyectos/${idObra}/estimacion`,
       { headers: this.getHeaders() }
     );
   }

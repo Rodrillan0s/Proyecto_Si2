@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import Config
 
-from app.routes import main_routes, auth_routes, users_routes, tenant_routes, roles_routes, backup_routes, profile_routes, notificaciones_routes, password_recovery_routes, bitacora_routes, obra_routes, estructura_routes, unidad_routes, material_routes, proveedor_routes,orden_Trabajo_routes
+from app.routes import main_routes, auth_routes, users_routes, tenant_routes, roles_routes, backup_routes, profile_routes, notificaciones_routes, password_recovery_routes, bitacora_routes, obra_routes, estructura_routes, unidad_routes, material_routes, proveedor_routes, orden_Trabajo_routes, crm_routes, ai_routes, presupuesto_routes
 
 
 def create_app() -> FastAPI:
@@ -41,4 +41,11 @@ def create_app() -> FastAPI:
     app.include_router(material_routes.router,prefix='/api/materiales')
     app.include_router(proveedor_routes.router,prefix='/api/proveedores')
     app.include_router(orden_Trabajo_routes.router)
+    app.include_router(crm_routes.router, prefix='/api/crm')
+    app.include_router(crm_routes.router, prefix='/crm')
+    app.include_router(ai_routes.router, prefix='/api/ai')
+    app.include_router(ai_routes.router, prefix='/ai')
+    app.include_router(presupuesto_routes.router_proyectos)
+    app.include_router(presupuesto_routes.router_apus)
+    app.include_router(presupuesto_routes.router_costos)
     return app

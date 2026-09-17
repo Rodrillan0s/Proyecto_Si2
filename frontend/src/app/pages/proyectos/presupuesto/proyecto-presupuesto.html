@@ -1,0 +1,541 @@
+<div class="presupuesto-wrapper space-y-6">
+
+  <!-- TOASTS DE NOTIFICACIÓN -->
+  <div *ngIf="exito" class="toast toast-success" role="status">{{ exito }}</div>
+  <div *ngIf="error" class="toast toast-error" role="alert">{{ error }}</div>
+
+  <!-- CABECERA DE CONTROL DE PRESUPUESTOS DE LA OBRA -->
+  <div class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="text-xl">💰</span>
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white">Presupuesto y Análisis de Precios Unitarios (APU)</h2>
+          <span *ngIf="presupuestoActivo?.es_vigente" class="badge-vigente">✓ Línea Base Vigente</span>
+        </div>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          Gestión analítica de partidas, recursos, control presupuestario y comparativa de costos reales.
+        </p>
+      </div>
+
+      <!-- SELECTOR DE VERSIÓN Y ACCIONES GENERALES -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <div *ngIf="presupuestos.length > 0" class="flex items-center gap-1.5 bg-gray-50 dark:bg-slate-800/60 px-3 py-1.5 rounded-xl border border-gray-200 dark:border-slate-700 text-xs">
+          <span class="text-gray-500 font-semibold">Versión:</span>
+          <select [ngModel]="presupuestoActivo?.id_presupuesto" (ngModelChange)="onCambiarPresupuesto($event)" class="bg-transparent font-bold text-orange-600 dark:text-orange-400 outline-none">
+            <option *ngFor="let p of presupuestos" [value]="p.id_presupuesto">
+              v{{ p.version }} - {{ p.codigo }} ({{ p.estado }}) {{ p.es_vigente ? '★ Vigente' : '' }}
+            </option>
+          </select>
+        </div>
+
+        <button *ngIf="puedeAprobar()" (click)="aprobarLineaBase()" [disabled]="guardando" class="btn-approve">
+          <span>✓</span> Aprobar Línea Base
+        </button>
+
+        <button *ngIf="presupuestoActivo?.estado === 'APROBADO'" (click)="crearNuevaVersion()" [disabled]="guardando" class="btn-secondary text-xs">
+          <span>＋</span> Nueva Versión
+        </button>
+      </div>
+    </div>
+
+    <!-- TARJETAS RESUMEN KPI DEL PRESUPUESTO SELECCIONADO -->
+    <div *ngIf="presupuestoActivo" class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-gray-100 dark:border-slate-800/80">
+      <div class="kpi-card">
+        <span class="kpi-label">TOTAL PRESUPUESTO</span>
+        <span class="kpi-value text-orange-600 dark:text-orange-500">{{ presupuestoActivo.total_presupuesto | number:'1.2-2' }} Bs.</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">ESTADO DE VERSIÓN</span>
+        <span class="status-badge" [ngClass]="'status-' + presupuestoActivo.estado.toLowerCase()">{{ presupuestoActivo.estado }}</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">SUPERFICIE ESTIMADA</span>
+        <span class="kpi-subvalue">{{ presupuestoActivo.superficie_m2 ? (presupuestoActivo.superficie_m2 | number:'1.1-2') + ' m²' : 'No definida' }}</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">ESTIMADO INICIAL</span>
+        <span class="kpi-subvalue">{{ presupuestoActivo.monto_estimado_inicial ? (presupuestoActivo.monto_estimado_inicial | number:'1.2-2') + ' Bs.' : 'S/E' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SELECTOR DE SUB-PESTAÑAS (VISTAS) -->
+  <div class="sub-tabs-container">
+    <button type="button" class="sub-tab" [class.active]="vistaActiva === 'partidas'" (click)="cambiarVista('partidas')">
+      <span>📑</span> Partidas & APU (HU54 & HU57)
+    </button>
+    <button type="button" class="sub-tab" [class.active]="vistaActiva === 'consolidado'" (click)="cambiarVista('consolidado')">
+      <span>📊</span> Presupuesto Consolidado (HU58)
+    </button>
+    <button type="button" class="sub-tab" [class.active]="vistaActiva === 'comparativa'" (click)="cambiarVista('comparativa')">
+      <span>⚖️</span> Comparativa Presupuestado vs Ejecutado (HU60)
+    </button>
+    <button type="button" class="sub-tab" [class.active]="vistaActiva === 'apus'" (click)="cambiarVista('apus')">
+      <span>📘</span> Biblioteca de APU Corporativa (HU55)
+    </button>
+  </div>
+
+  <!-- LOADING SPINNER -->
+  <div *ngIf="cargando" class="flex justify-center items-center py-10">
+    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+    <span class="ml-3 text-xs text-gray-500 font-semibold">Cargando información...</span>
+  </div>
+
+  <!-- ───────────────────────────────────────────────────────────────────────────── -->
+  <!-- VISTA 1: PARTIDAS & ASOCIACIÓN APU -->
+  <!-- ───────────────────────────────────────────────────────────────────────────── -->
+  <div *ngIf="!cargando && vistaActiva === 'partidas'" class="space-y-4">
+    <div class="flex justify-between items-center">
+      <div>
+        <h3 class="text-base font-bold text-gray-900 dark:text-white">Partidas Presupuestarias</h3>
+        <p class="text-xs text-gray-500">Rubros de obra y actividades cuantificadas con costos congelados (snapshot).</p>
+      </div>
+      <button *ngIf="puedeModificar()" type="button" class="btn-primary text-xs" (click)="abrirNuevaPartida()">
+        <span>＋</span> Nueva Partida
+      </button>
+    </div>
+
+    <div class="table-card">
+      <div *ngIf="!presupuestoActivo?.partidas || presupuestoActivo!.partidas!.length === 0" class="empty-state">
+        <span class="text-3xl">📝</span>
+        <p class="font-bold text-sm text-gray-700 dark:text-gray-300">No hay partidas registradas en este presupuesto</p>
+        <p class="text-xs text-gray-500">Agrega las partidas de obra o asocia análisis de precios unitarios.</p>
+        <button *ngIf="puedeModificar()" class="btn-primary text-xs mt-2" (click)="abrirNuevaPartida()">＋ Agregar primera partida</button>
+      </div>
+
+      <div *ngIf="presupuestoActivo?.partidas && presupuestoActivo!.partidas!.length > 0" class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead>
+            <tr>
+              <th class="p-3">Ítem / Código</th>
+              <th class="p-3">Descripción de la Partida</th>
+              <th class="p-3">APU Vinculado</th>
+              <th class="p-3 text-right">Cantidad</th>
+              <th class="p-3 text-right">P. Unitario (Bs.)</th>
+              <th class="p-3 text-right">Subtotal (Bs.)</th>
+              <th *ngIf="puedeModificar()" class="p-3 text-right">Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of presupuestoActivo!.partidas" class="border-b border-gray-100 dark:border-slate-800 hover:bg-gray-50/60 dark:hover:bg-slate-800/40">
+              <td class="p-3 font-mono font-bold text-gray-700 dark:text-gray-300">{{ p.codigo }}</td>
+              <td class="p-3">
+                <strong class="text-gray-900 dark:text-white block">{{ p.nombre }}</strong>
+                <small class="text-gray-400">{{ p.unidad_medida_nombre }} ({{ p.unidad_medida_abrev }})</small>
+              </td>
+              <td class="p-3">
+                <span *ngIf="p.apu_codigo" class="apu-tag">
+                  ⚙️ {{ p.apu_codigo }} - {{ p.apu_nombre }}
+                </span>
+                <span *ngIf="!p.apu_codigo" class="text-gray-400 italic">Sin APU directo</span>
+              </td>
+              <td class="p-3 text-right font-mono">{{ p.cantidad | number:'1.2-2' }}</td>
+              <td class="p-3 text-right font-mono">{{ p.precio_unitario | number:'1.2-2' }}</td>
+              <td class="p-3 text-right font-mono font-bold text-orange-600 dark:text-orange-400">
+                {{ p.importe_total | number:'1.2-2' }}
+              </td>
+              <td *ngIf="puedeModificar()" class="p-3 text-right">
+                <button (click)="eliminarPartida(p)" class="text-red-500 hover:text-red-700 font-bold p-1">✕</button>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="font-bold bg-gray-50 dark:bg-slate-800/60">
+              <td colspan="5" class="p-3 text-right text-gray-700 dark:text-gray-300">TOTAL PRESUPUESTO ANALÍTICO:</td>
+              <td class="p-3 text-right font-mono text-base text-orange-600 dark:text-orange-400">
+                {{ presupuestoActivo!.total_presupuesto | number:'1.2-2' }} Bs.
+              </td>
+              <td *ngIf="puedeModificar()"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────────────────────────────────────────────────────────────────────────── -->
+  <!-- VISTA 2: PRESUPUESTO CONSOLIDADO (HU58) -->
+  <!-- ───────────────────────────────────────────────────────────────────────────── -->
+  <div *ngIf="!cargando && vistaActiva === 'consolidado'" class="space-y-5">
+    <div class="flex justify-between items-center">
+      <div>
+        <h3 class="text-base font-bold text-gray-900 dark:text-white">Resumen Consolidado de la Línea Base</h3>
+        <p class="text-xs text-gray-500">Distribución de recursos por tipo (Materiales, Mano de Obra, Equipos) y métricas analíticas.</p>
+      </div>
+      <button *ngIf="puedeAprobar()" (click)="aprobarLineaBase()" class="btn-approve">
+        ✓ Aprobar como Línea Base Vigente
+      </button>
+    </div>
+
+    <!-- METRICAS PARAMÉTRICAS VS REAL -->
+    <div *ngIf="consolidado?.metricas_parametricas" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="metric-box">
+        <span class="text-xs text-gray-500 font-semibold uppercase">Estimación Preliminar</span>
+        <div class="text-lg font-bold text-gray-900 dark:text-white mt-1">
+          {{ consolidado!.metricas_parametricas.monto_estimado_inicial ? (consolidado!.metricas_parametricas.monto_estimado_inicial! | number:'1.2-2') + ' Bs.' : 'No parametrizado' }}
+        </div>
+        <small class="text-gray-400">Basado en {{ consolidado!.metricas_parametricas.superficie_m2 || 0 }} m² a {{ consolidado!.metricas_parametricas.costo_m2_estimado || 0 }} Bs./m²</small>
+      </div>
+
+      <div class="metric-box">
+        <span class="text-xs text-gray-500 font-semibold uppercase">Presupuesto Analítico (Partidas)</span>
+        <div class="text-lg font-bold text-orange-600 dark:text-orange-400 mt-1">
+          {{ consolidado!.total_presupuesto | number:'1.2-2' }} Bs.
+        </div>
+        <small class="text-gray-400">{{ consolidado!.total_partidas }} partidas desglosadas</small>
+      </div>
+
+      <div class="metric-box">
+        <span class="text-xs text-gray-500 font-semibold uppercase">Desviación respecto a estimación</span>
+        <div class="text-lg font-bold mt-1" [ngClass]="(consolidado!.metricas_parametricas.desviacion_monto || 0) > 0 ? 'text-red-600' : 'text-emerald-600'">
+          {{ (consolidado!.metricas_parametricas.desviacion_monto || 0) > 0 ? '+' : '' }}{{ consolidado!.metricas_parametricas.desviacion_monto | number:'1.2-2' }} Bs.
+          ({{ consolidado!.metricas_parametricas.desviacion_porcentaje }}%)
+        </div>
+        <small class="text-gray-400">Costo real resultante: {{ consolidado!.metricas_parametricas.costo_m2_analitico_real | number:'1.2-2' }} Bs./m²</small>
+      </div>
+    </div>
+
+    <!-- DESGLOSE DE RECURSOS CON BARRAS DE PORCENTAJE -->
+    <div class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+      <h4 class="text-xs font-black uppercase text-gray-500 dark:text-gray-400 tracking-wider">Desglose Consolidado por Tipo de Recurso</h4>
+      <div class="space-y-3">
+        <div *ngFor="let r of consolidado?.desglose_recursos" class="space-y-1">
+          <div class="flex justify-between text-xs font-bold">
+            <span class="text-gray-800 dark:text-gray-200">
+              {{ r.tipo_recurso === 'MATERIAL' ? '📦 Materiales' : r.tipo_recurso === 'MANO_OBRA' ? '👷 Mano de Obra' : r.tipo_recurso === 'EQUIPO' ? '🚜 Maquinaria y Equipos' : '📋 Otros / Generales' }}
+            </span>
+            <span class="font-mono">{{ r.monto_total | number:'1.2-2' }} Bs. ({{ r.porcentaje }}%)</span>
+          </div>
+          <div class="w-full bg-gray-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
+            <div class="h-2.5 rounded-full" [ngClass]="r.tipo_recurso === 'MATERIAL' ? 'bg-blue-600' : r.tipo_recurso === 'MANO_OBRA' ? 'bg-amber-600' : r.tipo_recurso === 'EQUIPO' ? 'bg-orange-600' : 'bg-slate-500'" [style.width.%]="r.porcentaje"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────────────────────────────────────────────────────────────────────────── -->
+  <!-- VISTA 3: COMPARATIVA PRESUPUESTADO VS EJECUTADO (HU60) -->
+  <!-- ───────────────────────────────────────────────────────────────────────────── -->
+  <div *ngIf="!cargando && vistaActiva === 'comparativa'" class="space-y-5">
+    <div class="flex justify-between items-center">
+      <div>
+        <h3 class="text-base font-bold text-gray-900 dark:text-white">Control Presupuestario: Presupuestado vs Ejecutado</h3>
+        <p class="text-xs text-gray-500">Comparativa analítica y detección automática de sobrecostos o ahorros en obra.</p>
+      </div>
+      <button *ngIf="puedeRegistrarCosto()" (click)="abrirNuevoCosto()" class="btn-primary text-xs">
+        <span>＋</span> Registrar Costo Real (HU59)
+      </button>
+    </div>
+
+    <!-- KPIS COMPARATIVOS GLOBALES -->
+    <div *ngIf="comparativa" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div class="kpi-card">
+        <span class="kpi-label">TOTAL PRESUPUESTADO</span>
+        <span class="kpi-value text-gray-900 dark:text-white">{{ comparativa.total_presupuestado | number:'1.2-2' }} Bs.</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">TOTAL EJECUTADO REAL</span>
+        <span class="kpi-value text-blue-600 dark:text-blue-400">{{ comparativa.total_ejecutado | number:'1.2-2' }} Bs.</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">VARIACIÓN GLOBAL</span>
+        <span class="kpi-value" [ngClass]="comparativa.variacion_global_monto > 0 ? 'text-red-600' : 'text-emerald-600'">
+          {{ comparativa.variacion_global_monto > 0 ? '+' : '' }}{{ comparativa.variacion_global_monto | number:'1.2-2' }} Bs.
+        </span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">ÍNDICE CPI (EFICIENCIA)</span>
+        <span class="kpi-value font-mono" [ngClass]="comparativa.indice_eficiencia_cpi >= 1 ? 'text-emerald-600' : 'text-red-600'">
+          {{ comparativa.indice_eficiencia_cpi }}
+        </span>
+      </div>
+    </div>
+
+    <!-- TABLA COMPARATIVA POR PARTIDA -->
+    <div class="table-card">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead>
+            <tr>
+              <th class="p-3">Código</th>
+              <th class="p-3">Partida</th>
+              <th class="p-3 text-right">Pto. Importe</th>
+              <th class="p-3 text-right">Ejec. Importe</th>
+              <th class="p-3 text-right">Variación (Bs.)</th>
+              <th class="p-3 text-right">Var. %</th>
+              <th class="p-3 text-center">Estado de Desvío</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let cp of comparativa?.comparativa_partidas" class="border-b border-gray-100 dark:border-slate-800 hover:bg-gray-50/50">
+              <td class="p-3 font-mono font-bold">{{ cp.codigo }}</td>
+              <td class="p-3 font-semibold">{{ cp.nombre }}</td>
+              <td class="p-3 text-right font-mono">{{ cp.importe_presupuestado | number:'1.2-2' }}</td>
+              <td class="p-3 text-right font-mono font-bold">{{ cp.importe_ejecutado | number:'1.2-2' }}</td>
+              <td class="p-3 text-right font-mono font-bold" [ngClass]="cp.variacion_monto > 0 ? 'text-red-600' : cp.variacion_monto < 0 ? 'text-emerald-600' : 'text-gray-400'">
+                {{ cp.variacion_monto > 0 ? '+' : '' }}{{ cp.variacion_monto | number:'1.2-2' }}
+              </td>
+              <td class="p-3 text-right font-mono">{{ cp.variacion_porcentaje }}%</td>
+              <td class="p-3 text-center">
+                <span class="badge-desvio" [ngClass]="'desvio-' + cp.estado_desvio.toLowerCase()">
+                  {{ cp.estado_desvio === 'SOBRECOSTO' ? '⚠️ Sobrecosto' : cp.estado_desvio === 'AHORRO' ? '✓ Ahorro' : cp.estado_desvio === 'NO_INICIADO' ? 'Sin avance' : 'En pto.' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────────────────────────────────────────────────────────────────────────── -->
+  <!-- VISTA 4: BIBLIOTECA DE APU CORPORATIVO (HU55) -->
+  <!-- ───────────────────────────────────────────────────────────────────────────── -->
+  <div *ngIf="!cargando && vistaActiva === 'apus'" class="space-y-4">
+    <div class="flex justify-between items-center">
+      <div>
+        <h3 class="text-base font-bold text-gray-900 dark:text-white">Biblioteca Corporativa de APU</h3>
+        <p class="text-xs text-gray-500">Recetas analíticas reutilizables con insumos del catálogo CU14.</p>
+      </div>
+      <button (click)="abrirNuevoApu()" class="btn-primary text-xs">
+        <span>＋</span> Nuevo APU
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div *ngFor="let a of apus" (click)="abrirDetalleApu(a)" class="apu-card" [class.selected]="apuSeleccionadoDetalle?.id_apu === a.id_apu">
+        <div class="flex justify-between items-start">
+          <span class="font-mono text-xs font-bold text-orange-600">{{ a.codigo }}</span>
+          <span class="text-xs font-bold text-gray-900 dark:text-white">{{ a.costo_unitario_total | number:'1.2-2' }} Bs./{{ a.unidad_medida_abrev }}</span>
+        </div>
+        <h4 class="font-bold text-sm text-gray-900 dark:text-white mt-1">{{ a.nombre }}</h4>
+        <p class="text-xs text-gray-500 line-clamp-2 mt-1">{{ a.descripcion || 'Sin descripción' }}</p>
+      </div>
+    </div>
+
+    <!-- DETALLE DEL APU SELECCIONADO Y SUS COMPONENTES -->
+    <div *ngIf="apuSeleccionadoDetalle" class="bg-white dark:bg-slate-900 border border-orange-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm space-y-4">
+      <div class="flex justify-between items-center border-b border-gray-100 dark:border-slate-800 pb-3">
+        <div>
+          <span class="text-xs font-mono font-bold text-orange-600">{{ apuSeleccionadoDetalle.codigo }}</span>
+          <h4 class="text-base font-bold text-gray-900 dark:text-white">{{ apuSeleccionadoDetalle.nombre }}</h4>
+        </div>
+        <div class="text-right">
+          <span class="text-xs text-gray-400 uppercase font-semibold">Costo Unitario Total</span>
+          <div class="text-lg font-bold text-orange-600">{{ apuSeleccionadoDetalle.costo_unitario_total | number:'1.2-2' }} Bs.</div>
+        </div>
+      </div>
+
+      <!-- FORMULARIO AGREGAR COMPONENTE -->
+      <div class="grid grid-cols-1 sm:grid-cols-5 gap-2 items-end bg-gray-50 dark:bg-slate-800/40 p-3 rounded-xl">
+        <div>
+          <label class="text-[10px] font-bold uppercase text-gray-500">Tipo</label>
+          <select [(ngModel)]="formComponenteApu.tipo_recurso" class="form-input text-xs">
+            <option value="MATERIAL">Material</option>
+            <option value="MANO_OBRA">Mano de Obra</option>
+            <option value="EQUIPO">Equipo</option>
+          </select>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="text-[10px] font-bold uppercase text-gray-500">Recurso / Insumo</label>
+          <input type="text" [(ngModel)]="formComponenteApu.descripcion_recurso" placeholder="Ej: Cemento Portland, Fierro..." class="form-input text-xs">
+        </div>
+        <div>
+          <label class="text-[10px] font-bold uppercase text-gray-500">Unidad</label>
+          <select [(ngModel)]="formComponenteApu.id_unidad_medida" class="form-input text-xs">
+            <option *ngFor="let u of unidades" [value]="u.id_unidad_medida">{{ u.nombre }} ({{ u.abreviatura }})</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-[10px] font-bold uppercase text-gray-500">P. Unitario (Bs.)</label>
+          <input type="number" step="0.01" [(ngModel)]="formComponenteApu.precio_unitario" class="form-input text-xs">
+        </div>
+        <div class="sm:col-span-5 flex justify-end">
+          <button (click)="agregarComponente()" class="btn-primary text-xs">＋ Agregar Componente</button>
+        </div>
+      </div>
+
+      <!-- TABLA DE COMPONENTES DEL APU -->
+      <table class="w-full text-left text-xs">
+        <thead>
+          <tr class="border-b border-gray-100 dark:border-slate-800 text-gray-400">
+            <th class="p-2">Tipo</th>
+            <th class="p-2">Recurso</th>
+            <th class="p-2 text-right">Cantidad</th>
+            <th class="p-2 text-right">Precio Unitario</th>
+            <th class="p-2 text-right">Subtotal</th>
+            <th class="p-2 text-right">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of apuSeleccionadoDetalle.componentes" class="border-b border-gray-100 dark:border-slate-800">
+            <td class="p-2 font-bold">{{ c.tipo_recurso }}</td>
+            <td class="p-2">{{ c.descripcion_recurso }}</td>
+            <td class="p-2 text-right font-mono">{{ c.cantidad }}</td>
+            <td class="p-2 text-right font-mono">{{ c.precio_unitario | number:'1.2-2' }}</td>
+            <td class="p-2 text-right font-mono font-bold">{{ c.subtotal | number:'1.2-2' }}</td>
+            <td class="p-2 text-right">
+              <button (click)="eliminarComponente(c)" class="text-red-500 hover:text-red-700">✕</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ───────────────────────────────────────────────────────────────────────────── -->
+  <!-- MODAL: REGISTRAR PARTIDA -->
+  <!-- ───────────────────────────────────────────────────────────────────────────── -->
+  <div *ngIf="modalPartidaAbierto" class="modal-backdrop" (click)="modalPartidaAbierto = false">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h3 class="font-bold text-sm">Nueva Partida Presupuestaria</h3>
+        <button (click)="modalPartidaAbierto = false" class="text-gray-400 hover:text-gray-600">✕</button>
+      </div>
+      <div class="space-y-3 pt-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-bold text-gray-500">Código *</label>
+            <input type="text" [(ngModel)]="formPartida.codigo" placeholder="Ej: EST-01" class="form-input text-xs">
+          </div>
+          <div>
+            <label class="text-xs font-bold text-gray-500">Nombre *</label>
+            <input type="text" [(ngModel)]="formPartida.nombre" placeholder="Ej: Hormigón Columnas" class="form-input text-xs">
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs font-bold text-gray-500">Vincular APU (Opcional - Snapshot)</label>
+          <select [(ngModel)]="formPartida.id_apu" (ngModelChange)="alSeleccionarApuEnPartida($event)" class="form-input text-xs">
+            <option [ngValue]="null">Sin APU directo (Costo manual)</option>
+            <option *ngFor="let a of apus" [value]="a.id_apu">{{ a.codigo }} - {{ a.nombre }} ({{ a.costo_unitario_total }} Bs.)</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="text-xs font-bold text-gray-500">Unidad</label>
+            <select [(ngModel)]="formPartida.id_unidad_medida" class="form-input text-xs">
+              <option *ngFor="let u of unidades" [value]="u.id_unidad_medida">{{ u.abreviatura }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-gray-500">Cantidad</label>
+            <input type="number" step="0.01" [(ngModel)]="formPartida.cantidad" class="form-input text-xs">
+          </div>
+          <div>
+            <label class="text-xs font-bold text-gray-500">P. Unitario (Bs.)</label>
+            <input type="number" step="0.01" [(ngModel)]="formPartida.precio_unitario" class="form-input text-xs">
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t">
+          <button (click)="modalPartidaAbierto = false" class="btn-secondary text-xs">Cancelar</button>
+          <button (click)="guardarPartida()" [disabled]="guardando" class="btn-primary text-xs">Guardar Partida</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────────────────────────────────────────────────────────────────────────── -->
+  <!-- MODAL: REGISTRAR COSTO EJECUTADO (HU59) -->
+  <!-- ───────────────────────────────────────────────────────────────────────────── -->
+  <div *ngIf="modalCostoAbierto" class="modal-backdrop" (click)="modalCostoAbierto = false">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h3 class="font-bold text-sm">Registrar Costo Real Ejecutado</h3>
+        <button (click)="modalCostoAbierto = false" class="text-gray-400 hover:text-gray-600">✕</button>
+      </div>
+      <div class="space-y-3 pt-3">
+        <div>
+          <label class="text-xs font-bold text-gray-500">Asignar a Partida (Opcional)</label>
+          <select [(ngModel)]="formCosto.id_partida" class="form-input text-xs">
+            <option [ngValue]="null">Gasto general directo de obra (Sin partida)</option>
+            <option *ngFor="let p of presupuestoActivo?.partidas" [value]="p.id_partida">
+              {{ p.codigo }} - {{ p.nombre }}
+            </option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-xs font-bold text-gray-500">Descripción del Gasto / Insumo *</label>
+          <input type="text" [(ngModel)]="formCosto.descripcion" placeholder="Ej: Compra de 50 bolsas cemento Factura 441" class="form-input text-xs">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-bold text-gray-500">Tipo de Recurso</label>
+            <select [(ngModel)]="formCosto.tipo_recurso" class="form-input text-xs">
+              <option value="MATERIAL">Material</option>
+              <option value="MANO_OBRA">Mano de Obra</option>
+              <option value="EQUIPO">Equipo / Maquinaria</option>
+              <option value="OTRO">Otro / Gasto General</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-gray-500">Origen</label>
+            <select [(ngModel)]="formCosto.origen_costo" class="form-input text-xs">
+              <option value="REGISTRO_MANUAL">Registro Manual</option>
+              <option value="COMPRA">Compra / Factura</option>
+              <option value="ALMACEN">Salida de Almacén</option>
+              <option value="SUBCONTRATO">Subcontrato</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-bold text-gray-500">Cantidad</label>
+            <input type="number" step="0.01" [(ngModel)]="formCosto.cantidad" class="form-input text-xs">
+          </div>
+          <div>
+            <label class="text-xs font-bold text-gray-500">Costo Unitario (Bs.)</label>
+            <input type="number" step="0.01" [(ngModel)]="formCosto.costo_unitario" class="form-input text-xs">
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t">
+          <button (click)="modalCostoAbierto = false" class="btn-secondary text-xs">Cancelar</button>
+          <button (click)="guardarCosto()" [disabled]="guardando" class="btn-primary text-xs">Guardar Costo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────────────────────────────────────────────────────────────────────────── -->
+  <!-- MODAL: CREAR APU -->
+  <!-- ───────────────────────────────────────────────────────────────────────────── -->
+  <div *ngIf="modalApuAbierto" class="modal-backdrop" (click)="modalApuAbierto = false">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h3 class="font-bold text-sm">Nuevo APU Corporativo</h3>
+        <button (click)="modalApuAbierto = false" class="text-gray-400 hover:text-gray-600">✕</button>
+      </div>
+      <div class="space-y-3 pt-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-bold text-gray-500">Código *</label>
+            <input type="text" [(ngModel)]="formApu.codigo" placeholder="Ej: APU-01" class="form-input text-xs">
+          </div>
+          <div>
+            <label class="text-xs font-bold text-gray-500">Nombre *</label>
+            <input type="text" [(ngModel)]="formApu.nombre" placeholder="Ej: Mampostería Ladrillo 6H" class="form-input text-xs">
+          </div>
+        </div>
+        <div>
+          <label class="text-xs font-bold text-gray-500">Unidad de Medida</label>
+          <select [(ngModel)]="formApu.id_unidad_medida" class="form-input text-xs">
+            <option *ngFor="let u of unidades" [value]="u.id_unidad_medida">{{ u.nombre }} ({{ u.abreviatura }})</option>
+          </select>
+        </div>
+        <div class="flex justify-end gap-2 pt-3 border-t">
+          <button (click)="modalApuAbierto = false" class="btn-secondary text-xs">Cancelar</button>
+          <button (click)="guardarApu()" [disabled]="guardando" class="btn-primary text-xs">Crear APU</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

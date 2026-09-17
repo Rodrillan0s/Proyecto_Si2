@@ -148,3 +148,60 @@ def crear_categoria(data, token, ip="unknown"):
 
 def unidades_medida(token):
     _empresa(token, obligatorio=False); return {"success":True,"data":material_repos.catalogo_activo("unidades")}
+
+
+def catalogo_base(token, q=None, id_categoria=None, id_empresa=None, page=1, limit=100):
+    empresa_target = _empresa(token, id_empresa, obligatorio=False)
+    data, total = material_repos.listar_catalogo_base(q, id_categoria, empresa_target, page, limit)
+    return {
+        "success": True,
+        "data": data,
+        "pagination": {
+            "page": page,
+            "limit": limit,
+            "total": total,
+            "total_pages": (total + limit - 1) // limit if total else 0
+        }
+    }
+
+
+def detalle_base(id_material_base: int, token):
+    mat = material_repos.obtener_material_base(id_material_base)
+    if not mat:
+        raise MaterialError("Material base no encontrado.", 404)
+    return {"success": True, "data": mat}
+
+
+def adoptar(data: dict, token, ip="unknown"):
+    if not isinstance(data, dict):
+        raise MaterialError("El cuerpo debe ser un objeto válido.")
+
+    id_material_base = data.get("id_material_base")
+    if not id_material_base:
+        raise MaterialError("El id_material_base es obligatorio.")
+
+    id_empresa = _empresa(token, data.get("id_empresa"))
+    precio = _numero(data.get("precio"), "El precio", obligatorio=False)
+    codigo_interno = str(data.get("codigo_interno") or "").strip() or None
+    id_proveedor = data.get("id_proveedor")
+    stock_minimo = _numero(data.get("stock_minimo"), "El stock mínimo", obligatorio=False) or Decimal("0")
+
+    res = material_repos.adoptar_material_base(
+        id_empresa=id_empresa,
+        id_material_base=int(id_material_base),
+        precio=float(precio) if precio is not None else None,
+        codigo_interno=codigo_interno,
+        id_proveedor=int(id_proveedor) if id_proveedor else None,
+        stock_minimo=float(stock_minimo)
+    )
+
+    if not res.get("success"):
+        raise MaterialError(res.get("error", "Error al adoptar material base."), 400)
+
+    _log(token, "ADOPTAR_MATERIAL_BASE", f"Material base ID {id_material_base} adoptado en catálogo de empresa ID {id_empresa} con código '{res['codigo']}'.", ip)
+    return {
+        "success": True,
+        "message": f"Material '{res['nombre_material']}' adoptado con éxito en el catálogo de su empresa.",
+        "data": res
+    }
+

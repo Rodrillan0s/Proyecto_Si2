@@ -26,3 +26,7 @@ class Config:
     BREVO_TIMEOUT_SECONDS = int(os.getenv("BREVO_TIMEOUT_SECONDS", 10))
 
     RECOVERY_CODE_SECRET = os.getenv("RECOVERY_CODE_SECRET")
+
+    # CREDENCIALES GEMINI IA
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+    GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-flash-latest")

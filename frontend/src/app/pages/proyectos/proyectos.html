@@ -327,37 +327,30 @@
       </div>
 
       <!-- Barra de navegación por secciones (Tabs visuales del Formulario) -->
-      <div class="grid grid-cols-4 border-b border-gray-200 dark:border-slate-800 bg-gray-50/70 dark:bg-slate-800/40 text-xs font-bold">
+      <!-- Barra de navegación por secciones (Tabs visuales del Formulario) -->
+      <div class="grid grid-cols-3 border-b border-gray-200 dark:border-slate-800 bg-gray-50/70 dark:bg-slate-800/40 text-xs font-bold">
         <button (click)="irASeccion(1)"
                 type="button"
-                class="py-3 px-2 text-center border-b-2 transition-all flex flex-col sm:flex-row items-center justify-center gap-1"
+                class="py-3 px-2 text-center border-b-2 transition-all flex flex-col sm:flex-row items-center justify-center gap-1.5"
                 [ngClass]="seccionModal === 1 ? 'border-orange-600 text-orange-600 dark:text-orange-400 bg-white dark:bg-slate-900 font-extrabold' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'">
           <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 font-black">1</span>
-          <span class="truncate">General</span>
+          <span class="truncate">1. Datos Generales</span>
         </button>
 
         <button (click)="irASeccion(2)"
                 type="button"
-                class="py-3 px-2 text-center border-b-2 transition-all flex flex-col sm:flex-row items-center justify-center gap-1"
+                class="py-3 px-2 text-center border-b-2 transition-all flex flex-col sm:flex-row items-center justify-center gap-1.5"
                 [ngClass]="seccionModal === 2 ? 'border-orange-600 text-orange-600 dark:text-orange-400 bg-white dark:bg-slate-900 font-extrabold' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'">
           <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 font-black">2</span>
-          <span class="truncate">Economía</span>
+          <span class="truncate">{{ modoEdicion ? '2. Planificación' : '2. Requisitos & Estimación' }}</span>
         </button>
 
         <button (click)="irASeccion(3)"
                 type="button"
-                class="py-3 px-2 text-center border-b-2 transition-all flex flex-col sm:flex-row items-center justify-center gap-1"
+                class="py-3 px-2 text-center border-b-2 transition-all flex flex-col sm:flex-row items-center justify-center gap-1.5"
                 [ngClass]="seccionModal === 3 ? 'border-orange-600 text-orange-600 dark:text-orange-400 bg-white dark:bg-slate-900 font-extrabold' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'">
           <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 font-black">3</span>
-          <span class="truncate">Planificación</span>
-        </button>
-
-        <button (click)="irASeccion(4)"
-                type="button"
-                class="py-3 px-2 text-center border-b-2 transition-all flex flex-col sm:flex-row items-center justify-center gap-1"
-                [ngClass]="seccionModal === 4 ? 'border-orange-600 text-orange-600 dark:text-orange-400 bg-white dark:bg-slate-900 font-extrabold' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'">
-          <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 font-black">4</span>
-          <span class="truncate">Ubicación</span>
+          <span class="truncate">3. Ubicación</span>
         </button>
       </div>
 
@@ -397,46 +390,171 @@
             </div>
           </div>
 
-          <div>
-            <label class="form-label">Descripción (Opcional)</label>
-            <textarea [(ngModel)]="proyectoForm.descripcion" rows="3" placeholder="Resumen del alcance general del proyecto, especificaciones preliminares..." class="form-input w-full"></textarea>
-          </div>
-        </div>
-
-        <!-- SECCIÓN 2: INFORMACIÓN ECONÓMICA -->
-        <div *ngIf="seccionModal === 2" class="space-y-4">
-          <div class="border-b border-gray-100 dark:border-slate-800 pb-2">
-            <h3 class="text-sm font-extrabold text-orange-600 dark:text-orange-500 uppercase tracking-wider">2. Información Económica</h3>
-            <p class="text-xs text-gray-500 mt-0.5">Presupuesto inicial y moneda operativa de la obra</p>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label class="form-label">Moneda Operativa *</label>
-              <select [(ngModel)]="proyectoForm.moneda" class="form-select w-full font-bold">
+              <select [(ngModel)]="proyectoForm.moneda" (ngModelChange)="recalcularEstimacion()" class="form-select w-full font-bold">
                 <option value="BOB">Bolivianos (BOB - Bs)</option>
                 <option value="USD">Dólares Estadounidenses (USD - $)</option>
               </select>
             </div>
 
             <div>
-              <label class="form-label">Presupuesto Inicial Estimado</label>
+              <label class="form-label">Fecha de Inicio *</label>
+              <input type="date" [(ngModel)]="proyectoForm.fecha_inicio" class="form-input w-full">
+            </div>
+
+            <div>
+              <label class="form-label">Fecha Estimada de Fin</label>
+              <input type="date" [(ngModel)]="proyectoForm.fecha_fin" class="form-input w-full">
+            </div>
+          </div>
+
+          <div>
+            <label class="form-label">Descripción (Opcional)</label>
+            <textarea [(ngModel)]="proyectoForm.descripcion" rows="2" placeholder="Resumen del alcance general del proyecto, especificaciones preliminares..." class="form-input w-full text-xs"></textarea>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 2: REQUISITOS BÁSICOS & ESTIMACIÓN PRELIMINAR (MODO NUEVO) -->
+        <div *ngIf="seccionModal === 2 && !modoEdicion" class="space-y-4">
+          <div class="border-b border-gray-100 dark:border-slate-800 pb-2 flex justify-between items-center">
+            <div>
+              <h3 class="text-sm font-extrabold text-orange-600 dark:text-orange-500 uppercase tracking-wider">
+                2. Requisitos Básicos y Estimación Inicial
+              </h3>
+              <p class="text-xs text-gray-500 mt-0.5">
+                Datos necesarios para generar el presupuesto base preliminar determinístico
+              </p>
+            </div>
+            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/40">
+              ⚡ Estimación Automática
+            </span>
+          </div>
+
+          <!-- Cuadrícula de inputs de requisitos -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="form-label">Tipo de Obra *</label>
+              <select [(ngModel)]="requisitosEstimacion.tipo_obra" (ngModelChange)="recalcularEstimacion()" class="form-select w-full font-bold">
+                <option value="Vivienda">Vivienda (Residencial)</option>
+                <option value="Edificio">Edificio (En altura / Oficinas)</option>
+                <option value="Comercial">Comercial / Tiendas / Malls</option>
+                <option value="Industrial">Industrial / Galpones / Tinglados</option>
+                <option value="Otro">Otro tipo de obra civil</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="form-label">Superficie Aproximada (m²) *</label>
               <div class="relative">
-                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-xs font-bold text-gray-400">
-                  {{ proyectoForm.moneda === 'BOB' ? 'Bs' : '$' }}
-                </span>
-                <input type="number" min="0" [(ngModel)]="proyectoForm.valor_estimado" placeholder="0.00" class="form-input pl-10 w-full font-bold">
+                <input type="number" min="1" step="1" [(ngModel)]="requisitosEstimacion.superficie_m2" (ngModelChange)="recalcularEstimacion()" placeholder="Ej. 180" class="form-input w-full font-bold">
+                <span class="absolute right-3 top-2.5 text-xs text-gray-400 font-bold pointer-events-none">m²</span>
               </div>
-              <span class="text-[11px] text-gray-400 mt-1 block">Monto proyectado para la ejecución total del proyecto.</span>
+            </div>
+
+            <div>
+              <label class="form-label">Cantidad de Niveles / Pisos *</label>
+              <input type="number" min="1" max="60" step="1" [(ngModel)]="requisitosEstimacion.niveles" (ngModelChange)="recalcularEstimacion()" placeholder="1" class="form-input w-full font-bold">
+            </div>
+
+            <div>
+              <label class="form-label">Tipo de Terreno / Suelo *</label>
+              <select [(ngModel)]="requisitosEstimacion.tipo_terreno" (ngModelChange)="recalcularEstimacion()" class="form-select w-full">
+                <option value="Firme">Firme (Gravoso / Cohesivo bueno)</option>
+                <option value="Arcilloso">Arcilloso (Expansivo / Blando)</option>
+                <option value="Arenoso">Arenoso (Inestable / Friccionante)</option>
+                <option value="Rocoso">Rocoso (Semiduro / Duro)</option>
+                <option value="Otro">Otro tipo de terreno</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="form-label">Nivel de Complejidad *</label>
+              <select [(ngModel)]="requisitosEstimacion.complejidad" (ngModelChange)="recalcularEstimacion()" class="form-select w-full">
+                <option value="Bajo">Bajo (Diseño regular ortogonal / estándar)</option>
+                <option value="Medio">Medio (Diseño contemporáneo / 1ra calidad)</option>
+                <option value="Alto">Alto (Diseño singular / Premium / voladizos)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="form-label">Ubicación / Zona Referencial</label>
+              <input type="text" [(ngModel)]="requisitosEstimacion.ubicacion" (ngModelChange)="recalcularEstimacion()" placeholder="Ej. Equipetrol, Urubó, Plan 3000..." class="form-input w-full">
+            </div>
+          </div>
+
+          <div>
+            <label class="form-label">Características Generales de la Obra (Opcional)</label>
+            <textarea [(ngModel)]="requisitosEstimacion.caracteristicas_generales" rows="2" placeholder="Detalles constructivos preliminares, accesos, requerimientos especiales..." class="form-input w-full text-xs"></textarea>
+          </div>
+
+          <!-- PANEL DEL ALGORITMO DETERMINÍSTICO DE ESTIMACIÓN -->
+          <div class="p-4 rounded-2xl bg-gradient-to-br from-orange-50/80 via-amber-50/50 to-orange-50/20 dark:from-slate-800 dark:via-slate-800/80 dark:to-orange-950/20 border border-orange-200 dark:border-orange-800/50 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-black uppercase text-orange-700 dark:text-orange-400 tracking-wider flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                </svg>
+                Desglose del Algoritmo de Estimación
+              </span>
+              <span *ngIf="calculandoEstimacion" class="text-[11px] text-orange-600 font-semibold animate-pulse">
+                Calculando factores...
+              </span>
+            </div>
+
+            <div *ngIf="calculoEstimacion" class="space-y-2">
+              <!-- Desglose de Factores -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] bg-white/70 dark:bg-slate-900/60 p-2.5 rounded-xl border border-orange-100 dark:border-slate-700/60">
+                <div>
+                  <span class="text-gray-500 block">Costo Base/m²:</span>
+                  <strong class="font-mono text-gray-800 dark:text-gray-200">{{ calculoEstimacion.costo_referencial_m2 | number:'1.2-2' }} Bs.</strong>
+                </div>
+                <div>
+                  <span class="text-gray-500 block">Factor Niveles:</span>
+                  <strong class="font-mono text-gray-800 dark:text-gray-200">× {{ calculoEstimacion.factor_niveles }}</strong>
+                </div>
+                <div>
+                  <span class="text-gray-500 block">Factor Terreno:</span>
+                  <strong class="font-mono text-gray-800 dark:text-gray-200">× {{ calculoEstimacion.factor_terreno }}</strong>
+                </div>
+                <div>
+                  <span class="text-gray-500 block">Factor Complejidad:</span>
+                  <strong class="font-mono text-gray-800 dark:text-gray-200">× {{ calculoEstimacion.factor_complejidad }}</strong>
+                </div>
+              </div>
+
+              <!-- Fórmulas y Montos -->
+              <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pt-1 border-t border-orange-200/50 dark:border-slate-700/60">
+                <div class="text-xs text-gray-600 dark:text-gray-300">
+                  <span>Costo base: </span>
+                  <span class="font-mono font-bold">{{ calculoEstimacion.costo_base | number:'1.2-2' }} Bs.</span>
+                  <span class="text-gray-400"> ({{ calculoEstimacion.superficie_m2 }} m² × {{ calculoEstimacion.costo_referencial_m2 }} Bs.)</span>
+                </div>
+                <div class="text-right">
+                  <span class="text-[10px] text-gray-500 block uppercase font-bold">Presupuesto Base Preliminar Estimado</span>
+                  <span class="text-lg font-black text-orange-600 dark:text-orange-400 font-mono">
+                    {{ calculoEstimacion.monto_estimado | number:'1.2-2' }} {{ calculoEstimacion.moneda }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Explicabilidad / Disclaimer -->
+            <div class="text-[11px] text-gray-500 dark:text-gray-400 bg-orange-100/50 dark:bg-orange-950/30 p-2 rounded-lg border border-orange-200/40 dark:border-orange-900/30 flex items-start gap-1.5">
+              <span class="text-orange-500 text-xs mt-0.5">ℹ️</span>
+              <span>
+                <strong>Estimación preliminar explicable:</strong> Calculada mediante parámetros de mercado configurables en la plataforma. Servirá como punto de partida inicial para el presupuesto analítico con partidas y recetas APU en T20 (HU53–HU60).
+              </span>
             </div>
           </div>
         </div>
 
-        <!-- SECCIÓN 3: PLANIFICACIÓN -->
-        <div *ngIf="seccionModal === 3" class="space-y-4">
+        <!-- SECCIÓN 2 EN MODO EDICIÓN: PLANIFICACIÓN Y FECHAS -->
+        <div *ngIf="seccionModal === 2 && modoEdicion" class="space-y-4">
           <div class="border-b border-gray-100 dark:border-slate-800 pb-2">
-            <h3 class="text-sm font-extrabold text-orange-600 dark:text-orange-500 uppercase tracking-wider">3. Planificación de Fechas</h3>
-            <p class="text-xs text-gray-500 mt-0.5">Cronograma estimado de inicio y culminación de obras</p>
+            <h3 class="text-sm font-extrabold text-orange-600 dark:text-orange-500 uppercase tracking-wider">2. Planificación y Fechas</h3>
+            <p class="text-xs text-gray-500 mt-0.5">Cronograma de obras y estado operativo</p>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -451,7 +569,7 @@
             </div>
           </div>
 
-          <div *ngIf="modoEdicion">
+          <div>
             <label class="form-label">Estado de la Obra</label>
             <select [(ngModel)]="proyectoForm.estado_obra" class="form-select w-full">
               <option value="PLANIFICACION">Planificación</option>
@@ -461,12 +579,22 @@
               <option value="CANCELADO">Cancelado</option>
             </select>
           </div>
+
+          <div>
+            <label class="form-label">Presupuesto Objetivo / Estimado Actual</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-xs font-bold text-gray-400">
+                {{ proyectoForm.moneda === 'BOB' ? 'Bs' : '$' }}
+              </span>
+              <input type="number" min="0" [(ngModel)]="proyectoForm.valor_estimado" placeholder="0.00" class="form-input pl-10 w-full font-bold">
+            </div>
+          </div>
         </div>
 
-        <!-- SECCIÓN 4: UBICACIÓN Y MAPA INTERACTIVO -->
-        <div [style.display]="seccionModal === 4 ? 'block' : 'none'" class="space-y-4">
+        <!-- SECCIÓN 3: UBICACIÓN Y MAPA INTERACTIVO -->
+        <div [style.display]="seccionModal === 3 ? 'block' : 'none'" class="space-y-4">
           <div class="border-b border-gray-100 dark:border-slate-800 pb-2">
-            <h3 class="text-sm font-extrabold text-orange-600 dark:text-orange-500 uppercase tracking-wider">4. Ubicación y Georreferenciación</h3>
+            <h3 class="text-sm font-extrabold text-orange-600 dark:text-orange-500 uppercase tracking-wider">3. Ubicación y Georreferenciación</h3>
             <p class="text-xs text-gray-500 mt-0.5">Localización geográfica y datos catastrales en Santa Cruz</p>
           </div>
 
@@ -531,7 +659,7 @@
         <div class="flex items-center gap-2">
           <button (click)="cerrarModal()" class="btn-outline text-xs" [disabled]="guardando">Cancelar</button>
 
-          <button *ngIf="seccionModal < 4" (click)="siguienteSeccion()" type="button" class="btn-primary text-xs flex items-center gap-1.5">
+          <button *ngIf="seccionModal < 3" (click)="siguienteSeccion()" type="button" class="btn-primary text-xs flex items-center gap-1.5">
             Siguiente
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>

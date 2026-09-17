@@ -23,10 +23,46 @@ export interface Material {
   estado: EstadoMaterial;
   id_empresa?: number;
   nombre_empresa?: string;
+  id_material_base?: number | null;
+  es_propio?: boolean;
   caracteristicas?: MaterialCaracteristica[];
   fecha_ingreso?: string;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface MaterialBase {
+  id_material_base: number;
+  codigo: string;
+  nombre_material: string;
+  descripcion?: string | null;
+  categoria?: CategoriaMaterial;
+  categoria_nombre?: string;
+  unidad_medida?: UnidadMedida;
+  unidad_nombre?: string;
+  unidad_abreviatura?: string;
+  precio_referencial?: number | null;
+  estado: EstadoMaterial;
+  created_at?: string;
+  adoptado: boolean;
+  id_material_empresa?: number | null;
+  precio_empresa?: number | null;
+  codigo_empresa?: string | null;
+}
+
+export interface MaterialAdoptarPayload {
+  id_material_base: number;
+  precio?: number | null;
+  codigo_interno?: string | null;
+  id_proveedor?: number | null;
+  stock_minimo?: number;
+  id_empresa?: number;
+}
+
+export interface MaterialBaseListResponse {
+  success: boolean;
+  data: MaterialBase[];
+  pagination: MaterialPagination;
 }
 
 export interface MaterialCreatePayload {
@@ -72,4 +108,20 @@ export class MaterialsService {
   categorias(): Observable<ApiResponse<CategoriaMaterial[]>> { return this.http.get<ApiResponse<CategoriaMaterial[]>>(`${this.url}/categorias`); }
   crearCategoria(payload: CategoriaCreatePayload): Observable<CategoriaMutationResponse> { return this.http.post<CategoriaMutationResponse>(`${this.url}/categorias`, payload); }
   unidadesMedida(): Observable<ApiResponse<UnidadMedida[]>> { return this.http.get<ApiResponse<UnidadMedida[]>>(`${this.url}/unidades-medida`); }
+
+  listarBase(filtros: { q?: string; id_categoria?: number; id_empresa?: number; page?: number; limit?: number }): Observable<MaterialBaseListResponse> {
+    let params = new HttpParams();
+    Object.entries(filtros).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') params = params.set(key, String(value));
+    });
+    return this.http.get<MaterialBaseListResponse>(`${this.url}/base`, { params });
+  }
+
+  obtenerDetalleBase(id_material_base: number): Observable<ApiResponse<MaterialBase>> {
+    return this.http.get<ApiResponse<MaterialBase>>(`${this.url}/base/${id_material_base}`);
+  }
+
+  adoptar(payload: MaterialAdoptarPayload): Observable<MaterialMutationResponse> {
+    return this.http.post<MaterialMutationResponse>(`${this.url}/adoptar`, payload);
+  }
 }

@@ -1,0 +1,796 @@
+<div class="crm-container p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
+
+  <!-- ========================================================================= -->
+  <!-- ENCABEZADO Y KPIS PRINCIPALES                                            -->
+  <!-- ========================================================================= -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white shadow-md shadow-amber-500/20">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        </div>
+        <div>
+          <h1 class="text-xl md:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+            CRM & Gestión Comercial
+          </h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400">
+            Control de prospectos, clientes comerciales, interacciones y unidades inmobiliarias.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botones de Acción Global -->
+    <div class="flex items-center gap-2">
+      <button 
+        *ngIf="pestanaActiva === 'prospectos'"
+        (click)="abrirModalNuevo('PROSPECTO')"
+        class="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-md shadow-amber-500/20 transition-all cursor-pointer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Nuevo Prospecto
+      </button>
+
+      <button 
+        *ngIf="pestanaActiva === 'clientes'"
+        (click)="abrirModalNuevo('CLIENTE')"
+        class="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition-all cursor-pointer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+        Nuevo Cliente Comercial
+      </button>
+    </div>
+  </div>
+
+  <!-- ALERTA DE MENSAJES -->
+  <div *ngIf="mensajeExito" class="p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs rounded-lg flex items-center justify-between shadow-xs">
+    <div class="flex items-center gap-2">
+      <span>✓</span>
+      <span>{{ mensajeExito }}</span>
+    </div>
+    <button (click)="limpiarMensajes()" class="text-xs font-bold opacity-70 hover:opacity-100 cursor-pointer">✕</button>
+  </div>
+
+  <div *ngIf="mensajeError" class="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 text-xs rounded-lg flex items-center justify-between shadow-xs">
+    <div class="flex items-center gap-2">
+      <span>⚠️</span>
+      <span>{{ mensajeError }}</span>
+    </div>
+    <button (click)="limpiarMensajes()" class="text-xs font-bold opacity-70 hover:opacity-100 cursor-pointer">✕</button>
+  </div>
+
+  <!-- TARJETAS DE KPIS -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+    <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
+      <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-bold">
+        <span>Prospectos Activos</span>
+        <span class="p-1 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400">🎯</span>
+      </div>
+      <p class="text-2xl font-black text-slate-900 dark:text-white mt-2">
+        {{ metricas?.total_prospectos || 0 }}
+      </p>
+      <p class="text-[11px] text-slate-400 mt-0.5">Leads en embudo</p>
+    </div>
+
+    <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
+      <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-bold">
+        <span>En Negociación</span>
+        <span class="p-1 rounded bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400">💼</span>
+      </div>
+      <p class="text-2xl font-black text-orange-600 dark:text-orange-400 mt-2">
+        {{ metricas?.prospectos_por_estado?.EN_NEGOCIACION || 0 }}
+      </p>
+      <p class="text-[11px] text-slate-400 mt-0.5">Próximos al cierre</p>
+    </div>
+
+    <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
+      <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-bold">
+        <span>Clientes Comerciales</span>
+        <span class="p-1 rounded bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400">🤝</span>
+      </div>
+      <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2">
+        {{ metricas?.total_clientes || 0 }}
+      </p>
+      <p class="text-[11px] text-slate-400 mt-0.5">Ventas concretadas</p>
+    </div>
+
+    <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
+      <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-bold">
+        <span>Unidades Reservadas/Vendidas</span>
+        <span class="p-1 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">🏢</span>
+      </div>
+      <p class="text-2xl font-black text-blue-600 dark:text-blue-400 mt-2">
+        {{ (metricas?.unidades_asociadas?.RESERVADO || 0) + (metricas?.unidades_asociadas?.VENDIDO || 0) }}
+      </p>
+      <p class="text-[11px] text-slate-400 mt-0.5">Asociadas a clientes</p>
+    </div>
+  </div>
+
+  <!-- SELECTOR DE PESTAÑAS (TABS) -->
+  <div class="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+    <button 
+      (click)="cambiarPestana('prospectos')"
+      class="px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 cursor-pointer"
+      [ngClass]="pestanaActiva === 'prospectos' 
+        ? 'bg-amber-500 text-white shadow-xs' 
+        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'">
+      <span>🎯</span>
+      <span>Prospectos / Leads ({{ metricas?.total_prospectos || 0 }})</span>
+    </button>
+
+    <button 
+      (click)="cambiarPestana('clientes')"
+      class="px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 cursor-pointer"
+      [ngClass]="pestanaActiva === 'clientes' 
+        ? 'bg-blue-600 text-white shadow-xs' 
+        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'">
+      <span>👥</span>
+      <span>Clientes Comerciales ({{ metricas?.total_clientes || 0 }})</span>
+    </button>
+
+    <button 
+      (click)="cambiarPestana('asistente_ia')"
+      class="px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 cursor-pointer"
+      [ngClass]="pestanaActiva === 'asistente_ia' 
+        ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-xs' 
+        : 'text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30'">
+      <span>✨</span>
+      <span>Asistente IA (Gemini)</span>
+    </button>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- VISTA: PROSPECTOS Y CLIENTES (TABLA Y FILTROS)                            -->
+  <!-- ========================================================================= -->
+  <div *ngIf="pestanaActiva === 'prospectos' || pestanaActiva === 'clientes'" class="space-y-4">
+    <!-- Barra de Filtros -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xs">
+      <div class="relative w-full sm:w-72">
+        <input 
+          type="text"
+          [(ngModel)]="q"
+          (input)="onSearch($event)"
+          placeholder="Buscar por nombre, CI, teléfono o correo..."
+          class="w-full text-xs pl-8 pr-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
+        />
+        <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      </div>
+
+      <!-- Filtro por etapa (solo para prospectos) -->
+      <div *ngIf="pestanaActiva === 'prospectos'" class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto">
+        <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Etapa:</span>
+        <button 
+          (click)="filtrarPorEstado('')"
+          class="px-2.5 py-1 text-xs rounded-md font-semibold transition-colors cursor-pointer"
+          [ngClass]="filtroEstado === '' ? 'bg-slate-800 text-white dark:bg-white dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'">
+          Todos
+        </button>
+        <button 
+          *ngFor="let est of ['NUEVO', 'CONTACTADO', 'INTERESADO', 'EN_NEGOCIACION', 'CONVERTIDO', 'PERDIDO']"
+          (click)="filtrarPorEstado(est)"
+          class="px-2 py-1 text-xs rounded-md font-semibold transition-colors cursor-pointer"
+          [ngClass]="filtroEstado === est ? 'bg-amber-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'">
+          {{ est }}
+        </button>
+      </div>
+    </div>
+
+    <!-- TABLA DE RESULTADOS -->
+    <div class="border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 overflow-hidden shadow-xs">
+      <div *ngIf="cargandoLista" class="py-12 flex flex-col items-center justify-center gap-3">
+        <div class="w-8 h-8 border-3 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Cargando registros...</p>
+      </div>
+
+      <div *ngIf="!cargandoLista && clientes.length === 0" class="py-12 flex flex-col items-center justify-center gap-2 text-center p-4">
+        <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 text-xl">
+          👥
+        </div>
+        <p class="text-sm font-bold text-slate-700 dark:text-slate-300">No se encontraron registros</p>
+        <p class="text-xs text-slate-500 max-w-sm">No hay {{ pestanaActiva === 'prospectos' ? 'prospectos' : 'clientes comerciales' }} que coincidan con la búsqueda o filtro seleccionado.</p>
+      </div>
+
+      <div class="overflow-x-auto" *ngIf="!cargandoLista && clientes.length > 0">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <th class="py-3 px-4">Nombre / Contacto</th>
+              <th class="py-3 px-4">CI / NIT</th>
+              <th class="py-3 px-4">Origen</th>
+              <th class="py-3 px-4" *ngIf="pestanaActiva === 'prospectos'">Presupuesto Est.</th>
+              <th class="py-3 px-4">Etapa / Estado</th>
+              <th class="py-3 px-4">Asesor Asignado</th>
+              <th class="py-3 px-4 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
+            <tr *ngFor="let c of clientes" class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+              <td class="py-3 px-4">
+                <div class="font-bold text-slate-900 dark:text-white">{{ c.nombre_completo }}</div>
+                <div class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
+                  <span *ngIf="c.telefono">📞 {{ c.telefono }}</span>
+                  <span *ngIf="c.email">✉️ {{ c.email }}</span>
+                </div>
+              </td>
+              <td class="py-3 px-4 font-mono text-slate-600 dark:text-slate-400">
+                {{ c.ci || '—' }}
+              </td>
+              <td class="py-3 px-4">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                  {{ c.origen }}
+                </span>
+              </td>
+              <td class="py-3 px-4 font-mono font-bold text-slate-900 dark:text-white" *ngIf="pestanaActiva === 'prospectos'">
+                {{ c.presupuesto_estimado !== null ? ('$' + (c.presupuesto_estimado | number:'1.2-2')) : 'No informado' }}
+              </td>
+              <td class="py-3 px-4">
+                <span [class]="'px-2.5 py-1 rounded-full text-[11px] border ' + getBadgeEstadoClass(c.estado)">
+                  {{ c.estado }}
+                </span>
+              </td>
+              <td class="py-3 px-4 text-slate-600 dark:text-slate-400">
+                {{ c.asesor_nombre || 'Sin asignar' }}
+              </td>
+              <td class="py-3 px-4 text-right">
+                <div class="flex items-center justify-end gap-1.5">
+                  <!-- Ver Historial Completo (HU81) -->
+                  <button 
+                    (click)="verDetalleCliente(c)"
+                    class="px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-amber-500 hover:text-white text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer"
+                    title="Ver historial completo del cliente">
+                    Historial
+                  </button>
+
+                  <!-- Cambiar etapa rápido (Prospectos) -->
+                  <div class="relative group" *ngIf="c.tipo_cliente === 'PROSPECTO'">
+                    <button 
+                      class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 text-xs font-bold cursor-pointer"
+                      title="Cambiar etapa">
+                      ⚙️
+                    </button>
+                    <div class="absolute right-0 mt-1 w-44 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-xl py-1 hidden group-hover:block z-50">
+                      <div class="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase">Cambiar Etapa</div>
+                      <button 
+                        *ngFor="let est of ['CONTACTADO', 'INTERESADO', 'EN_NEGOCIACION', 'PERDIDO']"
+                        (click)="cambiarEstadoProspecto(c, est)"
+                        class="w-full text-left px-3 py-1.5 text-xs hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-between">
+                        <span>{{ est }}</span>
+                        <span *ngIf="c.estado === est">✓</span>
+                      </button>
+                      <div class="border-t border-slate-100 dark:border-slate-800 my-1"></div>
+                      <button 
+                        (click)="cambiarEstadoProspecto(c, 'CONVERTIDO')"
+                        class="w-full text-left px-3 py-1.5 text-xs font-bold text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30">
+                        Convertir a Cliente
+                      </button>
+                    </div>
+                  </div>
+
+                  <button 
+                    (click)="abrirModalEditar(c)"
+                    class="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"
+                    title="Editar datos">
+                    ✏️
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginador -->
+      <div *ngIf="totalPaginas > 1" class="px-4 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/20 flex items-center justify-between text-xs text-slate-500">
+        <span>Mostrando página {{ pagina }} de {{ totalPaginas }} ({{ total }} registros)</span>
+        <div class="flex items-center gap-1">
+          <button 
+            [disabled]="pagina === 1"
+            (click)="cambiarPagina(pagina - 1)"
+            class="px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 disabled:opacity-40 cursor-pointer">
+            Anterior
+          </button>
+          <button 
+            [disabled]="pagina === totalPaginas"
+            (click)="cambiarPagina(pagina + 1)"
+            class="px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 disabled:opacity-40 cursor-pointer">
+            Siguiente
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- VISTA: ASISTENTE INTELIGENTE CRM (GEMINI IA)                             -->
+  <!-- ========================================================================= -->
+  <div *ngIf="pestanaActiva === 'asistente_ia'" class="space-y-4">
+    <div class="p-4 bg-gradient-to-r from-purple-900/10 via-indigo-900/10 to-transparent border border-purple-200 dark:border-purple-900/50 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-xs">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white text-lg shadow-md shadow-purple-500/20">
+          ✨
+        </div>
+        <div>
+          <h2 class="text-sm md:text-base font-black text-slate-900 dark:text-white">
+            Asistente IA OBRATEC (Capacidad CRM)
+          </h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400">
+            Interpretación en lenguaje natural sobre prospectos, negociaciones y unidades autorizadas de su empresa.
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 text-[11px] font-bold px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+        <span>🔒 Aislamiento HU109 Activo</span>
+      </div>
+    </div>
+
+    <!-- Preguntas rápidas sugeridas -->
+    <div>
+      <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Preguntas frecuentes recomendadas:</p>
+      <div class="flex flex-wrap gap-2">
+        <button 
+          *ngFor="let sug of sugerenciasIa"
+          (click)="enviarPreguntaIa(sug)"
+          [disabled]="consultandoIa"
+          class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 text-slate-700 dark:text-slate-300 transition-all cursor-pointer text-left shadow-2xs">
+          💡 {{ sug }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Área de Chat -->
+    <div class="border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 overflow-hidden flex flex-col h-[480px] shadow-sm">
+      <!-- Conversación -->
+      <div class="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+        <div 
+          *ngFor="let m of mensajesChat"
+          class="flex flex-col"
+          [ngClass]="m.emisor === 'usuario' ? 'items-end' : 'items-start'">
+          <div 
+            class="max-w-[85%] md:max-w-[75%] p-3.5 rounded-2xl text-xs leading-relaxed"
+            [ngClass]="m.emisor === 'usuario' 
+              ? 'bg-purple-600 text-white rounded-tr-none shadow-xs' 
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-tl-none border border-slate-200 dark:border-slate-700/60'">
+            <div class="font-bold mb-1 text-[11px] opacity-80">
+              {{ m.emisor === 'usuario' ? 'Tú' : 'Asistente IA OBRATEC' }} • {{ m.hora }}
+            </div>
+            <div class="whitespace-pre-wrap">{{ m.texto }}</div>
+          </div>
+        </div>
+
+        <div *ngIf="consultandoIa" class="flex items-center gap-2 text-xs text-purple-600 dark:text-purple-400 font-semibold p-2">
+          <div class="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+          Consultando datos autorizados y procesando con Gemini...
+        </div>
+      </div>
+
+      <!-- Barra de Envío -->
+      <div class="p-3 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-200 dark:border-slate-800 flex gap-2 items-center">
+        <input 
+          type="text"
+          [(ngModel)]="preguntaIa"
+          (keyup.enter)="enviarPreguntaIa()"
+          [disabled]="consultandoIa"
+          placeholder="Escribe una pregunta sobre tus clientes o prospectos en lenguaje natural..."
+          class="flex-1 text-xs px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-purple-500 shadow-2xs"
+        />
+        <button 
+          (click)="enviarPreguntaIa()"
+          [disabled]="consultandoIa || !preguntaIa.trim()"
+          class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 disabled:opacity-40 text-white text-xs font-bold transition-all shadow-md shadow-purple-600/20 cursor-pointer flex items-center gap-1.5">
+          <span>Preguntar</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: DETALLE E HISTORIAL COMPLETO DEL CLIENTE (HU81)                     -->
+  <!-- ========================================================================= -->
+  <div *ngIf="mostrarModalDetalle && clienteSeleccionado" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in">
+      
+      <!-- Encabezado Modal -->
+      <div class="p-4 md:p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/40">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black text-sm">
+            {{ clienteSeleccionado.nombre_completo.substring(0, 2).toUpperCase() }}
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-base font-black text-slate-900 dark:text-white">{{ clienteSeleccionado.nombre_completo }}</h3>
+              <span [class]="'px-2 py-0.5 rounded text-[10px] font-bold border ' + getBadgeEstadoClass(clienteSeleccionado.estado)">
+                {{ clienteSeleccionado.estado }}
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              {{ clienteSeleccionado.tipo_cliente === 'PROSPECTO' ? 'Cliente Potencial / Lead' : 'Cliente Comercial Confirmado' }} • CI: {{ clienteSeleccionado.ci || 'Sin CI' }}
+            </p>
+          </div>
+        </div>
+        <button (click)="cerrarModalDetalle()" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer font-bold">✕</button>
+      </div>
+
+      <!-- Contenido scrolleable -->
+      <div class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+        
+        <!-- Ficha de Datos Personales / Comerciales -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-800 text-xs">
+          <div>
+            <span class="text-[10px] font-bold uppercase text-slate-400">Teléfono</span>
+            <p class="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{{ clienteSeleccionado.telefono || 'No registrado' }}</p>
+          </div>
+          <div>
+            <span class="text-[10px] font-bold uppercase text-slate-400">Correo</span>
+            <p class="font-semibold text-slate-800 dark:text-slate-200 mt-0.5 truncate">{{ clienteSeleccionado.email || 'No registrado' }}</p>
+          </div>
+          <div>
+            <span class="text-[10px] font-bold uppercase text-slate-400">Presupuesto Estimado</span>
+            <p class="font-bold text-slate-900 dark:text-white mt-0.5 font-mono">
+              {{ clienteSeleccionado.presupuesto_estimado ? ('$' + (clienteSeleccionado.presupuesto_estimado | number:'1.2-2')) : 'No informado' }}
+            </p>
+          </div>
+          <div>
+            <span class="text-[10px] font-bold uppercase text-slate-400">Origen</span>
+            <p class="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{{ clienteSeleccionado.origen }}</p>
+          </div>
+        </div>
+
+        <!-- SECCIÓN: INTERACCIONES COMERCIALES (HU84, HU81) -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+              <span>📞</span>
+              <span>Historial de Interacciones Comerciales ({{ interacciones.length }})</span>
+            </h4>
+            <button 
+              (click)="abrirModalInteraccion(clienteSeleccionado)"
+              class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-2xs">
+              <span>+ Registrar Interacción</span>
+            </button>
+          </div>
+
+          <div *ngIf="interacciones.length === 0" class="p-6 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-400">
+            No hay interacciones registradas aún. Haz clic en "+ Registrar Interacción" para documentar llamadas, reuniones o visitas.
+          </div>
+
+          <div class="space-y-2.5" *ngIf="interacciones.length > 0">
+            <div 
+              *ngFor="let it of interacciones"
+              class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-2xs text-xs space-y-1.5">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 uppercase">
+                    {{ it.tipo }}
+                  </span>
+                  <span class="font-bold text-slate-900 dark:text-white">{{ it.asunto }}</span>
+                </div>
+                <span class="text-[10px] text-slate-400 font-mono">{{ it.fecha_interaccion | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+              <p class="text-slate-600 dark:text-slate-300 leading-relaxed">{{ it.detalle }}</p>
+              <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800">
+                <span>Registrado por: {{ it.usuario_nombre }}</span>
+                <span *ngIf="it.fecha_proximo_contacto" class="text-purple-600 dark:text-purple-400 font-semibold">
+                  ⏰ Próximo contacto: {{ it.fecha_proximo_contacto | date:'dd/MM/yyyy' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN: UNIDADES INMOBILIARIAS ASOCIADAS (HU85, HU81) -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+              <span>🏢</span>
+              <span>Unidades Inmobiliarias Asociadas ({{ unidadesAsociadas.length }})</span>
+            </h4>
+            <button 
+              (click)="abrirModalAsociarUnidad(clienteSeleccionado)"
+              class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-2xs">
+              <span>+ Asociar Unidad</span>
+            </button>
+          </div>
+
+          <div *ngIf="unidadesAsociadas.length === 0" class="p-6 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-400">
+            El cliente aún no tiene unidades inmobiliarias asociadas de los proyectos de la empresa.
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" *ngIf="unidadesAsociadas.length > 0">
+            <div 
+              *ngFor="let u of unidadesAsociadas"
+              class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-2xs text-xs space-y-2">
+              <div class="flex items-center justify-between">
+                <div>
+                  <span class="font-bold text-slate-900 dark:text-white text-sm">{{ u.codigo_unidad }}</span>
+                  <p class="text-[11px] text-slate-400">{{ u.nombre_obra }} ({{ u.tipo_unidad }})</p>
+                </div>
+                <span [class]="'px-2 py-0.5 rounded text-[10px] font-bold border ' + getBadgeAsocClass(u.estado_asociacion)">
+                  {{ u.estado_asociacion }}
+                </span>
+              </div>
+
+              <div class="flex items-center justify-between text-[11px] pt-2 border-t border-slate-100 dark:border-slate-800">
+                <span class="text-slate-500">Monto pactado:</span>
+                <span class="font-mono font-bold text-slate-900 dark:text-white">
+                  {{ u.monto_pactado ? ('$' + (u.monto_pactado | number:'1.2-2')) : 'No fijado' }}
+                </span>
+              </div>
+
+              <!-- Cambiar estado de la asociación -->
+              <div class="flex items-center gap-1 pt-1">
+                <span class="text-[10px] text-slate-400">Cambiar a:</span>
+                <button 
+                  *ngFor="let nuevoEst of ['INTERESADO', 'RESERVADO', 'VENDIDO', 'CANCELADO']"
+                  [disabled]="u.estado_asociacion === nuevoEst"
+                  (click)="actualizarEstadoAsociacion(u, nuevoEst)"
+                  class="px-1.5 py-0.5 text-[10px] rounded border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 cursor-pointer">
+                  {{ nuevoEst }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Pie Modal -->
+      <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 flex justify-end">
+        <button 
+          (click)="cerrarModalDetalle()"
+          class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold cursor-pointer">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: REGISTRAR / EDITAR CLIENTE O PROSPECTO (HU80, HU82)                -->
+  <!-- ========================================================================= -->
+  <div *ngIf="mostrarModalFormulario" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-fade-in">
+      <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/40">
+        <h3 class="text-sm font-black text-slate-900 dark:text-white">
+          {{ modoEdicion ? 'Editar Registro' : (formCliente.tipo_cliente === 'CLIENTE' ? 'Nuevo Cliente Comercial' : 'Nuevo Prospecto') }}
+        </h3>
+        <button (click)="mostrarModalFormulario = false" class="p-1 text-slate-400 hover:text-slate-600 font-bold cursor-pointer">✕</button>
+      </div>
+
+      <div class="p-4 md:p-6 space-y-4 max-h-[80vh] overflow-y-auto text-xs">
+        <div>
+          <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Nombre Completo *</label>
+          <input 
+            type="text" 
+            [(ngModel)]="formCliente.nombre_completo"
+            placeholder="Ej. Juan Pérez Mendizábal"
+            class="w-full text-xs px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">CI / Cédula</label>
+            <input 
+              type="text" 
+              [(ngModel)]="formCliente.ci"
+              placeholder="Ej. 6543210 SC"
+              class="w-full text-xs px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
+            />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Teléfono</label>
+            <input 
+              type="text" 
+              [(ngModel)]="formCliente.telefono"
+              placeholder="Ej. 77012345"
+              class="w-full text-xs px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Correo Electrónico</label>
+          <input 
+            type="email" 
+            [(ngModel)]="formCliente.email"
+            placeholder="contacto@ejemplo.com"
+            class="w-full text-xs px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Origen / Canal</label>
+            <select 
+              [(ngModel)]="formCliente.origen"
+              class="w-full text-xs px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-amber-500">
+              <option value="DIRECTO">Directo</option>
+              <option value="REDES_SOCIALES">Redes Sociales</option>
+              <option value="WEB">Sitio Web</option>
+              <option value="REFERIDO">Referido</option>
+              <option value="VISITA_OBRA">Visita a Obra</option>
+              <option value="LLAMADA">Llamada</option>
+              <option value="OTRO">Otro</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Presupuesto Est. ($)</label>
+            <input 
+              type="number" 
+              [(ngModel)]="formCliente.presupuesto_estimado"
+              placeholder="Opcional (ej. 75000)"
+              class="w-full text-xs px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Notas Comerciales</label>
+          <textarea 
+            [(ngModel)]="formCliente.notas"
+            rows="2"
+            placeholder="Comentarios o preferencias del cliente..."
+            class="w-full text-xs px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"></textarea>
+        </div>
+      </div>
+
+      <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 flex justify-end gap-2">
+        <button 
+          (click)="mostrarModalFormulario = false"
+          class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">
+          Cancelar
+        </button>
+        <button 
+          (click)="guardarCliente()"
+          [disabled]="guardandoFormulario"
+          class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white text-xs font-bold transition-all cursor-pointer shadow-xs">
+          {{ guardandoFormulario ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: REGISTRAR INTERACCIÓN COMERCIAL (HU84)                             -->
+  <!-- ========================================================================= -->
+  <div *ngIf="mostrarModalInteraccion && clienteSeleccionado" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-fade-in">
+      <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/40">
+        <h3 class="text-sm font-black text-slate-900 dark:text-white">Registrar Interacción Comercial</h3>
+        <button (click)="mostrarModalInteraccion = false" class="p-1 text-slate-400 hover:text-slate-600 font-bold cursor-pointer">✕</button>
+      </div>
+
+      <div class="p-4 md:p-6 space-y-3.5 text-xs">
+        <div>
+          <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Tipo de Actividad</label>
+          <select 
+            [(ngModel)]="formInteraccion.tipo"
+            class="w-full text-xs px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-amber-500">
+            <option value="LLAMADA">Llamada Telefónica</option>
+            <option value="REUNION">Reunión Presencial</option>
+            <option value="VISITA">Visita a Obra / Showroom</option>
+            <option value="MENSAJE">Mensaje de WhatsApp / SMS</option>
+            <option value="CORREO">Correo Electrónico</option>
+            <option value="SEGUIMIENTO">Seguimiento Comercial</option>
+            <option value="NOTA">Nota Interna</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Asunto *</label>
+          <input 
+            type="text" 
+            [(ngModel)]="formInteraccion.asunto"
+            placeholder="Ej. Envío de cotización Torre A"
+            class="w-full text-xs px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
+          />
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Detalle de la conversación / acuerdos *</label>
+          <textarea 
+            [(ngModel)]="formInteraccion.detalle"
+            rows="3"
+            placeholder="Describir lo conversado o acordado con el cliente..."
+            class="w-full text-xs px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Próximo Seguimiento (Opcional)</label>
+          <input 
+            type="date" 
+            [(ngModel)]="formInteraccion.fecha_proximo_contacto"
+            class="w-full text-xs px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
+          />
+        </div>
+      </div>
+
+      <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 flex justify-end gap-2">
+        <button 
+          (click)="mostrarModalInteraccion = false"
+          class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">
+          Cancelar
+        </button>
+        <button 
+          (click)="guardarInteraccion()"
+          [disabled]="guardandoInteraccion"
+          class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white text-xs font-bold transition-all cursor-pointer shadow-xs">
+          {{ guardandoInteraccion ? 'Guardando...' : 'Guardar Interacción' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: ASOCIAR UNIDAD INMOBILIARIA (HU85)                                 -->
+  <!-- ========================================================================= -->
+  <div *ngIf="mostrarModalAsociarUnidad && clienteSeleccionado" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-fade-in">
+      <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/40">
+        <h3 class="text-sm font-black text-slate-900 dark:text-white">Asociar Unidad Inmobiliaria</h3>
+        <button (click)="mostrarModalAsociarUnidad = false" class="p-1 text-slate-400 hover:text-slate-600 font-bold cursor-pointer">✕</button>
+      </div>
+
+      <div class="p-4 md:p-6 space-y-3.5 text-xs">
+        <div>
+          <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Unidad Inmobiliaria Disponible *</label>
+          <div *ngIf="cargandoUnidadesDisp" class="text-xs text-slate-400 py-2">Cargando unidades de la empresa...</div>
+          <select 
+            *ngIf="!cargandoUnidadesDisp"
+            [(ngModel)]="formAsociarUnidad.id_unidad"
+            class="w-full text-xs px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-amber-500">
+            <option [ngValue]="null">-- Seleccionar Unidad --</option>
+            <option *ngFor="let u of unidadesDisponibles" [ngValue]="u.id_unidad">
+              {{ u.codigo }} • {{ u.nombre_obra }} ({{ u.tipo_unidad }} - {{ u.superficie }} m²)
+            </option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Estado Asociación</label>
+            <select 
+              [(ngModel)]="formAsociarUnidad.estado_asociacion"
+              class="w-full text-xs px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-amber-500">
+              <option value="INTERESADO">Interesado</option>
+              <option value="RESERVADO">Reservado</option>
+              <option value="VENDIDO">Vendido</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Monto Pactado ($)</label>
+            <input 
+              type="number" 
+              [(ngModel)]="formAsociarUnidad.monto_pactado"
+              placeholder="Opcional"
+              class="w-full text-xs px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Observaciones</label>
+          <textarea 
+            [(ngModel)]="formAsociarUnidad.observaciones"
+            rows="2"
+            placeholder="Condiciones o notas de la reserva/asociación..."
+            class="w-full text-xs px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"></textarea>
+        </div>
+      </div>
+
+      <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 flex justify-end gap-2">
+        <button 
+          (click)="mostrarModalAsociarUnidad = false"
+          class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">
+          Cancelar
+        </button>
+        <button 
+          (click)="guardarAsociacionUnidad()"
+          [disabled]="guardandoAsociacion"
+          class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-xs font-bold transition-all cursor-pointer shadow-xs">
+          {{ guardandoAsociacion ? 'Asociando...' : 'Asociar Unidad' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

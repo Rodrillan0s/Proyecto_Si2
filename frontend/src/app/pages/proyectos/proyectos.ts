@@ -3,7 +3,7 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ProyectosService, Proyecto, TipoProyecto } from '../../services/proyectos';
+import { ProyectosService, Proyecto, TipoProyecto, RequisitosEstimacion, CalculoEstimacion, EstimacionObra } from '../../services/proyectos';
 import { AuthService } from '../../services/auth';
 
 @Component({
@@ -49,6 +49,21 @@ export class ProyectosComponent implements OnInit, OnDestroy {
 
   // Formulario estructurado según la especificación exacta de HU30
   proyectoForm: Proyecto = this.inicializarFormulario();
+
+  // Requisitos básicos para la estimación preliminar paramétrica
+  requisitosEstimacion: RequisitosEstimacion = {
+    tipo_obra: 'Vivienda',
+    superficie_m2: 150,
+    niveles: 1,
+    tipo_terreno: 'Firme',
+    complejidad: 'Bajo',
+    ubicacion: '',
+    caracteristicas_generales: '',
+    moneda: 'BOB'
+  };
+  calculoEstimacion: CalculoEstimacion | null = null;
+  calculandoEstimacion: boolean = false;
+  parametrosEstimacion: any = null;
 
   // Leaflet Map
   private mapa: any = null;
@@ -183,10 +198,61 @@ export class ProyectosComponent implements OnInit, OnDestroy {
     }
   }
 
+  cargarParametrosEstimacion() {
+    this.proyectosService.obtenerParametrosEstimacion().subscribe({
+      next: (res) => {
+        if (res && res.success) {
+          this.parametrosEstimacion = res.data;
+          this.recalcularEstimacion();
+        }
+      }
+    });
+  }
+
+  recalcularEstimacion() {
+    if (!this.requisitosEstimacion.superficie_m2 || this.requisitosEstimacion.superficie_m2 <= 0) {
+      this.calculoEstimacion = null;
+      return;
+    }
+    this.calculandoEstimacion = true;
+    this.requisitosEstimacion.moneda = this.proyectoForm.moneda || 'BOB';
+    this.requisitosEstimacion.ubicacion = this.proyectoForm.ubicacion || this.proyectoForm.zona || '';
+
+    this.proyectosService.calcularPreviewEstimacion(this.requisitosEstimacion).subscribe({
+      next: (res) => {
+        this.ngZone.run(() => {
+          this.calculandoEstimacion = false;
+          if (res && res.success) {
+            this.calculoEstimacion = res.data;
+            this.proyectoForm.valor_estimado = res.data.monto_estimado;
+          }
+          this.cdr.detectChanges();
+        });
+      },
+      error: () => {
+        this.ngZone.run(() => {
+          this.calculandoEstimacion = false;
+          this.cdr.detectChanges();
+        });
+      }
+    });
+  }
+
   abrirModalNuevo() {
     this.modoEdicion = false;
     this.seccionModal = 1;
     this.proyectoForm = this.inicializarFormulario();
+    this.requisitosEstimacion = {
+      tipo_obra: 'Vivienda',
+      superficie_m2: 150,
+      niveles: 1,
+      tipo_terreno: 'Firme',
+      complejidad: 'Bajo',
+      ubicacion: '',
+      caracteristicas_generales: '',
+      moneda: 'BOB'
+    };
+    this.calculoEstimacion = null;
     this.mostrarModal = true;
 
     // Obtener código con formato PYYYY-MM-NNNN
@@ -199,6 +265,7 @@ export class ProyectosComponent implements OnInit, OnDestroy {
       }
     });
 
+    this.cargarParametrosEstimacion();
     // Inicializar Leaflet centrado en Santa Cruz de la Sierra
     this.iniciarMapaConRetraso(-17.7833, -63.1821);
   }
@@ -221,15 +288,18 @@ export class ProyectosComponent implements OnInit, OnDestroy {
 
   irASeccion(sec: number) {
     this.seccionModal = sec;
-    if (sec === 4) {
+    if (sec === 3) {
       setTimeout(() => {
         this.mapa?.invalidateSize();
       }, 150);
     }
+    if (sec === 2 && !this.modoEdicion) {
+      this.recalcularEstimacion();
+    }
   }
 
   siguienteSeccion() {
-    if (this.seccionModal < 4) {
+    if (this.seccionModal < 3) {
       this.irASeccion(this.seccionModal + 1);
     }
   }
@@ -355,6 +425,12 @@ export class ProyectosComponent implements OnInit, OnDestroy {
 
     if (!this.proyectoForm.fecha_fin) {
       this.proyectoForm.fecha_fin = '';
+    }
+
+    if (!this.modoEdicion && this.calculoEstimacion) {
+      this.proyectoForm.estimacion = this.calculoEstimacion;
+      this.proyectoForm.requisitos_estimacion = this.requisitosEstimacion;
+      this.proyectoForm.valor_estimado = this.calculoEstimacion.monto_estimado;
     }
 
     if (this.modoEdicion && this.proyectoForm.id_obra) {

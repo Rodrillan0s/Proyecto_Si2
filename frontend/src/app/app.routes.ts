@@ -19,6 +19,7 @@ import { ProyectoDetalleComponent } from './pages/proyectos/detalle/proyecto-det
 import { MaterialesComponent } from './pages/materiales/materiales';
 import { ProveedoresComponent } from './pages/proveedores/proveedores';             
 import { OrdenesTrabajoComponent } from './pages/ordenes-trabajo/ordenes-trabajo';
+import { CrmComponent } from './pages/crm/crm';
 
 //LAYOUTS
 import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout';
@@ -62,6 +63,12 @@ export const routes: Routes = [
                 component: MaterialesComponent, 
                 canActivate: [roleGuard], 
                 data: { permissions: ['Visualizar_materiales'] } 
+            },
+            { 
+                path: 'crm', 
+                component: CrmComponent, 
+                canActivate: [roleGuard], 
+                data: { permissions: ['Visualizar_clientes'] } 
             },
             { 
                 path: 'proveedores', 

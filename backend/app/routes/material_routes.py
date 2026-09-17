@@ -29,6 +29,44 @@ def post_categoria(request: Request, data: dict = Body(...), token=Depends(exigi
     except material_services.MaterialError as exc: _raise(exc)
 
 
+@router.get("/base")
+def get_catalogo_base(
+    q: str = None,
+    id_categoria: int = None,
+    id_empresa: int = None,
+    page: int = 1,
+    limit: int = Query(100, le=200),
+    token=Depends(exigir_permiso("Visualizar_materiales"))
+):
+    try:
+        return material_services.catalogo_base(token, q, id_categoria, id_empresa, page, limit)
+    except material_services.MaterialError as exc:
+        _raise(exc)
+
+
+@router.get("/base/{id_material_base}")
+def get_detalle_base(
+    id_material_base: int,
+    token=Depends(exigir_permiso("Visualizar_materiales"))
+):
+    try:
+        return material_services.detalle_base(id_material_base, token)
+    except material_services.MaterialError as exc:
+        _raise(exc)
+
+
+@router.post("/adoptar", status_code=201)
+def post_adoptar_material(
+    request: Request,
+    data: dict = Body(...),
+    token=Depends(exigir_permiso("Registrar_materiales"))
+):
+    try:
+        return material_services.adoptar(data, token, _ip(request))
+    except material_services.MaterialError as exc:
+        _raise(exc)
+
+
 @router.get("")
 def get_materiales(q: str = None, id_categoria: int = None, estado: str = None,
                    stock_bajo: bool = None, page: int = 1, limit: int = Query(20, le=100),
