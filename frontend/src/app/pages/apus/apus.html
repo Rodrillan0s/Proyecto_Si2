@@ -1,0 +1,895 @@
+<div class="apus-page">
+  <!-- ENCABEZADO PRINCIPAL -->
+  <div class="page-header">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="header-badge">Costos & Presupuestos</span>
+        <span class="text-xs text-slate-500 font-medium">• Catálogo Paramétrico</span>
+      </div>
+      <h1 class="page-title">Análisis de Precios Unitarios (APU)</h1>
+      <p class="page-subtitle">
+        Plantillas base globales de OBRATEC y análisis de precios personalizados por empresa con rendimientos, costos y factores de cálculo.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <button
+        *ngIf="pestanaActiva === 'mis_apus'"
+        (click)="abrirCrearModal()"
+        class="btn-primary"
+        type="button"
+      >
+        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Crear APU Propio
+      </button>
+    </div>
+  </div>
+
+  <!-- ALERTAS DE ÉXITO Y ERROR -->
+  <div *ngIf="mensajeExito" class="alert-success mb-4">
+    <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+    <span>{{ mensajeExito }}</span>
+  </div>
+
+  <div *ngIf="mensajeError" class="alert-error mb-4">
+    <svg class="w-5 h-5 text-red-600 dark:text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    <span>{{ mensajeError }}</span>
+  </div>
+
+  <!-- NAVEGACIÓN ENTRE PESTAÑAS PRINCIPALES -->
+  <div class="tabs-container">
+    <div class="tabs-nav">
+      <button
+        type="button"
+        class="tab-button"
+        [class.active]="pestanaActiva === 'catalogo_base'"
+        (click)="cambiarPestana('catalogo_base')"
+      >
+        <span class="tab-icon">🌐</span>
+        <span>Catálogo Base OBRATEC</span>
+        <span class="tab-badge">{{ apusBase.length }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="tab-button"
+        [class.active]="pestanaActiva === 'mis_apus'"
+        (click)="cambiarPestana('mis_apus')"
+      >
+        <span class="tab-icon">🏢</span>
+        <span>Mis APUs (Empresa)</span>
+        <span class="tab-badge">{{ misApus.length }}</span>
+      </button>
+    </div>
+
+    <!-- BUSCADOR SUPERIOR Y FILTRO DE VIGENCIA -->
+    <div class="tabs-actions">
+      <div class="search-box">
+        <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input
+          type="text"
+          [ngModel]="qBusqueda"
+          (ngModelChange)="onBuscar($event)"
+          placeholder="Buscar APU por nombre, código o actividad..."
+          class="search-input"
+        />
+      </div>
+
+      <button
+        *ngIf="pestanaActiva === 'mis_apus'"
+        type="button"
+        (click)="toggleSoloVigentes()"
+        class="btn-filter-toggle"
+        [class.active]="soloVigentes"
+        title="Mostrar solo versiones activas vigentes o el historial completo"
+      >
+        <span class="dot" [class.bg-emerald-500]="soloVigentes" [class.bg-slate-400]="!soloVigentes"></span>
+        <span>{{ soloVigentes ? 'Solo Vigentes' : 'Todas las Versiones' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- BARRA DE CHIPS DE CATEGORÍAS (28 CATEGORÍAS NORMALIZADAS) -->
+  <div class="categories-bar">
+    <button
+      type="button"
+      class="cat-chip"
+      [class.active]="categoriaSeleccionadaId === null"
+      (click)="seleccionarCategoria(null)"
+    >
+      <span>Todas las categorías</span>
+      <span class="chip-count">
+        {{ pestanaActiva === 'catalogo_base' ? apusBase.length : misApus.length }}
+      </span>
+    </button>
+
+    <button
+      *ngFor="let cat of categorias"
+      type="button"
+      class="cat-chip"
+      [class.active]="categoriaSeleccionadaId === cat.id_categoria"
+      (click)="seleccionarCategoria(cat.id_categoria)"
+    >
+      <span>{{ cat.nombre }}</span>
+      <span class="chip-count" *ngIf="pestanaActiva === 'catalogo_base'">{{ cat.total_base }}</span>
+      <span class="chip-count" *ngIf="pestanaActiva === 'mis_apus'">{{ cat.total_empresa }}</span>
+    </button>
+  </div>
+
+  <!-- SPINNER DE CARGA -->
+  <div *ngIf="cargando" class="loading-state">
+    <div class="spinner"></div>
+    <p>Cargando análisis de precios...</p>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- VISTA 1: CATÁLOGO BASE OBRATEC                                            -->
+  <!-- ========================================================================= -->
+  <div *ngIf="!cargando && pestanaActiva === 'catalogo_base'">
+    <div class="catalog-info-banner mb-6">
+      <div class="flex items-start gap-3">
+        <div class="p-2.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xl">💡</div>
+        <div>
+          <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Plantillas Maestras de Construcción</h3>
+          <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+            Los APUs del Catálogo Base son plantillas de referencia con rendimientos estándar y costos estimados.
+            Haga clic en <strong>Usar como plantilla</strong> para adaptarlos a los materiales, cuadrillas y costos vigentes de su empresa.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Grid de Tarjetas de APU Base -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" *ngIf="apusBase.length > 0">
+      <div *ngFor="let a of apusBase" class="apu-card">
+        <div class="card-header">
+          <div class="flex items-center justify-between">
+            <span class="badge-category">{{ a.categoria_nombre }}</span>
+            <span class="font-mono text-[11px] font-bold text-slate-500 dark:text-slate-400">{{ a.codigo }}</span>
+          </div>
+          <h3 class="card-title mt-2">{{ a.nombre }}</h3>
+          <p class="card-desc">{{ a.descripcion || 'Sin descripción adicional' }}</p>
+        </div>
+
+        <div class="card-body">
+          <div class="flex items-center justify-between text-xs py-1.5 border-b border-slate-100 dark:border-slate-800">
+            <span class="text-slate-500">Unidad de obra:</span>
+            <span class="font-bold text-slate-700 dark:text-slate-200">{{ a.unidad_medida_nombre }} ({{ a.unidad_medida_abrev }})</span>
+          </div>
+          <div class="flex items-center justify-between text-xs py-1.5 border-b border-slate-100 dark:border-slate-800">
+            <span class="text-slate-500">Componentes:</span>
+            <span class="font-semibold text-slate-700 dark:text-slate-300">{{ a.total_componentes }} insumos base</span>
+          </div>
+          <div class="flex items-center justify-between text-xs py-1.5 border-b border-slate-100 dark:border-slate-800">
+            <span class="text-slate-500">Costo directo ref.:</span>
+            <span class="font-mono font-medium text-slate-600 dark:text-slate-400">{{ a.costo_directo | number:'1.2-2' }} Bs.</span>
+          </div>
+          <div class="flex items-center justify-between text-sm py-2">
+            <span class="font-bold text-slate-700 dark:text-slate-300">Precio unitario ref.:</span>
+            <span class="font-mono font-black text-amber-600 dark:text-amber-400 text-base">
+              {{ a.precio_unitario | number:'1.2-2' }} <span class="text-xs font-normal">Bs./{{ a.unidad_medida_abrev }}</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <button
+            type="button"
+            (click)="abrirDetalleApu(a.id_apu, true)"
+            class="btn-secondary flex-1 text-xs"
+          >
+            👁️ Ver desglose
+          </button>
+          <button
+            type="button"
+            (click)="abrirCopiarApuBase(a)"
+            class="btn-primary flex-1 text-xs"
+          >
+            📋 Usar como plantilla
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estado vacío Catálogo Base -->
+    <div *ngIf="apusBase.length === 0" class="empty-state">
+      <div class="empty-icon">📂</div>
+      <h3 class="text-base font-bold text-slate-800 dark:text-slate-200">No se encontraron APUs en el catálogo base</h3>
+      <p class="text-xs text-slate-500 max-w-sm mt-1">Pruebe ajustando el filtro de categoría o los términos del buscador.</p>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- VISTA 2: MIS APUS (EMPRESA)                                               -->
+  <!-- ========================================================================= -->
+  <div *ngIf="!cargando && pestanaActiva === 'mis_apus'">
+    <!-- Tabla de APUs de la empresa -->
+    <div class="table-container" *ngIf="misApus.length > 0">
+      <table class="apu-table">
+        <thead>
+          <tr>
+            <th>Código / Versión</th>
+            <th>Actividad / APU</th>
+            <th>Categoría</th>
+            <th>Unidad</th>
+            <th class="text-right">Costo Directo</th>
+            <th class="text-center">Factores (GG / UT / IT)</th>
+            <th class="text-right">Precio Unitario</th>
+            <th class="text-center">Estado</th>
+            <th class="text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let a of misApus" [class.opacity-60]="a.estado === 'INACTIVO'">
+            <!-- Código y Versión -->
+            <td>
+              <div class="flex items-center gap-1.5">
+                <span class="font-mono font-bold text-xs text-slate-800 dark:text-slate-200">{{ a.codigo }}</span>
+                <span
+                  class="badge-version"
+                  [class.vigente]="a.es_vigente"
+                  [class.historico]="!a.es_vigente"
+                  [title]="a.es_vigente ? 'Versión vigente' : 'Versión archivada histórica'"
+                >
+                  v{{ a.version }} {{ a.es_vigente ? '✓' : '' }}
+                </span>
+              </div>
+              <span *ngIf="a.id_apu_base" class="text-[10px] text-slate-400 block mt-0.5">
+                Plantilla base: {{ a.codigo_base }}
+              </span>
+            </td>
+
+            <!-- Nombre y Descripción -->
+            <td>
+              <p class="font-bold text-xs text-slate-900 dark:text-white">{{ a.nombre }}</p>
+              <p class="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{{ a.descripcion || 'Sin descripción' }}</p>
+              <span *ngIf="a.en_uso" class="inline-flex items-center gap-1 text-[10px] text-amber-700 dark:text-amber-300 font-semibold mt-1">
+                🔒 En uso en presupuestos
+              </span>
+            </td>
+
+            <!-- Categoría -->
+            <td>
+              <span class="badge-category">{{ a.categoria_nombre }}</span>
+            </td>
+
+            <!-- Unidad -->
+            <td>
+              <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ a.unidad_medida_abrev }}</span>
+            </td>
+
+            <!-- Costo Directo -->
+            <td class="text-right font-mono text-xs text-slate-600 dark:text-slate-400">
+              {{ a.costo_directo | number:'1.2-2' }} Bs.
+            </td>
+
+            <!-- Factores -->
+            <td class="text-center text-[11px] text-slate-500 font-mono">
+              {{ a.porcentaje_gastos_generales }}% / {{ a.porcentaje_utilidad }}% / {{ a.porcentaje_impuestos }}%
+            </td>
+
+            <!-- Precio Unitario -->
+            <td class="text-right">
+              <span class="font-mono font-bold text-sm text-amber-600 dark:text-amber-400">
+                {{ a.precio_unitario | number:'1.2-2' }}
+              </span>
+              <span class="text-[10px] text-slate-400 ml-0.5">Bs.</span>
+            </td>
+
+            <!-- Estado -->
+            <td class="text-center">
+              <button
+                type="button"
+                (click)="toggleEstadoApu(a, $event)"
+                class="badge-status"
+                [class.activo]="a.estado === 'ACTIVO'"
+                [class.inactivo]="a.estado === 'INACTIVO'"
+                title="Haga clic para activar o desactivar"
+              >
+                {{ a.estado }}
+              </button>
+            </td>
+
+            <!-- Acciones -->
+            <td class="text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                <button
+                  type="button"
+                  (click)="abrirDetalleApu(a.id_apu, false)"
+                  class="action-btn"
+                  title="Ver y editar hoja de análisis"
+                >
+                  ✏️
+                </button>
+                <button
+                  type="button"
+                  (click)="duplicarApu(a)"
+                  class="action-btn"
+                  title="Duplicar APU"
+                >
+                  📋
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Estado vacío Mis APUs -->
+    <div *ngIf="misApus.length === 0" class="empty-state">
+      <div class="empty-icon">🏗️</div>
+      <h3 class="text-base font-bold text-slate-800 dark:text-slate-200">Su empresa no tiene APUs registrados</h3>
+      <p class="text-xs text-slate-500 max-w-sm mt-1">
+        Puede copiar plantillas desde el <strong>Catálogo Base OBRATEC</strong> o crear un APU desde cero con sus propios rendimientos.
+      </p>
+      <div class="flex items-center gap-3 mt-4">
+        <button type="button" (click)="cambiarPestana('catalogo_base')" class="btn-secondary text-xs">
+          Explorar Catálogo Base
+        </button>
+        <button type="button" (click)="abrirCrearModal()" class="btn-primary text-xs">
+          + Crear APU Propio
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: HOJA DE ANÁLISIS DE PRECIOS UNITARIOS (DETALLE Y EDICIÓN)          -->
+  <!-- ========================================================================= -->
+  <div *ngIf="modalDetalleAbierto && apuSeleccionado" class="modal-backdrop">
+    <div class="modal-container-xl">
+      <!-- Encabezado del Modal -->
+      <div class="modal-header">
+        <div class="flex items-center gap-2">
+          <span class="font-mono text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">
+            {{ apuSeleccionado.codigo }}
+          </span>
+          <span class="badge-version" [class.vigente]="apuSeleccionado.es_vigente">
+            v{{ apuSeleccionado.version }}
+          </span>
+          <span *ngIf="esModoLectura" class="text-[11px] font-bold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950 px-2 py-0.5 rounded">
+            Plantilla Base (Solo Lectura)
+          </span>
+          <span *ngIf="apuSeleccionado.en_uso" class="text-[11px] font-bold text-amber-800 dark:text-amber-200 bg-amber-100 dark:bg-amber-950 px-2 py-0.5 rounded">
+            En uso en presupuestos
+          </span>
+        </div>
+        <button type="button" (click)="cerrarModalDetalle()" class="modal-close-btn">✕</button>
+      </div>
+
+      <div class="px-6 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+        <h2 class="text-lg font-extrabold text-slate-900 dark:text-white">{{ apuSeleccionado.nombre }}</h2>
+        <div class="flex items-center gap-4 text-xs text-slate-500 mt-1">
+          <span><strong>Categoría:</strong> {{ apuSeleccionado.categoria_nombre }}</span>
+          <span><strong>Unidad de Obra:</strong> {{ apuSeleccionado.unidad_medida_nombre }} ({{ apuSeleccionado.unidad_medida_abrev }})</span>
+          <span><strong>Rendimiento base:</strong> {{ apuSeleccionado.rendimiento_base }}</span>
+        </div>
+      </div>
+
+      <!-- Cuerpo del Modal: Pestañas de Componentes y Factores -->
+      <div class="modal-body-split">
+        <!-- Panel Izquierdo: Tablas de Componentes (Materiales, Mano de Obra, Equipos) -->
+        <div class="components-panel">
+          <div class="components-nav">
+            <button
+              type="button"
+              class="comp-tab-btn"
+              [class.active]="pestanaDetalle === 'materiales'"
+              (click)="pestanaDetalle = 'materiales'"
+            >
+              <span>Materiales</span>
+              <span class="badge-count">{{ apuSeleccionado.materiales?.length || 0 }}</span>
+            </button>
+            <button
+              type="button"
+              class="comp-tab-btn"
+              [class.active]="pestanaDetalle === 'mano_obra'"
+              (click)="pestanaDetalle = 'mano_obra'"
+            >
+              <span>Mano de Obra</span>
+              <span class="badge-count">{{ apuSeleccionado.mano_obra?.length || 0 }}</span>
+            </button>
+            <button
+              type="button"
+              class="comp-tab-btn"
+              [class.active]="pestanaDetalle === 'equipos'"
+              (click)="pestanaDetalle = 'equipos'"
+            >
+              <span>Equipos & Herramientas</span>
+              <span class="badge-count">{{ apuSeleccionado.equipos?.length || 0 }}</span>
+            </button>
+          </div>
+
+          <!-- Pestaña Materiales -->
+          <div *ngIf="pestanaDetalle === 'materiales'" class="p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Insumos y Materiales de Construcción</span>
+              <button
+                *ngIf="!esModoLectura"
+                type="button"
+                (click)="abrirAgregarComponente('MATERIAL')"
+                class="btn-primary text-xs py-1"
+              >
+                + Agregar Material
+              </button>
+            </div>
+
+            <table class="w-full text-xs" *ngIf="(apuSeleccionado.materiales?.length || 0) > 0">
+              <thead>
+                <tr class="border-b border-slate-200 dark:border-slate-800 text-slate-500 font-semibold">
+                  <th class="text-left pb-2">Descripción</th>
+                  <th class="text-center pb-2">Unidad</th>
+                  <th class="text-right pb-2">Rendimiento</th>
+                  <th class="text-right pb-2">Precio Unit. (Bs.)</th>
+                  <th class="text-right pb-2">Subtotal (Bs.)</th>
+                  <th *ngIf="!esModoLectura" class="text-right pb-2">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                <tr *ngFor="let m of apuSeleccionado.materiales">
+                  <td class="py-2">
+                    <span class="font-bold text-slate-800 dark:text-slate-200">{{ m.descripcion_recurso }}</span>
+                    <span *ngIf="m.recurso_codigo" class="font-mono text-[10px] text-slate-400 block">{{ m.recurso_codigo }}</span>
+                  </td>
+                  <td class="py-2 text-center text-slate-600 dark:text-slate-400">{{ m.unidad_medida_abrev }}</td>
+                  <td class="py-2 text-right font-mono">{{ m.rendimiento | number:'1.2-4' }}</td>
+                  <td class="py-2 text-right font-mono">{{ m.precio_unitario | number:'1.2-2' }}</td>
+                  <td class="py-2 text-right font-mono font-bold text-slate-900 dark:text-white">{{ m.subtotal | number:'1.2-2' }}</td>
+                  <td *ngIf="!esModoLectura" class="py-2 text-right">
+                    <button (click)="abrirEditarComponente(m)" class="text-slate-400 hover:text-amber-500 mr-1.5" title="Editar">✏️</button>
+                    <button (click)="eliminarComponente(m)" class="text-slate-400 hover:text-red-500" title="Eliminar">🗑️</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div *ngIf="(apuSeleccionado.materiales?.length || 0) === 0" class="p-6 text-center text-xs text-slate-400 border border-dashed rounded-xl">
+              Sin materiales registrados en este análisis.
+            </div>
+          </div>
+
+          <!-- Pestaña Mano de Obra -->
+          <div *ngIf="pestanaDetalle === 'mano_obra'" class="p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Mano de Obra y Cuadrillas</span>
+              <button
+                *ngIf="!esModoLectura"
+                type="button"
+                (click)="abrirAgregarComponente('MANO_OBRA')"
+                class="btn-primary text-xs py-1"
+              >
+                + Agregar Mano de Obra
+              </button>
+            </div>
+
+            <table class="w-full text-xs" *ngIf="(apuSeleccionado.mano_obra?.length || 0) > 0">
+              <thead>
+                <tr class="border-b border-slate-200 dark:border-slate-800 text-slate-500 font-semibold">
+                  <th class="text-left pb-2">Categoría / Obrero</th>
+                  <th class="text-center pb-2">Unidad</th>
+                  <th class="text-right pb-2">Rendimiento (hrs)</th>
+                  <th class="text-right pb-2">Costo Hora (Bs.)</th>
+                  <th class="text-right pb-2">Subtotal (Bs.)</th>
+                  <th *ngIf="!esModoLectura" class="text-right pb-2">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                <tr *ngFor="let mo of apuSeleccionado.mano_obra">
+                  <td class="py-2 font-bold text-slate-800 dark:text-slate-200">{{ mo.descripcion_recurso }}</td>
+                  <td class="py-2 text-center text-slate-600 dark:text-slate-400">{{ mo.unidad_medida_abrev }}</td>
+                  <td class="py-2 text-right font-mono">{{ mo.rendimiento | number:'1.2-4' }}</td>
+                  <td class="py-2 text-right font-mono">{{ mo.precio_unitario | number:'1.2-2' }}</td>
+                  <td class="py-2 text-right font-mono font-bold text-slate-900 dark:text-white">{{ mo.subtotal | number:'1.2-2' }}</td>
+                  <td *ngIf="!esModoLectura" class="py-2 text-right">
+                    <button (click)="abrirEditarComponente(mo)" class="text-slate-400 hover:text-amber-500 mr-1.5" title="Editar">✏️</button>
+                    <button (click)="eliminarComponente(mo)" class="text-slate-400 hover:text-red-500" title="Eliminar">🗑️</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div *ngIf="(apuSeleccionado.mano_obra?.length || 0) === 0" class="p-6 text-center text-xs text-slate-400 border border-dashed rounded-xl">
+              Sin mano de obra registrada en este análisis.
+            </div>
+          </div>
+
+          <!-- Pestaña Equipos -->
+          <div *ngIf="pestanaDetalle === 'equipos'" class="p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Maquinaria y Herramientas</span>
+              <button
+                *ngIf="!esModoLectura"
+                type="button"
+                (click)="abrirAgregarComponente('EQUIPO')"
+                class="btn-primary text-xs py-1"
+              >
+                + Agregar Equipo
+              </button>
+            </div>
+
+            <table class="w-full text-xs" *ngIf="(apuSeleccionado.equipos?.length || 0) > 0">
+              <thead>
+                <tr class="border-b border-slate-200 dark:border-slate-800 text-slate-500 font-semibold">
+                  <th class="text-left pb-2">Descripción del Equipo</th>
+                  <th class="text-center pb-2">Unidad</th>
+                  <th class="text-right pb-2">Rendimiento (hrs/%)</th>
+                  <th class="text-right pb-2">Costo Unit. (Bs.)</th>
+                  <th class="text-right pb-2">Subtotal (Bs.)</th>
+                  <th *ngIf="!esModoLectura" class="text-right pb-2">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                <tr *ngFor="let eq of apuSeleccionado.equipos">
+                  <td class="py-2 font-bold text-slate-800 dark:text-slate-200">{{ eq.descripcion_recurso }}</td>
+                  <td class="py-2 text-center text-slate-600 dark:text-slate-400">{{ eq.unidad_medida_abrev }}</td>
+                  <td class="py-2 text-right font-mono">{{ eq.rendimiento | number:'1.2-4' }}</td>
+                  <td class="py-2 text-right font-mono">{{ eq.precio_unitario | number:'1.2-2' }}</td>
+                  <td class="py-2 text-right font-mono font-bold text-slate-900 dark:text-white">{{ eq.subtotal | number:'1.2-2' }}</td>
+                  <td *ngIf="!esModoLectura" class="py-2 text-right">
+                    <button (click)="abrirEditarComponente(eq)" class="text-slate-400 hover:text-amber-500 mr-1.5" title="Editar">✏️</button>
+                    <button (click)="eliminarComponente(eq)" class="text-slate-400 hover:text-red-500" title="Eliminar">🗑️</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div *ngIf="(apuSeleccionado.equipos?.length || 0) === 0" class="p-6 text-center text-xs text-slate-400 border border-dashed rounded-xl">
+              Sin equipos o herramientas registrados en este análisis.
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel Derecho: Hoja Económica y Cascada de Factores -->
+        <div class="factors-panel">
+          <div class="p-4 bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              Cálculo Económico & Factores
+            </h3>
+            <p class="text-[11px] text-slate-500">Cálculo dinámico en tiempo real según rendimientos</p>
+          </div>
+
+          <div class="p-4 space-y-3">
+            <!-- Desglose de Costo Directo -->
+            <div class="space-y-1.5 pb-3 border-b border-slate-200 dark:border-slate-800 text-xs">
+              <div class="flex justify-between text-slate-500">
+                <span>Materiales:</span>
+                <span class="font-mono">{{ factores.costo_materiales | number:'1.2-2' }} Bs.</span>
+              </div>
+              <div class="flex justify-between text-slate-500">
+                <span>Mano de Obra:</span>
+                <span class="font-mono">{{ factores.costo_mano_obra | number:'1.2-2' }} Bs.</span>
+              </div>
+              <div class="flex justify-between text-slate-500">
+                <span>Equipos:</span>
+                <span class="font-mono">{{ factores.costo_equipos | number:'1.2-2' }} Bs.</span>
+              </div>
+              <div class="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200 pt-1">
+                <span>COSTO DIRECTO (CD):</span>
+                <span class="font-mono text-sm">{{ factores.costo_directo | number:'1.2-2' }} Bs.</span>
+              </div>
+            </div>
+
+            <!-- Factores Parametrizables -->
+            <div class="space-y-2.5 text-xs">
+              <!-- Gastos Generales -->
+              <div>
+                <div class="flex justify-between items-center mb-1">
+                  <span class="font-semibold text-slate-700 dark:text-slate-300">Gastos Generales (GG):</span>
+                  <span class="font-mono font-bold text-slate-700 dark:text-slate-300">+ {{ factores.monto_gastos_generales | number:'1.2-2' }} Bs.</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    [disabled]="esModoLectura"
+                    [(ngModel)]="factores.porcentaje_gastos_generales"
+                    (ngModelChange)="calcularTotalesEnVivo()"
+                    class="factor-input"
+                  />
+                  <span class="text-xs text-slate-400">% de CD</span>
+                </div>
+              </div>
+
+              <!-- Utilidad -->
+              <div>
+                <div class="flex justify-between items-center mb-1">
+                  <span class="font-semibold text-slate-700 dark:text-slate-300">Utilidad (UT):</span>
+                  <span class="font-mono font-bold text-slate-700 dark:text-slate-300">+ {{ factores.monto_utilidad | number:'1.2-2' }} Bs.</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    [disabled]="esModoLectura"
+                    [(ngModel)]="factores.porcentaje_utilidad"
+                    (ngModelChange)="calcularTotalesEnVivo()"
+                    class="factor-input"
+                  />
+                  <span class="text-xs text-slate-400">% de (CD + GG)</span>
+                </div>
+              </div>
+
+              <!-- Impuestos -->
+              <div>
+                <div class="flex justify-between items-center mb-1">
+                  <span class="font-semibold text-slate-700 dark:text-slate-300">Impuestos / Tributos:</span>
+                  <span class="font-mono font-bold text-slate-700 dark:text-slate-300">+ {{ factores.monto_impuestos | number:'1.2-2' }} Bs.</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    [disabled]="esModoLectura"
+                    [(ngModel)]="factores.porcentaje_impuestos"
+                    (ngModelChange)="calcularTotalesEnVivo()"
+                    class="factor-input"
+                  />
+                  <span class="text-xs text-slate-400">% tributario</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Gran Total: PRECIO UNITARIO FINAL -->
+            <div class="price-display-card mt-4">
+              <span class="text-xs uppercase font-bold tracking-wider text-amber-700 dark:text-amber-300">PRECIO UNITARIO FINAL</span>
+              <div class="text-2xl font-black font-mono text-amber-600 dark:text-amber-400 mt-1">
+                {{ factores.precio_unitario | number:'1.2-2' }}
+                <span class="text-xs font-bold text-slate-600 dark:text-slate-400">Bs. / {{ apuSeleccionado.unidad_medida_abrev }}</span>
+              </div>
+            </div>
+
+            <!-- Acciones de la Hoja -->
+            <div class="pt-3 space-y-2" *ngIf="!esModoLectura">
+              <button
+                type="button"
+                (click)="guardarCambiosFactores()"
+                [disabled]="guardando"
+                class="btn-primary w-full text-xs py-2"
+              >
+                💾 Guardar Factores
+              </button>
+
+              <button
+                type="button"
+                (click)="versionarApuActual()"
+                [disabled]="guardando"
+                class="btn-secondary w-full text-xs py-2"
+                title="Genera una nueva versión v(n+1) y archiva la actual"
+              >
+                📑 Generar Nueva Versión
+              </button>
+            </div>
+
+            <div class="pt-3" *ngIf="esModoLectura">
+              <button
+                type="button"
+                (click)="abrirCopiarApuBase(apuSeleccionado)"
+                class="btn-primary w-full text-xs py-2"
+              >
+                📋 Usar como plantilla en mi empresa
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: CREAR APU DESDE CERO                                               -->
+  <!-- ========================================================================= -->
+  <div *ngIf="modalCrearAbierto" class="modal-backdrop">
+    <div class="modal-container-md">
+      <div class="modal-header">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Crear Nuevo APU para Mi Empresa</h3>
+        <button type="button" (click)="modalCrearAbierto = false" class="modal-close-btn">✕</button>
+      </div>
+
+      <div class="p-5 space-y-4 text-xs">
+        <div>
+          <label class="form-label">Nombre de la actividad / APU *</label>
+          <input
+            type="text"
+            [(ngModel)]="formCrear.nombre"
+            placeholder="Ej. Colocación de cerámica esmaltada 40x40"
+            class="form-input"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="form-label">Categoría *</label>
+            <select [(ngModel)]="formCrear.id_categoria" class="form-input">
+              <option [ngValue]="null">-- Seleccione --</option>
+              <option *ngFor="let c of categorias" [ngValue]="c.id_categoria">{{ c.nombre }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Unidad de Medida *</label>
+            <select [(ngModel)]="formCrear.id_unidad_medida" class="form-input">
+              <option [ngValue]="null">-- Seleccione --</option>
+              <option *ngFor="let u of unidadesMedida" [ngValue]="u.id_unidad_medida">
+                {{ u.nombre }} ({{ u.abreviatura }})
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label">Descripción técnica</label>
+          <textarea
+            [(ngModel)]="formCrear.descripcion"
+            rows="2"
+            placeholder="Especificaciones técnicas de ejecución, dosificación o materiales..."
+            class="form-input"
+          ></textarea>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3 p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800">
+          <div>
+            <label class="form-label">% Gastos Generales</label>
+            <input type="number" step="0.1" [(ngModel)]="formCrear.porcentaje_gastos_generales" class="form-input text-center font-mono" />
+          </div>
+          <div>
+            <label class="form-label">% Utilidad</label>
+            <input type="number" step="0.1" [(ngModel)]="formCrear.porcentaje_utilidad" class="form-input text-center font-mono" />
+          </div>
+          <div>
+            <label class="form-label">% Impuestos</label>
+            <input type="number" step="0.01" [(ngModel)]="formCrear.porcentaje_impuestos" class="form-input text-center font-mono" />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" (click)="modalCrearAbierto = false" class="btn-secondary text-xs">Cancelar</button>
+        <button type="button" (click)="guardarNuevoApu()" [disabled]="guardando" class="btn-primary text-xs">
+          {{ guardando ? 'Creando...' : 'Crear y Continuar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: CONFIRMAR COPIA DE PLANTILLA BASE                                  -->
+  <!-- ========================================================================= -->
+  <div *ngIf="modalCopiarAbierto && apuBaseACopiar" class="modal-backdrop">
+    <div class="modal-container-md">
+      <div class="modal-header">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Adoptar Plantilla Base en Mi Empresa</h3>
+        <button type="button" (click)="modalCopiarAbierto = false" class="modal-close-btn">✕</button>
+      </div>
+
+      <div class="p-5 space-y-3 text-xs">
+        <div class="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-900">
+          <p class="font-bold text-amber-900 dark:text-amber-200 text-sm">{{ apuBaseACopiar.nombre }}</p>
+          <p class="text-amber-700 dark:text-amber-400 mt-1">Categoría: {{ apuBaseACopiar.categoria_nombre }} • Unidad: {{ apuBaseACopiar.unidad_medida_nombre }}</p>
+        </div>
+
+        <p class="text-slate-600 dark:text-slate-400 leading-relaxed">
+          Se generará una copia parametrizada para su empresa conservando la trazabilidad con el código base.
+          Los insumos se mapearán a los precios vigentes de sus materiales y cuadrillas, permitiendo modificar
+          los rendimientos libremente sin alterar el catálogo maestro de OBRATEC.
+        </p>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" (click)="modalCopiarAbierto = false" class="btn-secondary text-xs">Cancelar</button>
+        <button type="button" (click)="confirmarCopiarApuBase()" [disabled]="guardando" class="btn-primary text-xs">
+          {{ guardando ? 'Copiando...' : 'Confirmar y Parametrizar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: AGREGAR / EDITAR COMPONENTE (INSUMO)                               -->
+  <!-- ========================================================================= -->
+  <div *ngIf="modalComponenteAbierto" class="modal-backdrop">
+    <div class="modal-container-md">
+      <div class="modal-header">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white">
+          {{ editandoComponente ? 'Editar' : 'Agregar' }} {{ formComp.tipo_recurso }}
+        </h3>
+        <button type="button" (click)="modalComponenteAbierto = false" class="modal-close-btn">✕</button>
+      </div>
+
+      <div class="p-5 space-y-4 text-xs">
+        <!-- Selector desde recursos de la empresa -->
+        <div *ngIf="formComp.tipo_recurso === 'MATERIAL' && materialesDisponibles.length > 0">
+          <label class="form-label">Seleccionar desde Materiales de la Empresa</label>
+          <select (change)="alSeleccionarRecurso($event)" class="form-input">
+            <option value="">-- Seleccione un material para autocompletar precio y unidad --</option>
+            <option *ngFor="let m of materialesDisponibles" [value]="m.id_material">
+              {{ m.nombre_material }} ({{ m.precio | number:'1.2-2' }} Bs. / {{ m.unidad_medida_abrev }})
+            </option>
+          </select>
+        </div>
+
+        <div *ngIf="formComp.tipo_recurso === 'MANO_OBRA' && manoObraDisponible.length > 0">
+          <label class="form-label">Seleccionar desde Cuadrillas de la Empresa</label>
+          <select (change)="alSeleccionarRecurso($event)" class="form-input">
+            <option value="">-- Seleccione cuadrilla u obrero --</option>
+            <option *ngFor="let mo of manoObraDisponible" [value]="mo.id_mano_obra">
+              {{ mo.nombre }} ({{ mo.costo_unitario | number:'1.2-2' }} Bs./hr)
+            </option>
+          </select>
+        </div>
+
+        <div *ngIf="formComp.tipo_recurso === 'EQUIPO' && equiposDisponibles.length > 0">
+          <label class="form-label">Seleccionar desde Equipos de la Empresa</label>
+          <select (change)="alSeleccionarRecurso($event)" class="form-input">
+            <option value="">-- Seleccione equipo o maquinaria --</option>
+            <option *ngFor="let eq of equiposDisponibles" [value]="eq.id_equipo">
+              {{ eq.nombre }} ({{ eq.costo_unitario | number:'1.2-2' }} Bs./hr)
+            </option>
+          </select>
+        </div>
+
+        <!-- Descripción manual o refinada -->
+        <div>
+          <label class="form-label">Descripción del Recurso / Insumo *</label>
+          <input
+            type="text"
+            [(ngModel)]="formComp.descripcion_recurso"
+            placeholder="Ej. Cemento Portland IP-30, Peón, Mezcladora 350L..."
+            class="form-input"
+          />
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="form-label">Unidad *</label>
+            <select [(ngModel)]="formComp.id_unidad_medida" class="form-input">
+              <option *ngFor="let u of unidadesMedida" [ngValue]="u.id_unidad_medida">
+                {{ u.nombre }} ({{ u.abreviatura }})
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label class="form-label">Rendimiento *</label>
+            <input
+              type="number"
+              step="0.001"
+              min="0"
+              [(ngModel)]="formComp.rendimiento"
+              (ngModelChange)="recalcularSubtotalFormComp()"
+              class="form-input text-right font-mono"
+            />
+          </div>
+
+          <div>
+            <label class="form-label">Precio Unit. (Bs.) *</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              [(ngModel)]="formComp.precio_unitario"
+              (ngModelChange)="recalcularSubtotalFormComp()"
+              class="form-input text-right font-mono"
+            />
+          </div>
+        </div>
+
+        <div class="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <span class="text-xs text-slate-500 font-semibold">Subtotal calculado:</span>
+          <span class="text-sm font-bold font-mono text-slate-900 dark:text-white">
+            {{ formComp.subtotal | number:'1.2-2' }} Bs.
+          </span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" (click)="modalComponenteAbierto = false" class="btn-secondary text-xs">Cancelar</button>
+        <button type="button" (click)="guardarComponente()" [disabled]="guardando" class="btn-primary text-xs">
+          {{ guardando ? 'Guardando...' : (editandoComponente ? 'Guardar Cambios' : 'Agregar Insumo') }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

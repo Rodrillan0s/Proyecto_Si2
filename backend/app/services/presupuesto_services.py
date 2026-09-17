@@ -236,30 +236,36 @@ def crear_partida(id_obra: int, id_presupuesto: int, data: dict, token: dict, cl
         raise PresupuestoError("No se pueden agregar partidas a un presupuesto APROBADO o CERRADO.", status_code=400)
 
     codigo = (data.get("codigo") or "").strip()
-    nombre = (data.get("nombre") or "").strip()
-    id_unidad_medida = data.get("id_unidad_medida")
-
     if not codigo:
-        raise PresupuestoError("El código de la partida es obligatorio.")
+        codigo = presupuesto_repos.generar_codigo_partida(id_presupuesto)
+
+    nombre = (data.get("nombre") or "").strip()
     if not nombre:
         raise PresupuestoError("El nombre de la partida es obligatorio.")
+
+    id_apu = data.get("id_apu")
+    id_unidad_medida = data.get("id_unidad_medida")
+    precio_unitario = float(data.get("precio_unitario") or 0.0)
+
+    # Si seleccionó un APU, validar y aplicar snapshot del precio unitario y unidad de medida
+    if id_apu:
+        apu = _validar_apu(int(id_apu), token)
+        if not id_unidad_medida or int(id_unidad_medida) == 0:
+            id_unidad_medida = apu["id_unidad_medida"]
+        if precio_unitario <= 0:
+            precio_unitario = float(apu.get("costo_directo") or apu.get("costo_unitario_total") or 0.0)
+
     if not id_unidad_medida:
         raise PresupuestoError("La unidad de medida de la partida es obligatoria.")
 
-    cantidad = float(data.get("cantidad") or 1.0)
-    if cantidad < 0:
-        raise PresupuestoError("La cantidad no puede ser negativa.")
+    cantidad = float(data.get("cantidad") if data.get("cantidad") is not None else 1.0)
+    if cantidad <= 0:
+        raise PresupuestoError("La cantidad de obra debe ser mayor a cero.")
 
-    precio_unitario = float(data.get("precio_unitario") or 0.0)
     descripcion = data.get("descripcion")
     orden = int(data.get("orden") or 0)
-    id_apu = data.get("id_apu")
     id_estructura = data.get("id_estructura")
     id_unidad_construccion = data.get("id_unidad_construccion")
-
-    # Si seleccionó un APU, validar que pertenezca a la empresa
-    if id_apu:
-        _validar_apu(id_apu, token)
 
     id_partida = presupuesto_repos.crear_partida(
         id_presupuesto=id_presupuesto,
@@ -306,13 +312,20 @@ def actualizar_partida(id_obra: int, id_presupuesto: int, id_partida: int, data:
     nombre = (data.get("nombre") or partida["nombre"]).strip()
     id_unidad_medida = data.get("id_unidad_medida") or partida["id_unidad_medida"]
     cantidad = float(data.get("cantidad") if data.get("cantidad") is not None else partida["cantidad"])
+    if cantidad <= 0:
+        raise PresupuestoError("La cantidad de obra debe ser mayor a cero.")
+
     precio_unitario = float(data.get("precio_unitario") if data.get("precio_unitario") is not None else partida["precio_unitario"])
     descripcion = data.get("descripcion", partida["descripcion"])
     orden = int(data.get("orden") if data.get("orden") is not None else partida["orden"])
     id_apu = data.get("id_apu", partida["id_apu"])
 
-    if id_apu:
-        _validar_apu(id_apu, token)
+    if id_apu and int(id_apu) != (partida.get("id_apu") or 0):
+        apu = _validar_apu(int(id_apu), token)
+        if "precio_unitario" not in data or float(data.get("precio_unitario") or 0) <= 0:
+            precio_unitario = float(apu.get("costo_directo") or apu.get("costo_unitario_total") or 0.0)
+        if "id_unidad_medida" not in data:
+            id_unidad_medida = apu["id_unidad_medida"]
 
     presupuesto_repos.actualizar_partida(
         id_partida=id_partida,
@@ -408,9 +421,9 @@ def asociar_apu_a_partida(id_obra: int, id_presupuesto: int, id_partida: int, da
 # HU55: Crear y Gestionar APU (Análisis de Precios Unitarios)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def listar_apus(token: dict, id_obra: int = None, q: str = None, id_empresa: int = None):
+def listar_apus(token: dict, id_obra: int = None, q: str = None, id_empresa: int = None, solo_vigentes: bool = False):
     id_emp = _resolver_empresa_para_creacion(token, id_empresa)
-    apus = presupuesto_repos.listar_apus_empresa(id_emp, id_obra=id_obra, q=q)
+    apus = presupuesto_repos.listar_apus_empresa(id_emp, id_obra=id_obra, q=q, solo_vigentes=solo_vigentes)
     return {"success": True, "data": apus}
 
 
@@ -419,24 +432,51 @@ def obtener_detalle_apu(id_apu: int, token: dict):
     return {"success": True, "data": apu}
 
 
+def sugerir_codigo_apu(token: dict, id_empresa: int = None):
+    id_emp = _resolver_empresa_para_creacion(token, id_empresa)
+    codigo = presupuesto_repos.generar_codigo_apu(id_emp)
+    return {"success": True, "codigo": codigo}
+
+
+def sugerir_codigo_partida(id_presupuesto: int, token: dict):
+    _validar_presupuesto(id_presupuesto, token)
+    codigo = presupuesto_repos.generar_codigo_partida(id_presupuesto)
+    return {"success": True, "codigo": codigo}
+
+
+def listar_equipos_catalogo(token: dict, id_empresa: int = None, q: str = None):
+    id_emp = _resolver_empresa_para_creacion(token, id_empresa)
+    equipos = presupuesto_repos.listar_equipos(id_emp, q=q)
+    return {"success": True, "data": equipos}
+
+
+def listar_mano_obra_catalogo(token: dict, id_empresa: int = None, q: str = None):
+    id_emp = _resolver_empresa_para_creacion(token, id_empresa)
+    mano_obra = presupuesto_repos.listar_mano_obra_catalogo(id_emp, q=q)
+    return {"success": True, "data": mano_obra}
+
+
 def crear_apu(data: dict, token: dict, client_ip: str):
     id_empresa = _resolver_empresa_para_creacion(token, data.get("id_empresa"))
 
     codigo = (data.get("codigo") or "").strip()
+    if not codigo:
+        codigo = presupuesto_repos.generar_codigo_apu(id_empresa)
+
     nombre = (data.get("nombre") or "").strip()
     id_unidad_medida = data.get("id_unidad_medida")
 
-    if not codigo:
-        raise PresupuestoError("El código del APU es obligatorio.")
     if not nombre:
-        raise PresupuestoError("El nombre del APU es obligatorio.")
+        raise PresupuestoError("El nombre de la actividad (APU) es obligatorio.")
     if not id_unidad_medida:
         raise PresupuestoError("La unidad de medida del APU es obligatoria.")
 
     descripcion = data.get("descripcion")
     rendimiento_base = float(data.get("rendimiento_base") or 1.0)
-    id_obra = data.get("id_obra")
+    if rendimiento_base <= 0:
+        raise PresupuestoError("El rendimiento base debe ser mayor a cero.")
 
+    id_obra = data.get("id_obra")
     if id_obra:
         _validar_obra(id_obra, token)
 
@@ -447,11 +487,30 @@ def crear_apu(data: dict, token: dict, client_ip: str):
         id_unidad_medida=int(id_unidad_medida),
         descripcion=descripcion,
         rendimiento_base=rendimiento_base,
-        id_obra=int(id_obra) if id_obra else None
+        id_obra=int(id_obra) if id_obra else None,
+        codigo_base=codigo
     )
 
     if not id_apu:
         raise PresupuestoError("No se pudo registrar el APU. Verifique que el código no esté duplicado.", status_code=400)
+
+    componentes = data.get("componentes")
+    if isinstance(componentes, list) and componentes:
+        for comp in componentes:
+            try:
+                presupuesto_repos.agregar_componente_apu(
+                    id_apu=id_apu,
+                    tipo_recurso=comp.get("tipo_recurso", "MATERIAL"),
+                    descripcion_recurso=comp.get("descripcion_recurso", ""),
+                    id_unidad_medida=int(comp.get("id_unidad_medida")),
+                    cantidad=float(comp.get("rendimiento") or comp.get("cantidad") or 1.0),
+                    precio_unitario=float(comp.get("precio_unitario") or 0.0),
+                    id_recurso=comp.get("id_recurso"),
+                    rendimiento=float(comp.get("rendimiento") or comp.get("cantidad") or 1.0)
+                )
+            except Exception:
+                pass
+        presupuesto_repos.recalcular_costo_unitario_apu(id_apu)
 
     bitacora_repos.registrar_bitacora(
         id_usuario=_usuario_id(token),
@@ -465,12 +524,20 @@ def crear_apu(data: dict, token: dict, client_ip: str):
     return {
         "success": True,
         "message": "APU creado exitosamente.",
-        "id_apu": id_apu
+        "id_apu": id_apu,
+        "codigo": codigo
     }
 
 
 def actualizar_apu(id_apu: int, data: dict, token: dict, client_ip: str):
     apu = _validar_apu(id_apu, token)
+
+    en_uso = presupuesto_repos.apu_en_uso_por_partidas(id_apu)
+    target_id_apu = id_apu
+    nueva_version_creada = False
+    if en_uso:
+        target_id_apu = presupuesto_repos.versionar_apu_transaccional(id_apu)
+        nueva_version_creada = True
 
     codigo = (data.get("codigo") or apu["codigo"]).strip()
     nombre = (data.get("nombre") or apu["nombre"]).strip()
@@ -480,8 +547,8 @@ def actualizar_apu(id_apu: int, data: dict, token: dict, client_ip: str):
     estado = data.get("estado", apu["estado"])
 
     presupuesto_repos.actualizar_apu(
-        id_apu=id_apu,
-        codigo=codigo,
+        id_apu=target_id_apu,
+        codigo=codigo if not nueva_version_creada else (apu.get("codigo_base") + f"-v{apu.get('version', 1) + 1}"),
         nombre=nombre,
         id_unidad_medida=int(id_unidad_medida),
         descripcion=descripcion,
@@ -493,12 +560,21 @@ def actualizar_apu(id_apu: int, data: dict, token: dict, client_ip: str):
         id_usuario=_usuario_id(token),
         modulo="Modulo_presupuestos",
         accion="ACTUALIZAR_APU",
-        descripcion=f"APU ID {id_apu} actualizado.",
+        descripcion=f"APU ID {id_apu} actualizado (Versión target: {target_id_apu}).",
         ip=client_ip,
         estado="EXITOSO"
     )
 
-    return {"success": True, "message": "APU actualizado exitosamente."}
+    msg = "APU actualizado exitosamente."
+    if nueva_version_creada:
+        msg = f"Se generó automáticamente una nueva versión del APU debido a que la versión anterior ya está asignada a presupuestos de obra."
+
+    return {
+        "success": True,
+        "message": msg,
+        "id_apu": target_id_apu,
+        "nueva_version": nueva_version_creada
+    }
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -520,17 +596,20 @@ def agregar_componente_apu(id_apu: int, data: dict, token: dict, client_ip: str)
     if not id_unidad_medida:
         raise PresupuestoError("La unidad de medida del componente es obligatoria.")
 
-    cantidad = float(data.get("cantidad") or 1.0)
-    if cantidad <= 0:
-        raise PresupuestoError("La cantidad del recurso debe ser mayor a cero.")
+    # Rendimiento unitario
+    rendimiento = float(data.get("rendimiento") if data.get("rendimiento") is not None else (data.get("cantidad") or 1.0))
+    if rendimiento <= 0:
+        raise PresupuestoError("El rendimiento del recurso debe ser mayor a cero.")
 
     precio_unitario = float(data.get("precio_unitario") or 0.0)
+    if precio_unitario < 0:
+        raise PresupuestoError("El precio o costo unitario no puede ser negativo.")
+
     id_recurso = data.get("id_recurso")
 
-    # Si es MATERIAL y se especifica id_recurso, validar existencia en catálogo CU14
+    # Validación de pertenencia al catálogo correspondiente
     if tipo_recurso == "MATERIAL" and id_recurso:
-        db = PostgreSQL()
-        db.create_connection()
+        db = PostgreSQL(); db.create_connection()
         try:
             mat = db.execute_query(
                 "SELECT id_material, precio, id_empresa FROM obras.t_material WHERE id_material = %s;",
@@ -540,36 +619,76 @@ def agregar_componente_apu(id_apu: int, data: dict, token: dict, client_ip: str)
                 raise PresupuestoError("El material seleccionado no existe en el catálogo.")
             if mat[2] != apu["id_empresa"] and not es_admin_sistema(token):
                 raise PresupuestoError("El material pertenece a otra empresa.", status_code=403)
-            
-            # Si precio no fue ingresado manualmente, congelar el precio actual de almacén
             if precio_unitario <= 0 and mat[1]:
                 precio_unitario = float(mat[1])
         finally:
             db.close_connection()
 
+    elif tipo_recurso == "MANO_OBRA" and id_recurso:
+        db = PostgreSQL(); db.create_connection()
+        try:
+            mo = db.execute_query(
+                "SELECT id_mano_obra, costo_unitario, id_empresa FROM obras.t_mano_obra WHERE id_mano_obra = %s;",
+                (id_recurso,), fetchone=True
+            )
+            if not mo:
+                raise PresupuestoError("La cuadrilla/mano de obra seleccionada no existe.")
+            if mo[2] != apu["id_empresa"] and not es_admin_sistema(token):
+                raise PresupuestoError("La mano de obra pertenece a otra empresa.", status_code=403)
+            if precio_unitario <= 0 and mo[1]:
+                precio_unitario = float(mo[1])
+        finally:
+            db.close_connection()
+
+    elif tipo_recurso == "EQUIPO" and id_recurso:
+        db = PostgreSQL(); db.create_connection()
+        try:
+            eq = db.execute_query(
+                "SELECT id_equipo, costo_unitario, id_empresa FROM obras.t_equipo WHERE id_equipo = %s;",
+                (id_recurso,), fetchone=True
+            )
+            if not eq:
+                raise PresupuestoError("El equipo seleccionado no existe.")
+            if eq[2] != apu["id_empresa"] and not es_admin_sistema(token):
+                raise PresupuestoError("El equipo pertenece a otra empresa.", status_code=403)
+            if precio_unitario <= 0 and eq[1]:
+                precio_unitario = float(eq[1])
+        finally:
+            db.close_connection()
+
+    # Si el APU está en uso, versionar automáticamente
+    target_id_apu = id_apu
+    nueva_version_creada = False
+    if presupuesto_repos.apu_en_uso_por_partidas(id_apu):
+        target_id_apu = presupuesto_repos.versionar_apu_transaccional(id_apu)
+        nueva_version_creada = True
+
     id_componente = presupuesto_repos.agregar_componente_apu(
-        id_apu=id_apu,
+        id_apu=target_id_apu,
         tipo_recurso=tipo_recurso,
         descripcion_recurso=descripcion_recurso,
         id_unidad_medida=int(id_unidad_medida),
-        cantidad=cantidad,
+        cantidad=rendimiento,
         precio_unitario=precio_unitario,
-        id_recurso=int(id_recurso) if id_recurso else None
+        id_recurso=int(id_recurso) if id_recurso else None,
+        rendimiento=rendimiento
     )
 
     bitacora_repos.registrar_bitacora(
         id_usuario=_usuario_id(token),
         modulo="Modulo_presupuestos",
         accion="AGREGAR_COMPONENTE_APU",
-        descripcion=f"Recurso '{descripcion_recurso}' ({tipo_recurso}) agregado al APU ID {id_apu}.",
+        descripcion=f"Recurso '{descripcion_recurso}' ({tipo_recurso}) agregado al APU ID {target_id_apu}.",
         ip=client_ip,
         estado="EXITOSO"
     )
 
     return {
         "success": True,
-        "message": "Componente agregado al APU con éxito.",
-        "id_componente": id_componente
+        "message": "Componente agregado al APU con éxito." if not nueva_version_creada else "Se generó una nueva versión del APU con el nuevo componente incorporado.",
+        "id_componente": id_componente,
+        "id_apu": target_id_apu,
+        "nueva_version": nueva_version_creada
     }
 
 
@@ -588,46 +707,92 @@ def actualizar_componente_apu(id_apu: int, id_componente: int, data: dict, token
     if not id_unidad_medida:
         raise PresupuestoError("La unidad de medida del componente es obligatoria.")
 
-    cantidad = float(data.get("cantidad") or 1.0)
+    rendimiento = float(data.get("rendimiento") if data.get("rendimiento") is not None else (data.get("cantidad") or 1.0))
+    if rendimiento <= 0:
+        raise PresupuestoError("El rendimiento del recurso debe ser mayor a cero.")
+
     precio_unitario = float(data.get("precio_unitario") or 0.0)
+    if precio_unitario < 0:
+        raise PresupuestoError("El precio no puede ser negativo.")
+
     id_recurso = data.get("id_recurso")
 
+    # Si está en uso, versionar
+    target_id_apu = id_apu
+    nueva_version_creada = False
+    target_id_componente = id_componente
+    if presupuesto_repos.apu_en_uso_por_partidas(id_apu):
+        target_id_apu = presupuesto_repos.versionar_apu_transaccional(id_apu)
+        nueva_version_creada = True
+        # En la nueva versión buscamos el componente clonado correspondiente
+        det = presupuesto_repos.obtener_apu_detalle(target_id_apu)
+        clonados = [c for c in (det.get("componentes") or []) if c["descripcion_recurso"] == descripcion_recurso and c["tipo_recurso"] == tipo_recurso]
+        if clonados:
+            target_id_componente = clonados[0]["id_componente"]
+
     presupuesto_repos.actualizar_componente_apu(
-        id_componente=id_componente,
+        id_componente=target_id_componente,
         tipo_recurso=tipo_recurso,
         descripcion_recurso=descripcion_recurso,
         id_unidad_medida=int(id_unidad_medida),
-        cantidad=cantidad,
+        cantidad=rendimiento,
         precio_unitario=precio_unitario,
-        id_recurso=int(id_recurso) if id_recurso else None
+        id_recurso=int(id_recurso) if id_recurso else None,
+        rendimiento=rendimiento
     )
 
     bitacora_repos.registrar_bitacora(
         id_usuario=_usuario_id(token),
         modulo="Modulo_presupuestos",
         accion="ACTUALIZAR_COMPONENTE_APU",
-        descripcion=f"Componente ID {id_componente} del APU ID {id_apu} actualizado.",
+        descripcion=f"Componente ID {target_id_componente} del APU ID {target_id_apu} actualizado.",
         ip=client_ip,
         estado="EXITOSO"
     )
 
-    return {"success": True, "message": "Componente del APU actualizado con éxito."}
+    return {
+        "success": True,
+        "message": "Componente del APU actualizado con éxito.",
+        "id_apu": target_id_apu,
+        "nueva_version": nueva_version_creada
+    }
 
 
 def eliminar_componente_apu(id_apu: int, id_componente: int, token: dict, client_ip: str):
     _validar_apu(id_apu, token)
-    presupuesto_repos.eliminar_componente_apu(id_componente)
+    
+    target_id_apu = id_apu
+    nueva_version_creada = False
+    target_id_componente = id_componente
+    if presupuesto_repos.apu_en_uso_por_partidas(id_apu):
+        target_id_apu = presupuesto_repos.versionar_apu_transaccional(id_apu)
+        nueva_version_creada = True
+        # Buscar componente equivalente en la nueva versión
+        det_orig = presupuesto_repos.obtener_apu_detalle(id_apu)
+        orig_comp = next((c for c in (det_orig.get("componentes") or []) if c["id_componente"] == id_componente), None)
+        if orig_comp:
+            det_new = presupuesto_repos.obtener_apu_detalle(target_id_apu)
+            clon = next((c for c in (det_new.get("componentes") or []) if c["descripcion_recurso"] == orig_comp["descripcion_recurso"] and c["tipo_recurso"] == orig_comp["tipo_recurso"]), None)
+            if clon:
+                target_id_componente = clon["id_componente"]
+
+    presupuesto_repos.eliminar_componente_apu(target_id_componente)
 
     bitacora_repos.registrar_bitacora(
         id_usuario=_usuario_id(token),
         modulo="Modulo_presupuestos",
         accion="ELIMINAR_COMPONENTE_APU",
-        descripcion=f"Componente ID {id_componente} eliminado del APU ID {id_apu}.",
+        descripcion=f"Componente ID {target_id_componente} eliminado del APU ID {target_id_apu}.",
         ip=client_ip,
         estado="EXITOSO"
     )
 
-    return {"success": True, "message": "Componente eliminado del APU con éxito."}
+    return {
+        "success": True,
+        "message": "Componente eliminado del APU con éxito.",
+        "id_apu": target_id_apu,
+        "nueva_version": nueva_version_creada
+    }
 
 
 # ─────────────────────────────────────────────────────────────────────────────

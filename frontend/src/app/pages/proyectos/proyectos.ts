@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, ChangeDetectorRef, NgZone, PLATFORM_ID, OnDestroy, DestroyRef } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ProyectosService, Proyecto, TipoProyecto, RequisitosEstimacion, CalculoEstimacion, EstimacionObra } from '../../services/proyectos';
 import { AuthService } from '../../services/auth';
@@ -17,10 +17,13 @@ export class ProyectosComponent implements OnInit, OnDestroy {
   private proyectosService = inject(ProyectosService);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private cdr = inject(ChangeDetectorRef);
   private ngZone = inject(NgZone);
   private platformId = inject(PLATFORM_ID);
   private destroyRef = inject(DestroyRef);
+
+  modoAccionContexto: 'nuevo' | 'estructura' | 'jefes' | null = null;
 
   proyectos: Proyecto[] = [];
   proyectosFiltrados: Proyecto[] = [];
@@ -86,6 +89,26 @@ export class ProyectosComponent implements OnInit, OnDestroy {
         });
       });
     this.cargarDatos();
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(params => {
+        const tab = params.get('tab') || params.get('accion');
+        if (tab === 'nuevo') {
+          this.modoAccionContexto = 'nuevo';
+          setTimeout(() => {
+            if (this.esRolAutorizado() && !this.mostrarModal) {
+              this.abrirModalNuevo();
+            }
+          }, 350);
+        } else if (tab === 'estructura') {
+          this.modoAccionContexto = 'estructura';
+        } else if (tab === 'jefes') {
+          this.modoAccionContexto = 'jefes';
+        } else {
+          this.modoAccionContexto = null;
+        }
+        this.cdr.detectChanges();
+      });
   }
 
   hasPermission(permiso: string): boolean {

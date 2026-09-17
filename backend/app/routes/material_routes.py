@@ -7,26 +7,36 @@ from app.utils.security import exigir_permiso
 router = APIRouter(tags=["Materiales"])
 
 
-def _ip(request): return request.client.host if request.client else "unknown"
-def _raise(exc): raise HTTPException(status_code=exc.status_code, detail=str(exc))
+def _ip(request):
+    return request.client.host if request.client else "unknown"
+
+
+def _raise(exc):
+    raise HTTPException(status_code=exc.status_code, detail=str(exc))
 
 
 @router.get("/categorias")
 def get_categorias(token=Depends(exigir_permiso("Visualizar_materiales"))):
-    try: return material_services.categorias(token)
-    except material_services.MaterialError as exc: _raise(exc)
+    try:
+        return material_services.categorias(token)
+    except material_services.MaterialError as exc:
+        _raise(exc)
 
 
 @router.get("/unidades-medida")
 def get_unidades_medida(token=Depends(exigir_permiso("Visualizar_materiales"))):
-    try: return material_services.unidades_medida(token)
-    except material_services.MaterialError as exc: _raise(exc)
+    try:
+        return material_services.unidades_medida(token)
+    except material_services.MaterialError as exc:
+        _raise(exc)
 
 
 @router.post("/categorias", status_code=201)
 def post_categoria(request: Request, data: dict = Body(...), token=Depends(exigir_permiso("Registrar_materiales"))):
-    try: return material_services.crear_categoria(data, token, _ip(request))
-    except material_services.MaterialError as exc: _raise(exc)
+    try:
+        return material_services.crear_categoria(data, token, _ip(request))
+    except material_services.MaterialError as exc:
+        _raise(exc)
 
 
 @router.get("/base")
@@ -67,36 +77,73 @@ def post_adoptar_material(
         _raise(exc)
 
 
+@router.post("/copiar-catalogo-base")
+def post_copiar_catalogo_base(
+    request: Request,
+    data: dict = Body(default={}),
+    token=Depends(exigir_permiso("Registrar_materiales"))
+):
+    try:
+        id_empresa = data.get("id_empresa")
+        return material_services.copiar_catalogo_base(token, id_empresa, _ip(request))
+    except material_services.MaterialError as exc:
+        _raise(exc)
+
+
 @router.get("")
-def get_materiales(q: str = None, id_categoria: int = None, estado: str = None,
-                   stock_bajo: bool = None, page: int = 1, limit: int = Query(20, le=100),
-                   id_empresa: int = None,
-                   token=Depends(exigir_permiso("Visualizar_materiales"))):
-    try: return material_services.listar(token,q,id_categoria,estado,stock_bajo,page,limit,id_empresa)
-    except material_services.MaterialError as exc: _raise(exc)
+def get_materiales(
+    q: str = None,
+    id_categoria: int = None,
+    estado: str = None,
+    stock_bajo: bool = None,
+    page: int = 1,
+    limit: int = Query(20, le=1000),
+    id_empresa: int = None,
+    token=Depends(exigir_permiso("Visualizar_materiales"))
+):
+    try:
+        return material_services.listar(token, q, id_categoria, estado, stock_bajo, page, limit, id_empresa)
+    except material_services.MaterialError as exc:
+        _raise(exc)
 
 
 @router.get("/{id_material}")
 def get_material(id_material: int, token=Depends(exigir_permiso("Visualizar_materiales"))):
-    try: return material_services.detalle(id_material,token)
-    except material_services.MaterialError as exc: _raise(exc)
+    try:
+        return material_services.detalle(id_material, token)
+    except material_services.MaterialError as exc:
+        _raise(exc)
 
 
 @router.post("", status_code=201)
 def post_material(request: Request, data: dict = Body(...), token=Depends(exigir_permiso("Registrar_materiales"))):
-    try: return material_services.registrar(data,token,_ip(request))
-    except material_services.MaterialError as exc: _raise(exc)
+    try:
+        return material_services.registrar(data, token, _ip(request))
+    except material_services.MaterialError as exc:
+        _raise(exc)
 
 
 @router.put("/{id_material}")
-def put_material(id_material: int, request: Request, data: dict = Body(...),
-                 token=Depends(exigir_permiso("Modificar_materiales"))):
-    try: return material_services.modificar(id_material,data,token,_ip(request))
-    except material_services.MaterialError as exc: _raise(exc)
+def put_material(
+    id_material: int,
+    request: Request,
+    data: dict = Body(...),
+    token=Depends(exigir_permiso("Modificar_materiales"))
+):
+    try:
+        return material_services.modificar(id_material, data, token, _ip(request))
+    except material_services.MaterialError as exc:
+        _raise(exc)
 
 
 @router.patch("/{id_material}/estado")
-def patch_estado(id_material: int, request: Request, data: dict = Body(...),
-                 token=Depends(exigir_permiso("Desactivar_materiales"))):
-    try: return material_services.cambiar_estado(id_material,data.get("estado"),token,_ip(request))
-    except material_services.MaterialError as exc: _raise(exc)
+def patch_estado(
+    id_material: int,
+    request: Request,
+    data: dict = Body(...),
+    token=Depends(exigir_permiso("Desactivar_materiales"))
+):
+    try:
+        return material_services.cambiar_estado(id_material, data.get("estado"), token, _ip(request))
+    except material_services.MaterialError as exc:
+        _raise(exc)

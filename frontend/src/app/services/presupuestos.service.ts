@@ -24,6 +24,55 @@ export interface Presupuesto {
   partidas?: PartidaPresupuesto[];
 }
 
+export interface Equipo {
+  id_equipo: number;
+  codigo: string;
+  nombre: string;
+  descripcion?: string | null;
+  id_unidad_medida: number;
+  costo_unitario: number;
+  activo: boolean;
+  id_empresa: number;
+  unidad_medida_nombre?: string;
+  unidad_medida_abrev?: string;
+}
+
+export interface ManoObra {
+  id_mano_obra: number;
+  nombre: string;
+  categoria?: string;
+  descripcion?: string | null;
+  id_unidad_medida: number;
+  costo_unitario: number;
+  activo: boolean;
+  id_empresa: number;
+  unidad_medida_nombre?: string;
+  unidad_medida_abrev?: string;
+}
+
+export interface InsumoExplosion {
+  tipo_recurso?: 'MATERIAL' | 'MANO_OBRA' | 'EQUIPO';
+  id_recurso?: number | null;
+  descripcion: string;
+  descripcion_recurso?: string;
+  unidad: string;
+  unidad_medida_nombre?: string;
+  unidad_medida_abrev?: string;
+  precio_unitario: number;
+  cantidad_total: number;
+  consumo_total?: number;
+  subtotal_total: number;
+  costo_total?: number;
+}
+
+export interface TotalesCostoDirecto {
+  materiales: number;
+  mano_obra: number;
+  equipos: number;
+  costo_directo_total?: number;
+  total_directo?: number;
+}
+
 export interface PartidaPresupuesto {
   id_partida: number;
   id_presupuesto: number;
@@ -52,11 +101,14 @@ export interface ApuComponente {
   id_recurso?: number | null;
   descripcion_recurso: string;
   id_unidad_medida: number;
+  rendimiento: number;
   cantidad: number;
   precio_unitario: number;
   subtotal: number;
   unidad_medida_nombre?: string;
   unidad_medida_abrev?: string;
+  material_codigo?: string;
+  recurso_codigo?: string;
 }
 
 export interface Apu {
@@ -64,16 +116,24 @@ export interface Apu {
   id_empresa: number;
   id_obra?: number | null;
   codigo: string;
+  codigo_base?: string;
+  version: number;
   nombre: string;
   descripcion?: string | null;
   id_unidad_medida: number;
   rendimiento_base: number;
   costo_unitario_total: number;
+  costo_materiales: number;
+  costo_mano_obra: number;
+  costo_equipos: number;
+  costo_directo: number;
   estado: string;
+  es_vigente: boolean;
   unidad_medida_nombre?: string;
   unidad_medida_abrev?: string;
   total_componentes?: number;
   componentes?: ApuComponente[];
+  en_uso?: boolean;
 }
 
 export interface DesgloseRecurso {
@@ -98,6 +158,15 @@ export interface PresupuestoConsolidado {
   total_partidas: number;
   partidas: PartidaPresupuesto[];
   desglose_recursos: DesgloseRecurso[];
+  explosion_insumos?: {
+    materiales?: InsumoExplosion[];
+    mano_obra?: InsumoExplosion[];
+    equipos?: InsumoExplosion[];
+    MATERIAL?: InsumoExplosion[];
+    MANO_OBRA?: InsumoExplosion[];
+    EQUIPO?: InsumoExplosion[];
+  };
+  totales_costo_directo?: TotalesCostoDirecto;
   desglose_estructura: any[];
   metricas_parametricas: MetricasParametricas;
 }
@@ -211,6 +280,12 @@ export class PresupuestosService {
     );
   }
 
+  siguienteCodigoPartida(idObra: number, idPresupuesto: number): Observable<{ success: boolean; codigo: string }> {
+    return this.http.get<{ success: boolean; codigo: string }>(
+      `${this.apiUrl}/api/proyectos/${idObra}/presupuestos/${idPresupuesto}/partidas/siguiente-codigo`
+    );
+  }
+
   asociarApuAPartida(idObra: number, idPresupuesto: number, idPartida: number, data: { id_apu: number; congelar_costo?: boolean }): Observable<any> {
     return this.http.post(
       `${this.apiUrl}/api/proyectos/${idObra}/presupuestos/${idPresupuesto}/partidas/${idPartida}/asociar-apu`,
@@ -219,19 +294,40 @@ export class PresupuestosService {
   }
 
   // ─── HU55 & HU56: APU Corporativo y Componentes ───
-  listarApus(idObra?: number, q?: string): Observable<{ success: boolean; data: Apu[] }> {
+  listarApus(idObra?: number, q?: string, solo_vigentes?: boolean): Observable<{ success: boolean; data: Apu[] }> {
     let params = new HttpParams();
     if (idObra) params = params.set('id_obra', idObra.toString());
     if (q) params = params.set('q', q);
+    if (solo_vigentes !== undefined) params = params.set('solo_vigentes', solo_vigentes.toString());
     return this.http.get<{ success: boolean; data: Apu[] }>(`${this.apiUrl}/api/apus/`, { params });
+  }
+
+  siguienteCodigoApu(id_empresa?: number): Observable<{ success: boolean; codigo: string }> {
+    let params = new HttpParams();
+    if (id_empresa) params = params.set('id_empresa', id_empresa.toString());
+    return this.http.get<{ success: boolean; codigo: string }>(`${this.apiUrl}/api/apus/siguiente-codigo`, { params });
+  }
+
+  listarEquipos(id_empresa?: number, q?: string): Observable<{ success: boolean; data: Equipo[] }> {
+    let params = new HttpParams();
+    if (id_empresa) params = params.set('id_empresa', id_empresa.toString());
+    if (q) params = params.set('q', q);
+    return this.http.get<{ success: boolean; data: Equipo[] }>(`${this.apiUrl}/api/apus/recursos/equipos`, { params });
+  }
+
+  listarManoObra(id_empresa?: number, q?: string): Observable<{ success: boolean; data: ManoObra[] }> {
+    let params = new HttpParams();
+    if (id_empresa) params = params.set('id_empresa', id_empresa.toString());
+    if (q) params = params.set('q', q);
+    return this.http.get<{ success: boolean; data: ManoObra[] }>(`${this.apiUrl}/api/apus/recursos/mano-obra`, { params });
   }
 
   obtenerApu(idApu: number): Observable<{ success: boolean; data: Apu }> {
     return this.http.get<{ success: boolean; data: Apu }>(`${this.apiUrl}/api/apus/${idApu}`);
   }
 
-  crearApu(data: any): Observable<{ success: boolean; message: string; id_apu: number }> {
-    return this.http.post<{ success: boolean; message: string; id_apu: number }>(`${this.apiUrl}/api/apus/`, data);
+  crearApu(data: any): Observable<{ success: boolean; message: string; id_apu: number; codigo?: string }> {
+    return this.http.post<{ success: boolean; message: string; id_apu: number; codigo?: string }>(`${this.apiUrl}/api/apus/`, data);
   }
 
   actualizarApu(idApu: number, data: any): Observable<any> {

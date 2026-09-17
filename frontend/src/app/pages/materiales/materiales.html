@@ -6,42 +6,47 @@
     <div>
       <p class="eyebrow">CATÁLOGO</p>
       <h1>Gestión de Materiales</h1>
-      <p>Administra el catálogo y disponibilidad de materiales de la empresa.</p>
+      <p>Administra los insumos y materiales disponibles para tu empresa.</p>
     </div>
-    <button *ngIf="puedeRegistrar()" type="button" class="btn-primary" (click)="abrirNuevo()" [disabled]="savingMaterial">
-      <span aria-hidden="true">＋</span> Nuevo material
-    </button>
+    <div class="header-actions">
+      <button *ngIf="puedeRegistrar()" type="button" class="btn-primary" (click)="abrirNuevo()"
+        [disabled]="savingMaterial">
+        ＋ Nuevo material
+      </button>
+    </div>
   </header>
 
   <!-- BADGE CONTEXTO EMPRESA ACTIVA -->
-  <div *ngIf="empresaActiva" class="flex items-center justify-between px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs">
+  <div *ngIf="empresaActiva"
+    class="flex items-center justify-between px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs">
     <div class="flex items-center gap-2">
-      <span class="font-bold text-amber-800 dark:text-amber-400">🏢 Insumos de:</span>
+      <span class="font-bold text-amber-800 dark:text-amber-400">Empresa:</span>
       <span class="font-bold text-slate-900 dark:text-white">{{ empresaActiva.nombre_empresa }}</span>
-      <span class="text-slate-500 dark:text-slate-400 font-mono">(ID: {{ empresaActiva.id_empresa }})</span>
     </div>
     <span class="font-bold text-amber-700 dark:text-amber-300">{{ total }} material(es) en catálogo</span>
   </div>
 
   <!-- BADGE CONTEXTO VISTA GLOBAL -->
-  <div *ngIf="!empresaActiva && esVistaGlobal()" class="flex items-center justify-between px-4 py-2.5 bg-blue-500/10 border border-blue-500/30 rounded-lg text-xs">
+  <div *ngIf="!empresaActiva && esVistaGlobal()"
+    class="flex items-center justify-between px-4 py-2.5 bg-blue-500/10 border border-blue-500/30 rounded-lg text-xs">
     <div class="flex items-center gap-2">
-      <span class="font-bold text-blue-700 dark:text-blue-400">🌐 Vista Global:</span>
-      <span class="text-slate-700 dark:text-slate-300">Catálogo e inventario general consolidado de todas las empresas</span>
+      <span class="font-bold text-blue-700 dark:text-blue-400">VISTA GLOBAL:</span>
+      <span class="text-slate-700 dark:text-slate-300">Catálogo de todas las empresas</span>
     </div>
     <span class="font-bold text-blue-700 dark:text-blue-300">{{ total }} material(es) en total</span>
   </div>
 
-  <!-- SELECTOR DE VISTA: CATÁLOGO EMPRESA VS CATÁLOGO BASE BOLIVIA -->
+  <!-- SELECTOR DE VISTA -->
   <div class="catalog-tabs-container">
     <div class="catalog-tabs">
-      <button type="button" class="tab-btn" [class.active]="vistaActiva === 'empresa'" (click)="cambiarVista('empresa')">
-        <span>🏢 Catálogo de mi Empresa</span>
+      <button type="button" class="tab-btn" [class.active]="vistaActiva === 'empresa'"
+        (click)="cambiarVista('empresa')">
+        <span>Catálogo de Empresa</span>
         <span class="tab-badge">{{ total }}</span>
       </button>
       <button type="button" class="tab-btn" [class.active]="vistaActiva === 'base'" (click)="cambiarVista('base')">
-        <span>🇧🇴 Catálogo Base de Bolivia</span>
-        <span class="tab-badge secondary">{{ totalBase > 0 ? totalBase : '56' }} insumos</span>
+        <span>Catálogo Base</span>
+        <span class="tab-badge secondary">{{ totalBase > 0 ? totalBase : '74' }}</span>
       </button>
     </div>
   </div>
@@ -52,120 +57,195 @@
       <div class="search-field">
         <label for="buscar-material">Buscar materiales</label>
         <div class="search-wrap">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
-          <input id="buscar-material" type="search" [(ngModel)]="q" (ngModelChange)="buscar()" placeholder="Buscar por código o nombre...">
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z" />
+          </svg>
+          <input id="buscar-material" type="search" [(ngModel)]="q" (ngModelChange)="buscar()"
+            placeholder="Buscar por código o nombre...">
         </div>
       </div>
       <div>
         <label for="filtro-categoria">Categoría</label>
         <select id="filtro-categoria" [(ngModel)]="categoria" (change)="filtrar()">
-          <option value="">Todas</option><option *ngFor="let c of categorias" [value]="c.id_categoria">{{ c.nombre }}</option>
+          <option value="">Todas</option>
+          <option *ngFor="let c of categorias" [value]="c.id_categoria">{{ c.nombre }}</option>
         </select>
       </div>
       <div>
         <label for="filtro-estado">Estado</label>
         <select id="filtro-estado" [(ngModel)]="estado" (change)="filtrar()">
-          <option value="">Todos</option><option value="ACTIVO">Activo</option><option value="INACTIVO">Inactivo</option>
+          <option value="">Todos</option>
+          <option value="ACTIVO">Activo</option>
+          <option value="INACTIVO">Inactivo</option>
         </select>
       </div>
       <div>
         <label for="filtro-stock">Stock</label>
         <select id="filtro-stock" [(ngModel)]="stock" (change)="filtrar()">
-          <option value="">Todos</option><option value="normal">Stock normal</option><option value="bajo">Stock bajo</option>
+          <option value="">Todos</option>
+          <option value="normal">Stock normal</option>
+          <option value="bajo">Stock bajo</option>
         </select>
       </div>
     </div>
 
     <div class="table-card" [attr.aria-busy]="loadingMaterials">
-      <div class="loading" *ngIf="loadingMaterials"><span class="spinner"></span><span>Cargando materiales...</span></div>
+      <div class="loading" *ngIf="loadingMaterials">
+        <span class="spinner"></span>
+      </div>
+
       <ng-container *ngIf="!loadingMaterials">
-        <div class="empty" *ngIf="materiales.length === 0">
-          <div class="empty-icon" aria-hidden="true">▦</div>
-          <h2>{{ total === 0 && !q && !categoria && !estado && !stock ? 'No hay materiales registrados.' : 'No se encontraron materiales con los filtros seleccionados.' }}</h2>
-          <div class="flex gap-2">
-            <button *ngIf="puedeRegistrar()" class="btn-primary" (click)="abrirNuevo()">＋ Crear material propio</button>
-            <button class="btn-secondary" (click)="cambiarVista('base')">🇧🇴 Ver Catálogo Base Bolivia</button>
+        <!-- ASISTENTE CUANDO EL CATÁLOGO ESTÁ VACÍO -->
+        <div class="empty empty-assistant" *ngIf="materiales.length === 0 && !q && !categoria && !estado && !stock">
+          <div class="assistant-icon" aria-hidden="true"></div>
+          <h2>No hay materiales registrados</h2>
+          <p class="assistant-text">
+            Tu catálogo está vacío. Puedes crear materiales nuevos o incorporar el catálogo base de materiales.
+          </p>
+          <div class="assistant-actions">
+            <button *ngIf="puedeRegistrar()" type="button" class="btn-primary" (click)="abrirConfirmarCopiaBase()"
+              [disabled]="copiandoBase">
+              Incorporar catálogo base
+            </button>
+            <button *ngIf="puedeRegistrar()" type="button" class="btn-secondary" (click)="abrirNuevo()">
+              Registrar Material
+            </button>
+            <button type="button" class="btn-secondary" (click)="cambiarVista('base')">
+              Mirar catálogo base
+            </button>
           </div>
-          <button *ngIf="q || categoria || estado || stock" class="btn-secondary mt-2" (click)="limpiarFiltros()">Limpiar filtros</button>
         </div>
+
+        <!-- MENSAJE DE BÚSQUEDA SIN RESULTADOS -->
+        <div class="empty" *ngIf="materiales.length === 0 && (q || categoria || estado || stock)">
+          <div class="empty-icon" aria-hidden="true">▦</div>
+          <h2>No se encontraron materiales con los filtros seleccionados.</h2>
+          <button class="btn-secondary mt-2" (click)="limpiarFiltros()">Limpiar filtros</button>
+        </div>
+
+        <!-- TABLA DE MATERIALES -->
         <div class="table-scroll" *ngIf="materiales.length > 0">
           <table>
-            <thead><tr><th>Código</th><th>Material</th><th *ngIf="esVistaGlobal()">Empresa</th><th>Categoría</th><th>Unidad</th><th>Stock actual</th><th>Stock mínimo</th><th>Estado</th><th class="actions-head">Acciones</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Material</th>
+                <th *ngIf="esVistaGlobal()">Empresa</th>
+                <th>Categoría</th>
+                <th>Unidad</th>
+                <th>Precio</th>
+                <th>Estado</th>
+                <th class="actions-head">Acciones</th>
+              </tr>
+            </thead>
             <tbody>
               <tr *ngFor="let m of materiales">
                 <td>
                   <span class="code">{{ m.codigo }}</span>
-                  <span *ngIf="m.es_propio" class="tag-propio" title="Material propio de la empresa">Propio</span>
-                  <span *ngIf="m.id_material_base" class="tag-base" title="Insumo adoptado del catálogo común">Base</span>
+                  <span *ngIf="m.es_propio" class="tag-propio" title="Material propietario">Propio</span>
+                  <span *ngIf="m.id_material_base" class="tag-base" title="Insumo del catálogo base">Base</span>
                 </td>
-                <td><strong>{{ m.nombre_material }}</strong><span class="stock-label" [ngClass]="'stock-' + stockEstado(m)">{{ stockEstado(m) === 'sin' ? 'Sin stock' : stockEstado(m) === 'bajo' ? 'Stock bajo' : 'Stock normal' }}</span></td>
-                <td *ngIf="esVistaGlobal()"><span class="text-xs font-semibold text-slate-700 dark:text-slate-300">🏢 {{ m.nombre_empresa || 'Empresa #' + m.id_empresa }}</span></td>
-                <td>{{ m.categoria.nombre }}</td><td>{{ m.unidad_medida.nombre }} <small>({{ m.unidad_medida.abreviatura }})</small></td>
-                <td class="number">{{ m.stock_actual }}</td><td class="number">{{ m.stock_minimo }}</td>
-                <td><span class="badge" [class.active]="m.estado === 'ACTIVO'" [class.inactive]="m.estado === 'INACTIVO'">{{ m.estado === 'ACTIVO' ? 'Activo' : 'Inactivo' }}</span></td>
+                <td>
+                  <strong>{{ m.nombre_material }}</strong>
+                  <small *ngIf="m.descripcion" class="text-slate-500 block text-xs">{{ m.descripcion }}</small>
+                </td>
+                <td *ngIf="esVistaGlobal()">
+                  <span class="text-xs font-semibold text-slate-700 dark:text-slate-300"> {{ m.nombre_empresa ||
+                    'Empresa #' + m.id_empresa }}</span>
+                </td>
+                <td>{{ m.categoria.nombre }}</td>
+                <td>{{ m.unidad_medida.nombre }} <small>({{ m.unidad_medida.abreviatura }})</small></td>
+                <td class="number">{{ m.precio | number:'1.2-2' }}</td>
+                <td>
+                  <span class="badge" [class.active]="m.estado === 'ACTIVO'" [class.inactive]="m.estado === 'INACTIVO'">
+                    {{ m.estado === 'ACTIVO' ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
                 <td class="actions">
                   <button type="button" (click)="abrirDetalle(m)" [disabled]="loadingDetail">Ver</button>
-                  <button *ngIf="puedeModificar()" type="button" (click)="abrirEditar(m)" [disabled]="loadingDetail">Editar</button>
-                  <button *ngIf="puedeCambiarEstado()" type="button" [class.danger]="m.estado === 'ACTIVO'" [class.reactivate]="m.estado === 'INACTIVO'" (click)="confirmarEstado(m)" [disabled]="changingStatus">{{ m.estado === 'ACTIVO' ? 'Desactivar' : 'Reactivar' }}</button>
+                  <button *ngIf="puedeModificar()" type="button" (click)="abrirEditar(m)"
+                    [disabled]="loadingDetail">Editar</button>
+                  <button *ngIf="puedeCambiarEstado()" type="button" [class.danger]="m.estado === 'ACTIVO'"
+                    [class.reactivate]="m.estado === 'INACTIVO'" (click)="confirmarEstado(m)"
+                    [disabled]="changingStatus">
+                    {{ m.estado === 'ACTIVO' ? 'Desactivar' : 'Reactivar' }}
+                  </button>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
+
         <footer class="pagination" *ngIf="materiales.length > 0">
           <p>{{ total }} material{{ total === 1 ? '' : 'es' }}</p>
-          <div><button (click)="cambiarPagina(pagina - 1)" [disabled]="pagina <= 1">Anterior</button><span>Página {{ pagina }} de {{ totalPaginas }}</span><button (click)="cambiarPagina(pagina + 1)" [disabled]="pagina >= totalPaginas">Siguiente</button></div>
+          <div>
+            <button (click)="cambiarPagina(pagina - 1)" [disabled]="pagina <= 1">Anterior</button>
+            <span>Página {{ pagina }} de {{ totalPaginas }}</span>
+            <button (click)="cambiarPagina(pagina + 1)" [disabled]="pagina >= totalPaginas">Siguiente</button>
+          </div>
         </footer>
       </ng-container>
     </div>
   </ng-container>
 
-  <!-- VISTA B: CATÁLOGO BASE DE BOLIVIA (CU14) -->
+  <!-- VISTA B: CATÁLOGO BASE -->
   <ng-container *ngIf="vistaActiva === 'base'">
     <div class="base-catalog-banner">
-      <span class="banner-icon">🇧🇴</span>
-      <div>
-        <strong>Catálogo Base de Insumos de Construcción (Bolivia)</strong>
-        <p class="text-xs opacity-90 mt-0.5">Catálogo predefinido con cementos, agregados, aceros, maderas, tuberías y acabados estándar. Selecciona insumos para agregarlos al catálogo comercial de tu empresa con tu propio precio y utilizarlos en APUs y presupuestos (CU16).</p>
+      <div class="banner-content">
+        <strong>Catálogo Base</strong>
+        <p class="text-xs opacity-90 mt-0.5">Materiales estandarizados para Construcción</p>
       </div>
+      <button *ngIf="puedeRegistrar()" type="button" class="btn-primary btn-sm ml-auto"
+        (click)="abrirConfirmarCopiaBase()" [disabled]="copiandoBase">
+        Incorporar Catálogo Base al Catálogo de Materiales
+      </button>
     </div>
 
     <div class="filters-card">
       <div class="search-field">
-        <label for="buscar-material-base">Buscar en insumos base</label>
+        <label for="buscar-material-base">Buscar</label>
         <div class="search-wrap">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
-          <input id="buscar-material-base" type="search" [(ngModel)]="q" (ngModelChange)="cargarMaterialesBase()" placeholder="Ej: Fierro, Cemento, Ladrillo, Arena...">
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z" />
+          </svg>
+          <input id="buscar-material-base" type="search" [(ngModel)]="q" (ngModelChange)="cargarMaterialesBase()"
+            placeholder="Ej: Cemento, Fierro, Arena, Tubo...">
         </div>
       </div>
       <div>
         <label for="filtro-categoria-base">Categoría</label>
         <select id="filtro-categoria-base" [(ngModel)]="categoria" (change)="cargarMaterialesBase()">
-          <option value="">Todas las categorías</option><option *ngFor="let c of categorias" [value]="c.id_categoria">{{ c.nombre }}</option>
+          <option value="">Todas las categorías</option>
+          <option *ngFor="let c of categorias" [value]="c.id_categoria">{{ c.nombre }}</option>
         </select>
       </div>
       <div class="span-2 flex items-end justify-end">
-        <button type="button" class="btn-secondary" (click)="q = ''; categoria = ''; cargarMaterialesBase()">Limpiar filtros</button>
+        <button type="button" class="btn-secondary" (click)="q = ''; categoria = ''; cargarMaterialesBase()">Limpiar
+          filtros</button>
       </div>
     </div>
 
     <div class="table-card" [attr.aria-busy]="loadingBase">
-      <div class="loading" *ngIf="loadingBase"><span class="spinner"></span><span>Cargando catálogo base...</span></div>
+      <div class="loading" *ngIf="loadingBase">
+        <span class="spinner"></span>
+      </div>
+
       <ng-container *ngIf="!loadingBase">
         <div class="empty" *ngIf="materialesBase.length === 0">
           <div class="empty-icon" aria-hidden="true">▦</div>
-          <h2>No se encontraron insumos base con los filtros seleccionados.</h2>
+          <h2>No se encontraron materiales con los filtros seleccionados.</h2>
         </div>
+
         <div class="table-scroll" *ngIf="materialesBase.length > 0">
           <table>
             <thead>
               <tr>
                 <th>Código Base</th>
-                <th>Insumo Estándar</th>
+                <th>Insumo</th>
                 <th>Categoría</th>
                 <th>Unidad</th>
-                <th>Precio Ref. (Bs.)</th>
-                <th>Disponibilidad en mi Empresa</th>
+                <th>Precio Ref.</th>
+                <th>Disponibilidad</th>
                 <th class="actions-head">Acción</th>
               </tr>
             </thead>
@@ -177,29 +257,33 @@
                   <small *ngIf="mb.descripcion" class="text-slate-500 block text-xs">{{ mb.descripcion }}</small>
                 </td>
                 <td>{{ mb.categoria?.nombre || mb.categoria_nombre }}</td>
-                <td>{{ mb.unidad_medida?.nombre || mb.unidad_nombre }} <small *ngIf="mb.unidad_medida?.abreviatura || mb.unidad_abreviatura">({{ mb.unidad_medida?.abreviatura || mb.unidad_abreviatura }})</small></td>
+                <td>{{ mb.unidad_medida?.nombre || mb.unidad_nombre }} <small
+                    *ngIf="mb.unidad_medida?.abreviatura || mb.unidad_abreviatura">({{ mb.unidad_medida?.abreviatura ||
+                    mb.unidad_abreviatura }})</small></td>
                 <td>
-                  <span *ngIf="mb.precio_referencial" class="font-semibold text-slate-900 dark:text-white">{{ mb.precio_referencial | number:'1.2-2' }}</span>
+                  <span *ngIf="mb.precio_referencial" class="font-semibold text-slate-900 dark:text-white">{{
+                    mb.precio_referencial | number:'1.2-2' }}</span>
                   <span *ngIf="!mb.precio_referencial" class="text-slate-400 italic">S/R</span>
                 </td>
                 <td>
                   <span *ngIf="mb.adoptado" class="badge-adopted">
                     ✓ En tu catálogo
-                    <small *ngIf="mb.codigo_empresa">({{ mb.codigo_empresa }})</small>
                   </span>
                   <span *ngIf="!mb.adoptado" class="badge-not-adopted">No incorporado</span>
                 </td>
                 <td class="actions">
-                  <button *ngIf="!mb.adoptado && puedeRegistrar()" type="button" class="btn-primary btn-sm" (click)="abrirAdopcion(mb)">
-                    ＋ Agregar a mi catálogo
+                  <button *ngIf="!mb.adoptado && puedeRegistrar()" type="button" class="btn-primary btn-sm"
+                    (click)="abrirAdopcion(mb)">
+                    ＋ Agregar al catálogo
                   </button>
-                  <span *ngIf="mb.adoptado" class="text-xs text-emerald-600 font-bold">✓ Disponible en APU</span>
+                  <span *ngIf="mb.adoptado" class="text-xs text-emerald-600 font-bold">✓ Incorporado</span>
                   <span *ngIf="!puedeRegistrar() && !mb.adoptado" class="text-xs text-slate-400">Solo lectura</span>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
+
         <footer class="pagination" *ngIf="materialesBase.length > 0">
           <p>{{ materialesBase.length }} insumo{{ materialesBase.length === 1 ? '' : 's' }} listados</p>
         </footer>
@@ -208,124 +292,246 @@
   </ng-container>
 </section>
 
-<div class="modal-backdrop" *ngIf="modal" (click)="cerrarModal()">
-  <section class="modal" [class.modal-wide]="modal === 'formulario'" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" [attr.aria-labelledby]="modal === 'formulario' ? 'form-title' : modal === 'detalle' ? 'detail-title' : 'confirm-title'">
-    <ng-container *ngIf="modal === 'formulario'">
-      <header class="modal-header"><div><p class="eyebrow">{{ editando ? 'HU46' : 'HU45' }}</p><h2 id="form-title">{{ editando ? 'Modificar material' : 'Registrar material' }}</h2></div><button class="close" (click)="cerrarModal()" aria-label="Cerrar">×</button></header>
-      <form class="modal-form" (ngSubmit)="guardar()" #materialForm="ngForm">
-        <div class="modal-body">
-          <fieldset><legend>Datos generales</legend><div class="form-grid">
-            <div><label for="codigo">Código *</label><input id="codigo" name="codigo" [(ngModel)]="form.codigo" required maxlength="50"></div>
-            <div><label for="nombre">Nombre *</label><input id="nombre" name="nombre" [(ngModel)]="form.nombre_material" required maxlength="150"></div>
-            <div class="span-2"><label for="descripcion">Descripción</label><textarea id="descripcion" name="descripcion" [(ngModel)]="form.descripcion" rows="2"></textarea></div>
-            <div class="span-2"><label for="categoria-form">Categoría *</label>
+<!-- MODAL FORMULARIO MATERIAL -->
+<div class="modal-backdrop" *ngIf="modal === 'formulario'" (click)="cerrarModal()">
+  <section class="modal modal-wide" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+    aria-labelledby="form-title">
+    <header class="modal-header">
+      <div>
+        <h2 id="form-title">{{ editando ? 'Modificar material' : 'Registrar material' }}</h2>
+      </div>
+      <button class="close" (click)="cerrarModal()" aria-label="Cerrar">×</button>
+    </header>
+
+    <form class="modal-form" (ngSubmit)="guardar()" #materialForm="ngForm">
+      <div class="modal-body">
+        <fieldset>
+          <legend>Datos del Material</legend>
+          <div class="form-grid">
+            <div>
+              <label for="codigo">Código *</label>
+              <input id="codigo" name="codigo" [(ngModel)]="form.codigo" required maxlength="50">
+            </div>
+            <div>
+              <label for="nombre">Nombre *</label>
+              <input id="nombre" name="nombre" [(ngModel)]="form.nombre_material" required maxlength="150">
+            </div>
+            <div class="span-2">
+              <label for="descripcion">Descripción</label>
+              <textarea id="descripcion" name="descripcion" [(ngModel)]="form.descripcion" rows="2"></textarea>
+            </div>
+            <div class="span-2">
+              <label for="categoria-form">Categoría *</label>
               <div class="categoria-row">
-                <select id="categoria-form" name="id_categoria" [(ngModel)]="form.id_categoria" required><option [ngValue]="0" disabled>Selecciona una categoría</option><option *ngFor="let c of categorias" [ngValue]="c.id_categoria">{{ c.nombre }}</option></select>
-                <button type="button" class="btn-secondary btn-nueva-categoria" (click)="abrirNuevaCategoria()">＋ Nueva categoría</button>
+                <select id="categoria-form" name="id_categoria" [(ngModel)]="form.id_categoria" required>
+                  <option [ngValue]="0" disabled>Selecciona una categoría</option>
+                  <option *ngFor="let c of categorias" [ngValue]="c.id_categoria">{{ c.nombre }}</option>
+                </select>
+                <button type="button" class="btn-secondary btn-nueva-categoria" (click)="abrirNuevaCategoria()">＋ Nueva
+                  categoría</button>
               </div>
             </div>
-            <div><label for="unidad-form">Unidad de medida *</label><select id="unidad-form" name="id_unidad_medida" [(ngModel)]="form.id_unidad_medida" required><option [ngValue]="0" disabled>Selecciona una unidad</option><option *ngFor="let u of unidades" [ngValue]="u.id_unidad_medida">{{ u.nombre }} ({{ u.abreviatura }})</option></select></div>
-            <div><label for="precio">Precio</label><input id="precio" name="precio" type="number" min="0" step="0.01" [(ngModel)]="form.precio"></div>
-            <div *ngIf="editando"><label>Stock actual</label><div class="readonly-value">{{ form.stock_actual }} <span>Solo lectura</span></div></div>
-          </div></fieldset>
-          <fieldset><div class="legend-row"><legend>Características</legend><button type="button" class="btn-link" (click)="agregarCaracteristica()">＋ Agregar característica</button></div>
-            <p class="hint" *ngIf="form.caracteristicas.length === 0">Agrega datos como marca, peso o presentación.</p>
-            <div class="feature-row" *ngFor="let c of form.caracteristicas; let i = index; trackBy: trackCaracteristica"><input [id]="'car-nombre-'+i" [name]="'car-nombre-'+i" aria-label="Nombre de característica" placeholder="Nombre característica" [(ngModel)]="c.nombre"><input [name]="'car-valor-'+i" aria-label="Valor de característica" placeholder="Valor" [(ngModel)]="c.valor"><button type="button" (click)="quitarCaracteristica(i)" aria-label="Quitar característica">Quitar</button></div>
-          </fieldset>
-          <fieldset><legend>Información de almacén</legend><div class="form-grid">
-            <div *ngIf="!editando"><label for="cantidad-inicial">Cantidad inicial *</label><input id="cantidad-inicial" name="cantidad_inicial" type="number" min="0" step="0.01" [(ngModel)]="form.cantidad_inicial" required><p class="hint">Cantidad disponible al registrar el material.</p></div>
-            <div><label for="stock-minimo">Stock mínimo *</label><input id="stock-minimo" name="stock_minimo" type="number" min="0" step="0.01" [(ngModel)]="form.stock_minimo" required><p class="hint">Umbral para identificar materiales con bajo stock.</p></div>
-            <div *ngIf="!editando"><label for="fecha-ingreso">Fecha de ingreso *</label><input id="fecha-ingreso" name="fecha_ingreso" type="date" [(ngModel)]="form.fecha_ingreso" required></div>
-          </div></fieldset>
-        </div>
-        <footer class="modal-footer"><button type="button" class="btn-secondary" (click)="cerrarModal()" [disabled]="operacionFormularioActiva">Cancelar</button><button type="submit" class="btn-primary" [disabled]="operacionFormularioActiva || materialForm.invalid"><span class="spinner small" *ngIf="operacionFormularioActiva"></span>{{ operacionFormularioActiva ? 'Guardando...' : editando ? 'Guardar cambios' : 'Registrar material' }}</button></footer>
-      </form>
-    </ng-container>
+            <div>
+              <label for="unidad-form">Unidad de medida *</label>
+              <select id="unidad-form" name="id_unidad_medida" [(ngModel)]="form.id_unidad_medida" required>
+                <option [ngValue]="0" disabled>Selecciona una unidad</option>
+                <option *ngFor="let u of unidades" [ngValue]="u.id_unidad_medida">{{ u.nombre }} ({{ u.abreviatura }})
+                </option>
+              </select>
+            </div>
+            <div>
+              <label for="precio">Precio</label>
+              <input id="precio" name="precio" type="number" min="0" step="0.01" [(ngModel)]="form.precio">
+            </div>
+          </div>
+        </fieldset>
 
-    <ng-container *ngIf="modal === 'detalle' && detalle">
-      <header class="modal-header"><div><p class="eyebrow">DETALLE</p><h2 id="detail-title">{{ detalle.nombre_material }}</h2><p class="code">{{ detalle.codigo }}</p></div><button class="close" (click)="cerrarModal()" aria-label="Cerrar">×</button></header>
-      <div class="modal-body detail-grid">
-        <div><span>Categoría</span><strong>{{ detalle.categoria.nombre }}</strong></div><div><span>Unidad</span><strong>{{ detalle.unidad_medida.nombre }} ({{ detalle.unidad_medida.abreviatura }})</strong></div>
-        <div><span>Precio</span><strong>{{ detalle.precio | number:'1.2-2' }}</strong></div><div><span>Estado</span><strong>{{ detalle.estado === 'ACTIVO' ? 'Activo' : 'Inactivo' }}</strong></div>
-        <div><span>Stock actual</span><strong>{{ detalle.stock_actual }}</strong></div><div><span>Stock mínimo</span><strong>{{ detalle.stock_minimo }}</strong></div>
-        <div class="span-2"><span>Disponibilidad</span><strong class="stock-label" [ngClass]="'stock-' + stockEstado(detalle)">{{ stockEstado(detalle) === 'sin' ? 'Sin stock' : stockEstado(detalle) === 'bajo' ? 'Stock bajo' : 'Stock normal' }}</strong></div>
-        <div class="span-2" *ngIf="detalle.descripcion"><span>Descripción</span><p>{{ detalle.descripcion }}</p></div>
-        <div class="span-2" *ngIf="detalle.caracteristicas?.length"><span>Características</span><ul><li *ngFor="let c of detalle.caracteristicas"><strong>{{ c.nombre }}:</strong> {{ c.valor }}</li></ul></div>
-        <div *ngIf="detalle.created_at"><span>Registrado</span><strong>{{ detalle.created_at | date:'dd/MM/yyyy HH:mm' }}</strong></div><div *ngIf="detalle.updated_at"><span>Última actualización</span><strong>{{ detalle.updated_at | date:'dd/MM/yyyy HH:mm' }}</strong></div>
-      </div><footer class="modal-footer"><button class="btn-secondary" (click)="cerrarModal()">Cerrar</button></footer>
-    </ng-container>
-
-    <ng-container *ngIf="modal === 'confirmacion' && objetivoEstado">
-      <header class="modal-header"><h2 id="confirm-title">{{ objetivoEstado.estado === 'ACTIVO' ? '¿Deseas desactivar este material?' : '¿Deseas reactivar este material?' }}</h2><button class="close" (click)="cerrarModal()" aria-label="Cerrar">×</button></header>
-      <div class="modal-body"><p *ngIf="objetivoEstado.estado === 'ACTIVO'">El material permanecerá registrado para conservar la trazabilidad, pero ya no estará disponible para nuevas asociaciones.</p><p *ngIf="objetivoEstado.estado === 'INACTIVO'">El material volverá a estar disponible para nuevas asociaciones.</p><p class="confirm-name">{{ objetivoEstado.codigo }} · {{ objetivoEstado.nombre_material }}</p></div>
-      <footer class="modal-footer"><button class="btn-secondary" (click)="cerrarModal()" [disabled]="changingStatus">Cancelar</button><button class="btn-primary" [class.btn-danger]="objetivoEstado.estado === 'ACTIVO'" (click)="cambiarEstado()" [disabled]="changingStatus">{{ changingStatus ? 'Procesando...' : objetivoEstado.estado === 'ACTIVO' ? 'Desactivar' : 'Reactivar' }}</button></footer>
-    </ng-container>
-  </section>
-</div>
-
-<div class="modal-backdrop category-modal-backdrop" *ngIf="categoriaModalAbierto" (click)="cerrarModalCategoria()">
-  <section class="modal modal-category" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="category-title">
-    <header class="modal-header"><h2 id="category-title">Nueva categoría</h2><button class="close" (click)="cerrarModalCategoria()" [disabled]="savingCategory" aria-label="Cerrar">×</button></header>
-    <form class="modal-form" (ngSubmit)="guardarCategoria()" #categoriaFormRef="ngForm">
-      <div class="modal-body">
-        <p class="form-error" *ngIf="categoriaError" role="alert">{{ categoriaError }}</p>
-        <div class="form-grid">
-          <div class="span-2"><label for="categoria-nombre">Nombre *</label><input id="categoria-nombre" name="categoria_nombre" [(ngModel)]="categoriaForm.nombre" required maxlength="120"></div>
-          <div class="span-2"><label for="categoria-descripcion">Descripción</label><textarea id="categoria-descripcion" name="categoria_descripcion" [(ngModel)]="categoriaForm.descripcion" rows="2" maxlength="500"></textarea></div>
-        </div>
+        <fieldset>
+          <div class="legend-row">
+            <legend>Características adicionales</legend>
+            <button type="button" class="btn-link" (click)="agregarCaracteristica()">＋ Agregar característica</button>
+          </div>
+          <div *ngIf="form.caracteristicas.length === 0" class="hint">No se han definido características adicionales
+            para este material.</div>
+          <div *ngFor="let c of form.caracteristicas; let i = index; trackBy: trackCaracteristica" class="feature-row">
+            <input [id]="'feat-nombre-' + i" placeholder="Nombre (ej: Marca, Color, Espesor)" [(ngModel)]="c.nombre"
+              [name]="'feat_nom_' + i">
+            <input [id]="'feat-valor-' + i" placeholder="Valor (ej: Duralit, Gris, 12mm)" [(ngModel)]="c.valor"
+              [name]="'feat_val_' + i">
+            <button type="button" (click)="quitarCaracteristica(i)" aria-label="Eliminar característica">✕</button>
+          </div>
+        </fieldset>
       </div>
-      <footer class="modal-footer"><button type="button" class="btn-secondary" (click)="cerrarModalCategoria()" [disabled]="savingCategory">Cancelar</button><button type="submit" class="btn-primary" [disabled]="savingCategory || categoriaFormRef.invalid"><span class="spinner small" *ngIf="savingCategory"></span>{{ savingCategory ? 'Guardando...' : 'Guardar categoría' }}</button></footer>
+
+      <footer class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="cerrarModal()"
+          [disabled]="operacionFormularioActiva">Cancelar</button>
+        <button type="submit" class="btn-primary" [disabled]="operacionFormularioActiva">
+          {{ editando ? (updatingMaterial ? 'Guardando...' : 'Guardar cambios') : (savingMaterial ? 'Registrando...' :
+          'Registrar material') }}
+        </button>
+      </footer>
     </form>
   </section>
 </div>
 
-<!-- MODAL ADOPCIÓN MATERIAL BASE (CU14) -->
-<div class="modal-backdrop" *ngIf="modalAdopcionAbierto" (click)="cerrarAdopcion()">
-  <section class="modal modal-adopcion" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="adopcion-title">
+<!-- MODAL DETALLE MATERIAL -->
+<div class="modal-backdrop" *ngIf="modal === 'detalle' && detalle" (click)="cerrarModal()">
+  <section class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+    aria-labelledby="detail-title">
     <header class="modal-header">
       <div>
-        <p class="eyebrow">CU14 · INCORPORAR INSUMO</p>
-        <h2 id="adopcion-title">Agregar a mi Catálogo</h2>
+        <h2 id="detail-title">{{ detalle.nombre_material }}</h2>
       </div>
-      <button class="close" (click)="cerrarAdopcion()" [disabled]="adoptingMaterial" aria-label="Cerrar">×</button>
+      <button class="close" (click)="cerrarModal()" aria-label="Cerrar">×</button>
     </header>
     <div class="modal-body">
-      <div *ngIf="adopcionError" class="form-error" role="alert">{{ adopcionError }}</div>
-      
-      <div class="material-base-summary" *ngIf="materialBaseSeleccionado">
-        <div class="summary-icon">📦</div>
-        <div>
-          <h4>{{ materialBaseSeleccionado.nombre_material }}</h4>
-          <p class="text-xs text-slate-500">
-            Categoría: <strong>{{ materialBaseSeleccionado.categoria_nombre }}</strong> · 
-            Unidad: <strong>{{ materialBaseSeleccionado.unidad_nombre }} ({{ materialBaseSeleccionado.unidad_abreviatura }})</strong>
-          </p>
+      <div class="detail-grid">
+        <div><span>Código</span><strong>{{ detalle.codigo }}</strong></div>
+        <div><span>Estado</span><span class="badge" [class.active]="detalle.estado === 'ACTIVO'"
+            [class.inactive]="detalle.estado === 'INACTIVO'">{{ detalle.estado }}</span></div>
+        <div><span>Origen</span><strong>{{ detalle.es_propio ? 'Material propio' : 'Catálogo Base' }}</strong></div>
+        <div><span>Categoría</span><strong>{{ detalle.categoria.nombre }}</strong></div>
+        <div><span>Unidad de medida</span><strong>{{ detalle.unidad_medida.nombre }} ({{
+            detalle.unidad_medida.abreviatura }})</strong></div>
+        <div><span>Precio</span><strong>{{ detalle.precio | number:'1.2-2' }}</strong></div>
+        <div class="span-2"><span>Descripción</span>
+          <p>{{ detalle.descripcion || 'Sin descripción.' }}</p>
         </div>
-      </div>
-
-      <div class="form-grid">
-        <div>
-          <label for="codigo-interno">Código Interno de tu Empresa *</label>
-          <input id="codigo-interno" type="text" [(ngModel)]="formAdopcion.codigo_interno" placeholder="Ej: MAT-001">
-          <p class="hint">Código propio con el que identificarás este material en tu empresa.</p>
-        </div>
-        <div>
-          <label for="precio-adopcion">Precio Referencial Comercial (Bs.)</label>
-          <input id="precio-adopcion" type="number" step="0.01" min="0" [(ngModel)]="formAdopcion.precio" placeholder="0.00">
-          <p class="hint">Precio de compra o costo para presupuestos APU.</p>
-        </div>
-        <div class="span-2">
-          <label for="stock-minimo-adopcion">Stock Mínimo para Alertas de Almacén</label>
-          <input id="stock-minimo-adopcion" type="number" step="0.01" min="0" [(ngModel)]="formAdopcion.stock_minimo" placeholder="0">
-          <p class="hint">Permite gestionar inventario físico cuando se registren entradas.</p>
+        <div class="span-2" *ngIf="detalle.caracteristicas && detalle.caracteristicas.length > 0">
+          <span>Características</span>
+          <ul>
+            <li *ngFor="let c of detalle.caracteristicas"><strong>{{ c.nombre }}:</strong> {{ c.valor }}</li>
+          </ul>
         </div>
       </div>
     </div>
     <footer class="modal-footer">
-      <button type="button" class="btn-secondary" (click)="cerrarAdopcion()" [disabled]="adoptingMaterial">Cancelar</button>
-      <button type="button" class="btn-primary" (click)="confirmarAdopcion()" [disabled]="adoptingMaterial">
-        <span class="spinner small" *ngIf="adoptingMaterial"></span>
-        {{ adoptingMaterial ? 'Incorporando...' : '＋ Incorporar al Catálogo' }}
+      <button type="button" class="btn-secondary" (click)="cerrarModal()">Cerrar</button>
+    </footer>
+  </section>
+</div>
+
+<!-- MODAL CAMBIO DE ESTADO -->
+<div class="modal-backdrop" *ngIf="modal === 'confirmacion' && objetivoEstado" (click)="cerrarModal()">
+  <section class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+    aria-labelledby="confirm-title">
+    <header class="modal-header">
+      <h2 id="confirm-title">{{ objetivoEstado.estado === 'ACTIVO' ? 'Desactivar material' : 'Reactivar material' }}
+      </h2>
+      <button class="close" (click)="cerrarModal()" aria-label="Cerrar">×</button>
+    </header>
+    <div class="modal-body">
+      <p>¿Estás seguro de que deseas {{ objetivoEstado.estado === 'ACTIVO' ? 'desactivar' : 'reactivar' }} este
+        material?</p>
+      <div class="confirm-name">{{ objetivoEstado.codigo }} - {{ objetivoEstado.nombre_material }}</div>
+    </div>
+    <footer class="modal-footer">
+      <button type="button" class="btn-secondary" (click)="cerrarModal()" [disabled]="changingStatus">Cancelar</button>
+      <button type="button" [class.btn-danger]="objetivoEstado.estado === 'ACTIVO'"
+        [class.btn-primary]="objetivoEstado.estado === 'INACTIVO'" (click)="cambiarEstado()"
+        [disabled]="changingStatus">
+        {{ changingStatus ? '...' : (objetivoEstado.estado === 'ACTIVO' ? 'Desactivar' : 'Reactivar') }}
+      </button>
+    </footer>
+  </section>
+</div>
+
+<!-- MODAL NUEVA CATEGORÍA -->
+<div class="modal-backdrop category-modal-backdrop" *ngIf="categoriaModalAbierto" (click)="cerrarModalCategoria()">
+  <section class="modal modal-category" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+    aria-labelledby="cat-title">
+    <header class="modal-header">
+      <h2 id="cat-title">Nueva categoría de material</h2>
+      <button class="close" (click)="cerrarModalCategoria()" aria-label="Cerrar">×</button>
+    </header>
+    <form (ngSubmit)="guardarCategoria()">
+      <div class="modal-body">
+        <div class="form-error" *ngIf="categoriaError">{{ categoriaError }}</div>
+        <div>
+          <label for="cat-nombre">Nombre *</label>
+          <input id="cat-nombre" name="cat_nombre" [(ngModel)]="categoriaForm.nombre" required maxlength="120"
+            placeholder="Ej: Aceros Especiales">
+        </div>
+        <div style="margin-top: 1rem;">
+          <label for="cat-desc">Descripción</label>
+          <textarea id="cat-desc" name="cat_desc" [(ngModel)]="categoriaForm.descripcion" rows="2"
+            placeholder="Descripción breve de la categoría"></textarea>
+        </div>
+      </div>
+      <footer class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="cerrarModalCategoria()"
+          [disabled]="savingCategory">Cancelar</button>
+        <button type="submit" class="btn-primary" [disabled]="savingCategory">
+          {{ savingCategory ? 'Guardando...' : 'Guardar categoría' }}
+        </button>
+      </footer>
+    </form>
+  </section>
+</div>
+
+<!-- MODAL ADOPCIÓN INDIVIDUAL DE MATERIAL BASE -->
+<div class="modal-backdrop" *ngIf="modalAdopcionAbierto && materialBaseSeleccionado" (click)="cerrarAdopcion()">
+  <section class="modal modal-adopcion" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+    aria-labelledby="adop-title">
+    <header class="modal-header">
+      <h2 id="adop-title">Agregar material al catálogo</h2>
+      <button class="close" (click)="cerrarAdopcion()" aria-label="Cerrar">×</button>
+    </header>
+    <form (ngSubmit)="confirmarAdopcion()">
+      <div class="modal-body">
+        <div class="form-error" *ngIf="adopcionError">{{ adopcionError }}</div>
+        <div class="material-base-summary">
+          <div>
+            <h4>{{ materialBaseSeleccionado.nombre_material }}</h4>
+            <span class="text-xs text-slate-500">Categoría: {{ materialBaseSeleccionado.categoria?.nombre ||
+              materialBaseSeleccionado.categoria_nombre }}</span>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div>
+            <label for="adop-codigo">Código interno *</label>
+            <input id="adop-codigo" name="adop_codigo" [(ngModel)]="formAdopcion.codigo_interno" required>
+          </div>
+          <div>
+            <label for="adop-precio">Precio de compra/costo</label>
+            <input id="adop-precio" name="adop_precio" type="number" min="0" step="0.01"
+              [(ngModel)]="formAdopcion.precio" placeholder="Precio sugerido">
+          </div>
+        </div>
+      </div>
+      <footer class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="cerrarAdopcion()"
+          [disabled]="adoptingMaterial">Cancelar</button>
+        <button type="submit" class="btn-primary" [disabled]="adoptingMaterial">
+          {{ adoptingMaterial ? '...' : 'Incorporar a mi catálogo' }}
+        </button>
+      </footer>
+    </form>
+  </section>
+</div>
+
+<!-- MODAL CONFIRMACIÓN COPIA COMPLETA DE CATÁLOGO BASE -->
+<div class="modal-backdrop" *ngIf="modalCopiarBase" (click)="cerrarConfirmarCopiaBase()">
+  <section class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+    aria-labelledby="copy-title">
+    <header class="modal-header">
+      <h2 id="copy-title">Incorporar catálogo</h2>
+      <button class="close" (click)="cerrarConfirmarCopiaBase()" aria-label="Cerrar">×</button>
+    </header>
+    <div class="modal-body">
+      <p>¿Estás seguro de que deseas incorporar los materiales de este catálogo a tu empresa?</p>
+      <div
+        class="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg text-xs mt-3 text-amber-900 dark:text-amber-200">
+        Se incorporarán todos los materiales base al catálogo de su empresa.
+      </div>
+    </div>
+    <footer class="modal-footer">
+      <button type="button" class="btn-secondary" (click)="cerrarConfirmarCopiaBase()"
+        [disabled]="copiandoBase">Cancelar</button>
+      <button type="button" class="btn-primary" (click)="confirmarCopiarCatalogoBase()" [disabled]="copiandoBase">
+        <span *ngIf="copiandoBase" class="spinner small"></span>
+        {{ copiandoBase ? '...' : 'Confirmar' }}
       </button>
     </footer>
   </section>

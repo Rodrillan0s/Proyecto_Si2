@@ -13,6 +13,7 @@ import 'proyectos_screen.dart';
 import 'proyecto_detalle_screen.dart';
 import 'materiales_screen.dart';
 import 'ordenes_trabajo_screen.dart';
+import 'crm_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -300,6 +301,17 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               Divider(height: 1, color: dividerColor),
               _buildToolRow(
+                icon: Icons.contact_phone_outlined,
+                title: 'Clientes y CRM',
+                subtitle: 'Prospectos, pipeline comercial y ventas',
+                iconColor: const Color(0xFF38BDF8),
+                iconBg: isDark ? const Color(0xFF13283E) : const Color(0xFFF0F9FF),
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const CrmScreen()));
+                },
+              ),
+              Divider(height: 1, color: dividerColor),
+              _buildToolRow(
                 icon: Icons.inventory_2_outlined,
                 title: 'Catálogo de Materiales',
                 subtitle: 'Insumos, existencias y costos',
@@ -447,6 +459,15 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               Divider(height: 1, color: dividerColor),
               _buildToolRow(
+                icon: Icons.contact_phone_outlined,
+                title: 'Clientes y CRM',
+                subtitle: 'Embudo comercial y gestión de prospectos',
+                iconColor: const Color(0xFF38BDF8),
+                iconBg: isDark ? const Color(0xFF13283E) : const Color(0xFFF0F9FF),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CrmScreen())),
+              ),
+              Divider(height: 1, color: dividerColor),
+              _buildToolRow(
                 icon: Icons.inventory_2_outlined,
                 title: 'Inventario de Materiales',
                 subtitle: 'Existencias y pedidos en curso',
@@ -547,6 +568,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 iconColor: isDark ? const Color(0xFF38BDF8) : AppTheme.info,
                 iconBg: isDark ? const Color(0xFF13283E) : const Color(0xFFF0F9FF),
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProyectosScreen())),
+              ),
+              Divider(height: 1, color: dividerColor),
+              _buildToolRow(
+                icon: Icons.contact_phone_outlined,
+                title: 'Clientes y CRM',
+                subtitle: 'Prospectos en terreno y pipeline comercial',
+                iconColor: const Color(0xFF38BDF8),
+                iconBg: isDark ? const Color(0xFF13283E) : const Color(0xFFF0F9FF),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CrmScreen())),
               ),
               Divider(height: 1, color: dividerColor),
               _buildToolRow(

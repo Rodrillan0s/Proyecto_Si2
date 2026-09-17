@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
+import '../services/auth_provider.dart';
 import '../services/obra_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/construction_widgets.dart';
+import '../widgets/ev_widgets.dart';
 import 'proyecto_detalle_screen.dart';
 
 class ProyectosScreen extends StatefulWidget {
@@ -43,6 +46,239 @@ class _ProyectosScreenState extends State<ProyectosScreen> {
     await _futureProyectos;
   }
 
+  bool _puedeCrearObra() {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    return auth.hasPermission('Registrar_obras') ||
+        auth.esAdminGlobal ||
+        auth.esAdminEmpresa ||
+        auth.esJefeObra;
+  }
+
+  void _mostrarModalNuevoProyecto() async {
+    final nombreCtrl = TextEditingController();
+    final codigoCtrl = TextEditingController();
+    final ubicacionCtrl = TextEditingController();
+    final presupuestoCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+
+    DateTime fechaInicio = DateTime.now();
+    int? idTipoSeleccionado;
+    List<Map<String, dynamic>> tiposDisponibles = [];
+    bool guardando = false;
+
+    try {
+      tiposDisponibles = await _obraService.obtenerTiposProyecto();
+      if (tiposDisponibles.isNotEmpty) {
+        idTipoSeleccionado = int.tryParse(
+          tiposDisponibles.first['id_tipo_obra']?.toString() ?? '',
+        );
+      }
+    } catch (_) {}
+
+    if (!mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            final sheetBg = isDark ? const Color(0xFF131D31) : Colors.white;
+            final titleColor = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
+
+            return Container(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                16,
+                20,
+                24 + MediaQuery.of(context).viewInsets.bottom,
+              ),
+              decoration: BoxDecoration(
+                color: sheetBg,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Registrar Nueva Obra',
+                      style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: titleColor),
+                    ),
+                    const SizedBox(height: 14),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: TextField(
+                            controller: nombreCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Nombre del Proyecto *',
+                              hintText: 'Ej: Condominio Las Palmas',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          flex: 2,
+                          child: TextField(
+                            controller: codigoCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Código (Opcional)',
+                              hintText: 'Auto',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    if (tiposDisponibles.isNotEmpty)
+                      DropdownButtonFormField<int>(
+                        initialValue: idTipoSeleccionado,
+                        decoration: const InputDecoration(labelText: 'Tipo de Obra *'),
+                        items: tiposDisponibles.map((t) {
+                          final id = int.tryParse(t['id_tipo_obra']?.toString() ?? '') ?? 0;
+                          final nombre = t['nombre']?.toString() ?? 'Tipo';
+                          return DropdownMenuItem(value: id, child: Text(nombre));
+                        }).toList(),
+                        onChanged: (v) => setModalState(() => idTipoSeleccionado = v),
+                      ),
+                    const SizedBox(height: 12),
+
+                    TextField(
+                      controller: ubicacionCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Ubicación / Dirección *',
+                        hintText: 'Ej: Av. Banzer 4to Anillo',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: presupuestoCtrl,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: const InputDecoration(
+                              labelText: 'Presupuesto Estimado (BOB)',
+                              hintText: 'Ej: 1500000',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: fechaInicio,
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime(2035),
+                              );
+                              if (picked != null) {
+                                setModalState(() => fechaInicio = picked);
+                              }
+                            },
+                            child: InputDecorator(
+                              decoration: const InputDecoration(labelText: 'Fecha de Inicio'),
+                              child: Text(
+                                '${fechaInicio.year}-${fechaInicio.month.toString().padLeft(2, '0')}-${fechaInicio.day.toString().padLeft(2, '0')}',
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    TextField(
+                      controller: descCtrl,
+                      maxLines: 2,
+                      decoration: const InputDecoration(
+                        labelText: 'Descripción del Proyecto',
+                        hintText: 'Objetivo y alcance de la obra',
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    ObratecPrimaryButton(
+                      label: 'Registrar Proyecto',
+                      loading: guardando,
+                      onPressed: () async {
+                        final nombre = nombreCtrl.text.trim();
+                        final ubicacion = ubicacionCtrl.text.trim();
+                        if (nombre.isEmpty || ubicacion.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Nombre y ubicación son obligatorios.')),
+                          );
+                          return;
+                        }
+
+                        setModalState(() => guardando = true);
+                        try {
+                          final payload = <String, dynamic>{
+                            'nombre': nombre,
+                            'ubicacion': ubicacion,
+                            'descripcion': descCtrl.text.trim(),
+                            'presupuesto_estimado': double.tryParse(presupuestoCtrl.text.trim()) ?? 0,
+                            'fecha_inicio': '${fechaInicio.year}-${fechaInicio.month.toString().padLeft(2, '0')}-${fechaInicio.day.toString().padLeft(2, '0')}',
+                          };
+                          if (codigoCtrl.text.trim().isNotEmpty) {
+                            payload['codigo'] = codigoCtrl.text.trim();
+                          }
+                          if (idTipoSeleccionado != null) {
+                            payload['id_tipo_obra'] = idTipoSeleccionado;
+                          }
+
+                          await _obraService.crearProyecto(payload);
+
+                          if (!ctx.mounted) return;
+                          Navigator.pop(ctx);
+                          _refrescar();
+
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                              content: Text('Proyecto registrado exitosamente.'),
+                              backgroundColor: AppTheme.success,
+                            ));
+                          }
+                        } catch (e) {
+                          setModalState(() => guardando = false);
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text(e.toString().replaceAll('Exception: ', '')),
+                            backgroundColor: AppTheme.error,
+                          ));
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -64,6 +300,14 @@ class _ProyectosScreenState extends State<ProyectosScreen> {
           const SizedBox(width: 4),
         ],
       ),
+      floatingActionButton: _puedeCrearObra()
+          ? FloatingActionButton.extended(
+              backgroundColor: AppTheme.primary,
+              icon: const Icon(Icons.add_business_rounded, color: Colors.white, size: 20),
+              label: Text('Nuevo Proyecto', style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Colors.white)),
+              onPressed: _mostrarModalNuevoProyecto,
+            )
+          : null,
       body: SafeArea(
         child: Column(
           children: [
@@ -218,7 +462,7 @@ class _ProyectosScreenState extends State<ProyectosScreen> {
                     }
 
                     return ListView.builder(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
                       itemCount: listaFiltrada.length,
                       itemBuilder: (context, index) {
                         final p = listaFiltrada[index];
@@ -252,7 +496,7 @@ class _ProyectosScreenState extends State<ProyectosScreen> {
                                   fechaInicio: fechaInicio,
                                 ),
                               ),
-                            );
+                            ).then((_) => _refrescar());
                           },
                         );
                       },

@@ -1,4 +1,3 @@
-from datetime import date
 from decimal import Decimal, InvalidOperation
 
 from app.repos import bitacora_repos, material_repos
@@ -10,7 +9,8 @@ PROHIBIDOS_EDICION = {"cantidad_actual", "cantidad_inicial", "id_material", "id_
 
 class MaterialError(ValueError):
     def __init__(self, message, status_code=400):
-        super().__init__(message); self.status_code = status_code
+        super().__init__(message)
+        self.status_code = status_code
 
 
 def _empresa(token, id_empresa_solicitada=None, obligatorio=True):
@@ -32,45 +32,59 @@ def _empresa(token, id_empresa_solicitada=None, obligatorio=True):
 
 
 def _numero(value, campo, obligatorio=True):
-    if value is None and not obligatorio: return None
-    if isinstance(value, bool): raise MaterialError(f"{campo} debe ser un número válido.")
-    try: parsed = Decimal(str(value).strip())
-    except (InvalidOperation, ValueError, TypeError): raise MaterialError(f"{campo} debe ser un número válido.")
-    if not parsed.is_finite() or parsed < 0: raise MaterialError(f"{campo} no puede ser negativo.")
+    if value is None and not obligatorio:
+        return None
+    if isinstance(value, bool):
+        raise MaterialError(f"{campo} debe ser un número válido.")
+    try:
+        parsed = Decimal(str(value).strip())
+    except (InvalidOperation, ValueError, TypeError):
+        raise MaterialError(f"{campo} debe ser un número válido.")
+    if not parsed.is_finite() or parsed < 0:
+        raise MaterialError(f"{campo} no puede ser negativo.")
     return parsed
 
 
 def _validar(data, creando):
-    if not isinstance(data, dict): raise MaterialError("El cuerpo debe ser un objeto válido.")
+    if not isinstance(data, dict):
+        raise MaterialError("El cuerpo debe ser un objeto válido.")
     if not creando:
         invalidos = PROHIBIDOS_EDICION.intersection(data)
-        if invalidos: raise MaterialError("No se permite modificar: " + ", ".join(sorted(invalidos)) + ".")
+        if invalidos:
+            raise MaterialError("No se permite modificar: " + ", ".join(sorted(invalidos)) + ".")
     result = dict(data)
-    for key, label in (("codigo","El código"),("nombre_material","El nombre")):
+    for key, label in (("codigo", "El código"), ("nombre_material", "El nombre")):
         result[key] = str(data.get(key) or "").strip()
-        if not result[key]: raise MaterialError(f"{label} es obligatorio.")
+        if not result[key]:
+            raise MaterialError(f"{label} es obligatorio.")
     result["descripcion"] = str(data.get("descripcion") or "").strip() or None
-    for key, table, label in (("id_categoria","t_categoria_material","La categoría"),
-                              ("id_unidad_medida","t_unidad_medida","La unidad de medida")):
-        try: result[key] = int(data.get(key))
-        except (TypeError, ValueError): raise MaterialError(f"{label} es obligatoria.")
+    for key, table, label in (("id_categoria", "t_categoria_material", "La categoría"),
+                              ("id_unidad_medida", "t_unidad_medida", "La unidad de medida")):
+        try:
+            result[key] = int(data.get(key))
+        except (TypeError, ValueError):
+            raise MaterialError(f"{label} es obligatoria.")
         if result[key] <= 0 or not material_repos.referencia_activa(table, result[key]):
             raise MaterialError(f"{label} no existe o está inactiva.", 404)
     result["precio"] = _numero(data.get("precio"), "El precio", obligatorio=False)
-    result["stock_minimo"] = _numero(data.get("stock_minimo"), "El stock mínimo")
+
     chars = data.get("caracteristicas", [])
-    if not isinstance(chars, list): raise MaterialError("Las características deben ser una lista.")
-    seen = set(); result["caracteristicas"] = []
+    if not isinstance(chars, list):
+        raise MaterialError("Las características deben ser una lista.")
+    seen = set()
+    result["caracteristicas"] = []
     for item in chars:
-        if not isinstance(item, dict): raise MaterialError("Cada característica debe ser un objeto.")
-        nombre, valor = str(item.get("nombre") or "").strip(), str(item.get("valor") or "").strip()
-        if not nombre or not valor: raise MaterialError("Cada característica debe tener nombre y valor.")
-        if nombre.casefold() in seen: raise MaterialError(f"La característica '{nombre}' está duplicada.")
-        seen.add(nombre.casefold()); result["caracteristicas"].append({"nombre":nombre,"valor":valor})
-    if creando:
-        result["cantidad_inicial"] = _numero(data.get("cantidad_inicial"), "La cantidad inicial")
-        try: result["fecha_ingreso"] = date.fromisoformat(str(data.get("fecha_ingreso")))
-        except (ValueError, TypeError): raise MaterialError("La fecha de ingreso debe tener formato YYYY-MM-DD.")
+        if not isinstance(item, dict):
+            raise MaterialError("Cada característica debe ser un objeto.")
+        nombre = str(item.get("nombre") or "").strip()
+        valor = str(item.get("valor") or "").strip()
+        if not nombre or not valor:
+            raise MaterialError("Cada característica debe tener nombre y valor.")
+        if nombre.casefold() in seen:
+            raise MaterialError(f"La característica '{nombre}' está duplicada.")
+        seen.add(nombre.casefold())
+        result["caracteristicas"].append({"nombre": nombre, "valor": valor})
+
     return result
 
 
@@ -81,58 +95,92 @@ def _log(token, accion, descripcion, ip):
 def registrar(data, token, ip="unknown"):
     clean = _validar(data, True)
     empresa_target = _empresa(token, data.get("id_empresa"), obligatorio=True)
-    try: material_id = material_repos.crear(empresa_target, clean)
-    except material_repos.MaterialConflictError as exc: raise MaterialError(str(exc), 409)
-    _log(token,"REGISTRAR_MATERIAL",f"Material {material_id} registrado.",ip)
-    return {"success":True,"id_material":material_id,"message":"Material registrado exitosamente."}
+    try:
+        material_id = material_repos.crear(empresa_target, clean)
+    except material_repos.MaterialConflictError as exc:
+        raise MaterialError(str(exc), 409)
+    _log(token, "REGISTRAR_MATERIAL", f"Material {material_id} registrado.", ip)
+    return {"success": True, "id_material": material_id, "message": "Material registrado exitosamente."}
 
 
 def modificar(material_id, data, token, ip="unknown"):
     empresa_target = _empresa(token, data.get("id_empresa"), obligatorio=False)
-    if not material_repos.obtener(empresa_target, material_id): raise MaterialError("Material no encontrado.",404)
+    if not material_repos.obtener(empresa_target, material_id):
+        raise MaterialError("Material no encontrado.", 404)
     clean = _validar(data, False)
-    try: saved = material_repos.actualizar(empresa_target, material_id, clean)
-    except material_repos.MaterialConflictError as exc: raise MaterialError(str(exc),409)
-    if not saved: raise MaterialError("Material no encontrado.",404)
-    _log(token,"MODIFICAR_MATERIAL",f"Material {material_id} modificado.",ip)
-    return {"success":True,"message":"Material actualizado exitosamente."}
+    try:
+        saved = material_repos.actualizar(empresa_target, material_id, clean)
+    except material_repos.MaterialConflictError as exc:
+        raise MaterialError(str(exc), 409)
+    if not saved:
+        raise MaterialError("Material no encontrado.", 404)
+    _log(token, "MODIFICAR_MATERIAL", f"Material {material_id} modificado.", ip)
+    return {"success": True, "message": "Material actualizado exitosamente."}
 
 
 def listar(token, q=None, id_categoria=None, estado=None, stock_bajo=None, page=1, limit=20, id_empresa=None):
     if estado:
         estado = estado.upper()
-        if estado not in ESTADOS: raise MaterialError("Estado inválido.")
-    if page < 1 or limit < 1 or limit > 100: raise MaterialError("Paginación inválida; limit debe estar entre 1 y 100.")
+        if estado not in ESTADOS:
+            raise MaterialError("Estado inválido.")
+    if page < 1 or limit < 1 or limit > 1000:
+        raise MaterialError("Paginación inválida; limit debe estar entre 1 y 1000.")
     empresa_target = _empresa(token, id_empresa, obligatorio=False)
-    rows,total = material_repos.listar(empresa_target,q.strip() if q else None,id_categoria,estado,stock_bajo,page,limit)
-    return {"success":True,"data":rows,"pagination":{"page":page,"limit":limit,"total":total,"total_pages":(total+limit-1)//limit}}
+    rows, total = material_repos.listar(empresa_target, q.strip() if q else None, id_categoria, estado, stock_bajo, page, limit)
+    return {
+        "success": True,
+        "data": rows,
+        "pagination": {
+            "page": page,
+            "limit": limit,
+            "total": total,
+            "total_pages": (total + limit - 1) // limit if total else 0
+        }
+    }
 
 
 def detalle(material_id, token, id_empresa=None):
     empresa_target = _empresa(token, id_empresa, obligatorio=False)
-    data = material_repos.obtener(empresa_target,material_id)
-    if not data: raise MaterialError("Material no encontrado.",404)
-    return {"success":True,"data":data}
+    data = material_repos.obtener(empresa_target, material_id)
+    if not data:
+        raise MaterialError("Material no encontrado.", 404)
+    return {"success": True, "data": data}
 
 
 def cambiar_estado(material_id, estado, token, ip="unknown", id_empresa=None):
     estado = str(estado or "").strip().upper()
-    if estado not in ESTADOS: raise MaterialError("Estado inválido.")
+    if estado not in ESTADOS:
+        raise MaterialError("Estado inválido.")
     empresa_target = _empresa(token, id_empresa, obligatorio=False)
-    if not material_repos.cambiar_estado(empresa_target,material_id,estado): raise MaterialError("Material no encontrado.",404)
+    if not material_repos.cambiar_estado(empresa_target, material_id, estado):
+        raise MaterialError("Material no encontrado.", 404)
     accion = "DESACTIVAR_MATERIAL" if estado == "INACTIVO" else "REACTIVAR_MATERIAL"
-    _log(token,accion,f"Material {material_id} cambiado a {estado}.",ip)
-    return {"success":True,"message":"Estado actualizado exitosamente."}
+    _log(token, accion, f"Material {material_id} cambiado a {estado}.", ip)
+    return {"success": True, "message": "Estado actualizado exitosamente."}
+
+
+def copiar_catalogo_base(token, id_empresa=None, ip="unknown"):
+    empresa_target = _empresa(token, id_empresa, obligatorio=True)
+    cantidad = material_repos.copiar_catalogo_base(empresa_target)
+    _log(token, "COPIAR_CATALOGO_BASE", f"Se copiaron {cantidad} materiales base a empresa {empresa_target}.", ip)
+    return {
+        "success": True,
+        "message": f"Se han incorporado {cantidad} materiales a su catálogo empresarial.",
+        "data": {"materiales_copiados": cantidad}
+    }
 
 
 def categorias(token):
-    _empresa(token, obligatorio=False); return {"success":True,"data":material_repos.catalogo_activo("categorias")}
+    _empresa(token, obligatorio=False)
+    return {"success": True, "data": material_repos.catalogo_activo("categorias")}
 
 
 def _validar_categoria(data):
-    if not isinstance(data, dict): raise MaterialError("El cuerpo debe ser un objeto válido.")
+    if not isinstance(data, dict):
+        raise MaterialError("El cuerpo debe ser un objeto válido.")
     nombre = str(data.get("nombre") or "").strip()
-    if not nombre: raise MaterialError("El nombre de la categoría es obligatorio.")
+    if not nombre:
+        raise MaterialError("El nombre de la categoría es obligatorio.")
     descripcion = str(data.get("descripcion") or "").strip() or None
     return nombre, descripcion
 
@@ -140,14 +188,17 @@ def _validar_categoria(data):
 def crear_categoria(data, token, ip="unknown"):
     _empresa(token, obligatorio=False)
     nombre, descripcion = _validar_categoria(data)
-    try: categoria = material_repos.crear_categoria(nombre, descripcion)
-    except material_repos.MaterialConflictError as exc: raise MaterialError(str(exc), 409)
-    _log(token,"REGISTRAR_CATEGORIA_MATERIAL",f"Categoría {categoria['id_categoria']} ({nombre}) registrada.",ip)
-    return {"success":True,"data":categoria,"message":"Categoría registrada exitosamente."}
+    try:
+        categoria = material_repos.crear_categoria(nombre, descripcion)
+    except material_repos.MaterialConflictError as exc:
+        raise MaterialError(str(exc), 409)
+    _log(token, "REGISTRAR_CATEGORIA_MATERIAL", f"Categoría {categoria['id_categoria']} ({nombre}) registrada.", ip)
+    return {"success": True, "data": categoria, "message": "Categoría registrada exitosamente."}
 
 
 def unidades_medida(token):
-    _empresa(token, obligatorio=False); return {"success":True,"data":material_repos.catalogo_activo("unidades")}
+    _empresa(token, obligatorio=False)
+    return {"success": True, "data": material_repos.catalogo_activo("unidades")}
 
 
 def catalogo_base(token, q=None, id_categoria=None, id_empresa=None, page=1, limit=100):
@@ -198,10 +249,21 @@ def adoptar(data: dict, token, ip="unknown"):
     if not res.get("success"):
         raise MaterialError(res.get("error", "Error al adoptar material base."), 400)
 
-    _log(token, "ADOPTAR_MATERIAL_BASE", f"Material base ID {id_material_base} adoptado en catálogo de empresa ID {id_empresa} con código '{res['codigo']}'.", ip)
+    _log(token, "ADOPTAR_MATERIAL_BASE", f"Material base ID {id_material_base} adoptado en empresa ID {id_empresa} con código '{res['codigo']}'.", ip)
     return {
         "success": True,
-        "message": f"Material '{res['nombre_material']}' adoptado con éxito en el catálogo de su empresa.",
+        "message": f"Material '{res['nombre_material']}' adoptado con éxito.",
         "data": res
+    }
+
+
+def copiar_catalogo_base(token, id_empresa=None, ip="unknown"):
+    empresa_target = _empresa(token, id_empresa, obligatorio=True)
+    copiados = material_repos.copiar_catalogo_base(empresa_target)
+    _log(token, "COPIAR_CATALOGO_BASE", f"Se incorporaron {copiados} materiales del catálogo base a la empresa {empresa_target}.", ip)
+    return {
+        "success": True,
+        "message": f"Se incorporaron {copiados} materiales base al catálogo de su empresa.",
+        "data": {"materiales_copiados": copiados}
     }
 

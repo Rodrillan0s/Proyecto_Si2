@@ -58,6 +58,20 @@ def get_metricas(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# GET /api/crm/asesores
+# ─────────────────────────────────────────────────────────────────────────────
+@router.get("/asesores")
+def get_asesores(
+    id_empresa: int = None,
+    token=Depends(exigir_permiso("Visualizar_clientes")),
+):
+    try:
+        return crm_services.listar_asesores(token=token, id_empresa_solicitada=id_empresa)
+    except crm_services.CrmError as exc:
+        _raise(exc)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # GET /api/crm/clientes/unidades-disponibles
 # ─────────────────────────────────────────────────────────────────────────────
 @router.get("/clientes/unidades-disponibles")
@@ -150,12 +164,14 @@ def patch_clasificacion(
 ):
     try:
         nuevo_estado = data.get("estado")
+        nota = data.get("nota")
         return crm_services.clasificar_prospecto(
             id_cliente=id_cliente,
             nuevo_estado=nuevo_estado,
             token=token,
             ip=_ip(request),
-            id_empresa_solicitada=id_empresa
+            id_empresa_solicitada=id_empresa,
+            nota=nota
         )
     except crm_services.CrmError as exc:
         _raise(exc)

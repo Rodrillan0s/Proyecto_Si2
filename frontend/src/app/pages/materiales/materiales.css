@@ -56,3 +56,11 @@
 :host-context(.dark) .material-base-summary{background:#0f172a;border-color:#334155}
 .summary-icon{font-size:1.8rem}
 .material-base-summary h4{font-size:1rem;font-weight:700;margin:0 0 .2rem}
+
+.header-actions{display:flex;align-items:center;gap:.6rem}
+.empty-assistant{padding:3rem 1.5rem;text-align:center;max-width:580px;margin:0 auto}
+.assistant-icon{font-size:3rem;line-height:1;margin-bottom:.5rem}
+.assistant-text{font-size:.9rem;color:#64748b;margin:.6rem 0 1.5rem;line-height:1.55}
+:host-context(.dark) .assistant-text{color:#94a3b8}
+.assistant-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:.75rem}
+

@@ -41,8 +41,18 @@ class PostgreSQL():
         try:
             p = self.get_pool()
             self.conn = p.getconn()
-            if self.conn.closed:
-                p.putconn(self.conn, close=True)
+            is_dead = self.conn.closed != 0
+            if not is_dead:
+                try:
+                    with self.conn.cursor() as cur_test:
+                        cur_test.execute("SELECT 1;")
+                except Exception:
+                    is_dead = True
+            if is_dead:
+                try:
+                    p.putconn(self.conn, close=True)
+                except Exception:
+                    pass
                 self.conn = p.getconn()
             self.cur = self.conn.cursor()
             self._from_pool = True

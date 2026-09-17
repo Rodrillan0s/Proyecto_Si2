@@ -13,7 +13,8 @@ import {
   UnidadDisponible,
   TipoCliente,
   TipoInteraccion,
-  EstadoAsociacionUnidad
+  EstadoAsociacionUnidad,
+  AsesorComercial
 } from '../../services/crm.service';
 import { AiService } from '../../services/ai.service';
 
@@ -46,6 +47,11 @@ export class CrmComponent implements OnInit {
   metricas: MetricasCRM | null = null;
   cargandoMetricas = false;
 
+  // Asesores comerciales de la empresa activa
+  asesores: AsesorComercial[] = [];
+  cargandoAsesores = false;
+  filtroAsesor: number | null = null;
+
   // Listado de clientes / prospectos
   clientes: ClienteCRM[] = [];
   cargandoLista = false;
@@ -56,6 +62,23 @@ export class CrmComponent implements OnInit {
   limite = 15;
   total = 0;
   totalPaginas = 1;
+
+  // Etapas del pipeline comercial para visualización y avance
+  etapasPipeline = [
+    { clave: 'NUEVO', label: 'Nuevo', icono: '🎯' },
+    { clave: 'CONTACTADO', label: 'Contactado', icono: '📞' },
+    { clave: 'INTERESADO', label: 'Interesado', icono: '💡' },
+    { clave: 'NEGOCIACION', label: 'Negociación', icono: '💼' },
+    { clave: 'RESERVADO', label: 'Reservado', icono: '📑' },
+    { clave: 'VENDIDO', label: 'Vendido', icono: '🤝' },
+  ];
+
+  // Modal para avanzar de etapa con notas
+  mostrarModalCambiarEtapa = false;
+  clienteParaCambioEtapa: ClienteCRM | null = null;
+  etapaSeleccionada = '';
+  notaCambioEtapa = '';
+  guardandoCambioEtapa = false;
 
   // Detalle e Historial (HU81)
   clienteSeleccionado: ClienteCRM | null = null;
@@ -81,7 +104,8 @@ export class CrmComponent implements OnInit {
     estado: 'NUEVO',
     origen: 'DIRECTO',
     presupuesto_estimado: null,
-    notas: ''
+    notas: '',
+    id_usuario_asignado: null
   };
 
   // Formulario de Interacción (HU84)
@@ -91,11 +115,13 @@ export class CrmComponent implements OnInit {
     tipo: TipoInteraccion;
     asunto: string;
     detalle: string;
+    fecha_interaccion: string;
     fecha_proximo_contacto: string;
   } = {
     tipo: 'LLAMADA',
     asunto: '',
     detalle: '',
+    fecha_interaccion: '',
     fecha_proximo_contacto: ''
   };
 
@@ -134,6 +160,7 @@ export class CrmComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarMetricas();
+    this.cargarAsesores();
     this.cargarLista();
 
     // Suscripción reactiva para buscador con debounce
@@ -155,6 +182,24 @@ export class CrmComponent implements OnInit {
         }
       },
       error: () => {}
+    });
+  }
+
+  // ── Cargar Asesores Comerciales de la Empresa ─────────────────────────────
+  cargarAsesores() {
+    this.cargandoAsesores = true;
+    this.crmService.listarAsesores().subscribe({
+      next: (res) => {
+        if (res && res.success) {
+          this.asesores = res.data || [];
+        }
+        this.cargandoAsesores = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.cargandoAsesores = false;
+        this.cdr.detectChanges();
+      }
     });
   }
 
@@ -209,6 +254,7 @@ export class CrmComponent implements OnInit {
       tipo_cliente: this.filtroTipo,
       estado: this.filtroEstado || undefined,
       q: this.q.trim() || undefined,
+      id_usuario_asignado: this.filtroAsesor || undefined,
       page: this.pagina,
       limit: this.limite
     }).subscribe({
@@ -231,6 +277,12 @@ export class CrmComponent implements OnInit {
 
   filtrarPorEstado(estado: string) {
     this.filtroEstado = estado;
+    this.pagina = 1;
+    this.cargarLista();
+  }
+
+  filtrarPorAsesor(idAsesor: any) {
+    this.filtroAsesor = idAsesor ? Number(idAsesor) : null;
     this.pagina = 1;
     this.cargarLista();
   }
@@ -282,7 +334,8 @@ export class CrmComponent implements OnInit {
       estado: tipo === 'PROSPECTO' ? 'NUEVO' : 'ACTIVO',
       origen: 'DIRECTO',
       presupuesto_estimado: null,
-      notas: ''
+      notas: '',
+      id_usuario_asignado: null
     };
     this.limpiarMensajes();
     this.mostrarModalFormulario = true;
@@ -303,7 +356,8 @@ export class CrmComponent implements OnInit {
       estado: c.estado,
       origen: c.origen || 'DIRECTO',
       presupuesto_estimado: c.presupuesto_estimado,
-      notas: c.notas || ''
+      notas: c.notas || '',
+      id_usuario_asignado: c.id_usuario_asignado || null
     };
     this.limpiarMensajes();
     this.mostrarModalFormulario = true;
@@ -354,20 +408,45 @@ export class CrmComponent implements OnInit {
     }
   }
 
-  // ── Clasificación / Conversión (HU83) ──────────────────────────────────────
-  cambiarEstadoProspecto(c: ClienteCRM, nuevoEstado: string) {
-    this.crmService.clasificarProspecto(c.id_cliente, nuevoEstado).subscribe({
+  // ── Avance del Pipeline y Gestión de Etapas (HU83) ─────────────────────────
+  abrirModalCambiarEtapa(c: ClienteCRM, nuevaEtapa: string) {
+    this.clienteParaCambioEtapa = c;
+    this.etapaSeleccionada = nuevaEtapa;
+    this.notaCambioEtapa = '';
+    this.mostrarModalCambiarEtapa = true;
+  }
+
+  cerrarModalCambiarEtapa() {
+    this.mostrarModalCambiarEtapa = false;
+    this.clienteParaCambioEtapa = null;
+    this.etapaSeleccionada = '';
+    this.notaCambioEtapa = '';
+  }
+
+  confirmarCambioEtapa() {
+    if (!this.clienteParaCambioEtapa || !this.etapaSeleccionada) return;
+
+    this.guardandoCambioEtapa = true;
+    this.crmService.clasificarProspecto(
+      this.clienteParaCambioEtapa.id_cliente,
+      this.etapaSeleccionada,
+      this.notaCambioEtapa.trim() || undefined
+    ).subscribe({
       next: (res) => {
-        this.mostrarExito(res.message || 'Clasificación actualizada.');
+        this.mostrarExito(res.message || 'Etapa comercial actualizada con éxito.');
+        this.guardandoCambioEtapa = false;
+        this.mostrarModalCambiarEtapa = false;
         this.cargarLista();
         this.cargarMetricas();
-        if (this.clienteSeleccionado && this.clienteSeleccionado.id_cliente === c.id_cliente) {
-          this.clienteSeleccionado.estado = res.estado;
-          this.clienteSeleccionado.tipo_cliente = res.tipo_cliente;
+        if (this.clienteSeleccionado && this.clienteSeleccionado.id_cliente === this.clienteParaCambioEtapa?.id_cliente) {
+          this.verDetalleCliente(this.clienteSeleccionado);
         }
+        this.clienteParaCambioEtapa = null;
       },
       error: (err) => {
-        this.mostrarError(err.error?.detail || 'Error al actualizar clasificación.');
+        this.mostrarError(err.error?.detail || 'Error al actualizar etapa comercial.');
+        this.guardandoCambioEtapa = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -379,6 +458,7 @@ export class CrmComponent implements OnInit {
       tipo: 'LLAMADA',
       asunto: '',
       detalle: '',
+      fecha_interaccion: new Date().toISOString().split('T')[0],
       fecha_proximo_contacto: ''
     };
     this.limpiarMensajes();
@@ -397,6 +477,7 @@ export class CrmComponent implements OnInit {
       tipo: this.formInteraccion.tipo,
       asunto: this.formInteraccion.asunto.trim(),
       detalle: this.formInteraccion.detalle.trim(),
+      fecha_interaccion: this.formInteraccion.fecha_interaccion || null,
       fecha_proximo_contacto: this.formInteraccion.fecha_proximo_contacto || null
     }).subscribe({
       next: (res) => {
@@ -474,9 +555,12 @@ export class CrmComponent implements OnInit {
   actualizarEstadoAsociacion(asoc: UnidadAsociadaCRM, nuevoEstado: any) {
     this.crmService.cambiarEstadoAsociacion(asoc.id_cliente_unidad, nuevoEstado).subscribe({
       next: (res) => {
-        this.mostrarExito(res.message || 'Estado de la unidad actualizado.');
+        this.mostrarExito(res.message || `Estado de la unidad actualizado a ${nuevoEstado}.`);
         asoc.estado_asociacion = nuevoEstado as EstadoAsociacionUnidad;
         this.cargarMetricas();
+        if (this.clienteSeleccionado) {
+          this.verDetalleCliente(this.clienteSeleccionado);
+        }
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -525,7 +609,28 @@ export class CrmComponent implements OnInit {
     });
   }
 
-  // ── Helpers UI ────────────────────────────────────────────────────────────
+  // ── Helpers UI y Pipeline ─────────────────────────────────────────────────
+  getIndiceEtapa(estado: string): number {
+    const orden = ['NUEVO', 'CONTACTADO', 'INTERESADO', 'NEGOCIACION', 'RESERVADO', 'VENDIDO'];
+    const norm = (estado === 'EN_NEGOCIACION' ? 'NEGOCIACION' : estado || '').toUpperCase();
+    return orden.indexOf(norm);
+  }
+
+  getIconoInteraccion(tipo: string): string {
+    switch (tipo) {
+      case 'LLAMADA': return '📞';
+      case 'MENSAJE': return '💬';
+      case 'REUNION': return '👥';
+      case 'VISITA': return '🏡';
+      case 'CONSULTA': return '❓';
+      case 'SEGUIMIENTO': return '🔄';
+      case 'OBSERVACION': return '📝';
+      case 'CORREO': return '✉️';
+      case 'NOTA': return '📌';
+      default: return '📋';
+    }
+  }
+
   cambiarPagina(nueva: number) {
     if (nueva < 1 || nueva > this.totalPaginas) return;
     this.pagina = nueva;
@@ -552,23 +657,35 @@ export class CrmComponent implements OnInit {
   }
 
   getBadgeEstadoClass(estado: string): string {
-    switch (estado) {
-      case 'NUEVO': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800';
-      case 'CONTACTADO': return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800';
-      case 'INTERESADO': return 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800';
-      case 'EN_NEGOCIACION': return 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 border-orange-200 dark:border-orange-800 font-bold';
+    const norm = (estado || '').toUpperCase();
+    switch (norm) {
+      case 'NUEVO':
+        return 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800';
+      case 'CONTACTADO':
+        return 'bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800';
+      case 'INTERESADO':
+        return 'bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800';
+      case 'NEGOCIACION':
+      case 'EN_NEGOCIACION':
+        return 'bg-orange-100 dark:bg-orange-950/40 text-orange-800 dark:text-orange-300 border-orange-200 dark:border-orange-800 font-bold';
+      case 'RESERVADO':
+        return 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 font-bold';
+      case 'VENDIDO':
       case 'CONVERTIDO':
-      case 'ACTIVO': return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 font-bold';
+      case 'ACTIVO':
+        return 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 font-bold';
       case 'PERDIDO':
-      case 'INACTIVO': return 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700';
-      default: return 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300';
+      case 'INACTIVO':
+        return 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700';
+      default:
+        return 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300';
     }
   }
 
   getBadgeAsocClass(estado: string): string {
     switch (estado) {
       case 'INTERESADO': return 'bg-amber-100 text-amber-800 border-amber-200';
-      case 'RESERVADO': return 'bg-blue-100 text-blue-800 border-blue-200 font-bold';
+      case 'RESERVADO': return 'bg-indigo-100 text-indigo-800 border-indigo-200 font-bold';
       case 'VENDIDO': return 'bg-emerald-100 text-emerald-800 border-emerald-200 font-bold';
       case 'ENTREGADO': return 'bg-teal-100 text-teal-800 border-teal-200';
       case 'CANCELADO': return 'bg-red-100 text-red-800 border-red-200';

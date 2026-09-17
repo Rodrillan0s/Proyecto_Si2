@@ -254,22 +254,45 @@
         <div *ngIf="hasPermission('Visualizar_obras')" class="sidebar-group">
           <div class="sidebar-item justify-between" (click)="toggleSubmenuObras()" style="cursor: pointer;">
             <div class="flex items-center">
-              <svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-              <span>Obras</span>
+              <svg class="w-5 h-5 mr-3 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+              <span>Obras & Proyectos</span>
             </div>
             <svg class="w-4 h-4 transition-transform duration-200" [class.rotate-180]="menuObrasAbierto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
           </div>
           
-          <div *ngIf="menuObrasAbierto" class="pl-7 space-y-0.5 border-l-2 border-slate-700/40 ml-4 my-1">
-            <a class="sidebar-subitem" (click)="navegarA('/proyectos')">
-              <span class="w-1.5 h-1.5 rounded-full bg-slate-400 mr-2.5"></span>
-              Ver obras
-            </a>
-            <a class="sidebar-subitem" (click)="navegarA('/proyectos', 'nuevo')" *ngIf="hasPermission('Registrar_obras')">
+          <div *ngIf="menuObrasAbierto" class="pl-6 space-y-0.5 border-l-2 border-slate-700/50 ml-4 my-1">
+            <!-- 1. Gestión de Proyectos -->
+            <a id="sidebar-gestion-proyectos" class="sidebar-subitem" (click)="navegarA('/proyectos')">
               <span class="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2.5"></span>
-              Nueva obra
+              Gestión de proyectos
             </a>
-            <a class="sidebar-subitem" (click)="navegarA('/ordenes-trabajo')">
+
+            <!-- 2. Editar / Registrar Proyecto -->
+            <a id="sidebar-editar-proyectos" class="sidebar-subitem" (click)="navegarA('/proyectos', 'nuevo')" *ngIf="hasPermission('Registrar_obras')">
+              <span class="w-1.5 h-1.5 rounded-full bg-blue-400 mr-2.5"></span>
+              Editar / Nuevo proyecto
+            </a>
+
+            <!-- 3. Precios Unitarios (APU) -->
+            <a id="sidebar-apus-obras" class="sidebar-subitem" (click)="navegarA('/apus')" *ngIf="hasAnyPermission(['Visualizar_presupuesto', 'Visualizar_obras'])">
+              <span class="w-1.5 h-1.5 rounded-full bg-orange-400 mr-2.5"></span>
+              Análisis de Precios (APU)
+            </a>
+
+            <!-- 4. Asignación de Unidades (Estructura WBS) -->
+            <a id="sidebar-unidades-obra" class="sidebar-subitem" (click)="navegarA('/proyectos', 'estructura')">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-2.5"></span>
+              Asignación de unidades
+            </a>
+
+            <!-- 5. Asignar Jefes de Obras -->
+            <a id="sidebar-jefes-obra" class="sidebar-subitem" (click)="navegarA('/proyectos', 'jefes')">
+              <span class="w-1.5 h-1.5 rounded-full bg-purple-400 mr-2.5"></span>
+              Asignar jefes de obras
+            </a>
+
+            <!-- 6. Órdenes de Trabajo -->
+            <a id="sidebar-ordenes-trabajo" class="sidebar-subitem" (click)="navegarA('/ordenes-trabajo')">
               <span class="w-1.5 h-1.5 rounded-full bg-slate-400 mr-2.5"></span>
               Órdenes de Trabajo
             </a>
@@ -283,25 +306,37 @@
           CRM & Clientes
         </a>
 
-        <!-- OPERACIONES Y LOGÍSTICA -->
-        <div class="sidebar-section-title" *ngIf="hasAnyPermission(['Visualizar_inventario', 'Visualizar_materiales', 'Visualizar_proveedores'])">LOGÍSTICA & TÉCNICO</div>
+        <!-- INVENTARIO & LOGÍSTICA -->
+        <div class="sidebar-section-title" *ngIf="hasAnyPermission(['Visualizar_inventario', 'Visualizar_materiales', 'Visualizar_proveedores', 'Visualizar_ordenes_compra', 'Visualizar_presupuesto', 'Visualizar_obras'])">INVENTARIO & LOGÍSTICA</div>
 
-        <!-- INVENTARIO (Requiere Visualizar_inventario) -->
-        <a class="sidebar-item" (click)="navegarA('/materiales')" *ngIf="hasPermission('Visualizar_inventario')">
-          <svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-          Inventario
+        <!-- INVENTARIO / STOCK (Requiere Visualizar_inventario o Visualizar_materiales) -->
+        <a id="sidebar-inventario" class="sidebar-item" (click)="navegarA('/inventario')" *ngIf="hasAnyPermission(['Visualizar_inventario', 'Visualizar_materiales'])">
+          <svg class="w-5 h-5 mr-3 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+          Inventario / Stock
+        </a>
+
+        <!-- ÓRDENES DE COMPRA (Requiere Visualizar_ordenes_compra) -->
+        <a id="sidebar-compras" class="sidebar-item" (click)="navegarA('/compras')" *ngIf="hasPermission('Visualizar_ordenes_compra')">
+          <svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+          Órdenes de Compra
         </a>
 
         <!-- MATERIALES (Requiere Visualizar_materiales) -->
         <a class="sidebar-item" (click)="navegarA('/materiales')" *ngIf="hasPermission('Visualizar_materiales')">
-          <svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
-          Materiales
+          <svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+          Catálogo Materiales
         </a>
 
         <!-- PROVEEDORES (Requiere Visualizar_proveedores) -->
         <a id="sidebar-proveedores" class="sidebar-item" (click)="navegarA('/proveedores')" *ngIf="hasPermission('Visualizar_proveedores')">
           <svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
           Proveedores
+        </a>
+
+        <!-- ANÁLISIS DE PRECIOS UNITARIOS (APU) -->
+        <a id="sidebar-apus" class="sidebar-item" (click)="navegarA('/apus')" *ngIf="hasAnyPermission(['Visualizar_presupuesto', 'Visualizar_obras'])">
+          <svg class="w-5 h-5 mr-3 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          Precios Unitarios (APU)
         </a>
 
         <!-- GESTION Y CONTROL -->

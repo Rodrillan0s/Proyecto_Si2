@@ -124,4 +124,8 @@ export class MaterialsService {
   adoptar(payload: MaterialAdoptarPayload): Observable<MaterialMutationResponse> {
     return this.http.post<MaterialMutationResponse>(`${this.url}/adoptar`, payload);
   }
+
+  copiarCatalogoBase(id_empresa?: number | null): Observable<ApiResponse<{ materiales_copiados: number }>> {
+    return this.http.post<ApiResponse<{ materiales_copiados: number }>>(`${this.url}/copiar-catalogo-base`, { id_empresa: id_empresa || undefined });
+  }
 }

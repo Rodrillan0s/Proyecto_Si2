@@ -1,0 +1,727 @@
+<section class="compras-page">
+  <!-- TOASTS -->
+  <div class="toast toast-success" *ngIf="exito" role="status">{{ exito }}</div>
+  <div class="toast toast-error" *ngIf="error" role="alert">{{ error }}</div>
+
+  <!-- HEADER -->
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">LOGÍSTICA Y COMPRAS</p>
+      <h1>Órdenes de Compra</h1>
+      <p>Gestione el aprovisionamiento de materiales, aprobaciones y recepciones a inventario.</p>
+    </div>
+    <div class="header-actions">
+      <button *ngIf="puedeRegistrar()" type="button" class="btn-primary" (click)="abrirModalNueva()">
+        ＋ Nueva Orden de Compra
+      </button>
+    </div>
+  </header>
+
+  <!-- BADGE EMPRESA ACTIVA -->
+  <div *ngIf="empresaActiva" class="company-badge">
+    <div class="badge-left">
+      <span class="badge-label">Empresa:</span>
+      <span class="badge-name">{{ empresaActiva.nombre_empresa }}</span>
+    </div>
+    <span class="badge-total">{{ total }} orden(es) registrada(s)</span>
+  </div>
+
+  <!-- KPI CARDS -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Total Órdenes</div>
+      <div class="kpi-value">{{ total }}</div>
+      <div class="kpi-sub">En todos los estados</div>
+    </div>
+    <div class="kpi-card kpi-warning">
+      <div class="kpi-label">Pendientes Aprobación</div>
+      <div class="kpi-value">{{ conteoPendientes }}</div>
+      <div class="kpi-sub">Esperando revisión</div>
+    </div>
+    <div class="kpi-card kpi-info">
+      <div class="kpi-label">Aprobadas / En Proceso</div>
+      <div class="kpi-value">{{ conteoAprobadas }}</div>
+      <div class="kpi-sub">Listas para recepción</div>
+    </div>
+    <div class="kpi-card kpi-success">
+      <div class="kpi-label">Recibidas Totalmente</div>
+      <div class="kpi-value">{{ conteoRecibidas }}</div>
+      <div class="kpi-sub">Entrada completa a almacén</div>
+    </div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="filters-card">
+    <div class="search-field">
+      <label for="buscar-oc">Buscar por número o proveedor</label>
+      <div class="search-wrap">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input
+          id="buscar-oc"
+          type="text"
+          placeholder="Ej: OC-2026-0001, Insumos S.R.L..."
+          [(ngModel)]="q"
+          (input)="onBuscar(q)"
+        />
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <div class="select-field">
+        <label for="filtro-estado">Estado</label>
+        <select id="filtro-estado" [(ngModel)]="estadoFiltro" (change)="cambiarFiltroEstado(estadoFiltro)">
+          <option value="">Todos los estados</option>
+          <option value="BORRADOR">Borrador</option>
+          <option value="PENDIENTE_APROBACION">Pendiente Aprobación</option>
+          <option value="APROBADA">Aprobada</option>
+          <option value="RECIBIDA_PARCIAL">Recibida Parcial</option>
+          <option value="RECIBIDA">Recibida Total</option>
+          <option value="RECHAZADA">Rechazada</option>
+          <option value="CANCELADA">Cancelada</option>
+        </select>
+      </div>
+
+      <div class="select-field">
+        <label for="filtro-proveedor">Proveedor</label>
+        <select id="filtro-proveedor" [(ngModel)]="proveedorFiltro" (change)="cargarOrdenes()">
+          <option [ngValue]="null">Todos los proveedores</option>
+          <option *ngFor="let p of proveedores" [ngValue]="p.id_proveedor">
+            {{ p.nombre }}
+          </option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA PRINCIPAL -->
+  <div class="table-container">
+    <div *ngIf="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Cargando órdenes de compra...</p>
+    </div>
+
+    <div *ngIf="!loading && !ordenes.length" class="empty-state">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+      <h3>No se encontraron órdenes de compra</h3>
+      <p>Ajuste los filtros o registre una nueva orden de compra para su empresa.</p>
+    </div>
+
+    <table *ngIf="!loading && ordenes.length" class="main-table">
+      <thead>
+        <tr>
+          <th>Nº Orden</th>
+          <th>Fecha</th>
+          <th>Proveedor</th>
+          <th>Solicitante</th>
+          <th>Total</th>
+          <th>Estado</th>
+          <th>Progreso</th>
+          <th class="th-actions">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let o of ordenes">
+          <td>
+            <span class="order-code">{{ o.numero_orden }}</span>
+          </td>
+          <td>{{ o.fecha | date:'dd/MM/yyyy' }}</td>
+          <td>
+            <div class="provider-cell">
+              <span class="provider-name">{{ o.proveedor_razon_social }}</span>
+              <span class="provider-nit">NIT: {{ o.proveedor_nit }}</span>
+            </div>
+          </td>
+          <td>
+            <div class="user-cell">
+              <span>{{ o.nombre_solicitante }}</span>
+            </div>
+          </td>
+          <td class="td-total">
+            Bs. {{ o.total | number:'1.2-2' }}
+          </td>
+          <td>
+            <span class="status-badge" [ngClass]="badgeClase(o.estado)">
+              {{ badgeEtiqueta(o.estado) }}
+            </span>
+          </td>
+          <td class="td-progress">
+            <div *ngIf="o.estado === 'APROBADA' || o.estado === 'RECIBIDA_PARCIAL' || o.estado === 'RECIBIDA'" class="progress-box">
+              <div class="progress-bar">
+                <div class="progress-fill" [style.width.%]="calcularProgresoOrden(o)"></div>
+              </div>
+              <span class="progress-text">{{ calcularProgresoOrden(o) }}%</span>
+            </div>
+            <span *ngIf="o.estado !== 'APROBADA' && o.estado !== 'RECIBIDA_PARCIAL' && o.estado !== 'RECIBIDA'" class="text-muted">—</span>
+          </td>
+          <td class="td-actions">
+            <!-- Ver Detalle -->
+            <button type="button" class="btn-icon" (click)="verDetalle(o)" title="Ver Detalle">
+              <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </button>
+
+            <!-- Enviar a Aprobación -->
+            <button
+              *ngIf="o.estado === 'BORRADOR' && puedeRegistrar()"
+              type="button"
+              class="btn-icon btn-action-send"
+              (click)="enviarAprobacion(o)"
+              title="Enviar a Aprobación"
+              [disabled]="procesandoAccion"
+            >
+              <svg viewBox="0 0 24 24"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            </button>
+
+            <!-- Aprobar / Rechazar -->
+            <button
+              *ngIf="o.estado === 'PENDIENTE_APROBACION' && puedeAprobar()"
+              type="button"
+              class="btn-icon btn-action-approve"
+              (click)="abrirModalAprobacion(o, 'APROBADA')"
+              title="Aprobar Orden"
+            >
+              <svg viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+            </button>
+            <button
+              *ngIf="o.estado === 'PENDIENTE_APROBACION' && puedeAprobar()"
+              type="button"
+              class="btn-icon btn-action-reject"
+              (click)="abrirModalAprobacion(o, 'RECHAZADA')"
+              title="Rechazar Orden"
+            >
+              <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+            </button>
+
+            <!-- Recepcionar Materiales -->
+            <button
+              *ngIf="(o.estado === 'APROBADA' || o.estado === 'RECIBIDA_PARCIAL') && puedeRecepcionar()"
+              type="button"
+              class="btn-icon btn-action-receive"
+              (click)="abrirModalRecepcion(o)"
+              title="Recepcionar Materiales"
+            >
+              <svg viewBox="0 0 24 24"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v3.01c0 .72.38 1.36.95 1.7L4 9v11c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V9l1.05-.29c.57-.34.95-.98.95-1.7V4c0-1.1-.9-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"/></svg>
+            </button>
+
+            <!-- Cancelar -->
+            <button
+              *ngIf="(o.estado === 'BORRADOR' || o.estado === 'PENDIENTE_APROBACION' || o.estado === 'APROBADA') && puedeRegistrar()"
+              type="button"
+              class="btn-icon btn-action-cancel"
+              (click)="abrirModalCancelar(o)"
+              title="Cancelar Orden"
+            >
+              <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- PAGINACIÓN -->
+    <div *ngIf="totalPaginas > 1" class="pagination-footer">
+      <span class="pagination-info">Página {{ pagina }} de {{ totalPaginas }} ({{ total }} total)</span>
+      <div class="pagination-buttons">
+        <button type="button" class="btn-page" [disabled]="pagina === 1" (click)="pagina = pagina - 1; cargarOrdenes()">
+          Anterior
+        </button>
+        <button type="button" class="btn-page" [disabled]="pagina === totalPaginas" (click)="pagina = pagina + 1; cargarOrdenes()">
+          Siguiente
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- MODAL 1: NUEVA ORDEN DE COMPRA -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="modalActivo === 'nueva'" class="modal-overlay" (click)="cerrarModales()">
+    <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h2>Nueva Orden de Compra</h2>
+          <p class="modal-sub">Cree un requerimiento de compra formal hacia un proveedor.</p>
+        </div>
+        <button type="button" class="btn-close" (click)="cerrarModales()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- SELECTOR DE EMPRESA SI ESTÁ EN VISTA GLOBAL -->
+        <div class="form-field" *ngIf="esVistaGlobal()" style="margin-bottom: 1rem;">
+          <label for="form-empresa">Empresa <span class="required">*</span></label>
+          <select id="form-empresa" [(ngModel)]="formNueva.id_empresa" (change)="onEmpresaFormCambiada()">
+            <option [ngValue]="null" disabled>Seleccione la empresa para esta orden...</option>
+            <option *ngFor="let emp of empresas" [ngValue]="emp.id_empresa">
+              {{ emp.nombre_empresa }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-grid-top">
+          <div class="form-field">
+            <label for="form-proveedor">Proveedor *</label>
+            <select id="form-proveedor" [(ngModel)]="formNueva.id_proveedor">
+              <option [ngValue]="null" disabled>
+                {{ proveedores.length === 0 ? 'No hay proveedores registrados para esta empresa' : 'Seleccione un proveedor' }}
+              </option>
+              <option *ngFor="let p of proveedores" [ngValue]="p.id_proveedor">
+                {{ p.nombre }} (NIT: {{ p.nit }})
+              </option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="form-fecha">Fecha de Emisión</label>
+            <input id="form-fecha" type="date" [(ngModel)]="formNueva.fecha" />
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="form-obs">Observaciones / Términos</label>
+          <textarea id="form-obs" rows="2" placeholder="Notas de entrega, condiciones o referencia de obra..." [(ngModel)]="formNueva.observaciones"></textarea>
+        </div>
+
+        <!-- TABLA DINÁMICA DE MATERIALES -->
+        <div class="section-divider">
+          <h3>Materiales Solicitados</h3>
+          <button type="button" class="btn-secondary btn-sm" (click)="agregarItemForm()">
+            ＋ Agregar Material
+          </button>
+        </div>
+
+        <div *ngIf="materiales.length === 0" style="margin-bottom: 1rem; padding: 0.75rem 1rem; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 0.5rem; font-size: 0.82rem; color: #b45309; display: flex; align-items: center; justify-content: space-between;">
+          <span>No hay materiales registrados en el catálogo de su empresa.</span>
+          <a routerLink="/materiales" (click)="cerrarModales()" style="font-weight: 600; text-decoration: underline; color: #d97706; cursor: pointer; margin-left: 0.5rem;">Ir a Catálogo de Materiales</a>
+        </div>
+
+        <div class="items-table-wrap">
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th style="width: 42%;">Material</th>
+                <th style="width: 14%;">U.M.</th>
+                <th style="width: 16%;">Cantidad</th>
+                <th style="width: 16%;">Precio Unitario (Bs.)</th>
+                <th style="width: 16%;">Subtotal (Bs.)</th>
+                <th style="width: 6%;"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let it of formNueva.items; let i = index">
+                <td>
+                  <select [(ngModel)]="it.id_material" (change)="onMaterialSeleccionado(it)">
+                    <option [ngValue]="null" disabled>Seleccionar material</option>
+                    <option *ngFor="let m of materiales" [ngValue]="m.id_material">
+                      {{ m.codigo }} - {{ m.nombre_material }}
+                    </option>
+                  </select>
+                </td>
+                <td>
+                  <span class="unit-tag">{{ it.unidad_medida || '—' }}</span>
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    min="0.001"
+                    step="1"
+                    [(ngModel)]="it.cantidad_solicitada"
+                    (input)="calcularSubtotalItem(it)"
+                  />
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    [(ngModel)]="it.precio_unitario"
+                    (input)="calcularSubtotalItem(it)"
+                  />
+                </td>
+                <td class="td-subtotal">
+                  Bs. {{ it.subtotal | number:'1.2-2' }}
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    class="btn-row-delete"
+                    (click)="eliminarItemForm(i)"
+                    [disabled]="formNueva.items.length === 1"
+                    title="Eliminar fila"
+                  >
+                    ✕
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- TOTALES Y CHECKBOX -->
+        <div class="form-bottom-summary">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="formNueva.enviar_aprobacion" />
+            <span>Enviar directamente a <strong>Pendiente de Aprobación</strong></span>
+          </label>
+
+          <div class="total-badge">
+            <span>Total Orden:</span>
+            <strong>Bs. {{ totalFormNueva | number:'1.2-2' }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="cerrarModales()" [disabled]="guardando">
+          Cancelar
+        </button>
+        <button type="button" class="btn-primary" (click)="guardarOrden()" [disabled]="guardando">
+          {{ guardando ? 'Guardando...' : 'Guardar Orden de Compra' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- MODAL 2: DETALLE DE LA ORDEN DE COMPRA -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="modalActivo === 'detalle' && ordenSeleccionada" class="modal-overlay" (click)="cerrarModales()">
+    <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <div class="header-status-line">
+            <h2>Orden {{ ordenSeleccionada.numero_orden }}</h2>
+            <span class="status-badge" [ngClass]="badgeClase(ordenSeleccionada.estado)">
+              {{ badgeEtiqueta(ordenSeleccionada.estado) }}
+            </span>
+          </div>
+          <p class="modal-sub">Proveedor: <strong>{{ ordenSeleccionada.proveedor_razon_social }}</strong> (NIT: {{ ordenSeleccionada.proveedor_nit }})</p>
+        </div>
+        <button type="button" class="btn-close" (click)="cerrarModales()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- AUDITORÍA Y METADATA -->
+        <div class="audit-grid">
+          <div>
+            <span class="audit-label">Fecha de Orden:</span>
+            <span class="audit-val">{{ ordenSeleccionada.fecha | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <div>
+            <span class="audit-label">Solicitado por:</span>
+            <span class="audit-val">{{ ordenSeleccionada.nombre_solicitante }}</span>
+          </div>
+          <div>
+            <span class="audit-label">Monto Total:</span>
+            <span class="audit-val highlight">Bs. {{ ordenSeleccionada.total | number:'1.2-2' }}</span>
+          </div>
+          <div *ngIf="ordenSeleccionada.nombre_aprobador">
+            <span class="audit-label">Evaluado por:</span>
+            <span class="audit-val">{{ ordenSeleccionada.nombre_aprobador }} ({{ ordenSeleccionada.fecha_aprobacion | date:'dd/MM/yyyy HH:mm' }})</span>
+          </div>
+        </div>
+
+        <div *ngIf="ordenSeleccionada.observacion_aprobacion" class="note-box">
+          <strong>Observación de Aprobación/Rechazo:</strong> {{ ordenSeleccionada.observacion_aprobacion }}
+        </div>
+
+        <div *ngIf="ordenSeleccionada.observaciones" class="note-box note-gray">
+          <strong>Observaciones generales:</strong> {{ ordenSeleccionada.observaciones }}
+        </div>
+
+        <!-- TABS DE DETALLE -->
+        <div class="detail-tabs">
+          <button
+            type="button"
+            class="d-tab"
+            [class.active]="tabDetalle === 'materiales'"
+            (click)="tabDetalle = 'materiales'"
+          >
+            Materiales y Saldo Pendiente ({{ ordenSeleccionada.detalles?.length || 0 }})
+          </button>
+          <button
+            type="button"
+            class="d-tab"
+            [class.active]="tabDetalle === 'recepciones'"
+            (click)="tabDetalle = 'recepciones'"
+          >
+            Historial de Recepciones ({{ ordenSeleccionada.recepciones?.length || 0 }})
+          </button>
+        </div>
+
+        <!-- TAB MATERIALES -->
+        <div *ngIf="tabDetalle === 'materiales'" class="tab-content">
+          <table class="detail-table">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Material</th>
+                <th>U.M.</th>
+                <th>Solicitado</th>
+                <th>Recibido</th>
+                <th>Pendiente</th>
+                <th>P. Unit.</th>
+                <th>Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let d of ordenSeleccionada.detalles">
+                <td><code>{{ d.codigo_material }}</code></td>
+                <td><strong>{{ d.nombre_material }}</strong></td>
+                <td>{{ d.unidad_medida }}</td>
+                <td>{{ d.cantidad_solicitada | number:'1.2-3' }}</td>
+                <td>
+                  <span [class.text-green]="d.cantidad_recibida > 0">
+                    {{ d.cantidad_recibida | number:'1.2-3' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge-pending-qty" [class.done]="d.cantidad_pendiente === 0">
+                    {{ d.cantidad_pendiente | number:'1.2-3' }}
+                  </span>
+                </td>
+                <td>Bs. {{ d.precio_unitario | number:'1.2-2' }}</td>
+                <td>Bs. {{ d.subtotal | number:'1.2-2' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- TAB RECEPCIONES -->
+        <div *ngIf="tabDetalle === 'recepciones'" class="tab-content">
+          <div *ngIf="!ordenSeleccionada.recepciones?.length" class="empty-receptions">
+            <p>Aún no se han registrado recepciones para esta orden.</p>
+          </div>
+
+          <div *ngIf="ordenSeleccionada.recepciones?.length" class="receptions-list">
+            <div *ngFor="let r of ordenSeleccionada.recepciones" class="reception-card">
+              <div class="rec-header">
+                <div>
+                  <span class="rec-num">{{ r.numero_recepcion }}</span>
+                  <span class="rec-date">{{ r.fecha_recepcion | date:'dd/MM/yyyy HH:mm' }}</span>
+                </div>
+                <span class="rec-user">Recepcionado por: {{ r.nombre_usuario_recepcion }}</span>
+              </div>
+              <div class="rec-stats">
+                <span>{{ r.total_items }} material(es) recibidos</span>
+                <strong>Total Unidades: {{ r.total_cantidad_recibida | number:'1.2-3' }}</strong>
+              </div>
+              <p *ngIf="r.observaciones" class="rec-obs">Nota: {{ r.observaciones }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="cerrarModales()">
+          Cerrar
+        </button>
+
+        <!-- ACCIONES CONTEXTUALES -->
+        <button
+          *ngIf="ordenSeleccionada.estado === 'BORRADOR' && puedeRegistrar()"
+          type="button"
+          class="btn-primary"
+          (click)="enviarAprobacion(ordenSeleccionada)"
+          [disabled]="procesandoAccion"
+        >
+          Enviar a Aprobación
+        </button>
+
+        <button
+          *ngIf="ordenSeleccionada.estado === 'PENDIENTE_APROBACION' && puedeAprobar()"
+          type="button"
+          class="btn-danger"
+          (click)="abrirModalAprobacion(ordenSeleccionada, 'RECHAZADA')"
+        >
+          Rechazar
+        </button>
+
+        <button
+          *ngIf="ordenSeleccionada.estado === 'PENDIENTE_APROBACION' && puedeAprobar()"
+          type="button"
+          class="btn-success"
+          (click)="abrirModalAprobacion(ordenSeleccionada, 'APROBADA')"
+        >
+          Aprobar Orden
+        </button>
+
+        <button
+          *ngIf="(ordenSeleccionada.estado === 'APROBADA' || ordenSeleccionada.estado === 'RECIBIDA_PARCIAL') && puedeRecepcionar()"
+          type="button"
+          class="btn-primary"
+          (click)="abrirModalRecepcion(ordenSeleccionada)"
+        >
+          Recepcionar Materiales
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- MODAL 3: APROBAR / RECHAZAR ORDEN -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="modalActivo === 'aprobar_rechazar' && ordenSeleccionada" class="modal-overlay" (click)="cerrarModales()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h2>{{ accionAprobacion === 'APROBADA' ? 'Aprobar Orden de Compra' : 'Rechazar Orden de Compra' }}</h2>
+          <p class="modal-sub">Orden {{ ordenSeleccionada.numero_orden }} - Bs. {{ ordenSeleccionada.total | number:'1.2-2' }}</p>
+        </div>
+        <button type="button" class="btn-close" (click)="cerrarModales()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <p *ngIf="accionAprobacion === 'APROBADA'">
+          ¿Está seguro de autorizar esta orden de compra? Al aprobarla quedará disponible para la recepción de materiales.
+        </p>
+        <p *ngIf="accionAprobacion === 'RECHAZADA'" class="text-danger">
+          Indique el motivo por el cual rechaza esta solicitud de compra:
+        </p>
+
+        <div class="form-field">
+          <label for="obs-aprobacion">
+            {{ accionAprobacion === 'RECHAZADA' ? 'Motivo del Rechazo *' : 'Observaciones (opcional)' }}
+          </label>
+          <textarea
+            id="obs-aprobacion"
+            rows="3"
+            placeholder="Ingrese observaciones de aprobación o motivo de rechazo..."
+            [(ngModel)]="observacionAprobacion"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="cerrarModales()" [disabled]="procesandoAccion">
+          Cancelar
+        </button>
+        <button
+          type="button"
+          [class]="accionAprobacion === 'APROBADA' ? 'btn-success' : 'btn-danger'"
+          (click)="confirmarAprobacionRechazo()"
+          [disabled]="procesandoAccion"
+        >
+          {{ procesandoAccion ? 'Procesando...' : (accionAprobacion === 'APROBADA' ? 'Confirmar Aprobación' : 'Confirmar Rechazo') }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- MODAL 4: RECEPCIÓN DE MATERIALES (ENTRADA A ALMACÉN) -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="modalActivo === 'recepcion' && ordenSeleccionada" class="modal-overlay" (click)="cerrarModales()">
+    <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h2>Recepción de Materiales</h2>
+          <p class="modal-sub">Orden {{ ordenSeleccionada.numero_orden }} - {{ ordenSeleccionada.proveedor_razon_social }}</p>
+        </div>
+        <button type="button" class="btn-close" (click)="cerrarModales()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="alert-info-box">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+          <div>
+            <strong>Entrada a Inventario:</strong> Confirmar esta recepción generará el movimiento oficial de entrada y sumará el stock de los materiales en almacén. Permite entregas parciales.
+          </div>
+        </div>
+
+        <div class="items-table-wrap">
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>Material</th>
+                <th>U.M.</th>
+                <th>Solicitado</th>
+                <th>Recibido Prev.</th>
+                <th>Saldo Pendiente</th>
+                <th style="width: 20%;">Cantidad a Recibir Ahora *</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of recepcionItems">
+                <td>
+                  <strong>{{ item.nombre_material }}</strong>
+                  <div class="text-xs text-muted">{{ item.codigo_material }}</div>
+                </td>
+                <td>{{ item.unidad_medida }}</td>
+                <td>{{ item.cantidad_solicitada | number:'1.2-3' }}</td>
+                <td>{{ item.cantidad_recibida_previa | number:'1.2-3' }}</td>
+                <td>
+                  <span class="badge-pending-qty">{{ item.cantidad_pendiente | number:'1.2-3' }}</span>
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    min="0"
+                    [max]="item.cantidad_pendiente"
+                    step="1"
+                    [(ngModel)]="item.cantidad_a_recibir"
+                    class="input-highlight"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="form-field mt-4">
+          <label for="obs-recepcion">Observaciones de Recepción / Remisión</label>
+          <textarea
+            id="obs-recepcion"
+            rows="2"
+            placeholder="Nº de remisión del proveedor, condiciones de entrega, estado del transporte..."
+            [(ngModel)]="observacionesRecepcion"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="cerrarModales()" [disabled]="procesandoAccion">
+          Cancelar
+        </button>
+        <button type="button" class="btn-primary" (click)="confirmarRecepcion()" [disabled]="procesandoAccion">
+          {{ procesandoAccion ? 'Registrando Entrada...' : 'Confirmar Recepción y Actualizar Stock' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- MODAL 5: CANCELAR ORDEN -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="modalActivo === 'cancelar' && ordenSeleccionada" class="modal-overlay" (click)="cerrarModales()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h2>Cancelar Orden de Compra</h2>
+          <p class="modal-sub">Orden {{ ordenSeleccionada.numero_orden }}</p>
+        </div>
+        <button type="button" class="btn-close" (click)="cerrarModales()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <p>¿Está seguro de cancelar esta orden de compra? Esta acción no se puede deshacer.</p>
+        <div class="form-field">
+          <label for="motivo-cancel">Motivo de la Cancelación</label>
+          <textarea
+            id="motivo-cancel"
+            rows="3"
+            placeholder="Indique el motivo por el cual cancela la orden..."
+            [(ngModel)]="motivoCancelacion"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="cerrarModales()" [disabled]="procesandoAccion">
+          Cerrar
+        </button>
+        <button type="button" class="btn-danger" (click)="confirmarCancelacion()" [disabled]="procesandoAccion">
+          {{ procesandoAccion ? 'Cancelando...' : 'Confirmar Cancelación' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</section>

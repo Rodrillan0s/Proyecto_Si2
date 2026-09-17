@@ -18,8 +18,11 @@ import { ProyectosComponent } from './pages/proyectos/proyectos';
 import { ProyectoDetalleComponent } from './pages/proyectos/detalle/proyecto-detalle';
 import { MaterialesComponent } from './pages/materiales/materiales';
 import { ProveedoresComponent } from './pages/proveedores/proveedores';             
+import { ComprasComponent } from './pages/compras/compras';
 import { OrdenesTrabajoComponent } from './pages/ordenes-trabajo/ordenes-trabajo';
 import { CrmComponent } from './pages/crm/crm';
+import { ApusComponent } from './pages/apus/apus';
+import { InventarioComponent } from './pages/inventario/inventario';
 
 //LAYOUTS
 import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout';
@@ -75,6 +78,24 @@ export const routes: Routes = [
                 component: ProveedoresComponent, 
                 canActivate: [roleGuard], 
                 data: { permissions: ['Visualizar_proveedores'] } 
+            },
+            { 
+                path: 'inventario', 
+                component: InventarioComponent, 
+                canActivate: [roleGuard], 
+                data: { permissions: ['Visualizar_inventario', 'Visualizar_materiales'] } 
+            },
+            { 
+                path: 'compras', 
+                component: ComprasComponent, 
+                canActivate: [roleGuard], 
+                data: { permissions: ['Visualizar_ordenes_compra'] } 
+            },
+            { 
+                path: 'apus', 
+                component: ApusComponent, 
+                canActivate: [roleGuard], 
+                data: { permissions: ['Visualizar_presupuesto'] } 
             },
             { 
                 path: 'usuarios', 

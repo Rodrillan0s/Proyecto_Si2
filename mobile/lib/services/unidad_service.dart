@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'api_client.dart';
 
 class UnidadService {
+  /// Lista todas las unidades de construcción asociadas al proyecto
   Future<List<Map<String, dynamic>>> listarUnidades(int idObra) async {
     try {
       final response = await ApiClient.dio.get('/api/proyectos/$idObra/unidades');
@@ -22,6 +23,7 @@ class UnidadService {
     }
   }
 
+  /// Obtiene la información detallada de una unidad de construcción
   Future<Map<String, dynamic>> obtenerDetalleUnidad(int idObra, int idUnidad) async {
     try {
       final response = await ApiClient.dio.get('/api/proyectos/$idObra/unidades/$idUnidad');
@@ -40,6 +42,54 @@ class UnidadService {
     }
   }
 
+  /// Registra una nueva unidad de construcción asociada a un nodo de estructura
+  Future<Map<String, dynamic>> crearUnidad(int idObra, Map<String, dynamic> datos) async {
+    try {
+      final response = await ApiClient.dio.post(
+        '/api/proyectos/$idObra/unidades',
+        data: datos,
+      );
+      final data = response.data;
+      if (data is Map) {
+        return Map<String, dynamic>.from(data);
+      }
+      return {'success': true};
+    } on DioException catch (e) {
+      throw Exception(_parsearErrorDio(e));
+    }
+  }
+
+  /// Actualiza los atributos físicos o de asignación de una unidad de construcción
+  Future<Map<String, dynamic>> actualizarUnidad(
+    int idObra,
+    int idUnidad,
+    Map<String, dynamic> datos,
+  ) async {
+    try {
+      final response = await ApiClient.dio.put(
+        '/api/proyectos/$idObra/unidades/$idUnidad',
+        data: datos,
+      );
+      final data = response.data;
+      if (data is Map) {
+        return Map<String, dynamic>.from(data);
+      }
+      return {'success': true};
+    } on DioException catch (e) {
+      throw Exception(_parsearErrorDio(e));
+    }
+  }
+
+  /// Elimina una unidad de construcción
+  Future<void> eliminarUnidad(int idObra, int idUnidad) async {
+    try {
+      await ApiClient.dio.delete('/api/proyectos/$idObra/unidades/$idUnidad');
+    } on DioException catch (e) {
+      throw Exception(_parsearErrorDio(e));
+    }
+  }
+
+  /// Cambia el estado de una unidad de construcción con trazabilidad
   Future<Map<String, dynamic>> cambiarEstadoUnidad({
     required int idObra,
     required int idUnidad,
@@ -60,6 +110,27 @@ class UnidadService {
         return Map<String, dynamic>.from(data);
       }
       return {'success': true};
+    } on DioException catch (e) {
+      throw Exception(_parsearErrorDio(e));
+    }
+  }
+
+  /// Lista los modelos de unidad predefinidos disponibles para el proyecto
+  Future<List<Map<String, dynamic>>> listarModelos(int idObra) async {
+    try {
+      final response = await ApiClient.dio.get('/api/proyectos/$idObra/unidades/modelos');
+      final data = response.data;
+
+      if (data is List) {
+        return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+
+      if (data is Map && data['data'] is List) {
+        final list = data['data'] as List;
+        return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+
+      return [];
     } on DioException catch (e) {
       throw Exception(_parsearErrorDio(e));
     }

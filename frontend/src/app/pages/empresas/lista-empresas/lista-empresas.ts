@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../../services/auth';
 import { Empresa, EmpresaService } from '../../../services/empresa';
+import { MaterialsService } from '../../../services/materials.service';
 
 @Component({
   selector: 'app-lista-empresas',
@@ -15,6 +16,7 @@ import { Empresa, EmpresaService } from '../../../services/empresa';
 export class ListaEmpresasComponent implements OnInit {
 
   private empresaService = inject(EmpresaService);
+  private materialsService = inject(MaterialsService);
   private authService = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
   private ngZone = inject(NgZone);
@@ -32,6 +34,7 @@ export class ListaEmpresasComponent implements OnInit {
   modoEdicion: boolean = false;
 
   empresaForm: Empresa = this.inicializarEmpresa();
+  acoplarCatalogoBase: boolean = false;
 
   totalEmpresas: number = 0;
   empresasActivas: number = 0;
@@ -147,6 +150,7 @@ export class ListaEmpresasComponent implements OnInit {
   abrirModalNuevo() {
     this.modoEdicion = false;
     this.empresaForm = this.inicializarEmpresa();
+    this.acoplarCatalogoBase = false;
     this.mostrarModal = true;
   }
 
@@ -203,10 +207,17 @@ export class ListaEmpresasComponent implements OnInit {
           }
         });
     } else {
+      const acoplar = this.acoplarCatalogoBase;
       this.empresaService.crearEmpresa(this.empresaForm)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-          next: () => {
+          next: (res) => {
+            if (acoplar && res.id_empresa) {
+              this.materialsService.copiarCatalogoBase(res.id_empresa).subscribe({
+                next: () => {},
+                error: () => {}
+              });
+            }
             this.ngZone.run(() => {
               this.cerrarModal();
               this.cargarEmpresas();

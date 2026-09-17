@@ -11,17 +11,19 @@ from app.utils.security import es_admin_sistema
 TIPOS_CLIENTE = {"PROSPECTO", "CLIENTE"}
 
 ESTADOS_PROSPECTO = {
-    "NUEVO", "CONTACTADO", "INTERESADO", "EN_NEGOCIACION", "CONVERTIDO", "PERDIDO"
+    "NUEVO", "CONTACTADO", "INTERESADO", "NEGOCIACION", "EN_NEGOCIACION", "RESERVADO", "VENDIDO", "CONVERTIDO", "PERDIDO"
 }
 
-ESTADOS_CLIENTE = {"ACTIVO", "INACTIVO"}
+ESTADOS_CLIENTE = {
+    "ACTIVO", "INACTIVO", "NUEVO", "CONTACTADO", "INTERESADO", "NEGOCIACION", "EN_NEGOCIACION", "RESERVADO", "VENDIDO"
+}
 
 ORIGENES_VALIDOS = {
     "DIRECTO", "WEB", "REFERIDO", "REDES_SOCIALES", "VISITA_OBRA", "LLAMADA", "OTRO"
 }
 
 TIPOS_INTERACCION = {
-    "LLAMADA", "MENSAJE", "REUNION", "VISITA", "CORREO", "SEGUIMIENTO", "NOTA"
+    "LLAMADA", "MENSAJE", "REUNION", "VISITA", "CONSULTA", "SEGUIMIENTO", "OBSERVACION", "OBSERVACIONES", "CORREO", "NOTA", "OTRO"
 }
 
 ESTADOS_ASOCIACION_UNIDAD = {
@@ -348,32 +350,64 @@ def actualizar(id_cliente: int, data: dict, token: dict, ip: str, id_empresa_sol
 # ─────────────────────────────────────────────────────────────────────────────
 # 5. CLASIFICAR PROSPECTO / CONVERTIR A CLIENTE (HU83)
 # ─────────────────────────────────────────────────────────────────────────────
-def clasificar_prospecto(id_cliente: int, nuevo_estado: str, token: dict, ip: str, id_empresa_solicitada=None):
+def clasificar_prospecto(id_cliente: int, nuevo_estado: str, token: dict, ip: str, id_empresa_solicitada=None, nota: str = None):
     emp_id = _empresa(token, id_empresa_solicitada, obligatorio=True)
     cliente = crm_repos.obtener_cliente_por_id(id_cliente, emp_id)
     if not cliente:
         raise CrmError(f"Cliente con ID {id_cliente} no encontrado en la empresa autorizada.", 404)
 
     estado_upper = str(nuevo_estado or "").strip().upper()
+    if estado_upper == "EN_NEGOCIACION":
+        estado_upper = "NEGOCIACION"
+
+    estado_anterior = cliente["estado"]
     tipo_actual = cliente["tipo_cliente"]
 
-    if estado_upper == "CONVERTIDO" or (tipo_actual == "PROSPECTO" and estado_upper == "CLIENTE"):
-        # Transición atómica a CLIENTE / ACTIVO
-        ok = crm_repos.cambiar_clasificacion_crm(id_cliente, emp_id, "CLIENTE", "ACTIVO")
+    # Transición a CLIENTE (Venta concretada o conversión explícita)
+    if estado_upper in ("CONVERTIDO", "CLIENTE", "VENDIDO", "RESERVADO") and tipo_actual == "PROSPECTO":
+        nuevo_tipo = "CLIENTE"
+        estado_final = "ACTIVO" if estado_upper in ("CONVERTIDO", "CLIENTE") else estado_upper
+        ok = crm_repos.cambiar_clasificacion_crm(id_cliente, emp_id, nuevo_tipo, estado_final)
         if not ok:
-            raise CrmError("No se pudo convertir el prospecto a cliente comercial.")
-        _log(token, "CONVERTIR_PROSPECTO_CLIENTE", f"Prospecto ID {id_cliente} convertido a Cliente Comercial.", ip)
+            raise CrmError("No se pudo actualizar la clasificación del cliente.")
+
+        # Registrar automáticamente en el historial cronológico
+        id_usuario = token.get("nro_usuario") or cliente.get("id_usuario_asignado")
+        if id_usuario:
+            crm_repos.registrar_interaccion(
+                id_cliente=id_cliente,
+                id_usuario=id_usuario,
+                tipo="SEGUIMIENTO",
+                asunto=f"Evolución comercial: {estado_anterior} -> {estado_final} ({nuevo_tipo})",
+                detalle=nota.strip() if nota and str(nota).strip() else f"El prospecto avanzó a {nuevo_tipo} ({estado_final}) en el pipeline comercial."
+            )
+
+        _log(token, "CONVERTIR_PROSPECTO_CLIENTE", f"Prospecto ID {id_cliente} convertido a {nuevo_tipo} / {estado_final}.", ip)
         return {
             "success": True,
-            "message": "Prospecto convertido a Cliente Comercial exitosamente.",
-            "tipo_cliente": "CLIENTE",
-            "estado": "ACTIVO"
+            "message": f"Cliente comercial actualizado a {estado_final}.",
+            "tipo_cliente": nuevo_tipo,
+            "estado": estado_final
         }
 
     if tipo_actual == "PROSPECTO":
         if estado_upper not in ESTADOS_PROSPECTO:
-            raise CrmError(f"Estado no válido para prospecto. Debe ser uno de: {', '.join(ESTADOS_PROSPECTO)}")
+            raise CrmError(f"Estado no válido para prospecto. Debe ser uno de: {', '.join(sorted(ESTADOS_PROSPECTO))}")
         ok = crm_repos.cambiar_clasificacion_crm(id_cliente, emp_id, "PROSPECTO", estado_upper)
+        if not ok:
+            raise CrmError("No se pudo actualizar el estado del prospecto.")
+
+        # Registrar automáticamente en el historial cronológico
+        id_usuario = token.get("nro_usuario") or cliente.get("id_usuario_asignado")
+        if id_usuario:
+            crm_repos.registrar_interaccion(
+                id_cliente=id_cliente,
+                id_usuario=id_usuario,
+                tipo="SEGUIMIENTO",
+                asunto=f"Avance comercial: {estado_anterior} -> {estado_upper}",
+                detalle=nota.strip() if nota and str(nota).strip() else f"El prospecto avanzó de {estado_anterior} a {estado_upper} en el pipeline comercial."
+            )
+
         _log(token, "CAMBIAR_ESTADO_PROSPECTO", f"Prospecto ID {id_cliente} cambió de estado a {estado_upper}.", ip)
         return {
             "success": True,
@@ -383,8 +417,22 @@ def clasificar_prospecto(id_cliente: int, nuevo_estado: str, token: dict, ip: st
         }
     else:
         if estado_upper not in ESTADOS_CLIENTE:
-            raise CrmError(f"Estado no válido para cliente comercial. Debe ser uno de: {', '.join(ESTADOS_CLIENTE)}")
+            raise CrmError(f"Estado no válido para cliente comercial. Debe ser uno de: {', '.join(sorted(ESTADOS_CLIENTE))}")
         ok = crm_repos.cambiar_clasificacion_crm(id_cliente, emp_id, "CLIENTE", estado_upper)
+        if not ok:
+            raise CrmError("No se pudo actualizar el estado del cliente comercial.")
+
+        # Registrar automáticamente en el historial cronológico
+        id_usuario = token.get("nro_usuario") or cliente.get("id_usuario_asignado")
+        if id_usuario:
+            crm_repos.registrar_interaccion(
+                id_cliente=id_cliente,
+                id_usuario=id_usuario,
+                tipo="SEGUIMIENTO",
+                asunto=f"Avance comercial: {estado_anterior} -> {estado_upper}",
+                detalle=nota.strip() if nota and str(nota).strip() else f"El cliente comercial avanzó de {estado_anterior} a {estado_upper}."
+            )
+
         _log(token, "CAMBIAR_ESTADO_CLIENTE", f"Cliente ID {id_cliente} cambió de estado a {estado_upper}.", ip)
         return {
             "success": True,
@@ -518,6 +566,23 @@ def asociar_unidad(id_cliente: int, data: dict, token: dict, ip: str, id_empresa
     _log(token, "ASOCIAR_CLIENTE_UNIDAD",
          f"Unidad {info_unidad['codigo_unidad']} asociada a cliente ID {id_cliente} ({estado_asociacion}).", ip)
 
+    # Registrar automáticamente en historial cronológico del cliente
+    id_usuario = token.get("nro_usuario") or cliente.get("id_usuario_asignado")
+    if id_usuario:
+        asunto_it = f"Unidad {info_unidad['codigo_unidad']} asociada ({estado_asociacion})"
+        det_it = f"Se asoció la unidad {info_unidad['codigo_unidad']} ({info_unidad['tipo_unidad']}) del proyecto {info_unidad['nombre_obra']} en estado {estado_asociacion}."
+        if monto_pactado:
+            det_it += f" Monto pactado: ${monto_pactado:,.2f}."
+        if observaciones:
+            det_it += f" Observaciones: {observaciones}."
+        crm_repos.registrar_interaccion(
+            id_cliente=id_cliente,
+            id_usuario=id_usuario,
+            tipo="SEGUIMIENTO",
+            asunto=asunto_it,
+            detalle=det_it
+        )
+
     return {
         "success": True,
         "message": "Unidad asociada al cliente exitosamente.",
@@ -535,9 +600,12 @@ def cambiar_estado_asociacion(id_cliente_unidad: int, nuevo_estado: str, observa
     db.create_connection()
     try:
         row = db.execute_query(
-            f"""SELECT cu.id_cliente, c.id_empresa 
+            f"""SELECT cu.id_cliente, c.id_empresa, cu.id_unidad, u.codigo AS codigo_unidad, o.nombre AS nombre_obra
                 FROM {Config.SCHEMA}.t_crm_cliente_unidad cu
                 INNER JOIN {Config.SCHEMA}.t_crm_cliente c ON c.id_cliente = cu.id_cliente
+                INNER JOIN {Config.SCHEMA}.t_unidad_construccion u ON u.id_unidad = cu.id_unidad
+                INNER JOIN {Config.SCHEMA}.t_estructura_obra e ON e.id_estructura = u.id_estructura
+                INNER JOIN {Config.SCHEMA}.t_obra o ON o.id_obra = e.id_obra
                 WHERE cu.id_cliente_unidad = %s;""",
             (id_cliente_unidad,), fetchone=True
         )
@@ -545,12 +613,47 @@ def cambiar_estado_asociacion(id_cliente_unidad: int, nuevo_estado: str, observa
             raise CrmError(f"Asociación ID {id_cliente_unidad} no encontrada.", 404)
         if int(row[1]) != int(emp_id):
             raise CrmError("Acceso no autorizado a datos de otra empresa.", 403)
+
+        id_cliente_asoc = row[0]
+        id_unidad_asoc = row[2]
+        codigo_unidad = row[3]
+        nombre_obra = row[4]
+
+        # Validar colisión si el nuevo estado es RESERVADO o VENDIDO
+        if estado_upper in ("RESERVADO", "VENDIDO"):
+            ocupada = db.execute_query(
+                f"""SELECT id_cliente FROM {Config.SCHEMA}.t_crm_cliente_unidad 
+                    WHERE id_unidad = %s AND estado_asociacion IN ('RESERVADO', 'VENDIDO') 
+                      AND id_cliente_unidad != %s;""",
+                (id_unidad_asoc, id_cliente_unidad), fetchone=True
+            )
+            if ocupada:
+                raise CrmError("La unidad ya cuenta con una reserva o venta activa con otro cliente.", 409)
     finally:
         db.close_connection()
 
-    res = crm_repos.cambiar_estado_asociacion_unidad(id_cliente_unidad, estado_upper, observaciones)
-    if not res:
-        raise CrmError("No se pudo actualizar el estado de la asociación.")
+    try:
+        res = crm_repos.cambiar_estado_asociacion_unidad(id_cliente_unidad, estado_upper, observaciones)
+        if not res:
+            raise CrmError("No se pudo actualizar el estado de la asociación.")
+    except Exception as exc:
+        if "uq_crm_unidad_reservada_vendida" in str(exc):
+            raise CrmError("La unidad ya cuenta con una reserva o venta activa en el sistema.", 409)
+        raise CrmError(f"Error al actualizar la unidad: {exc}")
+
+    # Registrar automáticamente en historial del cliente
+    id_usuario = token.get("nro_usuario")
+    if id_usuario:
+        det_it = f"El estado de la unidad {codigo_unidad} ({nombre_obra}) cambió a {estado_upper}."
+        if observaciones:
+            det_it += f" Observaciones: {observaciones}."
+        crm_repos.registrar_interaccion(
+            id_cliente=id_cliente_asoc,
+            id_usuario=id_usuario,
+            tipo="SEGUIMIENTO",
+            asunto=f"Unidad {codigo_unidad} actualizada a {estado_upper}",
+            detalle=det_it
+        )
 
     _log(token, "CAMBIAR_ESTADO_ASOCIACION", f"Asociación ID {id_cliente_unidad} actualizada a {estado_upper}.", ip)
     return {"success": True, "message": f"Estado de asociación actualizado a {estado_upper}."}
@@ -573,3 +676,15 @@ def obtener_metricas(token: dict, id_empresa_solicitada=None):
         "success": True,
         "data": crm_repos.obtener_metricas_crm(emp_id)
     }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 9. ASESORES / RESPONSABLES COMERCIALES (HU80, HU82)
+# ─────────────────────────────────────────────────────────────────────────────
+def listar_asesores(token: dict, id_empresa_solicitada=None):
+    emp_id = _empresa(token, id_empresa_solicitada, obligatorio=True)
+    return {
+        "success": True,
+        "data": crm_repos.listar_asesores_empresa(emp_id)
+    }
+

@@ -1,3 +1,4 @@
+import datetime
 from app.classes.postgres import PostgreSQL
 from app.config import Config
 
@@ -63,6 +64,31 @@ def _row_to_partida(row):
 def _row_to_apu(row):
     if not row:
         return None
+    if len(row) >= 20:
+        return {
+            "id_apu": row[0],
+            "id_empresa": row[1],
+            "id_obra": row[2],
+            "codigo": row[3],
+            "nombre": row[4],
+            "descripcion": row[5],
+            "id_unidad_medida": row[6],
+            "rendimiento_base": float(row[7]) if row[7] is not None else 1.0,
+            "costo_unitario_total": float(row[8]) if row[8] is not None else 0.0,
+            "estado": row[9],
+            "created_at": str(row[10]) if row[10] else None,
+            "updated_at": str(row[11]) if row[11] else None,
+            "version": row[12] if row[12] is not None else 1,
+            "codigo_base": row[13] or row[3],
+            "costo_materiales": float(row[14]) if row[14] is not None else 0.0,
+            "costo_mano_obra": float(row[15]) if row[15] is not None else 0.0,
+            "costo_equipos": float(row[16]) if row[16] is not None else 0.0,
+            "costo_directo": float(row[17]) if row[17] is not None else (float(row[8]) if row[8] is not None else 0.0),
+            "es_vigente": bool(row[18]) if row[18] is not None else True,
+            "unidad_medida_nombre": row[19] if len(row) > 19 else None,
+            "unidad_medida_abrev": row[20] if len(row) > 20 else None,
+            "total_componentes": row[21] if len(row) > 21 else 0
+        }
     return {
         "id_apu": row[0],
         "id_empresa": row[1],
@@ -76,6 +102,13 @@ def _row_to_apu(row):
         "estado": row[9],
         "created_at": str(row[10]) if row[10] else None,
         "updated_at": str(row[11]) if row[11] else None,
+        "version": 1,
+        "codigo_base": row[3],
+        "costo_materiales": 0.0,
+        "costo_mano_obra": 0.0,
+        "costo_equipos": 0.0,
+        "costo_directo": float(row[8]) if row[8] is not None else 0.0,
+        "es_vigente": True,
         "unidad_medida_nombre": row[12] if len(row) > 12 else None,
         "unidad_medida_abrev": row[13] if len(row) > 13 else None,
         "total_componentes": row[14] if len(row) > 14 else 0
@@ -85,6 +118,7 @@ def _row_to_apu(row):
 def _row_to_componente(row):
     if not row:
         return None
+    rendimiento_val = float(row[6]) if row[6] is not None else 0.0
     return {
         "id_componente": row[0],
         "id_apu": row[1],
@@ -92,13 +126,15 @@ def _row_to_componente(row):
         "id_recurso": row[3],
         "descripcion_recurso": row[4],
         "id_unidad_medida": row[5],
-        "cantidad": float(row[6]) if row[6] is not None else 0.0,
+        "rendimiento": rendimiento_val,
+        "cantidad": rendimiento_val,
         "precio_unitario": float(row[7]) if row[7] is not None else 0.0,
         "subtotal": float(row[8]) if row[8] is not None else 0.0,
         "created_at": str(row[9]) if row[9] else None,
         "unidad_medida_nombre": row[10] if len(row) > 10 else None,
         "unidad_medida_abrev": row[11] if len(row) > 11 else None,
-        "material_codigo": row[12] if len(row) > 12 else None
+        "material_codigo": row[12] if len(row) > 12 else None,
+        "recurso_codigo": row[12] if len(row) > 12 else None
     }
 
 
@@ -317,6 +353,21 @@ def obtener_partida_por_id(id_partida: int):
         db.close_connection()
 
 
+def generar_codigo_partida(id_presupuesto: int) -> str:
+    """
+    Genera una numeración jerárquica legible para la partida (ej: 1.01, 1.02...).
+    """
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        sql = "SELECT COUNT(*) FROM obras.t_partida_presupuesto WHERE id_presupuesto = %s;"
+        row = db.execute_query(sql, (id_presupuesto,), fetchone=True)
+        count = (row[0] if row else 0) + 1
+        return f"1.{count:02d}"
+    finally:
+        db.close_connection()
+
+
 def crear_partida(
     id_presupuesto: int, codigo: str, nombre: str, id_unidad_medida: int,
     cantidad: float, precio_unitario: float = 0.0, descripcion: str = None,
@@ -476,7 +527,7 @@ def asociar_apu_a_partida(id_partida: int, id_apu: int):
 # HU55 & HU56: Catálogo de APU y Componentes
 # ─────────────────────────────────────────────────────────────────────────────
 
-def listar_apus_empresa(id_empresa: int, id_obra: int = None, q: str = None):
+def listar_apus_empresa(id_empresa: int, id_obra: int = None, q: str = None, solo_vigentes: bool = False):
     db = PostgreSQL()
     db.create_connection()
     try:
@@ -487,9 +538,12 @@ def listar_apus_empresa(id_empresa: int, id_obra: int = None, q: str = None):
             condiciones.append("(a.id_obra IS NULL OR a.id_obra = %s)")
             params.append(id_obra)
 
+        if solo_vigentes:
+            condiciones.append("a.es_vigente = TRUE")
+
         if q:
-            condiciones.append("(a.nombre ILIKE %s OR a.codigo ILIKE %s)")
-            params.extend([f"%{q}%", f"%{q}%"])
+            condiciones.append("(a.nombre ILIKE %s OR a.codigo ILIKE %s OR a.codigo_base ILIKE %s)")
+            params.extend([f"%{q}%", f"%{q}%", f"%{q}%"])
 
         where_clause = " AND ".join(condiciones)
 
@@ -497,12 +551,14 @@ def listar_apus_empresa(id_empresa: int, id_obra: int = None, q: str = None):
             SELECT a.id_apu, a.id_empresa, a.id_obra, a.codigo, a.nombre, a.descripcion,
                    a.id_unidad_medida, a.rendimiento_base, a.costo_unitario_total, a.estado,
                    a.created_at, a.updated_at,
+                   a.version, a.codigo_base, a.costo_materiales, a.costo_mano_obra, a.costo_equipos,
+                   a.costo_directo, a.es_vigente,
                    um.nombre AS unidad_medida_nombre, um.abreviatura AS unidad_medida_abrev,
                    (SELECT COUNT(*) FROM obras.t_apu_componente c WHERE c.id_apu = a.id_apu) AS total_componentes
             FROM obras.t_apu a
             JOIN obras.t_unidad_medida um ON um.id_unidad_medida = a.id_unidad_medida
             WHERE {where_clause}
-            ORDER BY a.codigo ASC;
+            ORDER BY a.codigo_base ASC, a.version DESC;
         """
         rows = db.execute_query(sql, tuple(params), fetchall=True)
         return [_row_to_apu(r) for r in (rows or [])]
@@ -518,7 +574,10 @@ def obtener_apu_detalle(id_apu: int):
             SELECT a.id_apu, a.id_empresa, a.id_obra, a.codigo, a.nombre, a.descripcion,
                    a.id_unidad_medida, a.rendimiento_base, a.costo_unitario_total, a.estado,
                    a.created_at, a.updated_at,
-                   um.nombre AS unidad_medida_nombre, um.abreviatura AS unidad_medida_abrev
+                   a.version, a.codigo_base, a.costo_materiales, a.costo_mano_obra, a.costo_equipos,
+                   a.costo_directo, a.es_vigente,
+                   um.nombre AS unidad_medida_nombre, um.abreviatura AS unidad_medida_abrev,
+                   (SELECT COUNT(*) FROM obras.t_apu_componente c WHERE c.id_apu = a.id_apu) AS total_componentes
             FROM obras.t_apu a
             JOIN obras.t_unidad_medida um ON um.id_unidad_medida = a.id_unidad_medida
             WHERE a.id_apu = %s;
@@ -531,39 +590,154 @@ def obtener_apu_detalle(id_apu: int):
 
         sql_comp = """
             SELECT c.id_componente, c.id_apu, c.tipo_recurso, c.id_recurso,
-                   c.descripcion_recurso, c.id_unidad_medida, c.cantidad,
+                   c.descripcion_recurso, c.id_unidad_medida, COALESCE(c.rendimiento, c.cantidad) AS rendimiento,
                    c.precio_unitario, c.subtotal, c.created_at,
                    um.nombre AS unidad_medida_nombre, um.abreviatura AS unidad_medida_abrev,
-                   m.codigo AS material_codigo
+                   COALESCE(m.codigo, eq.codigo, '') AS recurso_codigo
             FROM obras.t_apu_componente c
             JOIN obras.t_unidad_medida um ON um.id_unidad_medida = c.id_unidad_medida
-            LEFT JOIN obras.t_material m ON m.id_material = c.id_recurso
+            LEFT JOIN obras.t_material m ON m.id_material = c.id_recurso AND c.tipo_recurso = 'MATERIAL'
+            LEFT JOIN obras.t_equipo eq ON eq.id_equipo = c.id_recurso AND c.tipo_recurso = 'EQUIPO'
             WHERE c.id_apu = %s
             ORDER BY c.tipo_recurso ASC, c.id_componente ASC;
         """
         comp_rows = db.execute_query(sql_comp, (id_apu,), fetchall=True)
         apu["componentes"] = [_row_to_componente(r) for r in (comp_rows or [])]
+        apu["en_uso"] = apu_en_uso_por_partidas(id_apu)
 
         return apu
     finally:
         db.close_connection()
 
 
-def crear_apu(id_empresa: int, codigo: str, nombre: str, id_unidad_medida: int,
-              descripcion: str = None, rendimiento_base: float = 1.0,
-              id_obra: int = None):
+def generar_codigo_apu(id_empresa: int, anio: int = None) -> str:
+    """
+    Genera el código secuencial automático para APU según la regla CU16: APU-YYYY-NNNN.
+    """
     db = PostgreSQL()
     db.create_connection()
     try:
+        if not anio:
+            anio = datetime.date.today().year
+        prefix = f"APU-{anio}-"
+        sql = """
+            SELECT codigo_base, codigo 
+            FROM obras.t_apu 
+            WHERE id_empresa = %s AND (codigo_base LIKE %s OR codigo LIKE %s);
+        """
+        rows = db.execute_query(sql, (id_empresa, f"{prefix}%", f"{prefix}%"), fetchall=True) or []
+        max_num = 0
+        for r in rows:
+            for cod in (r[0], r[1]):
+                if cod and cod.startswith(prefix):
+                    parts = cod.split("-")
+                    if len(parts) >= 3:
+                        num_part = parts[2].split("v")[0].split(".")[0]
+                        try:
+                            val = int(num_part)
+                            if val > max_num:
+                                max_num = val
+                        except ValueError:
+                            pass
+        next_num = max_num + 1
+        return f"APU-{anio}-{next_num:04d}"
+    finally:
+        db.close_connection()
+
+
+def apu_en_uso_por_partidas(id_apu: int) -> bool:
+    """
+    Indica si un APU está siendo utilizado por alguna partida presupuestaria.
+    """
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        sql = "SELECT COUNT(*) FROM obras.t_partida_presupuesto WHERE id_apu = %s;"
+        row = db.execute_query(sql, (id_apu,), fetchone=True)
+        return bool(row and row[0] > 0)
+    finally:
+        db.close_connection()
+
+
+def versionar_apu_transaccional(id_apu_original: int) -> int:
+    """
+    Crea una nueva versión del APU clonando sus componentes,
+    preservando la versión previa intacta para presupuestos históricos.
+    Retorna el id_apu de la nueva versión.
+    """
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        cur = db.conn.cursor()
+        cur.execute("""
+            SELECT id_empresa, id_obra, codigo_base, version, nombre, descripcion,
+                   id_unidad_medida, rendimiento_base
+            FROM obras.t_apu
+            WHERE id_apu = %s;
+        """, (id_apu_original,))
+        orig = cur.fetchone()
+        if not orig:
+            raise ValueError(f"APU {id_apu_original} no existe.")
+
+        id_empresa, id_obra, codigo_base, ver_ant, nombre, descripcion, id_um, rend_base = orig
+        codigo_base = codigo_base or f"APU-{id_apu_original}"
+        nueva_version = (ver_ant or 1) + 1
+        nuevo_codigo = f"{codigo_base}-v{nueva_version}"
+
+        # Desmarcar original como vigente
+        cur.execute("UPDATE obras.t_apu SET es_vigente = FALSE WHERE id_apu = %s;", (id_apu_original,))
+
+        # Insertar nueva versión
+        cur.execute("""
+            INSERT INTO obras.t_apu (
+                id_empresa, id_obra, codigo, codigo_base, version, nombre, descripcion,
+                id_unidad_medida, rendimiento_base, costo_unitario_total, costo_directo,
+                costo_materiales, costo_mano_obra, costo_equipos, estado, es_vigente
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 0.00, 0.00, 0.00, 0.00, 0.00, 'ACTIVO', TRUE)
+            RETURNING id_apu;
+        """, (id_empresa, id_obra, nuevo_codigo, codigo_base, nueva_version, nombre, descripcion, id_um, rend_base))
+        nuevo_id = cur.fetchone()[0]
+
+        # Clonar componentes
+        cur.execute("""
+            INSERT INTO obras.t_apu_componente (
+                id_apu, tipo_recurso, id_recurso, descripcion_recurso, id_unidad_medida,
+                cantidad, rendimiento, precio_unitario, subtotal
+            )
+            SELECT %s, tipo_recurso, id_recurso, descripcion_recurso, id_unidad_medida,
+                   COALESCE(rendimiento, cantidad), COALESCE(rendimiento, cantidad), precio_unitario, subtotal
+            FROM obras.t_apu_componente
+            WHERE id_apu = %s;
+        """, (nuevo_id, id_apu_original))
+
+        db.conn.commit()
+
+        recalcular_costo_unitario_apu(nuevo_id)
+        return nuevo_id
+    except Exception as e:
+        db.conn.rollback()
+        raise e
+    finally:
+        db.close_connection()
+
+
+def crear_apu(id_empresa: int, codigo: str, nombre: str, id_unidad_medida: int,
+              descripcion: str = None, rendimiento_base: float = 1.0,
+              id_obra: int = None, codigo_base: str = None):
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        cod_base = codigo_base or codigo
         sql = """
             INSERT INTO obras.t_apu (
-                id_empresa, id_obra, codigo, nombre, descripcion,
-                id_unidad_medida, rendimiento_base, costo_unitario_total, estado
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, 0.00, 'ACTIVO')
+                id_empresa, id_obra, codigo, codigo_base, version, nombre, descripcion,
+                id_unidad_medida, rendimiento_base, costo_unitario_total, costo_directo,
+                costo_materiales, costo_mano_obra, costo_equipos, estado, es_vigente
+            ) VALUES (%s, %s, %s, %s, 1, %s, %s, %s, %s, 0.00, 0.00, 0.00, 0.00, 0.00, 'ACTIVO', TRUE)
             RETURNING id_apu;
         """
         params = (
-            id_empresa, id_obra, codigo, nombre, descripcion,
+            id_empresa, id_obra, codigo, cod_base, nombre, descripcion,
             id_unidad_medida, rendimiento_base
         )
         row = db.execute_query(sql, params, fetchone=True, commit=True)
@@ -573,15 +747,15 @@ def crear_apu(id_empresa: int, codigo: str, nombre: str, id_unidad_medida: int,
 
 
 def actualizar_apu(id_apu: int, codigo: str, nombre: str, id_unidad_medida: int,
-                   descripcion: str = None, rendimiento_base: float = 1.0,
-                   estado: str = "ACTIVO"):
+                    descripcion: str = None, rendimiento_base: float = 1.0,
+                    estado: str = "ACTIVO"):
     db = PostgreSQL()
     db.create_connection()
     try:
         sql = """
             UPDATE obras.t_apu
             SET codigo = %s, nombre = %s, id_unidad_medida = %s,
-                descripcion = %s, rendimiento_base = %s, estado = %s
+                descripcion = %s, rendimiento_base = %s, estado = %s, updated_at = NOW()
             WHERE id_apu = %s;
         """
         params = (codigo, nombre, id_unidad_medida, descripcion, rendimiento_base, estado, id_apu)
@@ -596,14 +770,16 @@ def recalcular_costo_unitario_apu(id_apu: int):
     try:
         sql = """
             UPDATE obras.t_apu
-            SET costo_unitario_total = COALESCE(
-                (SELECT SUM(subtotal) FROM obras.t_apu_componente WHERE id_apu = %s),
-                0.00
-            )
+            SET costo_materiales = COALESCE((SELECT SUM(subtotal) FROM obras.t_apu_componente WHERE id_apu = %s AND tipo_recurso = 'MATERIAL'), 0.00),
+                costo_mano_obra = COALESCE((SELECT SUM(subtotal) FROM obras.t_apu_componente WHERE id_apu = %s AND tipo_recurso = 'MANO_OBRA'), 0.00),
+                costo_equipos = COALESCE((SELECT SUM(subtotal) FROM obras.t_apu_componente WHERE id_apu = %s AND tipo_recurso = 'EQUIPO'), 0.00),
+                costo_directo = COALESCE((SELECT SUM(subtotal) FROM obras.t_apu_componente WHERE id_apu = %s), 0.00),
+                costo_unitario_total = COALESCE((SELECT SUM(subtotal) FROM obras.t_apu_componente WHERE id_apu = %s), 0.00),
+                updated_at = NOW()
             WHERE id_apu = %s
-            RETURNING costo_unitario_total;
+            RETURNING costo_directo;
         """
-        row = db.execute_query(sql, (id_apu, id_apu), fetchone=True, commit=True)
+        row = db.execute_query(sql, (id_apu, id_apu, id_apu, id_apu, id_apu, id_apu), fetchone=True, commit=True)
         return float(row[0]) if row else 0.0
     finally:
         db.close_connection()
@@ -612,38 +788,44 @@ def recalcular_costo_unitario_apu(id_apu: int):
 def agregar_componente_apu(
     id_apu: int, tipo_recurso: str, descripcion_recurso: str,
     id_unidad_medida: int, cantidad: float, precio_unitario: float = 0.0,
-    id_recurso: int = None
+    id_recurso: int = None, rendimiento: float = None
 ):
     """
-    HU56: Asocia un recurso al APU.
-    Si tipo_recurso es MATERIAL y se provee id_recurso sin precio,
-    se obtiene el precio actual del catálogo de materiales como snapshot base.
+    Asocia un recurso (MATERIAL, MANO_OBRA, EQUIPO) al APU.
+    rendimiento es el coeficiente de insumo por unidad de obra.
     """
     db = PostgreSQL()
     db.create_connection()
     try:
-        if tipo_recurso == "MATERIAL" and id_recurso and (precio_unitario is None or float(precio_unitario) <= 0):
-            mat_row = db.execute_query(
-                "SELECT precio FROM obras.t_material WHERE id_material = %s;",
-                (id_recurso,), fetchone=True
-            )
+        rend = float(rendimiento if rendimiento is not None else (cantidad or 1.0))
+        precio_unitario = float(precio_unitario or 0.0)
+
+        # Si no se pasó precio y es MATERIAL, consultar catálogo
+        if tipo_recurso == "MATERIAL" and id_recurso and precio_unitario <= 0:
+            mat_row = db.execute_query("SELECT precio FROM obras.t_material WHERE id_material = %s;", (id_recurso,), fetchone=True)
             if mat_row and mat_row[0]:
                 precio_unitario = float(mat_row[0])
+        elif tipo_recurso == "MANO_OBRA" and id_recurso and precio_unitario <= 0:
+            mo_row = db.execute_query("SELECT costo_unitario FROM obras.t_mano_obra WHERE id_mano_obra = %s;", (id_recurso,), fetchone=True)
+            if mo_row and mo_row[0]:
+                precio_unitario = float(mo_row[0])
+        elif tipo_recurso == "EQUIPO" and id_recurso and precio_unitario <= 0:
+            eq_row = db.execute_query("SELECT costo_unitario FROM obras.t_equipo WHERE id_equipo = %s;", (id_recurso,), fetchone=True)
+            if eq_row and eq_row[0]:
+                precio_unitario = float(eq_row[0])
 
-        cantidad = float(cantidad or 0.0)
-        precio_unitario = float(precio_unitario or 0.0)
-        subtotal = round(cantidad * precio_unitario, 2)
+        subtotal = round(rend * precio_unitario, 2)
 
         sql = """
             INSERT INTO obras.t_apu_componente (
                 id_apu, tipo_recurso, id_recurso, descripcion_recurso,
-                id_unidad_medida, cantidad, precio_unitario, subtotal
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                id_unidad_medida, cantidad, rendimiento, precio_unitario, subtotal
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id_componente;
         """
         params = (
             id_apu, tipo_recurso, id_recurso, descripcion_recurso,
-            id_unidad_medida, cantidad, precio_unitario, subtotal
+            id_unidad_medida, rend, rend, precio_unitario, subtotal
         )
         row = db.execute_query(sql, params, fetchone=True, commit=True)
         id_componente = row[0] if row else None
@@ -659,7 +841,7 @@ def agregar_componente_apu(
 def actualizar_componente_apu(
     id_componente: int, tipo_recurso: str, descripcion_recurso: str,
     id_unidad_medida: int, cantidad: float, precio_unitario: float,
-    id_recurso: int = None
+    id_recurso: int = None, rendimiento: float = None
 ):
     db = PostgreSQL()
     db.create_connection()
@@ -672,19 +854,19 @@ def actualizar_componente_apu(
             return None
         id_apu = c_row[0]
 
-        cantidad = float(cantidad or 0.0)
+        rend = float(rendimiento if rendimiento is not None else (cantidad or 1.0))
         precio_unitario = float(precio_unitario or 0.0)
-        subtotal = round(cantidad * precio_unitario, 2)
+        subtotal = round(rend * precio_unitario, 2)
 
         sql = """
             UPDATE obras.t_apu_componente
             SET tipo_recurso = %s, descripcion_recurso = %s, id_unidad_medida = %s,
-                cantidad = %s, precio_unitario = %s, subtotal = %s, id_recurso = %s
+                cantidad = %s, rendimiento = %s, precio_unitario = %s, subtotal = %s, id_recurso = %s
             WHERE id_componente = %s;
         """
         params = (
             tipo_recurso, descripcion_recurso, id_unidad_medida,
-            cantidad, precio_unitario, subtotal, id_recurso, id_componente
+            rend, rend, precio_unitario, subtotal, id_recurso, id_componente
         )
         db.execute_query(sql, params, commit=True)
         recalcular_costo_unitario_apu(id_apu)
@@ -711,6 +893,98 @@ def eliminar_componente_apu(id_componente: int):
         )
         recalcular_costo_unitario_apu(id_apu)
         return True
+    finally:
+        db.close_connection()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Catálogos de Recursos para APU (Materiales, Mano de Obra, Equipos)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def listar_equipos(id_empresa: int, q: str = None):
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        conds = ["eq.id_empresa = %s", "eq.activo = TRUE"]
+        params = [id_empresa]
+        if q:
+            conds.append("(eq.nombre ILIKE %s OR eq.codigo ILIKE %s OR eq.descripcion ILIKE %s)")
+            params.extend([f"%{q}%", f"%{q}%", f"%{q}%"])
+        where = " WHERE " + " AND ".join(conds)
+        sql = f"""
+            SELECT eq.id_equipo, eq.codigo, eq.nombre, eq.descripcion,
+                   eq.id_unidad_medida, eq.costo_unitario, eq.activo, eq.id_empresa,
+                   um.nombre AS unidad_medida_nombre, um.abreviatura AS unidad_medida_abrev
+            FROM obras.t_equipo eq
+            JOIN obras.t_unidad_medida um ON um.id_unidad_medida = eq.id_unidad_medida
+            {where}
+            ORDER BY eq.codigo ASC;
+        """
+        rows = db.execute_query(sql, tuple(params), fetchall=True) or []
+        return [
+            {
+                "id_equipo": r[0], "codigo": r[1], "nombre": r[2], "descripcion": r[3],
+                "id_unidad_medida": r[4], "costo_unitario": float(r[5] or 0), "activo": r[6],
+                "id_empresa": r[7], "unidad_medida_nombre": r[8], "unidad_medida_abrev": r[9]
+            }
+            for r in rows
+        ]
+    finally:
+        db.close_connection()
+
+
+def obtener_equipo(id_equipo: int):
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        sql = """
+            SELECT eq.id_equipo, eq.codigo, eq.nombre, eq.descripcion,
+                   eq.id_unidad_medida, eq.costo_unitario, eq.activo, eq.id_empresa,
+                   um.nombre AS unidad_medida_nombre, um.abreviatura AS unidad_medida_abrev
+            FROM obras.t_equipo eq
+            JOIN obras.t_unidad_medida um ON um.id_unidad_medida = eq.id_unidad_medida
+            WHERE eq.id_equipo = %s;
+        """
+        r = db.execute_query(sql, (id_equipo,), fetchone=True)
+        if not r:
+            return None
+        return {
+            "id_equipo": r[0], "codigo": r[1], "nombre": r[2], "descripcion": r[3],
+            "id_unidad_medida": r[4], "costo_unitario": float(r[5] or 0), "activo": r[6],
+            "id_empresa": r[7], "unidad_medida_nombre": r[8], "unidad_medida_abrev": r[9]
+        }
+    finally:
+        db.close_connection()
+
+
+def listar_mano_obra_catalogo(id_empresa: int, q: str = None):
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        conds = ["mo.id_empresa = %s", "mo.activo = TRUE"]
+        params = [id_empresa]
+        if q:
+            conds.append("(mo.nombre ILIKE %s OR mo.descripcion ILIKE %s)")
+            params.extend([f"%{q}%", f"%{q}%"])
+        where = " WHERE " + " AND ".join(conds)
+        sql = f"""
+            SELECT mo.id_mano_obra, mo.nombre, mo.descripcion,
+                   mo.id_unidad_medida, mo.costo_unitario, mo.activo, mo.id_empresa,
+                   um.nombre AS unidad_medida_nombre, um.abreviatura AS unidad_medida_abrev
+            FROM obras.t_mano_obra mo
+            JOIN obras.t_unidad_medida um ON um.id_unidad_medida = mo.id_unidad_medida
+            {where}
+            ORDER BY mo.nombre ASC;
+        """
+        rows = db.execute_query(sql, tuple(params), fetchall=True) or []
+        return [
+            {
+                "id_mano_obra": r[0], "nombre": r[1], "descripcion": r[2],
+                "id_unidad_medida": r[3], "costo_unitario": float(r[4] or 0), "activo": r[5],
+                "id_empresa": r[6], "unidad_medida_nombre": r[7], "unidad_medida_abrev": r[8]
+            }
+            for r in rows
+        ]
     finally:
         db.close_connection()
 
@@ -789,6 +1063,50 @@ def obtener_presupuesto_consolidado(id_presupuesto: int):
                 estructura_totales[key]["total"] = round(estructura_totales[key]["total"] + imp_total, 2)
                 estructura_totales[key]["cantidad_partidas"] += 1
 
+        # Explosión de insumos a nivel de obra (consumo_total = cantidad_obra * rendimiento)
+        sql_exp = """
+            SELECT 
+                c.tipo_recurso,
+                c.id_recurso,
+                c.descripcion_recurso,
+                um.nombre AS unidad_medida_nombre,
+                um.abreviatura AS unidad_medida_abrev,
+                c.precio_unitario,
+                SUM(p.cantidad * COALESCE(c.rendimiento, c.cantidad)) AS consumo_total,
+                SUM(p.cantidad * COALESCE(c.rendimiento, c.cantidad) * c.precio_unitario) AS costo_total
+            FROM obras.t_partida_presupuesto p
+            JOIN obras.t_apu_componente c ON c.id_apu = p.id_apu
+            JOIN obras.t_unidad_medida um ON um.id_unidad_medida = c.id_unidad_medida
+            WHERE p.id_presupuesto = %s
+            GROUP BY c.tipo_recurso, c.id_recurso, c.descripcion_recurso, um.nombre, um.abreviatura, c.precio_unitario
+            ORDER BY c.tipo_recurso ASC, c.descripcion_recurso ASC;
+        """
+        exp_rows = db.execute_query(sql_exp, (id_presupuesto,), fetchall=True) or []
+        explosion_insumos = {
+            "MATERIAL": [],
+            "MANO_OBRA": [],
+            "EQUIPO": []
+        }
+        totales_explosion = {"MATERIAL": 0.0, "MANO_OBRA": 0.0, "EQUIPO": 0.0}
+        for r in exp_rows:
+            tipo = r[0]
+            costo_t = round(float(r[7] or 0), 2)
+            item = {
+                "tipo_recurso": tipo,
+                "id_recurso": r[1],
+                "descripcion_recurso": r[2],
+                "unidad_medida_nombre": r[3],
+                "unidad_medida_abrev": r[4],
+                "precio_unitario": float(r[5] or 0),
+                "consumo_total": round(float(r[6] or 0), 4),
+                "costo_total": costo_t
+            }
+            if tipo in explosion_insumos:
+                explosion_insumos[tipo].append(item)
+                totales_explosion[tipo] = round(totales_explosion[tipo] + costo_t, 2)
+
+        costo_directo_total = round(sum(totales_explosion.values()), 2)
+
         recursos_resumen = []
         for tipo, monto in recursos_totales.items():
             pct = round((monto / total_presupuesto * 100), 2) if total_presupuesto > 0 else 0.0
@@ -814,6 +1132,13 @@ def obtener_presupuesto_consolidado(id_presupuesto: int):
             "total_partidas": len(partidas),
             "partidas": partidas,
             "desglose_recursos": recursos_resumen,
+            "explosion_insumos": explosion_insumos,
+            "totales_costo_directo": {
+                "materiales": totales_explosion["MATERIAL"],
+                "mano_obra": totales_explosion["MANO_OBRA"],
+                "equipos": totales_explosion["EQUIPO"],
+                "costo_directo_total": costo_directo_total
+            },
             "desglose_estructura": list(estructura_totales.values()),
             "metricas_parametricas": {
                 "superficie_m2": superficie,

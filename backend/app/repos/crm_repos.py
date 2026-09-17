@@ -274,6 +274,8 @@ def actualizar_cliente_crm(id_cliente: int, id_empresa: int, email: str = None,
         campos.append("id_usuario_asignado = %s")
         params.append(id_usuario_asignado if id_usuario_asignado > 0 else None)
 
+    campos.append("updated_at = CURRENT_TIMESTAMP")
+
     if not campos:
         return True
 
@@ -533,7 +535,9 @@ def obtener_metricas_crm(id_empresa: int):
             COUNT(*) FILTER (WHERE tipo_cliente = 'PROSPECTO' AND estado = 'NUEVO') AS prospectos_nuevos,
             COUNT(*) FILTER (WHERE tipo_cliente = 'PROSPECTO' AND estado = 'CONTACTADO') AS prospectos_contactados,
             COUNT(*) FILTER (WHERE tipo_cliente = 'PROSPECTO' AND estado = 'INTERESADO') AS prospectos_interesados,
-            COUNT(*) FILTER (WHERE tipo_cliente = 'PROSPECTO' AND estado = 'EN_NEGOCIACION') AS prospectos_negociacion,
+            COUNT(*) FILTER (WHERE tipo_cliente = 'PROSPECTO' AND estado IN ('NEGOCIACION', 'EN_NEGOCIACION')) AS prospectos_negociacion,
+            COUNT(*) FILTER (WHERE tipo_cliente = 'PROSPECTO' AND estado = 'RESERVADO') AS prospectos_reservados,
+            COUNT(*) FILTER (WHERE tipo_cliente = 'PROSPECTO' AND estado = 'VENDIDO') AS prospectos_vendidos,
             COUNT(*) FILTER (WHERE tipo_cliente = 'PROSPECTO' AND estado = 'CONVERTIDO') AS prospectos_convertidos,
             COUNT(*) FILTER (WHERE tipo_cliente = 'PROSPECTO' AND estado = 'PERDIDO') AS prospectos_perdidos
         FROM {Config.SCHEMA}.t_crm_cliente
@@ -551,7 +555,7 @@ def obtener_metricas_crm(id_empresa: int):
     db = PostgreSQL()
     db.create_connection()
     try:
-        m = db.execute_query(sql, (id_empresa,), fetchone=True) or (0, 0, 0, 0, 0, 0, 0, 0)
+        m = db.execute_query(sql, (id_empresa,), fetchone=True) or (0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         u = db.execute_query(sql_unidades, (id_empresa,), fetchone=True) or (0, 0, 0)
         return {
             "total_clientes": m[0] or 0,
@@ -561,8 +565,11 @@ def obtener_metricas_crm(id_empresa: int):
                 "CONTACTADO": m[3] or 0,
                 "INTERESADO": m[4] or 0,
                 "EN_NEGOCIACION": m[5] or 0,
-                "CONVERTIDO": m[6] or 0,
-                "PERDIDO": m[7] or 0,
+                "NEGOCIACION": m[5] or 0,
+                "RESERVADO": m[6] or 0,
+                "VENDIDO": m[7] or 0,
+                "CONVERTIDO": m[8] or 0,
+                "PERDIDO": m[9] or 0,
             },
             "unidades_asociadas": {
                 "INTERESADO": u[0] or 0,
@@ -572,3 +579,38 @@ def obtener_metricas_crm(id_empresa: int):
         }
     finally:
         db.close_connection()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 7. LISTAR ASESORES / RESPONSABLES COMERCIALES DE LA EMPRESA
+# ─────────────────────────────────────────────────────────────────────────────
+def listar_asesores_empresa(id_empresa: int):
+    sql = f"""
+        SELECT u.id_usuario,
+               COALESCE(p.nombre_completo, u.username) AS nombre_completo,
+               u.username,
+               u.correo,
+               COALESCE(r.nombre_rol, 'Usuario') AS rol
+        FROM {Config.SCHEMA}.t_usuario u
+        LEFT JOIN {Config.SCHEMA}.t_persona p ON p.id_persona = u.id_persona
+        LEFT JOIN {Config.SCHEMA}.t_rol r ON r.id_rol = u.id_rol
+        WHERE u.id_empresa = %s AND (u.estado = 'ACTIVO' OR u.estado IS NULL)
+        ORDER BY p.nombre_completo ASC, u.username ASC;
+    """
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        rows = db.execute_query(sql, (id_empresa,), fetchall=True) or []
+        return [
+            {
+                "id_usuario": r[0],
+                "nombre_completo": r[1],
+                "username": r[2],
+                "email": r[3],
+                "rol": r[4]
+            }
+            for r in rows
+        ]
+    finally:
+        db.close_connection()
+

@@ -9,7 +9,10 @@ import {
   MaterialUpdatePayload, MaterialsService, UnidadMedida, MaterialBase, MaterialAdoptarPayload
 } from '../../services/materials.service';
 
-interface MaterialFormModel extends MaterialCreatePayload { id_material?: number; stock_actual?: number; }
+interface MaterialFormModel extends MaterialCreatePayload {
+  id_material?: number;
+  stock_actual?: number;
+}
 
 @Component({
   selector: 'app-materiales',
@@ -36,6 +39,7 @@ export class MaterialesComponent implements OnInit {
   limite = 20;
   total = 0;
   totalPaginas = 0;
+
   loadingMaterials = false;
   loadingCatalogs = false;
   loadingDetail = false;
@@ -45,6 +49,7 @@ export class MaterialesComponent implements OnInit {
   savingCategory = false;
   error = '';
   exito = '';
+
   modal: 'formulario' | 'detalle' | 'confirmacion' | null = null;
   categoriaModalAbierto = false;
   categoriaError = '';
@@ -55,7 +60,6 @@ export class MaterialesComponent implements OnInit {
   categoriaForm = { nombre: '', descripcion: '' };
   empresaActiva: any = null;
 
-  // CU14 REDEFINIDO: Catálogo Base de Bolivia y Adopción
   vistaActiva: 'empresa' | 'base' = 'empresa';
   materialesBase: MaterialBase[] = [];
   loadingBase = false;
@@ -66,9 +70,15 @@ export class MaterialesComponent implements OnInit {
   adoptingMaterial = false;
   adopcionError = '';
 
+  copiandoBase = false;
+  modalCopiarBase = false;
+
   ngOnInit(): void {
     this.busqueda$.pipe(debounceTime(400), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => { this.pagina = 1; this.cargarMateriales(); });
+      .subscribe(() => {
+        this.pagina = 1;
+        this.cargarMateriales();
+      });
 
     this.auth.empresaActiva$
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -79,22 +89,44 @@ export class MaterialesComponent implements OnInit {
       });
 
     this.loadingCatalogs = true;
-    forkJoin({ categorias: this.service.categorias(), unidades: this.service.unidadesMedida() })
-      .pipe(finalize(() => { this.loadingCatalogs = false; this.cdr.detectChanges(); })).subscribe({
-      next: ({ categorias, unidades }) => { this.categorias = categorias.data || []; this.unidades = unidades.data || []; this.cdr.detectChanges(); },
-      error: err => this.mostrarError(this.mensajeError(err, 'No se pudieron cargar los catálogos.'))
-    });
+    forkJoin({
+      categorias: this.service.categorias(),
+      unidades: this.service.unidadesMedida()
+    })
+      .pipe(finalize(() => {
+        this.loadingCatalogs = false;
+        this.cdr.detectChanges();
+      }))
+      .subscribe({
+        next: ({ categorias, unidades }) => {
+          this.categorias = categorias.data || [];
+          this.unidades = unidades.data || [];
+          this.cdr.detectChanges();
+        },
+        error: err => this.mostrarError(this.mensajeError(err, 'No se pudieron cargar los catálogos.'))
+      });
+
     this.cargarMateriales();
   }
 
   formularioVacio(): MaterialFormModel {
-    return { codigo: '', nombre_material: '', descripcion: null, id_categoria: 0, id_unidad_medida: 0,
-      precio: null, caracteristicas: [], cantidad_inicial: 0, stock_minimo: 0,
-      fecha_ingreso: new Date().toISOString().slice(0, 10) };
+    return {
+      codigo: '',
+      nombre_material: '',
+      descripcion: null,
+      id_categoria: 0,
+      id_unidad_medida: 0,
+      precio: null,
+      caracteristicas: [],
+      cantidad_inicial: 0,
+      stock_minimo: 0,
+      fecha_ingreso: new Date().toISOString().slice(0, 10)
+    };
   }
 
   cargarMateriales(): void {
-    this.loadingMaterials = true; this.error = '';
+    this.loadingMaterials = true;
+    this.error = '';
     const idEmpresa = this.auth.obtenerIdEmpresaActiva();
     this.service.listar({
       q: this.q.trim() || undefined,
@@ -105,8 +137,17 @@ export class MaterialesComponent implements OnInit {
       limit: this.limite,
       id_empresa: idEmpresa || undefined
     })
-      .pipe(finalize(() => { this.loadingMaterials = false; this.cdr.detectChanges(); })).subscribe({
-        next: res => { this.materiales = res.data || []; this.total = res.pagination.total; this.totalPaginas = res.pagination.total_pages; this.cdr.detectChanges(); },
+      .pipe(finalize(() => {
+        this.loadingMaterials = false;
+        this.cdr.detectChanges();
+      }))
+      .subscribe({
+        next: res => {
+          this.materiales = res.data || [];
+          this.total = res.pagination.total;
+          this.totalPaginas = res.pagination.total_pages;
+          this.cdr.detectChanges();
+        },
         error: err => this.mostrarError(this.mensajeError(err, 'No se pudo cargar el catálogo de materiales.'))
       });
   }
@@ -115,12 +156,31 @@ export class MaterialesComponent implements OnInit {
     return this.auth.esVistaGlobal();
   }
 
-  buscar(): void { this.busqueda$.next(this.q.trim()); }
-  filtrar(): void { this.pagina = 1; this.cargarMateriales(); }
-  limpiarFiltros(): void { this.q = ''; this.categoria = ''; this.estado = ''; this.stock = ''; this.pagina = 1; this.cargarMateriales(); }
-  cambiarPagina(pagina: number): void { if (!this.loadingMaterials && pagina >= 1 && pagina <= this.totalPaginas) { this.pagina = pagina; this.cargarMateriales(); } }
+  buscar(): void {
+    this.busqueda$.next(this.q.trim());
+  }
 
-  // Gestión de Catálogo Base (CU14)
+  filtrar(): void {
+    this.pagina = 1;
+    this.cargarMateriales();
+  }
+
+  limpiarFiltros(): void {
+    this.q = '';
+    this.categoria = '';
+    this.estado = '';
+    this.stock = '';
+    this.pagina = 1;
+    this.cargarMateriales();
+  }
+
+  cambiarPagina(pagina: number): void {
+    if (!this.loadingMaterials && pagina >= 1 && pagina <= this.totalPaginas) {
+      this.pagina = pagina;
+      this.cargarMateriales();
+    }
+  }
+
   cambiarVista(vista: 'empresa' | 'base'): void {
     this.vistaActiva = vista;
     this.q = '';
@@ -143,14 +203,50 @@ export class MaterialesComponent implements OnInit {
       id_empresa: idEmpresa || undefined,
       limit: 100
     })
-      .pipe(finalize(() => { this.loadingBase = false; this.cdr.detectChanges(); }))
+      .pipe(finalize(() => {
+        this.loadingBase = false;
+        this.cdr.detectChanges();
+      }))
       .subscribe({
         next: res => {
           this.materialesBase = res.data || [];
           this.totalBase = res.pagination.total;
           this.cdr.detectChanges();
         },
-        error: err => this.mostrarError(this.mensajeError(err, 'No se pudo cargar el catálogo base de la plataforma.'))
+        error: err => this.mostrarError(this.mensajeError(err, 'No se pudo cargar el catálogo base.'))
+      });
+  }
+
+  abrirConfirmarCopiaBase(): void {
+    this.modalCopiarBase = true;
+  }
+
+  cerrarConfirmarCopiaBase(): void {
+    if (this.copiandoBase) return;
+    this.modalCopiarBase = false;
+  }
+
+  confirmarCopiarCatalogoBase(): void {
+    if (this.copiandoBase) return;
+    this.copiandoBase = true;
+    const idEmpresa = this.auth.obtenerIdEmpresaActiva();
+    this.service.copiarCatalogoBase(idEmpresa || undefined)
+      .pipe(finalize(() => {
+        this.copiandoBase = false;
+        this.modalCopiarBase = false;
+        this.cdr.detectChanges();
+      }))
+      .subscribe({
+        next: res => {
+          this.mostrarExito(res.message || 'Catálogo base incorporado exitosamente.');
+          this.vistaActiva = 'empresa';
+          this.cargarMateriales();
+          this.cargarMaterialesBase();
+          this.cdr.detectChanges();
+        },
+        error: err => {
+          this.mostrarError(this.mensajeError(err, 'No se pudo incorporar el catálogo base.'));
+        }
       });
   }
 
@@ -183,13 +279,17 @@ export class MaterialesComponent implements OnInit {
     this.adoptingMaterial = true;
 
     this.service.adoptar(this.formAdopcion)
-      .pipe(finalize(() => { this.adoptingMaterial = false; this.cdr.detectChanges(); }))
+      .pipe(finalize(() => {
+        this.adoptingMaterial = false;
+        this.cdr.detectChanges();
+      }))
       .subscribe({
         next: res => {
           this.modalAdopcionAbierto = false;
           this.materialBaseSeleccionado = undefined;
-          this.mostrarExito(res.message || 'Material incorporado con éxito a su catálogo.');
+          this.mostrarExito(res.message || 'Material incorporado con éxito.');
           this.cargarMaterialesBase();
+          this.cargarMateriales();
           this.cdr.detectChanges();
         },
         error: err => {
@@ -199,36 +299,72 @@ export class MaterialesComponent implements OnInit {
       });
   }
 
-  abrirNuevo(): void { if (this.operacionFormularioActiva) return; this.error = ''; this.editando = false; this.form = this.formularioVacio(); this.modal = 'formulario'; }
+  abrirNuevo(): void {
+    if (this.operacionFormularioActiva) return;
+    this.error = '';
+    this.editando = false;
+    this.form = this.formularioVacio();
+    this.modal = 'formulario';
+  }
+
   abrirEditar(material: Material): void {
     if (this.loadingDetail) return;
     this.loadingDetail = true;
-    this.service.obtener(material.id_material).pipe(finalize(() => { this.loadingDetail = false; this.cdr.detectChanges(); })).subscribe({
+    this.service.obtener(material.id_material).pipe(finalize(() => {
+      this.loadingDetail = false;
+      this.cdr.detectChanges();
+    })).subscribe({
       next: res => {
-        const m = res.data; this.editando = true;
-        this.form = { id_material: m.id_material, codigo: m.codigo, nombre_material: m.nombre_material,
-          descripcion: m.descripcion || null, id_categoria: m.categoria.id_categoria,
-          id_unidad_medida: m.unidad_medida.id_unidad_medida, precio: m.precio,
+        const m = res.data;
+        this.editando = true;
+        this.form = {
+          id_material: m.id_material,
+          codigo: m.codigo,
+          nombre_material: m.nombre_material,
+          descripcion: m.descripcion || null,
+          id_categoria: m.categoria.id_categoria,
+          id_unidad_medida: m.unidad_medida.id_unidad_medida,
+          precio: m.precio,
           caracteristicas: (m.caracteristicas || []).map(c => ({ nombre: c.nombre, valor: c.valor })),
-          cantidad_inicial: 0, stock_minimo: m.stock_minimo, fecha_ingreso: '', stock_actual: m.stock_actual };
+          cantidad_inicial: 0,
+          stock_minimo: m.stock_minimo,
+          fecha_ingreso: '',
+          stock_actual: m.stock_actual
+        };
         this.modal = 'formulario';
         this.cdr.detectChanges();
-      }, error: err => this.mostrarError(this.mensajeError(err, 'No se pudo cargar el material.'))
+      },
+      error: err => this.mostrarError(this.mensajeError(err, 'No se pudo cargar el material.'))
     });
   }
 
   abrirDetalle(material: Material): void {
     if (this.loadingDetail) return;
     this.loadingDetail = true;
-    this.service.obtener(material.id_material).pipe(finalize(() => { this.loadingDetail = false; this.cdr.detectChanges(); })).subscribe({
-      next: res => { this.detalle = res.data; this.modal = 'detalle'; this.cdr.detectChanges(); },
+    this.service.obtener(material.id_material).pipe(finalize(() => {
+      this.loadingDetail = false;
+      this.cdr.detectChanges();
+    })).subscribe({
+      next: res => {
+        this.detalle = res.data;
+        this.modal = 'detalle';
+        this.cdr.detectChanges();
+      },
       error: err => this.mostrarError(this.mensajeError(err, 'No se pudo cargar el material.'))
     });
   }
 
-  agregarCaracteristica(): void { this.form.caracteristicas.push({ nombre: '', valor: '' }); }
-  quitarCaracteristica(index: number): void { this.form.caracteristicas.splice(index, 1); }
-  trackCaracteristica(index: number, item: MaterialCaracteristica): number { return index; }
+  agregarCaracteristica(): void {
+    this.form.caracteristicas.push({ nombre: '', valor: '' });
+  }
+
+  quitarCaracteristica(index: number): void {
+    this.form.caracteristicas.splice(index, 1);
+  }
+
+  trackCaracteristica(index: number): number {
+    return index;
+  }
 
   abrirNuevaCategoria(): void {
     if (this.savingCategory) return;
@@ -246,12 +382,19 @@ export class MaterialesComponent implements OnInit {
   guardarCategoria(): void {
     if (this.savingCategory) return;
     const nombre = this.categoriaForm.nombre.trim();
-    if (!nombre) { this.categoriaError = 'El nombre de la categoría es obligatorio.'; return; }
+    if (!nombre) {
+      this.categoriaError = 'El nombre de la categoría es obligatorio.';
+      return;
+    }
     this.savingCategory = true;
     this.categoriaError = '';
     this.cdr.detectChanges();
     this.service.crearCategoria({ nombre, descripcion: this.categoriaForm.descripcion.trim() || null })
-      .pipe(finalize(() => { this.savingCategory = false; this.cdr.detectChanges(); })).subscribe({
+      .pipe(finalize(() => {
+        this.savingCategory = false;
+        this.cdr.detectChanges();
+      }))
+      .subscribe({
         next: res => {
           const nueva = res.data;
           this.categorias = [...this.categorias, nueva].sort((a, b) => a.nombre.localeCompare(b.nombre));
@@ -260,34 +403,49 @@ export class MaterialesComponent implements OnInit {
           this.mostrarExito('Categoría registrada correctamente.');
           this.cdr.detectChanges();
         },
-        error: err => { this.categoriaError = this.mensajeErrorCategoria(err); this.cdr.detectChanges(); }
+        error: err => {
+          this.categoriaError = this.mensajeErrorCategoria(err);
+          this.cdr.detectChanges();
+        }
       });
   }
 
   private mensajeErrorCategoria(err: any): string {
     if (err?.status === 403) return 'No tienes permisos para crear categorías.';
     if (err?.status === 409) return 'Ya existe una categoría con ese nombre.';
-    if (err?.status >= 500) return 'No se pudo completar la operación. Intenta nuevamente.';
     return err?.error?.detail || err?.error?.message || 'No se pudo registrar la categoría.';
   }
 
   guardar(): void {
     if (this.operacionFormularioActiva) return;
     const validacion = this.validar();
-    if (validacion) { this.mostrarError(validacion); return; }
+    if (validacion) {
+      this.mostrarError(validacion);
+      return;
+    }
     if (this.editando) this.updatingMaterial = true;
     else this.savingMaterial = true;
     this.cdr.detectChanges();
-    const base = { codigo: this.form.codigo.trim(), nombre_material: this.form.nombre_material.trim(),
-      descripcion: this.form.descripcion?.trim() || null, id_categoria: +this.form.id_categoria,
-      id_unidad_medida: +this.form.id_unidad_medida, precio: this.form.precio === null ? null : +this.form.precio,
+
+    const base = {
+      codigo: this.form.codigo.trim(),
+      nombre_material: this.form.nombre_material.trim(),
+      descripcion: this.form.descripcion?.trim() || null,
+      id_categoria: +this.form.id_categoria,
+      id_unidad_medida: +this.form.id_unidad_medida,
+      precio: this.form.precio === null ? null : +this.form.precio,
       stock_minimo: +this.form.stock_minimo,
-      caracteristicas: this.form.caracteristicas.map(c => ({ nombre: c.nombre.trim(), valor: c.valor.trim() })) };
+      caracteristicas: this.form.caracteristicas.map(c => ({ nombre: c.nombre.trim(), valor: c.valor.trim() }))
+    };
     const idEmpresa = this.auth.obtenerIdEmpresaActiva() || this.auth.obtenerUsuario()?.id_empresa;
     const request = this.editando && this.form.id_material
       ? this.service.modificar(this.form.id_material, { ...base, id_empresa: idEmpresa } as MaterialUpdatePayload)
       : this.service.registrar({ ...base, cantidad_inicial: +this.form.cantidad_inicial, fecha_ingreso: this.form.fecha_ingreso, id_empresa: idEmpresa } as MaterialCreatePayload);
-    request.pipe(finalize(() => { this.liberarOperacionFormulario(); this.cdr.detectChanges(); })).subscribe({
+
+    request.pipe(finalize(() => {
+      this.liberarOperacionFormulario();
+      this.cdr.detectChanges();
+    })).subscribe({
       next: () => {
         this.liberarOperacionFormulario();
         this.modal = null;
@@ -300,55 +458,100 @@ export class MaterialesComponent implements OnInit {
     });
   }
 
-  get operacionFormularioActiva(): boolean { return this.savingMaterial || this.updatingMaterial; }
-  private liberarOperacionFormulario(): void { this.savingMaterial = false; this.updatingMaterial = false; }
+  get operacionFormularioActiva(): boolean {
+    return this.savingMaterial || this.updatingMaterial;
+  }
+
+  private liberarOperacionFormulario(): void {
+    this.savingMaterial = false;
+    this.updatingMaterial = false;
+  }
 
   private validar(): string | null {
     if (!this.form.codigo.trim()) return 'El código es obligatorio.';
     if (!this.form.nombre_material.trim()) return 'El nombre es obligatorio.';
     if (!(+this.form.id_categoria > 0)) return 'La categoría es obligatoria.';
     if (!(+this.form.id_unidad_medida > 0)) return 'La unidad de medida es obligatoria.';
-    if (!this.editando && (!this.form.fecha_ingreso || Number.isNaN(Date.parse(this.form.fecha_ingreso)))) return 'La fecha de ingreso es obligatoria y debe ser válida.';
-    if (!this.editando && +this.form.cantidad_inicial < 0) return 'La cantidad inicial no puede ser negativa.';
-    if (+this.form.stock_minimo < 0) return 'El stock mínimo no puede ser negativo.';
     if (this.form.precio !== null && +this.form.precio < 0) return 'El precio no puede ser negativo.';
-    if (this.form.caracteristicas.some(c => !c.nombre.trim() || !c.valor.trim())) return 'Cada característica debe tener nombre y valor.';
+    if (this.form.caracteristicas.some(c => !c.nombre.trim() || !c.valor.trim())) {
+      return 'Cada característica debe tener nombre y valor.';
+    }
     const nombres = this.form.caracteristicas.map(c => c.nombre.trim().toLocaleLowerCase());
-    if (new Set(nombres).size !== nombres.length) return 'No se permiten características duplicadas.';
+    if (new Set(nombres).size !== nombres.length) {
+      return 'No se permiten características duplicadas.';
+    }
     return null;
   }
 
-  confirmarEstado(material: Material): void { this.objetivoEstado = material; this.modal = 'confirmacion'; }
+  confirmarEstado(material: Material): void {
+    this.objetivoEstado = material;
+    this.modal = 'confirmacion';
+  }
+
   cambiarEstado(): void {
     if (!this.objetivoEstado || this.changingStatus) return;
     const nuevo: EstadoMaterial = this.objetivoEstado.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
     this.changingStatus = true;
-    this.service.cambiarEstado(this.objetivoEstado.id_material, nuevo).pipe(finalize(() => { this.changingStatus = false; this.cdr.detectChanges(); })).subscribe({
-      next: () => { this.modal = null; this.mostrarExito(nuevo === 'ACTIVO' ? 'Material reactivado correctamente.' : 'Material desactivado correctamente.'); this.cdr.detectChanges(); this.cargarMateriales(); },
-      error: err => this.mostrarError(this.mensajeError(err, 'No se pudo cambiar el estado del material.'))
-    });
+    this.service.cambiarEstado(this.objetivoEstado.id_material, nuevo)
+      .pipe(finalize(() => {
+        this.changingStatus = false;
+        this.cdr.detectChanges();
+      }))
+      .subscribe({
+        next: () => {
+          this.modal = null;
+          this.mostrarExito(nuevo === 'ACTIVO' ? 'Material reactivado correctamente.' : 'Material desactivado correctamente.');
+          this.cdr.detectChanges();
+          this.cargarMateriales();
+        },
+        error: err => this.mostrarError(this.mensajeError(err, 'No se pudo cambiar el estado del material.'))
+      });
   }
 
   cerrarModal(): void {
     if (this.operacionFormularioActiva || this.changingStatus || this.categoriaModalAbierto) return;
-    this.modal = null; this.detalle = undefined; this.objetivoEstado = undefined; this.error = '';
+    this.modal = null;
+    this.detalle = undefined;
+    this.objetivoEstado = undefined;
+    this.error = '';
     if (!this.editando) this.form = this.formularioVacio();
     this.cdr.detectChanges();
   }
-  stockEstado(m: Material): 'sin' | 'bajo' | 'normal' { return +m.stock_actual === 0 ? 'sin' : +m.stock_actual <= +m.stock_minimo ? 'bajo' : 'normal'; }
 
-  hasPermission(permiso: string): boolean { return this.auth.hasPermission(permiso); }
-  puedeRegistrar(): boolean { return this.auth.hasPermission('Registrar_materiales'); }
-  puedeModificar(): boolean { return this.auth.hasPermission('Modificar_materiales'); }
-  puedeCambiarEstado(): boolean { return this.auth.hasPermission('Desactivar_materiales'); }
+  stockEstado(m: Material): 'sin' | 'bajo' | 'normal' {
+    return +m.stock_actual === 0 ? 'sin' : +m.stock_actual <= +m.stock_minimo ? 'bajo' : 'normal';
+  }
+
+  hasPermission(permiso: string): boolean {
+    return this.auth.hasPermission(permiso);
+  }
+
+  puedeRegistrar(): boolean {
+    return this.auth.hasPermission('Registrar_materiales');
+  }
+
+  puedeModificar(): boolean {
+    return this.auth.hasPermission('Modificar_materiales');
+  }
+
+  puedeCambiarEstado(): boolean {
+    return this.auth.hasPermission('Desactivar_materiales');
+  }
 
   private mensajeError(err: any, fallback: string): string {
     if (err?.status === 403) return 'No tienes permisos para realizar esta acción.';
     if (err?.status === 404) return err?.error?.detail || 'Material no encontrado.';
-    if (err?.status === 409) return 'Ya existe un material con ese código.';
-    if (err?.status >= 500) return 'No se pudo completar la operación. Intenta nuevamente.';
+    if (err?.status === 409) return err?.error?.detail || 'Ya existe un material con ese código.';
     return err?.error?.detail || err?.error?.message || fallback;
   }
-  private mostrarError(mensaje: string): void { this.error = mensaje; setTimeout(() => this.error = '', 6000); }
-  private mostrarExito(mensaje: string): void { this.exito = mensaje; setTimeout(() => this.exito = '', 4500); }
+
+  private mostrarError(mensaje: string): void {
+    this.error = mensaje;
+    setTimeout(() => this.error = '', 6000);
+  }
+
+  private mostrarExito(mensaje: string): void {
+    this.exito = mensaje;
+    setTimeout(() => this.exito = '', 4500);
+  }
 }
