@@ -1,0 +1,387 @@
+<div class="space-y-6">
+
+  <!-- ── MENSAJES ─────────────────────────────────────────────────────────── -->
+  <div *ngIf="mensajeError" class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl text-sm dark:bg-red-950/20 dark:border-red-900/30 dark:text-red-400">
+    <strong>Error:</strong> {{ mensajeError }}
+  </div>
+  <div *ngIf="mensajeExito" class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl text-sm dark:bg-green-950/20 dark:border-green-900/30 dark:text-green-400">
+    <strong>Éxito:</strong> {{ mensajeExito }}
+  </div>
+
+  <!-- ── CABECERA DE SECCIÓN ────────────────────────────────────────────── -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+      <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+        <span class="text-xl">📊</span>
+        Avances de Obra
+      </h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+        Registro histórico del avance de las unidades de construcción
+      </p>
+    </div>
+    <button *ngIf="puedeRegistrar"
+            (click)="abrirFormulario()"
+            id="btn-nuevo-avance"
+            class="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      Registrar Avance
+    </button>
+  </div>
+
+  <!-- ── AVANCE GLOBAL ─────────────────────────────────────────────────── -->
+  <div class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-sm p-6">
+    <div class="flex items-center justify-between mb-4">
+      <span class="text-sm font-bold text-gray-700 dark:text-gray-300">Avance Global del Proyecto</span>
+      <span class="text-2xl font-black"
+            [class.text-green-600]="avanceGlobal >= 100"
+            [class.text-amber-600]="avanceGlobal >= 60 && avanceGlobal < 100"
+            [class.text-orange-600]="avanceGlobal > 0 && avanceGlobal < 60"
+            [class.text-gray-400]="avanceGlobal === 0">
+        {{ avanceGlobal | number:'1.1-1' }}%
+      </span>
+    </div>
+    <div class="w-full bg-gray-100 dark:bg-slate-800 rounded-full h-3 overflow-hidden">
+      <div class="h-3 rounded-full transition-all duration-700"
+           [class]="colorBarra(avanceGlobal)"
+           [style.width.%]="avanceGlobal">
+      </div>
+    </div>
+    <div *ngIf="cargandoResumen" class="mt-2 text-xs text-gray-400">Calculando avance...</div>
+  </div>
+
+  <!-- ── TABS: RESUMEN / HISTORIAL ─────────────────────────────────────── -->
+  <div class="flex items-center gap-2 border-b border-gray-200 dark:border-slate-800">
+    <button (click)="vistaActiva = 'resumen'"
+            class="px-4 py-2.5 text-sm font-bold border-b-2 transition-all"
+            [ngClass]="vistaActiva === 'resumen'
+              ? 'border-orange-600 text-orange-600 dark:text-orange-400'
+              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'">
+      📋 Resumen por Unidad
+    </button>
+    <button (click)="vistaActiva = 'historial'"
+            class="px-4 py-2.5 text-sm font-bold border-b-2 transition-all"
+            [ngClass]="vistaActiva === 'historial'
+              ? 'border-orange-600 text-orange-600 dark:text-orange-400'
+              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'">
+      📜 Historial de Registros
+    </button>
+  </div>
+
+  <!-- ── VISTA: RESUMEN POR UNIDAD ────────────────────────────────────── -->
+  <div *ngIf="vistaActiva === 'resumen'">
+    <div *ngIf="cargandoResumen" class="flex justify-center py-8">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+    </div>
+
+    <div *ngIf="!cargandoResumen && resumenUnidades.length === 0"
+         class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-8 text-center">
+      <div class="text-4xl mb-3">📊</div>
+      <p class="text-gray-500 dark:text-gray-400 text-sm">No hay unidades de construcción en este proyecto.</p>
+      <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+        Registra primero las unidades en la pestaña "Estructura de la Obra".
+      </p>
+    </div>
+
+    <div *ngIf="!cargandoResumen && resumenUnidades.length > 0"
+         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div *ngFor="let u of resumenUnidades; trackBy: trackByUnidad"
+           class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl p-4 space-y-3 hover:shadow-md transition-shadow">
+
+        <!-- Header tarjeta -->
+        <div class="flex items-start justify-between gap-2">
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-mono text-orange-600 dark:text-orange-400 font-bold truncate">
+              {{ u.codigo_unidad }}
+            </p>
+            <p class="text-sm font-bold text-gray-900 dark:text-white truncate mt-0.5" [title]="u.nombre_unidad">
+              {{ u.nombre_unidad }}
+            </p>
+          </div>
+          <span class="text-xs px-2 py-0.5 rounded-full font-bold shrink-0" [ngClass]="colorEstado(u.estado_unidad)">
+            {{ u.estado_unidad }}
+          </span>
+        </div>
+
+        <!-- Barra de avance -->
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-xs text-gray-500">Avance</span>
+            <span class="text-sm font-black" 
+                  [class.text-green-600]="u.ultimo_avance >= 100"
+                  [class.text-amber-600]="u.ultimo_avance >= 60 && u.ultimo_avance < 100"
+                  [class.text-orange-600]="u.ultimo_avance > 0 && u.ultimo_avance < 60"
+                  [class.text-gray-400]="u.ultimo_avance === 0">
+              {{ u.ultimo_avance | number:'1.0-1' }}%
+            </span>
+          </div>
+          <div class="w-full bg-gray-100 dark:bg-slate-800 rounded-full h-2">
+            <div class="h-2 rounded-full transition-all"
+                 [class]="colorBarra(u.ultimo_avance)"
+                 [style.width.%]="u.ultimo_avance">
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex items-center justify-between text-xs text-gray-400">
+          <span>{{ u.tipo_unidad }}</span>
+          <span *ngIf="u.fecha_ultimo">{{ u.fecha_ultimo | date:'dd/MM/yyyy' }}</span>
+          <span *ngIf="!u.fecha_ultimo">Sin registros</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── VISTA: HISTORIAL DE AVANCES ─────────────────────────────────── -->
+  <div *ngIf="vistaActiva === 'historial'" class="space-y-4">
+
+    <!-- Filtro por unidad -->
+    <div class="flex items-center gap-3 flex-wrap">
+      <label class="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+        Filtrar por unidad:
+      </label>
+      <select id="filtro-unidad-avance"
+              [(ngModel)]="filtroUnidad"
+              (change)="onFiltroUnidadChange()"
+              class="form-select text-sm py-1.5 px-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white">
+        <option [ngValue]="null">Todas las unidades</option>
+        <option *ngFor="let u of unidades" [ngValue]="u.id_unidad">
+          {{ u.codigo }} – {{ u.nombre }}
+        </option>
+      </select>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="cargando" class="flex justify-center py-8">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+    </div>
+
+    <!-- Sin avances -->
+    <div *ngIf="!cargando && avancesFiltrados.length === 0"
+         class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-8 text-center">
+      <div class="text-4xl mb-3">📜</div>
+      <p class="text-gray-500 dark:text-gray-400 text-sm">No hay avances registrados aún.</p>
+      <p *ngIf="puedeRegistrar" class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+        Utiliza el botón "Registrar Avance" para comenzar el seguimiento.
+      </p>
+    </div>
+
+    <!-- Tabla de avances -->
+    <div *ngIf="!cargando && avancesFiltrados.length > 0"
+         class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-gray-50 dark:bg-slate-800/60 border-b border-gray-200 dark:border-slate-700">
+              <th class="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Unidad</th>
+              <th class="text-center px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Avance</th>
+              <th class="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha</th>
+              <th class="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">Observación</th>
+              <th class="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">Registrado por</th>
+              <th *ngIf="puedeRegistrar" class="text-center px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 dark:divide-slate-800">
+            <tr *ngFor="let a of avancesFiltrados; trackBy: trackByAvance"
+                class="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
+
+              <!-- Unidad -->
+              <td class="px-4 py-3">
+                <div class="text-xs font-mono text-orange-600 dark:text-orange-400">{{ a.codigo_unidad }}</div>
+                <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ a.nombre_unidad }}</div>
+                <span class="text-xs px-1.5 py-0.5 rounded-full font-bold" [ngClass]="colorEstado(a.estado_unidad)">
+                  {{ a.estado_unidad }}
+                </span>
+              </td>
+
+              <!-- Porcentaje -->
+              <td class="px-4 py-3 text-center">
+                <div class="flex flex-col items-center gap-1">
+                  <span class="text-lg font-black"
+                        [class.text-green-600]="a.porcentaje_avance >= 100"
+                        [class.text-amber-600]="a.porcentaje_avance >= 60 && a.porcentaje_avance < 100"
+                        [class.text-orange-600]="a.porcentaje_avance > 0 && a.porcentaje_avance < 60"
+                        [class.text-gray-400]="a.porcentaje_avance === 0">
+                    {{ a.porcentaje_avance | number:'1.0-1' }}%
+                  </span>
+                  <div class="w-16 bg-gray-100 dark:bg-slate-800 rounded-full h-1.5">
+                    <div class="h-1.5 rounded-full" [class]="colorBarra(a.porcentaje_avance)"
+                         [style.width.%]="a.porcentaje_avance"></div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Fecha -->
+              <td class="px-4 py-3">
+                <span class="text-sm text-gray-700 dark:text-gray-300">
+                  {{ a.fecha_registro | date:'dd/MM/yyyy' }}
+                </span>
+              </td>
+
+              <!-- Observación -->
+              <td class="px-4 py-3 hidden md:table-cell">
+                <span class="text-sm text-gray-500 dark:text-gray-400 italic">
+                  {{ a.observacion || '—' }}
+                </span>
+              </td>
+
+              <!-- Usuario -->
+              <td class="px-4 py-3 hidden lg:table-cell">
+                <span class="text-xs text-gray-500 dark:text-gray-400">{{ a.usuario_nombre }}</span>
+              </td>
+
+              <!-- Acciones -->
+              <td *ngIf="puedeRegistrar" class="px-4 py-3 text-center">
+                <button (click)="eliminarAvance(a.id_avance)"
+                        title="Eliminar avance"
+                        class="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer de tabla -->
+      <div class="px-4 py-3 bg-gray-50 dark:bg-slate-800/60 border-t border-gray-200 dark:border-slate-700">
+        <span class="text-xs text-gray-500 dark:text-gray-400">
+          {{ avancesFiltrados.length }} registro{{ avancesFiltrados.length !== 1 ? 's' : '' }} encontrado{{ avancesFiltrados.length !== 1 ? 's' : '' }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── MODAL: FORMULARIO DE NUEVO AVANCE ──────────────────────────────── -->
+<div *ngIf="mostrarFormulario"
+     class="fixed inset-0 z-50 flex items-center justify-center p-4"
+     style="background: rgba(0,0,0,0.5);">
+  <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg border border-gray-200 dark:border-slate-700"
+       (click)="$event.stopPropagation()">
+
+    <!-- Header modal -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-800">
+      <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+        <span class="text-lg">📊</span>
+        Registrar Avance de Obra
+      </h3>
+      <button (click)="cerrarFormulario()" id="btn-cerrar-avance-form"
+              class="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Body modal -->
+    <form (ngSubmit)="guardarAvance()" class="px-6 py-5 space-y-5" id="form-avance-obra">
+
+      <!-- Unidad de construcción -->
+      <div>
+        <label class="block text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
+          Unidad de Construcción <span class="text-red-500">*</span>
+        </label>
+        <select id="avance-id-unidad"
+                [(ngModel)]="nuevoAvance.id_unidad"
+                name="id_unidad"
+                class="w-full form-select text-sm rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white px-3 py-2.5"
+                [class.border-red-400]="erroresForm['id_unidad']">
+          <option [ngValue]="0" disabled>Seleccione una unidad...</option>
+          <option *ngFor="let u of unidades" [ngValue]="u.id_unidad">
+            {{ u.codigo }} – {{ u.nombre }} ({{ u.tipo_unidad }})
+          </option>
+        </select>
+        <p *ngIf="erroresForm['id_unidad']" class="mt-1 text-xs text-red-500">{{ erroresForm['id_unidad'] }}</p>
+        <p *ngIf="unidades.length === 0" class="mt-1 text-xs text-amber-600">
+          No hay unidades de construcción. Créalas primero en la pestaña Estructura.
+        </p>
+      </div>
+
+      <!-- Porcentaje de avance -->
+      <div>
+        <label class="block text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
+          Porcentaje de Avance (%) <span class="text-red-500">*</span>
+        </label>
+        <div class="space-y-2">
+          <div class="flex items-center gap-3">
+            <input id="avance-porcentaje"
+                   type="range"
+                   min="0" max="100" step="1"
+                   [(ngModel)]="nuevoAvance.porcentaje_avance"
+                   name="porcentaje_avance"
+                   class="flex-1 accent-orange-600"
+                   [class.border-red-400]="erroresForm['porcentaje_avance']">
+            <input id="avance-porcentaje-num"
+                   type="number"
+                   min="0" max="100" step="0.1"
+                   [(ngModel)]="nuevoAvance.porcentaje_avance"
+                   name="porcentaje_avance_num"
+                   class="w-20 text-center text-sm font-bold border border-gray-200 dark:border-slate-700 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
+                   [class.border-red-400]="erroresForm['porcentaje_avance']">
+            <span class="text-sm font-bold text-gray-600 dark:text-gray-400">%</span>
+          </div>
+          <!-- Preview barra -->
+          <div class="w-full bg-gray-100 dark:bg-slate-800 rounded-full h-2">
+            <div class="h-2 rounded-full transition-all"
+                 [class]="colorBarra(nuevoAvance.porcentaje_avance || 0)"
+                 [style.width.%]="nuevoAvance.porcentaje_avance || 0">
+            </div>
+          </div>
+        </div>
+        <p *ngIf="erroresForm['porcentaje_avance']" class="mt-1 text-xs text-red-500">{{ erroresForm['porcentaje_avance'] }}</p>
+      </div>
+
+      <!-- Fecha de registro -->
+      <div>
+        <label class="block text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
+          Fecha de Registro <span class="text-red-500">*</span>
+        </label>
+        <input id="avance-fecha"
+               type="date"
+               [(ngModel)]="nuevoAvance.fecha_registro"
+               name="fecha_registro"
+               class="w-full text-sm border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
+               [class.border-red-400]="erroresForm['fecha_registro']">
+        <p *ngIf="erroresForm['fecha_registro']" class="mt-1 text-xs text-red-500">{{ erroresForm['fecha_registro'] }}</p>
+      </div>
+
+      <!-- Observaciones -->
+      <div>
+        <label class="block text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
+          Observaciones
+        </label>
+        <textarea id="avance-observacion"
+                  [(ngModel)]="nuevoAvance.observacion"
+                  name="observacion"
+                  rows="3"
+                  placeholder="Descripción del avance, trabajo realizado, observaciones..."
+                  class="w-full text-sm border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 bg-white dark:bg-slate-800 text-gray-900 dark:text-white resize-none">
+        </textarea>
+      </div>
+
+      <!-- Pie del modal -->
+      <div class="flex gap-3 pt-2">
+        <button type="button"
+                (click)="cerrarFormulario()"
+                [disabled]="procesando"
+                class="flex-1 px-4 py-2.5 text-sm font-bold border border-gray-200 dark:border-slate-700 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50">
+          Cancelar
+        </button>
+        <button type="submit"
+                id="btn-guardar-avance"
+                [disabled]="procesando || unidades.length === 0"
+                class="flex-1 px-4 py-2.5 text-sm font-bold bg-orange-600 hover:bg-orange-700 text-white rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+          <div *ngIf="procesando" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+          {{ procesando ? 'Guardando...' : 'Guardar Avance' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -9,6 +9,7 @@ import { environment } from '../../../../environments/environment';
 
 import { ProyectoEstructuraComponent } from '../estructura/proyecto-estructura';
 import { ProyectoPresupuestoComponent } from '../presupuesto/proyecto-presupuesto';
+import { ProyectoAvancesComponent } from '../avances/proyecto-avances';
 
 export interface UsuarioEmpresa {
   nro_usuario: number;
@@ -19,7 +20,7 @@ export interface UsuarioEmpresa {
 @Component({
   selector: 'app-proyecto-detalle',
   standalone: true,
-  imports: [CommonModule, FormsModule, ProyectoEstructuraComponent, ProyectoPresupuestoComponent],
+  imports: [CommonModule, FormsModule, ProyectoEstructuraComponent, ProyectoPresupuestoComponent, ProyectoAvancesComponent],
   templateUrl: './proyecto-detalle.html',
   styleUrl: './proyecto-detalle.css'
 })
@@ -40,7 +41,7 @@ export class ProyectoDetalleComponent implements OnInit, OnDestroy {
   idUsuarioSeleccionado: number | undefined;
 
   // Control de pestañas
-  tabActivo: 'general' | 'estructura' | 'presupuesto' = 'general';
+  tabActivo: 'general' | 'estructura' | 'presupuesto' | 'avances' = 'general';
 
   cargando: boolean = false;
   procesandoAccion: boolean = false;
@@ -70,7 +71,7 @@ export class ProyectoDetalleComponent implements OnInit, OnDestroy {
     });
   }
 
-  seleccionarTab(tab: 'general' | 'estructura' | 'presupuesto') {
+  seleccionarTab(tab: 'general' | 'estructura' | 'presupuesto' | 'avances') {
     this.tabActivo = tab;
     if (tab === 'general') {
       this.iniciarMapaDetalle();
@@ -260,6 +261,10 @@ export class ProyectoDetalleComponent implements OnInit, OnDestroy {
 
   volverAProyectos() {
     this.router.navigate(['/proyectos']);
+  }
+
+  irAAvances() {
+    this.seleccionarTab('avances');
   }
 
   irAEstructura() {
