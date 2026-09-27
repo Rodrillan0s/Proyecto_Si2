@@ -10,6 +10,7 @@ import '../services/unidad_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/construction_widgets.dart';
 import '../widgets/ev_widgets.dart';
+import 'avances_obra_screen.dart';
 
 class ProyectoDetalleScreen extends StatefulWidget {
   final int idObra;
@@ -582,6 +583,27 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
     final indicatorBg = isDark ? const Color(0xFFF97316) : const Color(0xFF0F172A);
 
     return Scaffold(
+      // CU18 – Avances de Obra
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AvancesObraScreen(
+              idObra: widget.idObra,
+              nombreObra: widget.nombre,
+              codigoObra: widget.codigo,
+            ),
+          ),
+        ),
+        backgroundColor: AppTheme.primary,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.trending_up_rounded, size: 20),
+        label: const Text(
+          'Avances',
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+        ),
+        tooltip: 'Avances de Obra (CU18)',
+      ),
       body: SafeArea(
         child: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) {
