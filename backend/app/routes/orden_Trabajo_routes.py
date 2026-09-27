@@ -266,3 +266,9 @@ def delete_responsable_orden_trabajo(
             status_code=500,
             detail=f"Error interno: {str(e)}"
         )    
+
+def asignar_permisos_orden_trabajo(router: APIRouter):
+    """
+    Asigna los permisos a las rutas del router de órdenes de trabajo.
+    """
+    #s    
