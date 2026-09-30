@@ -2,7 +2,7 @@ import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { EstimacionesService, Apu, ApuInsumo, ApuDetalle, ManoObra, Estimacion, EstimacionDetalle } from '../../services/estimaciones.service';
+import { EstimacionesService, Apu, ApuInsumo, ApuDetalle, Estimacion, EstimacionDetalle } from '../../services/estimaciones.service';
 import { MaterialsService, UnidadMedida, Material } from '../../services/materials.service';
 import { ProyectosService, Proyecto } from '../../services/proyectos';
 
@@ -10,9 +10,7 @@ interface InsumoFila {
   editing: boolean;
   guardando: boolean;
   id?: number;
-  tipo_insumo: string;
   id_material?: number | null;
-  id_mano_obra?: number | null;
   nombre: string;
   id_unidad_medida?: number;
   cantidad: number;
@@ -41,7 +39,6 @@ export class EstimacionesComponent implements OnInit {
   estimaciones: Estimacion[] = [];
   unidades: UnidadMedida[] = [];
   materiales: Material[] = [];
-  manoObra: ManoObra[] = [];
   obras: Proyecto[] = [];
 
   filtro = { texto: '', tipo: '', calidad: '' };
@@ -51,17 +48,17 @@ export class EstimacionesComponent implements OnInit {
   mensaje = '';
 
   // Editor de partida / APU
-  editor: { abierto: boolean; editar: boolean; idApu?: number; form: { nombre: string; descripcion: string; id_unidad_medida?: number; tipo_analisis_precio_unitario: string; calidad: string } } = {
-    abierto: false, editar: false, form: { nombre: '', descripcion: '', tipo_analisis_precio_unitario: 'OBRA_GRIS', calidad: '' }
+  editor: { abierto: boolean; editar: boolean; idApu?: number; form: { codigo: string; nombre: string; descripcion: string; id_unidad_medida?: number; rendimiento: number | null; mano_de_obra: number; porcentaje_utilidad: number; tipo_analisis_precio_unitario: string; calidad: string } } = {
+    abierto: false, editar: false, form: { codigo: '', nombre: '', descripcion: '', rendimiento: null, mano_de_obra: 0, porcentaje_utilidad: 10, tipo_analisis_precio_unitario: 'OBRA_GRIS', calidad: '' }
   };
   insumos: InsumoFila[] = [];
 
-  // Delector de material / cuadrilla para el editor
+  // Selector de material para el editor
   editorColumna = '';
 
   // Estimación
-  est: { abierto: boolean; nuevo: boolean; form: { id_obra?: number; nombre: string; descripcion: string; factor_utilidad: number | null } } = {
-    abierto: false, nuevo: false, form: { nombre: '', descripcion: '', factor_utilidad: null }
+  est: { abierto: boolean; nuevo: boolean; form: { id_obra?: number; nombre: string; cliente: string; descripcion: string } } = {
+    abierto: false, nuevo: false, form: { nombre: '', cliente: '', descripcion: '' }
   };
   detalle: Estimacion | null = null;
   mostrarDetalle = false;
@@ -69,9 +66,6 @@ export class EstimacionesComponent implements OnInit {
   apuSeleccionado?: number;
   cantidadApu = 1;
   guardandoDetalle = false;
-
-  // Nueva cuadrilla
-  mo: { abierto: boolean; nombre: string; costo_unitario: number | null } = { abierto: false, nombre: '', costo_unitario: null };
 
   ngOnInit(): void {
     const id = this.route.snapshot.queryParamMap.get('id_obra');
@@ -81,9 +75,26 @@ export class EstimacionesComponent implements OnInit {
 
   private cargarCatalogo(): void {
     this.materials.unidadesMedida().subscribe({ next: r => { this.unidades = r.data || []; this.cdr.detectChanges(); } });
-    this.materials.listar({ limit: 200 }).subscribe({ next: r => { this.materiales = r.data || []; this.cdr.detectChanges(); } });
-    this.service.listarManoObra().subscribe({ next: r => { this.manoObra = r.data || []; this.cdr.detectChanges(); } });
+    this.cargarMateriales();
     this.cargarObras();
+  }
+
+  private cargarMateriales(page = 1, acumulados: Material[] = []): void {
+    this.materials.listar({ limit: 100, page }).subscribe({
+      next: response => {
+        const materiales = [...acumulados, ...(response.data || [])];
+        if (page < (response.pagination?.total_pages || 1)) {
+          this.cargarMateriales(page + 1, materiales);
+          return;
+        }
+        this.materiales = materiales;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.error = 'No se pudo cargar el catálogo de materiales.';
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   private cargarObras(): void {
@@ -129,14 +140,23 @@ export class EstimacionesComponent implements OnInit {
     return (Number(row.cantidad) || 0) * (Number(row.precio_unitario) || 0);
   }
 
-  get costoTemporal(): number {
+  get costoMaterialesTemporal(): number {
     return this.insumos.reduce((acc, row) => acc + this.totalInsumo(row), 0);
+  }
+
+  get costoTemporal(): number {
+    return this.costoMaterialesTemporal + (Number(this.editor.form.mano_de_obra) || 0);
+  }
+
+  get precioFinalTemporal(): number {
+    const ganancia = Number(this.editor.form.porcentaje_utilidad) || 0;
+    return this.costoTemporal * (1 + ganancia / 100);
   }
 
   // ---------------- Editor de partida (APU) ----------------
 
   abrirNuevaPartida(): void {
-    this.editor = { abierto: true, editar: false, form: { nombre: '', descripcion: '', id_unidad_medida: undefined, tipo_analisis_precio_unitario: 'OBRA_GRIS', calidad: '' } };
+    this.editor = { abierto: true, editar: false, form: { codigo: '', nombre: '', descripcion: '', id_unidad_medida: undefined, rendimiento: null, mano_de_obra: 0, porcentaje_utilidad: 10, tipo_analisis_precio_unitario: 'OBRA_GRIS', calidad: '' } };
     this.insumos = [];
     this.error = '';
   }
@@ -149,11 +169,11 @@ export class EstimacionesComponent implements OnInit {
         const d: ApuDetalle = r.data;
         this.editor = {
           abierto: true, editar: true, idApu: d.id_analisis_precio_unitario,
-          form: { nombre: d.nombre, descripcion: d.descripcion || '', id_unidad_medida: d.id_unidad_medida, tipo_analisis_precio_unitario: d.tipo_analisis_precio_unitario, calidad: d.calidad || '' }
+          form: { codigo: d.codigo, nombre: d.nombre, descripcion: d.descripcion || '', id_unidad_medida: d.id_unidad_medida, rendimiento: d.rendimiento ?? null, mano_de_obra: d.mano_de_obra || 0, porcentaje_utilidad: d.porcentaje_utilidad ?? 10, tipo_analisis_precio_unitario: d.tipo_analisis_precio_unitario, calidad: d.calidad || '' }
         };
         this.insumos = (d.insumos || []).map(i => ({
           editing: false, guardando: false, id: i.id_analisis_precio_unitario_insumo, nuevo: false,
-          tipo_insumo: i.tipo_insumo, id_material: i.id_material, id_mano_obra: i.id_mano_obra,
+          id_material: i.id_material,
           nombre: i.nombre, id_unidad_medida: i.id_unidad_medida, cantidad: i.cantidad, precio_unitario: i.precio_unitario, orden: i.orden
         }));
         this.cdr.detectChanges();
@@ -202,7 +222,7 @@ export class EstimacionesComponent implements OnInit {
   // ---------------- Insumos ----------------
 
   agregarInsumo(): void {
-    this.insumos.push({ editing: true, guardando: false, nuevo: true, tipo_insumo: 'MATERIAL', nombre: '', cantidad: 0, precio_unitario: 0, orden: (this.insumos.length || 0) + 1 });
+    this.insumos.push({ editing: true, guardando: false, nuevo: true, id_material: null, nombre: '', cantidad: 0, precio_unitario: 0, orden: (this.insumos.length || 0) + 1 });
   }
 
   private materialPorId(id?: number | null): Material | undefined {
@@ -212,11 +232,9 @@ export class EstimacionesComponent implements OnInit {
   onMaterial(ev: Event, row: InsumoFila): void {
     const id = Number((ev.target as HTMLSelectElement).value) || null;
     row.id_material = id;
-    row.id_mano_obra = null;
     if (id) {
       const mat = this.materialPorId(id);
       if (mat) {
-        row.tipo_insumo = 'MATERIAL';
         row.nombre = mat.nombre_material;
         row.id_unidad_medida = mat.unidad_medida?.id_unidad_medida;
         row.precio_unitario = Number(mat.precio) || 0;
@@ -224,38 +242,14 @@ export class EstimacionesComponent implements OnInit {
     }
   }
 
-  onManoObra(ev: Event, row: InsumoFila): void {
-    const id = Number((ev.target as HTMLSelectElement).value) || null;
-    row.id_mano_obra = id;
-    row.id_material = null;
-    if (id) {
-      const mo = this.manoObra.find(x => x.id_mano_obra === id);
-      if (mo) {
-        row.tipo_insumo = 'MANO_OBRA';
-        row.nombre = mo.nombre;
-        row.id_unidad_medida = mo.id_unidad_medida;
-        row.precio_unitario = Number(mo.costo_unitario) || 0;
-      }
-    }
-  }
-
-  cambiarTipoInsumo(row: InsumoFila): void {
-    row.id_material = null;
-    row.id_mano_obra = null;
-  }
-
   guardarInsumo(row: InsumoFila): void {
     const idApu = this.editor.idApu;
     if (!idApu) { this.error = 'Primero guarda la partida para poder agregar insumos.'; return; }
     this.error = '';
-    if (!row.nombre.trim() || !row.id_unidad_medida) { row.error = 'Nombre y unidad son obligatorios.'; return; }
-    if (row.tipo_insumo === 'MATERIAL' && !row.id_material) { row.error = 'Selecciona un material del catálogo.'; return; }
-    if (row.tipo_insumo === 'MANO_OBRA' && !row.id_mano_obra) { row.error = 'Selecciona una cuadrilla / mano de obra.'; return; }
+    if (!row.id_material) { row.error = 'Selecciona un material del catálogo.'; return; }
     row.guardando = true;
     const payload = {
-      tipo_insumo: row.tipo_insumo, id_material: row.tipo_insumo === 'MATERIAL' ? row.id_material : null,
-      id_mano_obra: row.tipo_insumo === 'MANO_OBRA' ? row.id_mano_obra : null, nombre: row.nombre,
-      id_unidad_medida: row.id_unidad_medida, cantidad: row.cantidad, precio_unitario: row.precio_unitario, orden: row.orden
+      id_material: row.id_material, cantidad: row.cantidad, precio_unitario: row.precio_unitario, orden: row.orden
     };
     const op = row.nuevo ? this.service.crearInsumo(idApu, payload) : this.service.actualizarInsumo(idApu, row.id!, payload);
     op.subscribe({
@@ -290,7 +284,7 @@ export class EstimacionesComponent implements OnInit {
         next: r => {
           this.insumos = (r.data.insumos || []).map(i => ({
             editing: false, guardando: false, id: i.id_analisis_precio_unitario_insumo, nuevo: false,
-            tipo_insumo: i.tipo_insumo, id_material: i.id_material, id_mano_obra: i.id_mano_obra,
+            id_material: i.id_material,
             nombre: i.nombre, id_unidad_medida: i.id_unidad_medida, cantidad: i.cantidad, precio_unitario: i.precio_unitario, orden: i.orden
           }));
           this.cdr.detectChanges();
@@ -299,32 +293,34 @@ export class EstimacionesComponent implements OnInit {
     }
   }
 
-  // ---------------- Mano de obra ----------------
-
-  crearManoObra(): void {
-    if (!this.mo.nombre.trim() || this.mo.costo_unitario == null) { this.error = 'Nombre y costo por jornal son obligatorios.'; return; }
-    this.guardando = true;
-    const jornal = this.unidades.find(u => u.abreviatura === 'jornal' || u.nombre.toLowerCase() === 'jornal');
-    this.service.crearManoObra({ nombre: this.mo.nombre, descripcion: 'Cuadrilla creada desde el editor', id_unidad_medida: jornal?.id_unidad_medida, costo_unitario: this.mo.costo_unitario }).subscribe({
-      next: () => { this.mo = { abierto: false, nombre: '', costo_unitario: null }; this.guardando = false; this.service.listarManoObra().subscribe({ next: r => { this.manoObra = r.data || []; this.cdr.detectChanges(); } }); },
-      error: e => { this.guardando = false; this.error = e?.error?.error || e?.error?.detail || 'No se pudo crear la cuadrilla.'; this.cdr.detectChanges(); }
-    });
-  }
-
   // ---------------- Estimaciones ----------------
 
   abrirNuevaEstimacion(): void {
     this.error = '';
-    this.est = { abierto: true, nuevo: true, form: { id_obra: this.idObra, nombre: `Presupuesto ${(this.estimaciones.length || 0) + 1}`, descripcion: '', factor_utilidad: null } };
+    this.est = { abierto: true, nuevo: true, form: { id_obra: this.idObra, nombre: `Presupuesto ${(this.estimaciones.length || 0) + 1}`, cliente: '', descripcion: '' } };
   }
 
   crearEstimacion(): void {
     const f = this.est.form;
-    if (!f.nombre.trim() || !f.id_obra) { this.error = 'Nombre y obra son obligatorios.'; return; }
+    if (!f.nombre.trim() || !f.cliente.trim() || !f.id_obra) { this.error = 'Obra, nombre del proyecto y cliente son obligatorios.'; return; }
     this.guardando = true;
     this.error = '';
     this.service.crearEstimacion(f).subscribe({
-      next: () => { this.guardando = false; this.est.abierto = false; this.mensaje = 'Estimación creada.'; this.cargar(); this.cdr.detectChanges(); },
+      next: response => {
+        this.guardando = false;
+        this.est.abierto = false;
+        this.mensaje = 'Presupuesto creado. Agrega las partidas medidas para completar el documento.';
+        this.cargar();
+        this.verDetalle({
+          id_estimacion: response.data.id_estimacion,
+          id_obra: f.id_obra!,
+          nombre: f.nombre,
+          cliente: f.cliente,
+          version: 1,
+          estado: 'BORRADOR'
+        });
+        this.cdr.detectChanges();
+      },
       error: e => { this.guardando = false; this.error = e?.error?.error || e?.error?.detail || 'No se pudo crear la estimación.'; this.cdr.detectChanges(); }
     });
   }
@@ -332,7 +328,7 @@ export class EstimacionesComponent implements OnInit {
   verDetalle(est: Estimacion): void {
     this.error = '';
     this.service.detalleEstimacion(est.id_estimacion).subscribe({
-      next: r => { this.detalle = r.data; this.mostrarDetalle = true; this.cdr.detectChanges(); },
+      next: r => { this.detalle = r.data; this.mostrarDetalle = true; this.agregarApu = false; this.cdr.detectChanges(); },
       error: e => { this.error = e?.error?.error || e?.error?.detail || 'No se pudo cargar la estimación.'; this.cdr.detectChanges(); }
     });
   }

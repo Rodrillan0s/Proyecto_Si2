@@ -5,12 +5,19 @@ import { environment } from '../../environments/environment';
 
 export interface Apu {
   id_analisis_precio_unitario: number;
+  codigo: string;
   id_obra?: number | null;
   id_padre?: number | null;
   id_estructura?: number | null;
   nombre: string;
   descripcion?: string | null;
   id_unidad_medida?: number;
+  rendimiento?: number | null;
+  costo_materiales: number;
+  mano_de_obra: number;
+  costo_directo: number;
+  porcentaje_utilidad: number;
+  precio_unitario_final: number;
   abreviatura?: string;
   unidad_nombre?: string;
   tipo_analisis_precio_unitario: string;
@@ -22,9 +29,7 @@ export interface Apu {
 export interface ApuInsumo {
   id_analisis_precio_unitario_insumo: number;
   id_analisis_precio_unitario?: number;
-  tipo_insumo: string;
-  id_material?: number | null;
-  id_mano_obra?: number | null;
+  id_material: number;
   nombre: string;
   id_unidad_medida: number;
   cantidad: number;
@@ -34,23 +39,21 @@ export interface ApuInsumo {
 
 export interface ApuDetalle {
   id_analisis_precio_unitario: number;
+  codigo: string;
   nombre: string;
   descripcion?: string | null;
   id_unidad_medida?: number;
+  rendimiento?: number | null;
+  costo_materiales: number;
+  mano_de_obra: number;
+  costo_directo: number;
+  porcentaje_utilidad: number;
+  precio_unitario_final: number;
   tipo_analisis_precio_unitario: string;
   calidad?: string | null;
   activo: boolean;
   insumos: ApuInsumo[];
   calculo?: { costo_directo_unitario: number; apu?: any; insumos?: any[] };
-}
-
-export interface ManoObra {
-  id_mano_obra: number;
-  nombre: string;
-  descripcion?: string | null;
-  id_unidad_medida: number;
-  costo_unitario: number;
-  activo: boolean;
 }
 
 export interface Estimacion {
@@ -60,7 +63,7 @@ export interface Estimacion {
   version: number;
   estado: string;
   descripcion?: string | null;
-  factor_utilidad?: number | null;
+  cliente: string;
   monto_total?: number;
   calculo?: { monto_total: number; subtotal_directo: number; utilidad: number; detalle?: EstimacionDetalle[] } | null;
 }
@@ -68,6 +71,7 @@ export interface Estimacion {
 export interface EstimacionDetalle {
   id_analisis_precio_unitario: number;
   id_estimacion_analisis_precio_unitario?: number;
+  item_codigo: string;
   nombre: string;
   unidad: string;
   costo_unitario: number;
@@ -124,14 +128,6 @@ export class EstimacionesService {
 
   eliminarInsumo(idApu: number, insumoId: number): Observable<ApiResponse<any>> {
     return this.http.delete<ApiResponse<any>>(`${this.api}/analisis_precio_unitario/${idApu}/insumos/${insumoId}`);
-  }
-
-  listarManoObra(): Observable<ApiResponse<ManoObra[]>> {
-    return this.http.get<ApiResponse<ManoObra[]>>(`${this.api}/mano-obra`);
-  }
-
-  crearManoObra(data: any): Observable<ApiResponse<{ id_mano_obra: number }>> {
-    return this.http.post<ApiResponse<{ id_mano_obra: number }>>(`${this.api}/mano-obra`, data);
   }
 
   listarEstimaciones(idObra?: number): Observable<ApiResponse<Estimacion[]>> {

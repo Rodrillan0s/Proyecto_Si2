@@ -1,9 +1,6 @@
 from app.repos import estimacion_repos, bitacora_repos
 
 
-FORBIDDEN_TYPES = {'EQUIPO', 'HERRAMIENTA', 'MAQUINARIA'}
-
-
 def _empresa(token):
     value = token.get('id_empresa')
     if not value and token.get('nombre_rol') == 'ADMINISTRADOR':
@@ -43,8 +40,6 @@ def create_apu(data, token, ip):
 
 def update_apu(id_apu, data, token, ip):
     empresa = _empresa(token)
-    if data.get('tipo_insumo') in FORBIDDEN_TYPES:
-        raise ValueError('Las herramientas, equipos y maquinaria no forman parte de una APU.')
     result = estimacion_repos.update_apu(id_apu, data, empresa)
     if not result:
         raise ValueError('La partida no existe o no pertenece a su empresa.')
@@ -54,12 +49,7 @@ def update_apu(id_apu, data, token, ip):
 
 def create_insumo(id_apu, data, token, ip):
     empresa = _empresa(token)
-    tipo = str(data.get('tipo_insumo', '')).upper()
-    if tipo in FORBIDDEN_TYPES:
-        raise ValueError('Las herramientas, equipos y maquinaria están prohibidas en las APUs.')
-    if tipo not in ('MATERIAL', 'MANO_OBRA', 'OTRO'):
-        raise ValueError('El tipo de insumo no es válido.')
-    for field in ('nombre', 'id_unidad_medida', 'cantidad', 'precio_unitario'):
+    for field in ('id_material', 'cantidad'):
         if data.get(field) is None:
             raise ValueError(f'El campo {field} es obligatorio.')
     result = estimacion_repos.create_insumo(id_apu, data, empresa)
@@ -93,8 +83,6 @@ def list_estimaciones(token, id_obra=None):
 
 
 def update_estimacion(id_estimacion, data, token, ip):
-    if data.get('estado') == 'APROBADA':
-        data = {**data, 'estado': 'APROBADA'}
     result = estimacion_repos.update_estimacion(id_estimacion, data, _empresa(token))
     if not result:
         raise ValueError('La estimación no existe o no pertenece a su empresa.')

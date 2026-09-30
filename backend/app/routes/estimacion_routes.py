@@ -12,22 +12,22 @@ router = APIRouter(prefix='/api/estimaciones', tags=['Estimaciones APU'])
 class ApuRequest(BaseModel):
     nombre: str = Field(min_length=1, max_length=200)
     id_unidad_medida: int
+    codigo: Optional[str] = Field(default=None, max_length=40)
     descripcion: Optional[str] = None
     id_obra: Optional[int] = None
     id_padre: Optional[int] = None
     id_estructura: Optional[int] = None
+    rendimiento: Optional[float] = Field(default=None, gt=0)
+    mano_de_obra: float = Field(default=0, ge=0)
+    porcentaje_utilidad: float = Field(default=10, ge=0)
     tipo_analisis_precio_unitario: str = 'OBRA_GRIS'
     calidad: Optional[str] = None
 
 
 class InsumoRequest(BaseModel):
-    tipo_insumo: str
-    nombre: str = Field(min_length=1, max_length=200)
-    id_unidad_medida: int
+    id_material: int = Field(gt=0)
     cantidad: float = Field(ge=0)
-    precio_unitario: float = Field(ge=0)
-    id_material: Optional[int] = None
-    id_mano_obra: Optional[int] = None
+    precio_unitario: Optional[float] = Field(default=None, ge=0)
     orden: int = 1
 
 
@@ -106,20 +106,6 @@ def actualizar_insumo(insumo_id: int, data: dict = Body(...), token=Depends(exig
 def eliminar_insumo(insumo_id: int, token=Depends(exigir_permiso('Modificar_estimaciones'))):
     from app.repos import estimacion_repos
     return {'success': True, 'data': estimacion_repos.delete_where('t_analisi_precio_unitario_insumo', 'id_analisis_precio_unitario_insumo', insumo_id, service._empresa(token))}
-
-
-@router.get('/mano-obra')
-def listar_mano_obra(token=Depends(exigir_permiso('Visualizar_mano_obra'))):
-    from app.repos.estimacion_repos import _query
-    return {'success': True, 'data': _query('SELECT * FROM obras.t_mano_obra WHERE id_empresa=%s AND activo=true ORDER BY nombre', (service._empresa(token),), fetchall=True)}
-
-
-@router.post('/mano-obra', status_code=201)
-def crear_mano_obra(request: Request, data: dict = Body(...), token=Depends(exigir_permiso('Registrar_mano_obra'))):
-    from app.repos.estimacion_repos import _query
-    result = _query('INSERT INTO obras.t_mano_obra(nombre,descripcion,id_unidad_medida,costo_unitario,id_empresa) VALUES (%s,%s,%s,ROUND(%s::numeric,2),%s) RETURNING id_mano_obra', (data.get('nombre'), data.get('descripcion'), data.get('id_unidad_medida'), data.get('costo_unitario'), service._empresa(token)), fetchone=True, commit=True)
-    service._log(token, 'CREAR_MANO_OBRA', f"Cuadrilla creada: {data.get('nombre')}", _ip(request))
-    return {'success': True, 'data': result}
 
 
 @router.get('')

@@ -1,41 +1,10 @@
 -- ============================================================================
 -- OBRATEC - SEED de estimación / APU (Bloques 1, 2 y 3) para empresa demo (1)
--- Re-ejecutable: crea unidades, materiales, cuadrillas, APUs e insumos de
--- manera idempotente y actualiza las funciones de cálculo a redondeo por línea:
---     costo APU  = SUM(ROUND(cantidad * precio_unitario, 2))
+-- Ejecutar después de migration_apu_materiales_y_presupuestos.sql.
+-- Re-ejecutable: crea unidades, materiales, APUs y detalles solo de materiales.
 -- Ejecutar con: python -c "... psycopg2 ... execute(open(sql).read())"
 -- ============================================================================
 BEGIN;
-
--- ============================================================================
--- 1. FUNCIONES DE CÁLCULO (redondeo por línea)
--- ============================================================================
-CREATE OR REPLACE FUNCTION obras.fn_calcular_analisis_precio_unitario(p_id_analisis_precio_unitario INTEGER, p_id_empresa INTEGER)
-RETURNS json AS $$
-DECLARE v_apu json; v_insumos json; v_total numeric;
-BEGIN
-    SELECT json_build_object('id_analisis_precio_unitario', a.id_analisis_precio_unitario, 'nombre', a.nombre, 'descripcion', a.descripcion,
-        'id_unidad_medida', a.id_unidad_medida, 'tipo_analisis_precio_unitario', a.tipo_analisis_precio_unitario, 'calidad', a.calidad)
-    INTO v_apu FROM obras.t_analisis_precio_unitario a WHERE a.id_analisis_precio_unitario = p_id_analisis_precio_unitario AND a.id_empresa = p_id_empresa;
-    IF v_apu IS NULL THEN RETURN json_build_object('success', false, 'error', 'La partida no existe o no pertenece a su empresa.'); END IF;
-    SELECT COALESCE(SUM(ROUND(i.cantidad * i.precio_unitario, 2)), 0), COALESCE(json_agg(json_build_object('id', i.id_analisis_precio_unitario_insumo, 'tipo_insumo', i.tipo_insumo, 'nombre', i.nombre, 'cantidad', i.cantidad, 'precio_unitario', i.precio_unitario, 'total', ROUND(i.cantidad * i.precio_unitario, 2), 'id_unidad_medida', i.id_unidad_medida) ORDER BY i.orden, i.id_analisis_precio_unitario_insumo), '[]'::json)
-    INTO v_total, v_insumos FROM obras.t_analisi_precio_unitario_insumo i WHERE i.id_analisis_precio_unitario = p_id_analisis_precio_unitario AND i.id_empresa = p_id_empresa;
-    RETURN json_build_object('success', true, 'apu', v_apu, 'insumos', v_insumos, 'costo_directo_unitario', ROUND(v_total, 2));
-END; $$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION obras.fn_calcular_estimacion(p_id_estimacion INTEGER, p_id_empresa INTEGER)
-RETURNS json AS $$
-DECLARE v_detalle json; v_directo numeric; v_indirectos numeric; v_utilidad numeric; v_total numeric; v_factor_i numeric; v_factor_u numeric;
-BEGIN
-    SELECT COALESCE(e.factor_indirectos, 0), COALESCE(e.factor_utilidad, 0) INTO v_factor_i, v_factor_u FROM obras.t_estimacion e WHERE e.id_estimacion = p_id_estimacion AND e.id_empresa = p_id_empresa;
-    IF NOT FOUND THEN RETURN json_build_object('success', false, 'error', 'La estimación no existe o no pertenece a su empresa.'); END IF;
-    SELECT COALESCE(SUM(ROUND(x.costo * x.cantidad, 2)), 0), COALESCE(json_agg(json_build_object('id_analisis_precio_unitario', x.id_apu, 'nombre', x.nombre, 'unidad', x.abreviatura, 'costo_unitario', ROUND(x.costo, 2), 'cantidad', x.cantidad, 'subtotal', ROUND(x.costo * x.cantidad, 2)) ORDER BY x.orden), '[]'::json)
-    INTO v_directo, v_detalle FROM (SELECT d.orden, d.cantidad, a.id_analisis_precio_unitario id_apu, a.nombre, um.abreviatura, COALESCE((SELECT SUM(ROUND(i.cantidad * i.precio_unitario, 2)) FROM obras.t_analisi_precio_unitario_insumo i WHERE i.id_analisis_precio_unitario = a.id_analisis_precio_unitario AND i.id_empresa = p_id_empresa), 0) costo FROM obras.t_estimacion_analisis_precio_unitario d JOIN obras.t_estimacion e ON e.id_estimacion = d.id_estimacion JOIN obras.t_analisis_precio_unitario a ON a.id_analisis_precio_unitario = d.id_analisis_precio_unitario JOIN obras.t_unidad_medida um ON um.id_unidad_medida = a.id_unidad_medida WHERE d.id_estimacion = p_id_estimacion AND e.id_empresa = p_id_empresa AND a.id_empresa = p_id_empresa) x;
-    v_indirectos := 0;
-    v_utilidad := v_directo * v_factor_u;
-    v_total := v_directo + v_utilidad;
-    RETURN json_build_object('success', true, 'detalle', v_detalle, 'subtotal_directo', ROUND(v_directo, 2), 'indirectos', ROUND(v_indirectos, 2), 'utilidad', ROUND(v_utilidad, 2), 'monto_total', ROUND(v_total, 2));
-END; $$ LANGUAGE plpgsql;
 
 -- ============================================================================
 -- 2. UNIDADES DE MEDIDA nuevas (idempotente)
@@ -77,19 +46,6 @@ JOIN obras.t_unidad_medida um ON LOWER(BTRIM(um.abreviatura)) = LOWER(BTRIM(d.un
 WHERE NOT EXISTS (SELECT 1 FROM obras.t_material m WHERE m.codigo = d.codigo AND m.id_empresa = 1);
 
 -- ============================================================================
--- 4. CUADRILLAS / MANO DE OBRA (costos 65, 85, 75 y 30 por jornal)
--- ============================================================================
-INSERT INTO obras.t_mano_obra(nombre, descripcion, id_unidad_medida, costo_unitario, id_empresa)
-SELECT v.nombre, v.descripcion, um.id_unidad_medida, v.costo, 1
-FROM (VALUES
-    ('Cuadrilla 1: Albañil + 2 ayudantes', 'Cuadrilla base de albañilería', 65),
-    ('Cuadrilla 2: Albañil + 3 ayudantes', 'Cuadrilla reforzada de albañilería', 85),
-    ('Cuadrilla 3: Albañil + 1 ayudante', 'Cuadrilla ligera de albañilería', 75),
-    ('Cuadrilla 4: Peón / ayudante', 'Cuadrilla de peones y ayudantes', 30)
-) v(nombre, descripcion, costo)
-JOIN obras.t_unidad_medida um ON LOWER(BTRIM(um.abreviatura)) = 'jornal' AND um.estado = 'ACTIVO'
-WHERE NOT EXISTS (SELECT 1 FROM obras.t_mano_obra mo WHERE LOWER(BTRIM(mo.nombre)) = LOWER(BTRIM(v.nombre)) AND mo.id_empresa = 1);
-
 -- ============================================================================
 -- 5. APUs BLOQUE 1 - Obra gris / excavación (costos esperados)
 --    23.75 | 37.91 | 231.38 | 16.17 | 18.01 | 8.40
@@ -109,12 +65,8 @@ WITH nuevos AS (
     WHERE NOT EXISTS (SELECT 1 FROM obras.t_analisis_precio_unitario a WHERE a.nombre = v.nombre AND a.id_empresa = 1)
     RETURNING id_analisis_precio_unitario, nombre
 )
-INSERT INTO obras.t_analisi_precio_unitario_insumo(id_analisis_precio_unitario, tipo_insumo, id_material, id_mano_obra, nombre, id_unidad_medida, cantidad, precio_unitario, orden, id_empresa)
-SELECT n.id_analisis_precio_unitario,
-       i.tipo,
-       CASE WHEN i.tipo = 'MATERIAL' THEN m.id_material END,
-       CASE WHEN i.tipo = 'MANO_OBRA' THEN mo.id_mano_obra END,
-       COALESCE(m.nombre_material, mo.nombre),
+INSERT INTO obras.t_analisi_precio_unitario_insumo(id_analisis_precio_unitario, tipo_insumo, id_material, nombre, id_unidad_medida, cantidad, precio_unitario, orden, id_empresa)
+SELECT n.id_analisis_precio_unitario, 'MATERIAL', m.id_material, m.nombre_material,
        um.id_unidad_medida, i.cantidad, i.precio, i.orden, 1
 FROM nuevos n
 JOIN (VALUES
@@ -150,8 +102,8 @@ JOIN (VALUES
 ) i(apu, tipo, material, cuadrilla, unidad, cantidad, precio, orden)
   ON i.apu = n.nombre
 LEFT JOIN obras.t_material m ON m.codigo = i.material AND m.id_empresa = 1
-LEFT JOIN obras.t_mano_obra mo ON LOWER(BTRIM(mo.nombre)) = LOWER(BTRIM(i.cuadrilla)) AND mo.id_empresa = 1
-JOIN obras.t_unidad_medida um ON LOWER(BTRIM(um.abreviatura)) = LOWER(BTRIM(i.unidad)) AND um.estado = 'ACTIVO';
+JOIN obras.t_unidad_medida um ON LOWER(BTRIM(um.abreviatura)) = LOWER(BTRIM(i.unidad)) AND um.estado = 'ACTIVO'
+WHERE i.tipo = 'MATERIAL' AND m.id_material IS NOT NULL;
 
 -- ============================================================================
 -- 6. APUs BLOQUE 2 - Acabados (6 NORMAL + 6 LUJO), sin herramientas ni maquinaria
@@ -177,12 +129,8 @@ WITH nuevos AS (
     WHERE NOT EXISTS (SELECT 1 FROM obras.t_analisis_precio_unitario a WHERE a.nombre = v.nombre AND a.id_empresa = 1)
     RETURNING id_analisis_precio_unitario, nombre
 )
-INSERT INTO obras.t_analisi_precio_unitario_insumo(id_analisis_precio_unitario, tipo_insumo, id_material, id_mano_obra, nombre, id_unidad_medida, cantidad, precio_unitario, orden, id_empresa)
-SELECT n.id_analisis_precio_unitario,
-       i.tipo,
-       CASE WHEN i.tipo = 'MATERIAL' THEN m.id_material END,
-       CASE WHEN i.tipo = 'MANO_OBRA' THEN mo.id_mano_obra END,
-       COALESCE(m.nombre_material, mo.nombre),
+INSERT INTO obras.t_analisi_precio_unitario_insumo(id_analisis_precio_unitario, tipo_insumo, id_material, nombre, id_unidad_medida, cantidad, precio_unitario, orden, id_empresa)
+SELECT n.id_analisis_precio_unitario, 'MATERIAL', m.id_material, m.nombre_material,
        um.id_unidad_medida, i.cantidad, i.precio, i.orden, 1
 FROM nuevos n
 JOIN (VALUES
@@ -232,8 +180,8 @@ JOIN (VALUES
 ) i(apu, tipo, material, cuadrilla, unidad, cantidad, precio, orden)
   ON i.apu = n.nombre
 LEFT JOIN obras.t_material m ON m.codigo = i.material AND m.id_empresa = 1
-LEFT JOIN obras.t_mano_obra mo ON LOWER(BTRIM(mo.nombre)) = LOWER(BTRIM(i.cuadrilla)) AND mo.id_empresa = 1
-JOIN obras.t_unidad_medida um ON LOWER(BTRIM(um.abreviatura)) = LOWER(BTRIM(i.unidad)) AND um.estado = 'ACTIVO';
+JOIN obras.t_unidad_medida um ON LOWER(BTRIM(um.abreviatura)) = LOWER(BTRIM(i.unidad)) AND um.estado = 'ACTIVO'
+WHERE i.tipo = 'MATERIAL' AND m.id_material IS NOT NULL;
 
 -- ============================================================================
 -- 7. APUs BLOQUE 3 - Subcontratos (sin insumos)
@@ -251,21 +199,43 @@ FROM (VALUES
 JOIN obras.t_unidad_medida um ON LOWER(BTRIM(um.abreviatura)) = LOWER(BTRIM(v.unidad)) AND um.estado = 'ACTIVO'
 WHERE NOT EXISTS (SELECT 1 FROM obras.t_analisis_precio_unitario a WHERE a.nombre = v.nombre AND a.id_empresa = 1);
 
+UPDATE obras.t_analisis_precio_unitario a
+SET mano_de_obra = v.costo
+FROM (VALUES
+    ('Excavación de zanjas para cimientos', 18.75),
+    ('Cimiento corrido (concreto 1:8)', 1.11),
+    ('Muro de ladrillo KK de soga', 144.50),
+    ('Sobrecimiento reforzado', 4.29),
+    ('Columna de concreto armado 0.25x0.25', 0.84),
+    ('Losa aligerada (e=0.20 m)', 0.90),
+    ('Tarrajeo de muros interiores', 6.60),
+    ('Tarrajeo de cielo raso', 7.00),
+    ('Contrapiso de 40 mm', 1.50),
+    ('Piso cerámico 60x60', 4.05),
+    ('Pintura látex 2 manos', 2.12),
+    ('Enlucido con yeso', 6.90),
+    ('Tarrajeo de muros fino', 7.65),
+    ('Tarrajeo de cielo raso fino', 8.15),
+    ('Contrapiso pulido impermeabilizado', 2.00),
+    ('Piso porcelanato 60x60', 19.90),
+    ('Pintura látex premium 3 manos', 2.94),
+    ('Enlucido fino con yeso', 9.00)
+) AS v(nombre, costo)
+WHERE a.id_empresa = 1 AND a.nombre = v.nombre;
+
 COMMIT;
 
 -- ============================================================================
 -- 8. VERIFICACIÓN: costos directos por APU y conteos
 -- ============================================================================
-SELECT a.nombre, a.tipo_analisis_precio_unitario, a.calidad, um.abreviatura AS unidad,
-       ROUND((SELECT SUM(ROUND(i.cantidad * i.precio_unitario, 2))
-              FROM obras.t_analisi_precio_unitario_insumo i
-              WHERE i.id_analisis_precio_unitario = a.id_analisis_precio_unitario), 2) AS costo_directo
+SELECT a.codigo, a.nombre, um.abreviatura AS unidad,
+       a.costo_materiales, a.mano_de_obra, a.costo_directo,
+       a.porcentaje_utilidad, a.precio_unitario_final
 FROM obras.t_analisis_precio_unitario a
 JOIN obras.t_unidad_medida um ON um.id_unidad_medida = a.id_unidad_medida
 WHERE a.id_empresa = 1
-ORDER BY a.tipo_analisis_precio_unitario, a.calidad NULLS FIRST, a.nombre;
+ORDER BY a.nombre;
 
 SELECT 'materiales' AS entidad, COUNT(*) AS total FROM obras.t_material WHERE id_empresa = 1 AND codigo LIKE 'APU-%'
-UNION ALL SELECT 'cuadrillas', COUNT(*) FROM obras.t_mano_obra WHERE id_empresa = 1
 UNION ALL SELECT 'apus', COUNT(*) FROM obras.t_analisis_precio_unitario WHERE id_empresa = 1
 UNION ALL SELECT 'insumos', COUNT(*) FROM obras.t_analisi_precio_unitario_insumo WHERE id_empresa = 1;
