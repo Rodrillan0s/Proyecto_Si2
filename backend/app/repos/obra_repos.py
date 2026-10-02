@@ -2,6 +2,65 @@ from app.classes.postgres import PostgreSQL
 from app.config import Config
 import json
 
+
+# Normaliza únicamente la escritura de los roles existentes (Ñ, espacios y _).
+_ROL_PERSONAL = "translate(upper(replace(replace(r.nombre_rol, ' ', ''), '_', '')), 'Ñ', 'N') IN ('ELECTRICO', 'PLOMERO', 'ALBANIL', 'MAESTROALBANIL')"
+
+
+def listar_personal(id_obra: int, id_empresa: int, candidatos: bool = False):
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        vinculo = 'NOT EXISTS' if candidatos else 'EXISTS'
+        activos = "AND u.estado = 'ACTIVO'" if candidatos else ''
+        rows = db.execute_query(f"""
+            SELECT u.id_usuario, u.username,
+                   COALESCE(NULLIF(p.nombre_completo, ''), u.username),
+                   r.nombre_rol, u.estado,
+                   (SELECT ou.fecha_asignacion FROM {Config.SCHEMA}.t_obra_usuario ou
+                    WHERE ou.id_obra = o.id_obra AND ou.id_usuario = u.id_usuario)
+            FROM {Config.SCHEMA}.t_obra o
+            JOIN {Config.SCHEMA}.t_usuario u ON u.id_empresa = o.id_empresa
+            JOIN {Config.SCHEMA}.t_rol r ON r.id_rol = u.id_rol
+            LEFT JOIN {Config.SCHEMA}.t_persona p ON p.id_persona = u.id_persona
+            WHERE o.id_obra = %s AND o.id_empresa = %s
+              AND {_ROL_PERSONAL} {activos}
+              AND {vinculo} (SELECT 1 FROM {Config.SCHEMA}.t_obra_usuario ou
+                              WHERE ou.id_obra = o.id_obra AND ou.id_usuario = u.id_usuario)
+            ORDER BY 3, u.id_usuario
+        """, (id_obra, id_empresa), fetchall=True) or []
+        fields = ('id_usuario', 'username', 'nombre_completo', 'nombre_rol', 'estado', 'fecha_asignacion')
+        return [dict(zip(fields, row)) for row in rows]
+    finally:
+        db.close_connection()
+
+
+def asignar_personal(id_obra: int, id_usuario: int, id_empresa: int):
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        # Bloquear obra y usuario mantiene su empresa/estado estables hasta el commit.
+        valido = db.execute_query(f"""
+            SELECT u.id_usuario
+            FROM {Config.SCHEMA}.t_obra o
+            JOIN {Config.SCHEMA}.t_usuario u ON u.id_empresa = o.id_empresa
+            JOIN {Config.SCHEMA}.t_rol r ON r.id_rol = u.id_rol
+            WHERE o.id_obra = %s AND o.id_empresa = %s AND u.id_usuario = %s
+              AND u.estado = 'ACTIVO' AND {_ROL_PERSONAL}
+            FOR UPDATE OF o, u
+        """, (id_obra, id_empresa, id_usuario), fetchone=True)
+        if not valido:
+            raise ValueError('El trabajador no existe, no está activo, no tiene un rol de campo permitido o no pertenece a la empresa de la obra.')
+        row = db.execute_query(f"""
+            INSERT INTO {Config.SCHEMA}.t_obra_usuario (id_obra, id_usuario)
+            VALUES (%s, %s)
+            ON CONFLICT (id_obra, id_usuario) DO NOTHING
+            RETURNING id_usuario
+        """, (id_obra, id_usuario), fetchone=True, commit=True)
+        return bool(row)
+    finally:
+        db.close_connection()
+
 def registrar_obra_sp(
     codigo: str, nombre: str, descripcion: str, id_tipo_obra: int, estado_obra: str,
     fecha_inicio, fecha_fin, id_empresa: int, moneda: str,

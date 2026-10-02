@@ -28,7 +28,12 @@ export type PermisoNombre =
   | 'Desactivar_materiales'
   | 'Visualizar_proveedores'
   | 'Registrar_proveedores'
-  | 'Modificar_proveedores';
+  | 'Modificar_proveedores'
+  | 'Visualizar_incidencias'
+  | 'Registrar_incidencias'
+  | 'Modificar_incidencias'
+  | 'Asignar_incidencias'
+  | 'Cerrar_incidencias';
 
 export const PERMISOS_OFICIALES: PermisoNombre[] = [
   'Visualizar_usuarios', 'Registrar_usuarios', 'Modificar_usuarios', 'Eliminar_usuarios',
@@ -36,7 +41,8 @@ export const PERMISOS_OFICIALES: PermisoNombre[] = [
   'Visualizar_empresa', 'Registrar_empresa', 'Modificar_empresa', 'Eliminar_empresa',
   'Visualizar_inventario', 'Registrar_inventario', 'Modificar_inventario', 'Eliminar_inventario',
   'Visualizar_materiales', 'Registrar_materiales', 'Modificar_materiales', 'Desactivar_materiales',
-  'Visualizar_proveedores', 'Registrar_proveedores', 'Modificar_proveedores'
+  'Visualizar_proveedores', 'Registrar_proveedores', 'Modificar_proveedores',
+  'Visualizar_incidencias', 'Registrar_incidencias', 'Modificar_incidencias', 'Asignar_incidencias', 'Cerrar_incidencias'
 ];
 
 export const MAPA_PERMISOS_POR_ROL: Record<string, PermisoNombre[]> = {
@@ -47,18 +53,21 @@ export const MAPA_PERMISOS_POR_ROL: Record<string, PermisoNombre[]> = {
     'Visualizar_empresa', 'Registrar_empresa', 'Modificar_empresa',
     'Visualizar_inventario', 'Registrar_inventario', 'Modificar_inventario', 'Eliminar_inventario',
     'Visualizar_materiales', 'Registrar_materiales', 'Modificar_materiales', 'Desactivar_materiales',
-    'Visualizar_proveedores', 'Registrar_proveedores', 'Modificar_proveedores'
+    'Visualizar_proveedores', 'Registrar_proveedores', 'Modificar_proveedores',
+    'Visualizar_incidencias', 'Registrar_incidencias', 'Modificar_incidencias', 'Asignar_incidencias', 'Cerrar_incidencias'
   ],
   'JEFE_DE_OBRA': [
     'Visualizar_obras', 'Registrar_obras', 'Modificar_obras',
     'Visualizar_inventario', 'Modificar_inventario',
     'Visualizar_materiales',
-    'Visualizar_proveedores'
+    'Visualizar_proveedores',
+    'Visualizar_incidencias', 'Registrar_incidencias', 'Modificar_incidencias', 'Asignar_incidencias'
   ],
   'SUPERVISOR_OBRA': [
     'Visualizar_obras', 'Modificar_obras',
     'Visualizar_inventario',
-    'Visualizar_materiales'
+    'Visualizar_materiales',
+    'Visualizar_incidencias', 'Modificar_incidencias', 'Cerrar_incidencias'
   ],
   'CLIENTE': [
     'Visualizar_obras'

@@ -11,6 +11,11 @@ export interface ResponsableObra {
   fecha_asignacion?: string;
 }
 
+export interface PersonalObra extends ResponsableObra {
+  nombre_rol: string;
+  estado: string;
+}
+
 export interface Proyecto {
   id_obra?: number;
   codigo: string;
@@ -118,6 +123,25 @@ export class ProyectosService {
       `${this.apiUrl}/api/proyectos/${idObra}/responsables`,
       { id_usuario: idUsuario },
       { headers: this.getHeaders() }
+    );
+  }
+
+  listarPersonal(idObra: number): Observable<{ success: boolean; data: PersonalObra[] }> {
+    return this.http.get<{ success: boolean; data: PersonalObra[] }>(
+      `${this.apiUrl}/api/proyectos/${idObra}/personal`, { headers: this.getHeaders() }
+    );
+  }
+
+  candidatosPersonal(idObra: number): Observable<{ success: boolean; data: PersonalObra[] }> {
+    return this.http.get<{ success: boolean; data: PersonalObra[] }>(
+      `${this.apiUrl}/api/proyectos/${idObra}/personal/candidatos`, { headers: this.getHeaders() }
+    );
+  }
+
+  asignarPersonal(idObra: number, idUsuario: number): Observable<ApiResponseSimple> {
+    return this.http.post<ApiResponseSimple>(
+      `${this.apiUrl}/api/proyectos/${idObra}/personal`,
+      { id_usuario: idUsuario }, { headers: this.getHeaders() }
     );
   }
 

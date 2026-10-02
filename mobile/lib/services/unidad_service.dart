@@ -4,7 +4,7 @@ import 'api_client.dart';
 class UnidadService {
   Future<List<Map<String, dynamic>>> listarUnidades(int idObra) async {
     try {
-      final response = await ApiClient.dio.get('/api/proyectos/$idObra/unidades');
+      final response = await ApiClient.dio.get('/api/proyectos/$idObra/unidades/');
       final data = response.data;
 
       if (data is List) {
