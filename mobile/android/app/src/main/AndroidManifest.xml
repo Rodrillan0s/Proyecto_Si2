@@ -7,7 +7,7 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <application
-        android:label="emergencias_vehiculares"
+        android:label="OBRATEC"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 

@@ -8,27 +8,26 @@ def get_profile(nro_usuario):
         db.create_connection()
 
         query=f'''
-            SELECT A.ci,A.nombre_usuario,A.fecha_registro, A.nro_usuario,A.estado,A.nro_rol,A.id_empresa,E.nombre_empresa,B.nombre_completo,B.telefono,B.correo,B.direccion,
-            C.nombre_rol, 0 AS cant_vehiculos
-            FROM {Config.SCHEMA}.USUARIO A
-            INNER JOIN {Config.SCHEMA}.PERSONA B ON A.ci =B.ci 
-            INNER JOIN {Config.SCHEMA}.ROL C ON A.nro_rol =C.nro_rol 
-            LEFT JOIN {Config.SCHEMA}.empresa E ON e.id_empresa =A.id_empresa
-            WHERE A.nro_usuario =%s
-            GROUP BY A.ci,A.nombre_usuario,A.fecha_registro, A.nro_usuario,A.estado,A.nro_rol,A.id_empresa,E.nombre_empresa,B.nombre_completo,B.telefono,B.correo,B.direccion,
-            C.nombre_rol;
+            SELECT B.ci, A.username, NULL AS fecha_registro, A.id_usuario,
+                   'ACTIVO' AS estado, A.id_rol, A.id_empresa, E.nombre_empresa,
+                   E.descripcion AS descripcion_empresa, B.nombre_completo,
+                   B.telefono, A.correo, B.direccion, C.nombre_rol,
+                   0 AS cant_vehiculos
+            FROM {Config.SCHEMA}.t_usuario A
+            LEFT JOIN {Config.SCHEMA}.t_persona B ON A.id_persona = B.id_persona
+            LEFT JOIN {Config.SCHEMA}.t_rol C ON A.id_rol = C.id_rol
+            LEFT JOIN {Config.SCHEMA}.t_empresa E ON E.id_empresa = A.id_empresa
+            WHERE A.id_usuario = %s;
         '''
 
         user=db.execute_query(query,(nro_usuario,),fetchone=True)
 
-        columns=[]
-        for column in  db.cur.description:
-            columns.append(column[0])
-        print(columns) 
+        if not user:
+            return None
+
+        columns=[column[0] for column in db.cur.description]
         
         data=dict(zip(columns,user))
-
-        print(data)
 
         return data
 
@@ -42,29 +41,51 @@ def update_profile(data:dict):
     try:
         db.create_connection()
 
-       #PREPARAR INSERT PERSONA
         query=f"""
-            UPDATE {Config.SCHEMA}.persona
-            SET telefono=%s, correo=%s, direccion=%s
+            UPDATE {Config.SCHEMA}.t_persona
+            SET telefono=%s, direccion=%s
             WHERE ci=%s
         """
-        params=(data['telefono'],data['correo'],data['direccion'],data['ci'])
+        params=(data['telefono'], data['direccion'], data['ci'])
 
-        if data.get('password_hash'):
-            hacer_commit=False
-        else:
-            hacer_commit=True
+        db.execute_query(query, params)
 
-        db.execute_query(query,params,commit=hacer_commit)
+        query_user = f"""
+            UPDATE {Config.SCHEMA}.t_usuario
+            SET correo=%s
+            WHERE id_usuario=%s
+        """
+        db.execute_query(query_user, (data['correo'], data['nro_usuario']))
 
         if data.get('password_hash'):
             query_user=f"""
-            UPDATE {Config.SCHEMA}.usuario
-            SET password_hash=%s
-            WHERE nro_usuario=%s
+            UPDATE {Config.SCHEMA}.t_usuario
+            SET password=%s
+            WHERE id_usuario=%s
             """
             param_user=(data['password_hash'],data['nro_usuario'])
-            db.execute_query(query_user,param_user,commit=True)
+            db.execute_query(query_user,param_user)
+
+        empresa_id = data.get('id_empresa')
+        if empresa_id is None:
+            query_empresa_id = f"""
+                SELECT id_empresa
+                FROM {Config.SCHEMA}.t_usuario
+                WHERE id_usuario = %s
+            """
+            res_empresa = db.execute_query(query_empresa_id, (data['nro_usuario'],), fetchone=True)
+            if res_empresa:
+                empresa_id = res_empresa[0]
+
+        if empresa_id is not None and 'descripcion_empresa' in data:
+            query_empresa = f"""
+                UPDATE {Config.SCHEMA}.t_empresa
+                SET descripcion = %s
+                WHERE id_empresa = %s
+            """
+            db.execute_query(query_empresa, (data.get('descripcion_empresa'), empresa_id))
+
+        db.conn.commit()
         
         return {
             'success':True,
@@ -74,3 +95,41 @@ def update_profile(data:dict):
         
     except Exception as e:
         raise ValueError(f'ERROR: {str(e)}')
+
+def get_password_hash(id_usuario):
+    db=PostgreSQL()
+    try:
+        db.create_connection()
+
+        query=f'''
+            SELECT password
+            FROM {Config.SCHEMA}.t_usuario
+            WHERE id_usuario = %s;
+        '''
+
+        user=db.execute_query(query,(id_usuario,),fetchone=True)
+        return user[0] if user else None
+
+    except Exception as e:
+        raise ValueError(f'ERROR: {str(e)}')
+    finally:
+        db.close_connection()
+
+def update_password(id_usuario, password_hash):
+    db=PostgreSQL()
+    try:
+        db.create_connection()
+
+        query=f'''
+            UPDATE {Config.SCHEMA}.t_usuario
+            SET password = %s
+            WHERE id_usuario = %s;
+        '''
+
+        db.execute_query(query,(password_hash, id_usuario))
+        db.conn.commit()
+
+    except Exception as e:
+        raise ValueError(f'ERROR: {str(e)}')
+    finally:
+        db.close_connection()

@@ -1,60 +1,123 @@
-from app.repos import auth_repos
+from app.repos import auth_repos, bitacora_repos
 from app.utils import security
+from app.classes.postgres import PostgreSQL
 from werkzeug.security import check_password_hash, generate_password_hash
+from datetime import datetime, timezone, timedelta
+import hashlib
 
-def loguear_usuario(data: dict):
-    ci = data.get('ci')
+def loguear_usuario(data: dict, user_agent: str = None, client_ip: str = None):
+    identificador = data.get('ci') or data.get('identificador') or data.get('usuario') or data.get('correo')
     password = data.get('password')
 
-    if not ci or not password:
-        raise ValueError("El CI y la contraseña son obligatorios.")
+    if not identificador or not password:
+        raise ValueError("Ingrese su usuario, correo o CI, y su contraseña.")
 
-    usuario_db = auth_repos.obtener_usuario_por_ci(ci)
+    if isinstance(identificador, str):
+        identificador = identificador.strip()
 
-    if not usuario_db:
-        raise ValueError("El usuario no existe o está inactivo.")
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        res_db = auth_repos.obtener_usuario_por_login_sp(identificador, db=db)
 
-    password_hash = usuario_db['password_hash']
+        if not res_db.get("success"):
+            raise ValueError(res_db.get("error", "No se encontro ningun usuario registrado."))
 
-    if check_password_hash(password_hash, password):
+        id_usuario = res_db['id_usuario']
+        password_hash = res_db['password_hash']
+        # VERIFICAR CONTRASEÑA
+        is_valid = False
+        try:
+            is_valid = check_password_hash(password_hash, password)
+        except Exception:
+            pass
+        if not is_valid:
+            is_valid = (password_hash == password)
 
-        #CREAR EL TOKEN GENERADO PARA EL USUARIO
-        token= security.create_access_token(
-            usuario_db['nro_usuario'],
-            usuario_db['nombre_usuario'],
-            usuario_db["nombre_rol"],
-            usuario_db['id_empresa'],
-            usuario_db['nombre_completo'],
-            usuario_db['nro_taller']
+        if not is_valid:
+            # REGISTRAR INTENTOS ERRONEOS AL LOGUEARSE
+            res_fallo = auth_repos.registrar_intento_fallido_sp(id_usuario, db=db)
+            bitacora_repos.registrar_bitacora(
+                id_usuario,
+                "AUTENTICACION",
+                "LOGIN_FALLIDO",
+                "Intento de inicio de sesión con contraseña incorrecta.",
+                (client_ip or "unknown")[:20],
+                "FALLIDO",
+                db=db,
+            )
+            intentos = res_fallo.get('intentos_fallidos', 0)
+            
+            if intentos >= 3:
+                raise ValueError("Su cuenta ha sido bloqueada por demasiados intentos fallidos. Espere 15 minutos para intentarlo de nuevo.")
+            elif intentos == 1:
+                raise ValueError("Contraseña incorrecta.")
+            elif intentos == 2:
+                raise ValueError("Contraseña incorrecta. Te quedan 1 intento antes de bloquear la cuenta.")
+
+        # VERIFICAR DISPOSITIVOS CONOCIDOS
+        fingerprint = f"{user_agent or 'unknown_ua'}"
+        dispositivo_hash = hashlib.sha256(fingerprint.encode('utf-8')).hexdigest()
+        
+        dispositivos_conocidos = res_db.get('dispositivos_conocidos') or []
+        verificacion_requerida = False
+
+        if dispositivo_hash not in dispositivos_conocidos:
+            verificacion_requerida = True
+
+        # REGISTRAR LOGIN CORRECTO
+        auth_repos.login_exitoso_sp(id_usuario, dispositivo_hash, db=db)
+        bitacora_repos.registrar_bitacora(
+            id_usuario,
+            "AUTENTICACION",
+            "LOGIN_EXITOSO",
+            "Inicio de sesión exitoso.",
+            (client_ip or "unknown")[:20],
+            "EXITOSO",
+            db=db,
         )
 
-        #RETORNAR RESPUESTA JSON DE EXITO
+        # GENERAR TOKEN JWT DE ACCESO
+        token = security.create_access_token(
+            id_usuario,
+            res_db['username'],
+            res_db["nombre_rol"],
+            res_db['id_empresa'],
+            res_db['nombre_empresa'],
+            res_db['nombre_completo'],
+            None
+        )
+
         return {
             "success": True,
             "message": "Login exitoso",
+            "verificacion_requerida": verificacion_requerida,
             "usuario": {
-                "nro_usuario": usuario_db['nro_usuario'],
-                "ci": usuario_db['ci'],
-                "nombre_completo": usuario_db['nombre_completo'],
-                "correo": usuario_db['correo'],
-                "nombre_rol": usuario_db['nombre_rol'],
-                "telefono": usuario_db['telefono'],
-                "id_empresa":usuario_db["id_empresa"],
-                "nro_taller":usuario_db["nro_taller"]
+                "nro_usuario": id_usuario,
+                "ci": res_db['ci'],
+                "nombre_completo": res_db['nombre_completo'],
+                "correo": res_db['correo'],
+                "nombre_rol": res_db['nombre_rol'],
+                "telefono": res_db['telefono'],
+                "id_empresa": res_db["id_empresa"],
+                "nombre_empresa": res_db["nombre_empresa"],
+                "nro_taller": None
             },
-            "token":token
+            "token": token
         }
-
-    #RETORNAR ERROR
-    raise ValueError("Contraseña incorrecta.")
+    finally:
+        db.close_connection()
 
 def registrar_nuevo_usuario(data: dict):
     
     #VALIDAR CAMPOS OBLIGATORIOS
-    campos_obligatorios = ['ci', 'nombre_completo', 'nombre_usuario', 'password', 'nro_rol']
+    campos_obligatorios = ['ci', 'nombre_completo', 'nombre_usuario', 'password']
     for campo in campos_obligatorios:
         if not data.get(campo):
             raise ValueError(f"El campo '{campo}' es obligatorio.")
+
+    if not security.password_cumple_requisitos(data.get('password')):
+        raise ValueError("La contraseña no cumple los requisitos de seguridad.")
             
     #VALIDAR QUE EL NOMBRE DE USUARIO NO ESTE EN USO
     nombre_usuario = data.get('nombre_usuario').upper()
@@ -66,7 +129,13 @@ def registrar_nuevo_usuario(data: dict):
     persona_existe = auth_repos.existe_persona_por_ci(ci)
             
     #PREPARAR DATOS Y ENCRIPTAR LA CONSTRASEÑA
-    password_plana = data.get('password')
+    password_plana = data.get('password') or ''
+    if len(password_plana) < 8:
+        raise ValueError("La contraseña debe tener al menos 8 caracteres.")
+    import re
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\/`~;]', password_plana):
+        raise ValueError("La contraseña debe contener al menos 1 símbolo especial (ej. @, #, $, %, *, !).")
+
     data['password_hash'] = generate_password_hash(password_plana)
     data['estado'] = 'ACTIVO'
     

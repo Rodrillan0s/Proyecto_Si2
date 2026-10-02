@@ -1,0 +1,104 @@
+<div class="space-y-4">
+
+  <div *ngIf="error" class="rounded-lg border border-rose-300 bg-rose-50 dark:bg-rose-950/40 dark:border-rose-800 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">
+    {{ error }}
+  </div>
+
+  <!-- SUBIR FOTOGRAFIA -->
+  <div *ngIf="puedeAdjuntar" class="flex items-center justify-between gap-3">
+    <p class="text-xs text-slate-500 dark:text-slate-400">Formatos admitidos: JPEG, PNG, WEBP, GIF · máx. 10 MB.</p>
+    <input #inputArchivo type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" (change)="onArchivoSeleccionado($event)">
+    <button type="button" (click)="seleccionarArchivo()" [disabled]="subiendo"
+      class="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs font-bold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition shadow-xs disabled:opacity-50 shrink-0">
+      <svg *ngIf="subiendo" class="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+      </svg>
+      <svg *ngIf="!subiendo" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 8.25L12 3.75m0 0L7.5 8.25M12 3.75v13.5"/></svg>
+      {{ subiendo ? 'Subiendo...' : 'Adjuntar fotografía' }}
+    </button>
+  </div>
+
+  <!-- CARGANDO -->
+  <div *ngIf="cargando" class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 py-4">
+    <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+    </svg>
+    Cargando evidencias...
+  </div>
+
+  <!-- VACIO -->
+  <div *ngIf="!cargando && evidencias.length === 0" class="text-sm text-slate-500 dark:text-slate-400 py-4 text-center">
+    No hay fotografías adjuntas a esta incidencia.
+  </div>
+
+  <!-- GALERIA -->
+  <div *ngIf="!cargando && evidencias.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+    <div *ngFor="let ev of evidencias; trackBy: trackByEvidencia"
+      class="group relative rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 aspect-square cursor-pointer"
+      (click)="abrirVisor(ev)"
+      [attr.title]="ev.nombre_archivo">
+
+      <div *ngIf="ev.cargandoVista" class="absolute inset-0 flex items-center justify-center">
+        <svg class="animate-spin h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+        </svg>
+      </div>
+
+      <img *ngIf="ev.urlVista" [src]="ev.urlVista" [alt]="ev.nombre_archivo" class="w-full h-full object-cover group-hover:scale-105 transition duration-200">
+
+      <div class="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 opacity-0 group-hover:opacity-100 transition">
+        <p class="text-[10px] text-white truncate">{{ ev.nombre_archivo }}</p>
+        <p class="text-[10px] text-slate-300">{{ formatearTamano(ev.tamano_bytes) }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VISOR / MODAL: FOTOGRAFIA EN TAMAÑO GRANDE (HU73) -->
+<div *ngIf="evidenciaEnVisor as ev"
+  class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs"
+  (click)="cerrarVisor()"
+  (document:keydown.escape)="cerrarVisor()">
+  <section
+    class="relative w-full max-w-3xl max-h-[90vh] rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden"
+    (click)="$event.stopPropagation()" role="dialog" aria-modal="true" [attr.aria-label]="ev.nombre_archivo">
+
+    <header class="flex items-center justify-between gap-3 px-5 py-3 border-b border-slate-100 dark:border-slate-800">
+      <h2 class="text-sm font-bold text-slate-900 dark:text-white truncate">{{ ev.nombre_archivo || 'Evidencia fotográfica' }}</h2>
+      <button type="button" (click)="cerrarVisor()" aria-label="Cerrar"
+        class="shrink-0 text-slate-400 hover:text-slate-700 dark:hover:text-white text-2xl leading-none">×</button>
+    </header>
+
+    <div class="flex-1 min-h-[240px] flex items-center justify-center bg-slate-100 dark:bg-slate-950 p-4 overflow-auto">
+      <div *ngIf="ev.cargandoVista" class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+        <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+        </svg>
+        Cargando fotografía...
+      </div>
+
+      <div *ngIf="!ev.cargandoVista && ev.errorVista" class="text-sm text-rose-600 dark:text-rose-400 text-center px-4">
+        No se pudo cargar la fotografía.
+      </div>
+
+      <img *ngIf="!ev.cargandoVista && !ev.errorVista && ev.urlVista"
+        [src]="ev.urlVista" [alt]="ev.nombre_archivo"
+        class="max-w-full max-h-[70vh] w-auto h-auto object-contain rounded-lg">
+    </div>
+
+    <footer class="flex items-center justify-end gap-3 px-5 py-3 border-t border-slate-100 dark:border-slate-800">
+      <button type="button" (click)="descargar(ev)" [disabled]="!ev.urlVista"
+        class="px-4 py-2 text-xs font-bold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition shadow-xs disabled:opacity-50">
+        Descargar
+      </button>
+      <button type="button" (click)="cerrarVisor()"
+        class="px-4 py-2 text-xs font-bold rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+        Cerrar
+      </button>
+    </footer>
+  </section>
+</div>

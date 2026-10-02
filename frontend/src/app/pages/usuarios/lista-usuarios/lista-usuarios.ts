@@ -76,16 +76,46 @@ export class ListaUsuariosComponent implements OnInit {
   totalUsuarios: number = 0;
   usuariosActivos: number = 0;
   usuariosInactivos: number = 0;
+  empresaActiva: any = null;
 
   rolesDisponibles = [
     { id: 1, nombre: 'ADMINISTRADOR' },
-    { id: 2, nombre: 'GERENTE TALLER' },
-    { id: 3, nombre: 'MECANICO' },
-    { id: 4, nombre: 'CLIENTE' }
+    { id: 2, nombre: 'CLIENTE' },
+    { id: 3, nombre: 'ADMINISTRADOR_EMPRESA' },
+    { id: 4, nombre: 'JEFE DE OBRA' },
+    { id: 5, nombre: 'ELECTRICO' },
+    { id: 6, nombre: 'PLOMERO' },
+    { id: 7, nombre: 'MAESTROALBAÑIL' },
+    { id: 8, nombre: 'ALBAÑIL' }
   ];
+
+  hasPermission(permiso: string): boolean {
+    return this.authService.hasPermission(permiso);
+  }
+
+  esAdministradorSistema(): boolean {
+    return this.authService.obtenerRolNormalizado() === 'ADMINISTRADOR';
+  }
+
+  rolesVisibles() {
+    return this.esAdministradorSistema() ? this.rolesDisponibles : this.rolesDisponibles.filter(rol => ![1, 2].includes(rol.id));
+  }
 
   async ngOnInit() {
     this.cargando = true;
+    
+    // Escuchar cambios en la empresa activa
+    this.authService.empresaActiva$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(emp => {
+        this.empresaActiva = emp;
+        if (emp && emp.id_empresa) {
+          this.filtroEmpresa = String(emp.id_empresa);
+        } else {
+          this.filtroEmpresa = '';
+        }
+        this.aplicarFiltro();
+      });
     
     // Esperar a que el token esté disponible (esto evita la petición 401 inicial)
     let intentos = 0;
@@ -96,19 +126,19 @@ export class ListaUsuariosComponent implements OnInit {
 
     // Si después de esperar sigue sin haber token, no hacemos nada
     if (this.authService.obtenerToken()) {
-      this.cargarEmpresas();
+      if (this.esAdministradorSistema()) this.cargarEmpresas();
       this.cargarUsuarios();
     } else {
       this.cargando = false;
-      this.mensajeError = "No se pudo iniciar sesión. Por favor recarga.";
+      this.mensajeError = 'No se pudo iniciar sesión correctamente. Por favor, recarga la página.';
     }
   }
 
   // --- LÓGICA DE FILTRADO Y MÉTRICAS ---
   
-  aplicarFiltros() {
-    if (this.filtroEmpresa === '') {
-      // Si no hay filtro, mostramos todos
+  aplicarFiltro() {
+    if (!this.filtroEmpresa) {
+      // Si está vacío, mostramos todos los usuarios
       this.usuariosFiltrados = [...this.usuarios];
     } else {
       // Si hay filtro, convertimos el ID a número y filtramos
@@ -117,6 +147,10 @@ export class ListaUsuariosComponent implements OnInit {
     }
     // Actualizamos las métricas basándonos EN LO FILTRADO, no en el total general
     this.actualizarMetricas();
+  }
+
+  aplicarFiltros() {
+    this.aplicarFiltro();
   }
 
   actualizarMetricas() {
@@ -135,10 +169,11 @@ export class ListaUsuariosComponent implements OnInit {
   }
 
   inicializarUsuario(): Usuario {
+    const idEmpresaActiva = this.authService.obtenerIdEmpresaActiva();
     return {
       ci: '', nombre_usuario: '', nombre_completo: '', correo: '',
       telefono: '', direccion: '', estado: 'ACTIVO', nro_rol: 4, 
-      id_empresa: null 
+      id_empresa: idEmpresaActiva || null 
     };
   }
 
@@ -196,8 +231,8 @@ export class ListaUsuariosComponent implements OnInit {
   }
 
   guardarUsuario() {
-    if (!this.usuarioForm.ci || !this.usuarioForm.nombre_completo || !this.usuarioForm.nombre_usuario || !this.usuarioForm.id_empresa) {
-      alert('Por favor complete todos los campos obligatorios, incluyendo la Empresa.');
+    if (!this.usuarioForm.ci || !this.usuarioForm.nombre_completo || !this.usuarioForm.nombre_usuario) {
+      alert('Por favor complete todos los campos obligatorios.');
       return;
     }
 

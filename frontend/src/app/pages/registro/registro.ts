@@ -1,0 +1,93 @@
+import { Component, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { AuthService } from '../../services/auth';
+
+interface RegistroForm {
+  ci: string;
+  nombre_completo: string;
+  nombre_usuario: string;
+  password: string;
+  confirmar_password: string;
+  telefono: string;
+  correo: string;
+  direccion: string;
+}
+
+@Component({
+  selector: 'app-registro',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './registro.html',
+  styleUrl: './registro.css'
+})
+export class RegistroComponent {
+  private authService = inject(AuthService);
+  private router = inject(Router);
+
+  formulario: RegistroForm = {
+    ci: '',
+    nombre_completo: '',
+    nombre_usuario: '',
+    password: '',
+    confirmar_password: '',
+    telefono: '',
+    correo: '',
+    direccion: ''
+  };
+  mensajeError = '';
+  cargando = false;
+
+  get requisitosPassword(): { texto: string; cumple: boolean }[] {
+    const password = this.formulario.password;
+    return [
+      { texto: 'Al menos 8 caracteres', cumple: password.length >= 8 },
+      { texto: 'Una letra mayúscula', cumple: /[A-Z]/.test(password) },
+      { texto: 'Una letra minúscula', cumple: /[a-z]/.test(password) },
+      { texto: 'Un número', cumple: /[0-9]/.test(password) },
+      { texto: 'Un carácter especial', cumple: /[^A-Za-z0-9\s]/.test(password) }
+    ];
+  }
+
+  get passwordSegura(): boolean {
+    return this.requisitosPassword.every(requisito => requisito.cumple);
+  }
+
+  registrar() {
+    this.mensajeError = '';
+    if (!this.formulario.ci || !this.formulario.nombre_completo || !this.formulario.nombre_usuario || !this.formulario.password || !this.formulario.correo) {
+      this.mensajeError = 'Complete los campos obligatorios.';
+      return;
+    }
+    if (!this.passwordSegura) {
+      this.mensajeError = 'La contraseña no cumple los requisitos de seguridad.';
+      return;
+    }
+    if (this.formulario.password !== this.formulario.confirmar_password) {
+      this.mensajeError = 'Las contraseñas no coinciden.';
+      return;
+    }
+
+    this.cargando = true;
+    this.authService.registrarUsuario({
+      ci: this.formulario.ci,
+      nombre_completo: this.formulario.nombre_completo,
+      nombre_usuario: this.formulario.nombre_usuario,
+      password: this.formulario.password,
+      telefono: this.formulario.telefono,
+      correo: this.formulario.correo,
+      direccion: this.formulario.direccion
+    }).subscribe({
+      next: () => this.router.navigate(['/login'], { queryParams: { registrado: '1' } }),
+      error: (error) => {
+        this.mensajeError = error.error?.detail || 'No se pudo crear la cuenta.';
+        this.cargando = false;
+      }
+    });
+  }
+
+  volverAlLogin() {
+    this.router.navigate(['/login']);
+  }
+}

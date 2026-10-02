@@ -1,6 +1,6 @@
 from app.repos import profile_repos
 from app.utils import security
-from werkzeug.security import generate_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 def obtener_perfil_usuario(nro_usuario):
 
@@ -30,3 +30,33 @@ def actualizar_perfil_usuario(nro_usuario: int, datos_perfil: dict):
         datos_perfil['password_hash'] = None
 
     return profile_repos.update_profile(datos_perfil)
+
+def cambiar_password_usuario(nro_usuario: int, datos: dict):
+    password_actual = datos.get('password_actual')
+    password_nueva = datos.get('password_nueva')
+    confirmar_password = datos.get('confirmar_password')
+
+    passwords = (password_actual, password_nueva, confirmar_password)
+    if any(not isinstance(password, str) or not password for password in passwords):
+        raise ValueError('Los tres campos de contraseña son obligatorios')
+
+    if password_nueva != confirmar_password:
+        raise ValueError('Las contraseñas no coinciden')
+
+    if not security.password_cumple_requisitos(password_nueva):
+        raise ValueError('La nueva contraseña no cumple los requisitos de seguridad')
+
+    password_hash = profile_repos.get_password_hash(nro_usuario)
+    if not password_hash:
+        raise ValueError('Usuario no encontrado')
+
+    if not check_password_hash(password_hash, password_actual):
+        raise ValueError('La contraseña actual es incorrecta')
+
+    nuevo_password_hash = generate_password_hash(password_nueva)
+    profile_repos.update_password(nro_usuario, nuevo_password_hash)
+
+    return {
+        'success': True,
+        'message': 'Contraseña actualizada correctamente'
+    }

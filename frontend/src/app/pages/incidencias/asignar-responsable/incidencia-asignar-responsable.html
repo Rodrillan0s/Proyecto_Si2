@@ -1,0 +1,54 @@
+<div class="space-y-4">
+
+  <div *ngIf="error" class="rounded-lg border border-rose-300 bg-rose-50 dark:bg-rose-950/40 dark:border-rose-800 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">
+    {{ error }}
+  </div>
+
+  <p class="text-sm text-slate-600 dark:text-slate-300">
+    Selecciona el usuario responsable de atender esta incidencia.
+    <span *ngIf="incidencia.estado === 'ABIERTA'">Al asignarla pasará automáticamente a <strong>ASIGNADA</strong>.</span>
+  </p>
+
+  <div *ngIf="cargandoUsuarios" class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 py-4">
+    <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+    </svg>
+    Cargando responsables de la obra...
+  </div>
+
+  <div *ngIf="!cargandoUsuarios && !error && usuariosDisponibles.length === 0" class="text-sm text-slate-500 dark:text-slate-400 py-2">
+    No hay trabajadores o jefes/supervisores activos vinculados a esta obra disponibles como responsables.
+  </div>
+
+  <div *ngIf="!cargandoUsuarios && usuariosDisponibles.length > 0" class="max-h-64 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800">
+    <label
+      *ngFor="let u of usuariosDisponibles"
+      class="flex items-center gap-3 p-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900 transition"
+      [class.bg-amber-50]="usuarioSeleccionado === u.nro_usuario"
+      [class.dark:bg-amber-950]="usuarioSeleccionado === u.nro_usuario"
+    >
+      <input type="radio" name="responsable" [value]="u.nro_usuario" [(ngModel)]="usuarioSeleccionado" class="accent-amber-600">
+      <div class="min-w-0">
+        <p class="text-sm font-bold text-slate-900 dark:text-white truncate">{{ u.nombre_completo || u.nombre_usuario }}</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400">{{ u.nombre_rol || 'Sin rol' }}</p>
+      </div>
+    </label>
+  </div>
+
+  <div class="flex items-center justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+    <button type="button" (click)="cancelar()" [disabled]="asignando"
+      class="px-4 py-2 text-xs font-bold rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition disabled:opacity-50">
+      Cancelar
+    </button>
+    <button type="button" (click)="confirmar()"
+      [disabled]="asignando || cargandoUsuarios || usuariosDisponibles.length === 0 || !usuarioSeleccionado"
+      class="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition shadow-xs disabled:opacity-50">
+      <svg *ngIf="asignando" class="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+      </svg>
+      {{ asignando ? 'Asignando...' : 'Asignar responsable' }}
+    </button>
+  </div>
+</div>

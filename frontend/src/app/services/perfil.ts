@@ -12,6 +12,7 @@ export interface PerfilUsuario {
   nro_rol: number;
   id_empresa?: number;
   nombre_empresa?: string;
+  descripcion_empresa?: string;
   nombre_completo: string;
   telefono: string;
   correo: string;
@@ -29,6 +30,12 @@ export interface ApiResponseGet {
 export interface ApiResponsePut {
   success: boolean;
   message: string;
+}
+
+export interface CambiarPasswordRequest {
+  password_actual: string;
+  password_nueva: string;
+  confirmar_password: string;
 }
 
 @Injectable({
@@ -59,5 +66,9 @@ export class PerfilService {
   actualizarPerfil(datos: any): Observable<ApiResponsePut> {
     const headers = this.getHeaders();
     return this.http.put<ApiResponsePut>(`${this.apiUrl}/api/perfil/`, datos, { headers });
+  }
+
+  cambiarPassword(datos: CambiarPasswordRequest): Observable<ApiResponsePut> {
+    return this.http.put<ApiResponsePut>(`${this.apiUrl}/api/perfil/cambiar-password`, datos);
   }
 }

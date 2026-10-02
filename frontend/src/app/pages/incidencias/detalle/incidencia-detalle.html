@@ -1,0 +1,210 @@
+<div class="space-y-6">
+
+  <!-- BREADCRUMB -->
+  <button (click)="volver()" class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+    ← Volver a incidencias
+  </button>
+
+  <!-- TOASTS -->
+  <div *ngIf="exito" role="status" class="rounded-lg border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 dark:border-emerald-800 px-4 py-3 text-sm text-emerald-800 dark:text-emerald-300">
+    {{ exito }}
+  </div>
+  <div *ngIf="error" role="alert" class="rounded-lg border border-rose-300 bg-rose-50 dark:bg-rose-950/40 dark:border-rose-800 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">
+    {{ error }}
+  </div>
+
+  <!-- CARGANDO -->
+  <div *ngIf="cargando" class="flex items-center justify-center gap-2 py-16 text-sm text-slate-500 dark:text-slate-400">
+    <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+    </svg>
+    Cargando incidencia...
+  </div>
+
+  <!-- ERROR SIN DATOS -->
+  <div *ngIf="!cargando && !incidencia" class="text-center py-16">
+    <p class="text-sm text-slate-500 dark:text-slate-400">No se pudo mostrar esta incidencia.</p>
+  </div>
+
+  <ng-container *ngIf="!cargando && incidencia as inc">
+
+    <!-- ENCABEZADO -->
+    <app-page-header [titulo]="inc.titulo" categoria="INCIDENCIA" [codigo]="'#' + inc.id_incidencia">
+      <div badge class="flex items-center gap-2">
+        <app-status-badge [estado]="inc.estado" [texto]="inc.estado"></app-status-badge>
+        <app-status-badge [estado]="inc.prioridad" [texto]="inc.prioridad"></app-status-badge>
+      </div>
+
+      <div actions class="flex flex-wrap items-center gap-2">
+        <button *ngIf="puedeEditar()" type="button" (click)="abrirEditar()"
+          class="px-3.5 py-1.5 text-xs font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+          Editar
+        </button>
+        <button *ngIf="puedeAsignar()" type="button" (click)="abrirAsignar()"
+          class="px-3.5 py-1.5 text-xs font-bold rounded-lg border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition">
+          {{ inc.id_responsable ? 'Reasignar responsable' : 'Asignar responsable' }}
+        </button>
+        <button *ngIf="siguienteEstado()" type="button" (click)="confirmarCambioEstado(siguienteEstado()!)"
+          class="px-3.5 py-1.5 text-xs font-bold rounded-lg border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-800 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition">
+          {{ textoSiguienteEstado() }}
+        </button>
+        <div *ngIf="puedeValidar()" class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-bold">Validar resolución</span>
+          <button type="button" (click)="confirmarCambioEstado('RESUELTA')" class="px-3.5 py-1.5 text-xs font-bold rounded-lg border border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300">Aprobar resolución</button>
+          <button type="button" (click)="confirmarCambioEstado('EN_PROCESO')" class="px-3.5 py-1.5 text-xs font-bold rounded-lg border border-rose-300 dark:border-rose-700 text-rose-700 dark:text-rose-300">Rechazar resolución</button>
+        </div>
+        <button *ngIf="puedeCerrar()" type="button" (click)="confirmarCierre()"
+          class="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs font-bold rounded-lg bg-rose-600 hover:bg-rose-700 text-white transition shadow-xs">
+          Cerrar incidencia
+        </button>
+      </div>
+    </app-page-header>
+
+    <!-- INFORMACION GENERAL -->
+    <section class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs">
+      <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4">Información general</h3>
+
+      <p class="text-sm text-slate-700 dark:text-slate-300 mb-5 whitespace-pre-line">{{ inc.descripcion }}</p>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 text-sm">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Proyecto</p>
+          <p class="font-semibold text-slate-900 dark:text-white">{{ inc.obra_codigo || ('#' + inc.id_obra) }}</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">{{ inc.obra_nombre }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Unidad</p>
+          <p class="font-semibold text-slate-900 dark:text-white">{{ inc.unidad_codigo || 'No aplica' }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Ubicación</p>
+          <p class="font-semibold text-slate-900 dark:text-white">{{ inc.ubicacion || 'No especificada' }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Responsable</p>
+          <p class="font-semibold text-slate-900 dark:text-white">{{ inc.responsable_nombre || 'Sin asignar' }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Registrado por</p>
+          <p class="font-semibold text-slate-900 dark:text-white">{{ inc.usuario_registro_nombre || ('Usuario #' + inc.id_usuario_registro) }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Fecha/hora de registro</p>
+          <p class="font-semibold text-slate-900 dark:text-white">{{ inc.created_at | date:'dd/MM/yyyy HH:mm' }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Última actualización</p>
+          <p class="font-semibold text-slate-900 dark:text-white">{{ inc.updated_at | date:'dd/MM/yyyy HH:mm' }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Inicio de atención</p>
+          <p class="font-semibold text-slate-900 dark:text-white">{{ inc.fecha_inicio_atencion ? (inc.fecha_inicio_atencion | date:'dd/MM/yyyy HH:mm') : 'Pendiente' }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Fin de atención</p>
+          <p class="font-semibold text-slate-900 dark:text-white">{{ inc.fecha_fin_atencion ? (inc.fecha_fin_atencion | date:'dd/MM/yyyy HH:mm') : 'Pendiente' }}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ORDENES DE TRABAJO AFECTADAS -->
+    <section class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs">
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Órdenes de trabajo afectadas</h3>
+        <button *ngIf="puedeSeleccionarOrdenes()" type="button" (click)="abrirOrdenes()"
+          class="px-3 py-1.5 text-xs font-bold rounded-lg border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition">
+          {{ inc.ordenes_trabajo?.length ? 'Editar OT afectadas' : 'Agregar OT afectadas' }}
+        </button>
+      </div>
+
+      <p *ngIf="!inc.ordenes_trabajo?.length" class="text-sm text-slate-500 dark:text-slate-400">
+        No se han indicado órdenes de trabajo afectadas.
+      </p>
+
+      <ul *ngIf="inc.ordenes_trabajo?.length" class="divide-y divide-slate-100 dark:divide-slate-800">
+        <li *ngFor="let ot of inc.ordenes_trabajo" class="flex flex-wrap items-center justify-between gap-2 py-2.5">
+          <div class="min-w-0">
+            <p class="text-sm font-bold text-slate-900 dark:text-white">{{ etiquetaOrden(ot.orden_nro) }} — {{ ot.tipo_trab || 'Sin tipo de trabajo' }}</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              Vinculada {{ ot.fecha_vinculo | date:'dd/MM/yyyy HH:mm' }}<span *ngIf="ot.usuario_vinculo_nombre"> por {{ ot.usuario_vinculo_nombre }}</span>
+            </p>
+          </div>
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ ot.estado || 'Sin estado' }}</span>
+          <span *ngIf="ot.afectada_por_incidencia" class="text-xs font-bold text-amber-700 dark:text-amber-300">AFECTADA POR INCIDENCIA</span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- SEGUIMIENTO Y EVIDENCIAS -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <section class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4">Seguimiento</h3>
+        <app-incidencia-seguimiento [idIncidencia]="inc.id_incidencia" [puedeComentar]="puedeComentar()"></app-incidencia-seguimiento>
+      </section>
+
+      <section class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4">Fotografías</h3>
+        <app-incidencia-evidencias [idIncidencia]="inc.id_incidencia" [puedeAdjuntar]="puedeAdjuntarEvidencia()"></app-incidencia-evidencias>
+      </section>
+    </div>
+  </ng-container>
+</div>
+
+<!-- MODAL: EDITAR -->
+<div *ngIf="modal === 'editar' && incidencia" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs" (click)="cerrarModal()">
+  <section class="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-2xl" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+    <header class="flex items-center justify-between mb-5">
+      <h2 class="text-lg font-bold text-slate-900 dark:text-white">Editar incidencia</h2>
+      <button type="button" (click)="cerrarModal()" aria-label="Cerrar" class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-2xl leading-none">×</button>
+    </header>
+    <app-incidencia-formulario [incidencia]="incidencia" (guardado)="incidenciaActualizada()" (cancelado)="cerrarModal()"></app-incidencia-formulario>
+  </section>
+</div>
+
+<!-- MODAL: ASIGNAR RESPONSABLE -->
+<div *ngIf="modal === 'asignar' && incidencia" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs" (click)="cerrarModal()">
+  <section class="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-2xl" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+    <header class="flex items-center justify-between mb-5">
+      <h2 class="text-lg font-bold text-slate-900 dark:text-white">Asignar responsable</h2>
+      <button type="button" (click)="cerrarModal()" aria-label="Cerrar" class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-2xl leading-none">×</button>
+    </header>
+    <app-incidencia-asignar-responsable [incidencia]="incidencia" (asignado)="responsableAsignado($event)" (cancelado)="cerrarModal()"></app-incidencia-asignar-responsable>
+  </section>
+</div>
+
+<!-- MODAL: ORDENES DE TRABAJO AFECTADAS -->
+<div *ngIf="modal === 'ordenes' && incidencia" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs" (click)="cerrarModal()">
+  <section class="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-2xl" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+    <header class="flex items-center justify-between mb-5">
+      <h2 class="text-lg font-bold text-slate-900 dark:text-white">Órdenes de trabajo afectadas</h2>
+      <button type="button" (click)="cerrarModal()" aria-label="Cerrar" class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-2xl leading-none">×</button>
+    </header>
+    <app-incidencia-ordenes-trabajo [incidencia]="incidencia" (guardado)="ordenesGuardadas($event)" (cancelado)="cerrarModal()"></app-incidencia-ordenes-trabajo>
+  </section>
+</div>
+
+<!-- CONFIRMACION: CAMBIO DE ESTADO -->
+<app-confirm-dialog
+  [abierto]="confirmando === 'estado'"
+  titulo="¿Actualizar el estado de la incidencia?"
+  [mensaje]="'La incidencia pasará de ' + incidencia?.estado + ' a ' + estadoObjetivo + '. Esta acción quedará registrada en el seguimiento y la bitácora.'"
+  confirmarTexto="Sí, actualizar estado"
+  tipo="advertencia"
+  [cargando]="procesandoEstado"
+  (onConfirmar)="ejecutarCambioEstado()"
+  (onCancelar)="cancelarConfirmacion()"
+></app-confirm-dialog>
+
+<!-- CONFIRMACION: CERRAR INCIDENCIA -->
+<app-confirm-dialog
+  [abierto]="confirmando === 'cerrar'"
+  titulo="¿Cerrar esta incidencia?"
+  mensaje="Solo podrás reabrirla si un administrador ajusta manualmente el registro. Verifica que la solución haya sido confirmada antes de cerrarla."
+  confirmarTexto="Sí, cerrar incidencia"
+  tipo="peligro"
+  [cargando]="procesandoEstado"
+  (onConfirmar)="ejecutarCambioEstado()"
+  (onCancelar)="cancelarConfirmacion()"
+></app-confirm-dialog>
