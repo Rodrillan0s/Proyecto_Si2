@@ -34,7 +34,13 @@ export type PermisoNombre =
   | 'Modificar_estimaciones'
   | 'Eliminar_estimaciones'
   | 'Visualizar_mano_obra'
-  | 'Registrar_mano_obra';
+  | 'Registrar_mano_obra'
+  | 'Visualizar_control_costos'
+  | 'Registrar_costos_ejecutados'
+  | 'Anular_costos_ejecutados'
+  | 'Registrar_ordenes_cambio'
+  | 'Modificar_ordenes_cambio'
+  | 'Aprobar_ordenes_cambio';
 
 export const PERMISOS_OFICIALES: PermisoNombre[] = [
   'Visualizar_usuarios', 'Registrar_usuarios', 'Modificar_usuarios', 'Eliminar_usuarios',
@@ -43,7 +49,9 @@ export const PERMISOS_OFICIALES: PermisoNombre[] = [
   'Visualizar_inventario', 'Registrar_inventario', 'Modificar_inventario', 'Eliminar_inventario',
   'Visualizar_materiales', 'Registrar_materiales', 'Modificar_materiales', 'Desactivar_materiales',
   'Visualizar_proveedores', 'Registrar_proveedores', 'Modificar_proveedores',
-  'Visualizar_estimaciones', 'Registrar_estimaciones', 'Modificar_estimaciones', 'Eliminar_estimaciones', 'Visualizar_mano_obra', 'Registrar_mano_obra'
+  'Visualizar_estimaciones', 'Registrar_estimaciones', 'Modificar_estimaciones', 'Eliminar_estimaciones', 'Visualizar_mano_obra', 'Registrar_mano_obra',
+  'Visualizar_control_costos', 'Registrar_costos_ejecutados', 'Anular_costos_ejecutados',
+  'Registrar_ordenes_cambio', 'Modificar_ordenes_cambio', 'Aprobar_ordenes_cambio'
 ];
 
 export const MAPA_PERMISOS_POR_ROL: Record<string, PermisoNombre[]> = {
@@ -55,13 +63,17 @@ export const MAPA_PERMISOS_POR_ROL: Record<string, PermisoNombre[]> = {
     'Visualizar_inventario', 'Registrar_inventario', 'Modificar_inventario', 'Eliminar_inventario',
     'Visualizar_materiales', 'Registrar_materiales', 'Modificar_materiales', 'Desactivar_materiales',
     'Visualizar_proveedores', 'Registrar_proveedores', 'Modificar_proveedores'
-    , 'Visualizar_estimaciones', 'Registrar_estimaciones', 'Modificar_estimaciones', 'Eliminar_estimaciones', 'Visualizar_mano_obra', 'Registrar_mano_obra'
+    , 'Visualizar_estimaciones', 'Registrar_estimaciones', 'Modificar_estimaciones', 'Eliminar_estimaciones', 'Visualizar_mano_obra', 'Registrar_mano_obra',
+    'Visualizar_control_costos', 'Registrar_costos_ejecutados', 'Anular_costos_ejecutados',
+    'Registrar_ordenes_cambio', 'Modificar_ordenes_cambio', 'Aprobar_ordenes_cambio'
   ],
   'JEFE_DE_OBRA': [
     'Visualizar_obras', 'Registrar_obras', 'Modificar_obras',
     'Visualizar_inventario', 'Modificar_inventario',
     'Visualizar_materiales',
-    'Visualizar_proveedores'
+    'Visualizar_proveedores',
+    'Visualizar_control_costos', 'Registrar_costos_ejecutados', 'Anular_costos_ejecutados',
+    'Registrar_ordenes_cambio', 'Modificar_ordenes_cambio', 'Aprobar_ordenes_cambio'
   ],
   'SUPERVISOR_OBRA': [
     'Visualizar_obras', 'Modificar_obras',

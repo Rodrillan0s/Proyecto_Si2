@@ -20,6 +20,7 @@ import { MaterialesComponent } from './pages/materiales/materiales';
 import { ProveedoresComponent } from './pages/proveedores/proveedores';             
 import { OrdenesTrabajoComponent } from './pages/ordenes-trabajo/ordenes-trabajo';
 import { EstimacionesComponent } from './pages/estimaciones/estimaciones';
+import { ControlCostosComponent } from './pages/control-costos/control-costos';
 
 //LAYOUTS
 import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout';
@@ -121,6 +122,12 @@ export const routes: Routes = [
                 component: EstimacionesComponent,
                 canActivate: [roleGuard],
                 data: { permissions: ['Visualizar_estimaciones'] }
+            },
+            {
+                path: 'control-costos',
+                component: ControlCostosComponent,
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_control_costos'] }
             },
             { 
                 path: 'perfil', 
