@@ -1,3 +1,4 @@
+import { Incidencia, IncidenciasService } from '../../services/incidencias';
 import { Component, OnInit, inject, PLATFORM_ID, ChangeDetectorRef, NgZone, DestroyRef } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
@@ -46,6 +47,33 @@ export class PanelComponent implements OnInit {
   private cdr = inject(ChangeDetectorRef);
   private ngZone = inject(NgZone);
   private destroyRef = inject(DestroyRef);
+
+  incidenciasAsignadas: Incidencia[] = [];
+  paginaIncidencias = 1;
+  totalPaginasIncidencias = 0;
+  cargandoIncidencias = false;
+  errorIncidencias = '';
+  private incidenciasService = inject(IncidenciasService);
+
+  cargarIncidenciasAsignadas(page = 1): void {
+    this.cargandoIncidencias = true;
+    this.errorIncidencias = '';
+    this.incidenciasService.listar({id_responsable: Number(this.usuarioActual.nro_usuario), page, limit: 20})
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: res => {
+          this.incidenciasAsignadas = res.data;
+          this.paginaIncidencias = page;
+          this.totalPaginasIncidencias = res.pagination.total_pages;
+          this.cargandoIncidencias = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.errorIncidencias = 'No se pudieron cargar las incidencias asignadas.';
+          this.cargandoIncidencias = false;
+          this.cdr.markForCheck();
+        }
+      });
+  }
 
   usuarioActual: any = null;
   rolUsuario: string = '';
@@ -105,6 +133,9 @@ export class PanelComponent implements OnInit {
     }
 
     this.rolUsuario = this.authService.obtenerRolNormalizado();
+    if (['ELECTRICO', 'PLOMERO', 'MAESTRO_ALBANIL', 'ALBANIL'].includes(this.rolUsuario)) {
+      this.cargarIncidenciasAsignadas();
+    }
 
     // Escuchar empresa activa reactiva
     this.authService.empresaActiva$

@@ -355,7 +355,19 @@ export class OrdenesTrabajoComponent implements OnInit, OnDestroy {
   }
 
   verOrden(orden: OrdenTrabajo): void {
-    this.ordenSeleccionada = orden;
+    this.ordenSeleccionada = null;
+    this.ordenesTrabajoService.obtenerOrdenTrabajo(orden.orden_nro)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (respuesta) => {
+          this.ordenSeleccionada = respuesta.data;
+          this.cdr.markForCheck();
+        },
+        error: (error) => {
+          this.mostrarError(error?.error?.detail || 'No se pudo consultar la orden de trabajo.');
+          this.cdr.markForCheck();
+        }
+      });
   }
 
   limpiarFiltros(): void {

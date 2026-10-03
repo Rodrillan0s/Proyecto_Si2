@@ -21,6 +21,9 @@ import { ProveedoresComponent } from './pages/proveedores/proveedores';
 import { OrdenesTrabajoComponent } from './pages/ordenes-trabajo/ordenes-trabajo';
 import { EstimacionesComponent } from './pages/estimaciones/estimaciones';
 import { ControlCostosComponent } from './pages/control-costos/control-costos';
+import { IncidenciasComponent } from './pages/incidencias/incidencias';
+import { IncidenciasAsignadasComponent } from './pages/incidencias/asignadas/incidencias-asignadas';
+import { IncidenciaDetalleComponent } from './pages/incidencias/detalle/incidencia-detalle';
 
 //LAYOUTS
 import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout';
@@ -111,11 +114,25 @@ export const routes: Routes = [
                 canActivate: [roleGuard], 
                 data: { permissions: ['Visualizar_usuarios'] } 
             },
-            { 
-                path: 'ordenes-trabajo', 
-                component: OrdenesTrabajoComponent, 
-                canActivate: [roleGuard], 
-                data: { permissions: ['Visualizar_obras'] } 
+            {
+                path: 'ordenes-trabajo',
+                component: OrdenesTrabajoComponent,
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_obras'] }
+            },
+            {
+                path: 'incidencias',
+                component: IncidenciasComponent,
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_incidencias'] }
+            },
+            {
+                path: 'incidencias/asignadas',
+                component: IncidenciasAsignadasComponent
+            },
+            {
+                path: 'incidencias/:id',
+                component: IncidenciaDetalleComponent
             },
             {
                 path: 'estimaciones',

@@ -448,6 +448,7 @@
               >
                 {{ obtenerTextoEstado(orden.estado) }}
               </span>
+              <span *ngIf="orden.afectada_por_incidencia" class="status-badge bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">AFECTADA POR INCIDENCIA</span>
 
             </td>
 
@@ -659,6 +660,7 @@
         >
           {{ obtenerTextoEstado(ordenSeleccionada.estado) }}
         </span>
+              <span *ngIf="ordenSeleccionada.afectada_por_incidencia" class="status-badge bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">AFECTADA POR INCIDENCIA</span>
 
       </div>
 
