@@ -8,7 +8,6 @@ import { AuthService } from '../../../services/auth';
 import { environment } from '../../../../environments/environment';
 
 import { ProyectoEstructuraComponent } from '../estructura/proyecto-estructura';
-import { ProyectoPresupuestoComponent } from '../presupuesto/proyecto-presupuesto';
 
 export interface UsuarioEmpresa {
   nro_usuario: number;
@@ -19,7 +18,7 @@ export interface UsuarioEmpresa {
 @Component({
   selector: 'app-proyecto-detalle',
   standalone: true,
-  imports: [CommonModule, FormsModule, ProyectoEstructuraComponent, ProyectoPresupuestoComponent],
+  imports: [CommonModule, FormsModule, ProyectoEstructuraComponent],
   templateUrl: './proyecto-detalle.html',
   styleUrl: './proyecto-detalle.css'
 })
@@ -48,7 +47,7 @@ export class ProyectoDetalleComponent implements OnInit, OnDestroy {
   errorCandidatosPersonal = '';
 
   // Control de pestañas
-  tabActivo: 'general' | 'estructura' | 'presupuesto' = 'general';
+  tabActivo: 'general' | 'estructura' = 'general';
 
   cargando: boolean = false;
   procesandoAccion: boolean = false;
@@ -72,13 +71,11 @@ export class ProyectoDetalleComponent implements OnInit, OnDestroy {
       const tab = qp.get('tab');
       if (tab === 'estructura') {
         this.tabActivo = 'estructura';
-      } else if (tab === 'presupuesto') {
-        this.tabActivo = 'presupuesto';
       }
     });
   }
 
-  seleccionarTab(tab: 'general' | 'estructura' | 'presupuesto') {
+  seleccionarTab(tab: 'general' | 'estructura') {
     this.tabActivo = tab;
     if (tab === 'general') {
       this.iniciarMapaDetalle();
@@ -360,10 +357,6 @@ export class ProyectoDetalleComponent implements OnInit, OnDestroy {
 
   irAProveedores() {
     this.router.navigate(['/proveedores']);
-  }
-
-  irAPresupuesto() {
-    this.seleccionarTab('presupuesto');
   }
 
   esRolAutorizado(): boolean {
