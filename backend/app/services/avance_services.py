@@ -111,22 +111,23 @@ def registrar_avance(id_obra: int, data: dict, token_data: dict, client_ip: str 
     return res
 
 
-def listar_avances(id_obra: int, token_data: dict, id_unidad: int = None) -> dict:
+def listar_avances(id_obra: int, token_data: dict, estado: str = None) -> dict:
     """
-    Lista el historial de avances de un proyecto, con filtro opcional por unidad.
+    Lista la bitácora de órdenes de trabajo de la obra, con filtro opcional por estado (FINALIZADO / PENDIENTE).
     Requiere permiso 'Visualizar_avances'.
     """
     id_empresa = _id_empresa(token_data)
-    res = avance_repos.listar_avances_fn(id_obra=id_obra, id_empresa=id_empresa, id_unidad=id_unidad)
+    res = avance_repos.listar_avances_fn(id_obra=id_obra, id_empresa=id_empresa, estado=estado)
     if not res.get("success"):
-        raise ValueError(res.get("error", "Error al obtener los avances."))
+        raise ValueError(res.get("error", "Error al obtener la bitácora de avances de obra."))
     return res
 
 
 def resumen_avances(id_obra: int, token_data: dict) -> dict:
     """
-    Devuelve el resumen de avance global del proyecto y el último avance
-    registrado por unidad.
+    Devuelve el resumen de avance global del proyecto calculado como:
+      (Órdenes FINALIZADAS / Total de Órdenes) * 100%
+    y el desglose por cuadrillas.
     Requiere permiso 'Visualizar_avances'.
     """
     id_empresa = _id_empresa(token_data)

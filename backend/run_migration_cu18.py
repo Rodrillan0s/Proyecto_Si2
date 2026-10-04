@@ -4,7 +4,7 @@ sys.path.insert(0, '.')
 
 from app.classes.postgres import PostgreSQL
 
-SQL_FILE = 'database/migration_cu18_avances_obra.sql'
+SQL_FILE = 'database/migration_cu18_v2_bitacora_ordenes.sql'
 
 db = PostgreSQL()
 db.create_connection()

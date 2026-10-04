@@ -37,14 +37,14 @@ def registrar_avance_fn(
         db.close_connection()
 
 
-def listar_avances_fn(id_obra: int, id_empresa: int, id_unidad: int = None) -> dict:
-    """Invoca fn_listar_avances_obra y retorna el historial completo."""
+def listar_avances_fn(id_obra: int, id_empresa: int, estado: str = None) -> dict:
+    """Invoca fn_listar_avances_obra y retorna la bitácora de órdenes con estado y cuadrillas."""
     db = PostgreSQL()
     db.create_connection()
     try:
         query = f"SELECT {Config.SCHEMA}.fn_listar_avances_obra(%s, %s, %s);"
         return _json_result(
-            db.execute_query(query, (id_obra, id_empresa, id_unidad), fetchone=True),
+            db.execute_query(query, (id_obra, id_empresa, estado), fetchone=True),
             "Error al obtener los avances de obra.",
         )
     finally:

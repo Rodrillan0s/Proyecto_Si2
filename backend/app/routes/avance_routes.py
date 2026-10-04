@@ -24,16 +24,16 @@ def _ip(request: Request) -> str:
 
 # ──────────────────────────────────────────────────────────────────────────────
 # GET /api/proyectos/{id_obra}/avances/
-#   Historial completo de avances. Filtrado opcional por ?id_unidad=N
+#   Bitácora de órdenes de trabajo de la obra. Filtrado opcional por ?estado=FINALIZADO|PENDIENTE
 # ──────────────────────────────────────────────────────────────────────────────
 @router.get("/")
 def get_avances(
     id_obra: int,
-    id_unidad: int = Query(default=None, description="Filtrar por unidad de construcción"),
+    estado: str = Query(default=None, description="Filtrar por estado: FINALIZADO o PENDIENTE"),
     token_data: dict = Depends(exigir_permiso("Visualizar_avances")),
 ):
     try:
-        return avance_services.listar_avances(id_obra, token_data, id_unidad)
+        return avance_services.listar_avances(id_obra, token_data, estado)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:

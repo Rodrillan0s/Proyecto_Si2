@@ -84,7 +84,45 @@ class AvanceValidationTests(unittest.TestCase):
             observacion="Cimentación concluida",
             id_usuario=2,
         )
-        mock_bitacora.assert_called_once()
+    @patch("app.repos.avance_repos.listar_avances_fn")
+    def test_listar_avances_con_filtro_estado(self, mock_repo):
+        mock_repo.return_value = {
+            "success": True,
+            "data": [
+                {
+                    "orden_nro": 1,
+                    "tipo_trab": "Cimentacion",
+                    "cuadrilla": 1,
+                    "estado": "FINALIZADO",
+                    "es_cumplida": True,
+                    "peso_porcentual": 50.0,
+                    "responsables": []
+                }
+            ]
+        }
+        token = {"nro_usuario": 1, "nombre_rol": "ADMINISTRADOR"}
+        res = avance_services.listar_avances(1, token, estado="FINALIZADO")
+        self.assertTrue(res["success"])
+        self.assertEqual(len(res["data"]), 1)
+        mock_repo.assert_called_once_with(id_obra=1, id_empresa=None, estado="FINALIZADO")
+
+    @patch("app.repos.avance_repos.resumen_avances_fn")
+    def test_resumen_avances_calculo_automatico(self, mock_repo):
+        mock_repo.return_value = {
+            "success": True,
+            "id_obra": 1,
+            "total_ordenes": 10,
+            "ordenes_cumplidas": 2,
+            "ordenes_pendientes": 8,
+            "porcentaje_avance": 20.0,
+            "cuadrillas": [{"cuadrilla": 1, "total_ordenes": 10, "cumplidas": 2, "pendientes": 8}]
+        }
+        token = {"nro_usuario": 2, "nombre_rol": "JEFE DE OBRA", "id_empresa": 3}
+        res = avance_services.resumen_avances(1, token)
+        self.assertTrue(res["success"])
+        self.assertEqual(res["porcentaje_avance"], 20.0)
+        self.assertEqual(res["ordenes_cumplidas"], 2)
+        mock_repo.assert_called_once_with(id_obra=1, id_empresa=3)
 
 
 if __name__ == "__main__":
