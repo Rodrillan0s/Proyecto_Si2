@@ -6,54 +6,46 @@ import { AuthService } from './auth';
 
 // ─── Interfaces ────────────────────────────────────────────────────────────
 
-export interface Avance {
-  id_avance: number;
-  id_obra: number;
-  id_unidad: number;
-  codigo_unidad: string;
-  nombre_unidad: string;
-  tipo_unidad: string;
-  estado_unidad: string;
-  porcentaje_avance: number;
-  fecha_registro: string;
-  observacion?: string;
+export interface ResponsableOrden {
   id_usuario: number;
-  usuario_nombre: string;
-  created_at: string;
+  username: string;
+  nombre_completo: string;
 }
 
-export interface ResumenAvance {
-  id_unidad: number;
-  codigo_unidad: string;
-  nombre_unidad: string;
-  tipo_unidad: string;
-  estado_unidad: string;
-  ultimo_avance: number;
-  fecha_ultimo?: string;
+export interface OrdenAvance {
+  orden_nro: number;
+  id_obra: number;
+  tipo_trab: string;
+  cuadrilla: number;
+  estado: string;
+  es_cumplida: boolean;
+  fecha_inicio: string;
+  fecha_fin?: string;
+  observacion?: string;
+  peso_porcentual: number;
+  responsables: ResponsableOrden[];
+}
+
+export interface CuadrillaResumen {
+  cuadrilla: number;
+  total_ordenes: number;
+  cumplidas: number;
+  pendientes: number;
 }
 
 export interface ResumenAvancesResponse {
   success: boolean;
-  avance_global: number;
-  unidades: ResumenAvance[];
+  id_obra: number;
+  total_ordenes: number;
+  ordenes_cumplidas: number;
+  ordenes_pendientes: number;
+  porcentaje_avance: number;
+  cuadrillas: CuadrillaResumen[];
 }
 
 export interface AvancesListResponse {
   success: boolean;
-  data: Avance[];
-}
-
-export interface AvanceCreateResponse {
-  success: boolean;
-  id_avance?: number;
-  message?: string;
-}
-
-export interface NuevoAvance {
-  id_unidad: number;
-  porcentaje_avance: number;
-  fecha_registro?: string;
-  observacion?: string;
+  data: OrdenAvance[];
 }
 
 // ─── Service ────────────────────────────────────────────────────────────────
@@ -69,34 +61,23 @@ export class AvancesService {
     return token ? new HttpHeaders({ 'Authorization': `Bearer ${token}` }) : new HttpHeaders();
   }
 
-  /** Lista el historial completo de avances de una obra. */
-  listarAvances(idObra: number, idUnidad?: number): Observable<AvancesListResponse> {
+  /**
+   * Lista la bitácora de órdenes de trabajo de la obra con su estado y cuadrillas.
+   * Filtro opcional: 'FINALIZADO' (cumplidas) o 'PENDIENTE' (faltantes por cumplir).
+   */
+  listarAvances(idObra: number, estado?: string): Observable<AvancesListResponse> {
     let url = `${this.apiUrl}/api/proyectos/${idObra}/avances/`;
-    if (idUnidad) url += `?id_unidad=${idUnidad}`;
+    if (estado) url += `?estado=${estado}`;
     return this.http.get<AvancesListResponse>(url, { headers: this.getHeaders() });
   }
 
-  /** Devuelve el resumen de avance global y por unidad. */
+  /**
+   * Obtiene el resumen consolidado de avances: % global (cumplidas/total),
+   * conteo de órdenes cumplidas y faltantes, y cuadrillas involucradas.
+   */
   resumenAvances(idObra: number): Observable<ResumenAvancesResponse> {
     return this.http.get<ResumenAvancesResponse>(
       `${this.apiUrl}/api/proyectos/${idObra}/avances/resumen`,
-      { headers: this.getHeaders() }
-    );
-  }
-
-  /** Registra un nuevo avance de obra. */
-  registrarAvance(idObra: number, avance: NuevoAvance): Observable<AvanceCreateResponse> {
-    return this.http.post<AvanceCreateResponse>(
-      `${this.apiUrl}/api/proyectos/${idObra}/avances/`,
-      avance,
-      { headers: this.getHeaders() }
-    );
-  }
-
-  /** Elimina un avance registrado. */
-  eliminarAvance(idObra: number, idAvance: number): Observable<{ success: boolean; message?: string }> {
-    return this.http.delete<{ success: boolean; message?: string }>(
-      `${this.apiUrl}/api/proyectos/${idObra}/avances/${idAvance}`,
       { headers: this.getHeaders() }
     );
   }

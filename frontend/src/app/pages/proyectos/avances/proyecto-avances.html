@@ -1,387 +1,290 @@
 <div class="space-y-6">
 
-  <!-- ── MENSAJES ─────────────────────────────────────────────────────────── -->
-  <div *ngIf="mensajeError" class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl text-sm dark:bg-red-950/20 dark:border-red-900/30 dark:text-red-400">
-    <strong>Error:</strong> {{ mensajeError }}
-  </div>
-  <div *ngIf="mensajeExito" class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl text-sm dark:bg-green-950/20 dark:border-green-900/30 dark:text-green-400">
-    <strong>Éxito:</strong> {{ mensajeExito }}
-  </div>
-
-  <!-- ── CABECERA DE SECCIÓN ────────────────────────────────────────────── -->
-  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-    <div>
-      <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-        <span class="text-xl">📊</span>
-        Avances de Obra
-      </h2>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-        Registro histórico del avance de las unidades de construcción
-      </p>
-    </div>
-    <button *ngIf="puedeRegistrar"
-            (click)="abrirFormulario()"
-            id="btn-nuevo-avance"
-            class="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-      </svg>
-      Registrar Avance
-    </button>
+  <!-- ALERTAS DE ERROR -->
+  <div *ngIf="mensajeError" class="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs dark:bg-red-950/30 dark:border-red-900/50 dark:text-red-400 flex items-center gap-2">
+    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+    </svg>
+    <span>{{ mensajeError }}</span>
   </div>
 
-  <!-- ── AVANCE GLOBAL ─────────────────────────────────────────────────── -->
-  <div class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-sm p-6">
-    <div class="flex items-center justify-between mb-4">
-      <span class="text-sm font-bold text-gray-700 dark:text-gray-300">Avance Global del Proyecto</span>
-      <span class="text-2xl font-black"
-            [class.text-green-600]="avanceGlobal >= 100"
-            [class.text-amber-600]="avanceGlobal >= 60 && avanceGlobal < 100"
-            [class.text-orange-600]="avanceGlobal > 0 && avanceGlobal < 60"
-            [class.text-gray-400]="avanceGlobal === 0">
-        {{ avanceGlobal | number:'1.1-1' }}%
-      </span>
-    </div>
-    <div class="w-full bg-gray-100 dark:bg-slate-800 rounded-full h-3 overflow-hidden">
-      <div class="h-3 rounded-full transition-all duration-700"
-           [class]="colorBarra(avanceGlobal)"
-           [style.width.%]="avanceGlobal">
-      </div>
-    </div>
-    <div *ngIf="cargandoResumen" class="mt-2 text-xs text-gray-400">Calculando avance...</div>
-  </div>
+  <!-- TARJETAS DE INDICADORES (KPIs) -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
-  <!-- ── TABS: RESUMEN / HISTORIAL ─────────────────────────────────────── -->
-  <div class="flex items-center gap-2 border-b border-gray-200 dark:border-slate-800">
-    <button (click)="vistaActiva = 'resumen'"
-            class="px-4 py-2.5 text-sm font-bold border-b-2 transition-all"
-            [ngClass]="vistaActiva === 'resumen'
-              ? 'border-orange-600 text-orange-600 dark:text-orange-400'
-              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'">
-      📋 Resumen por Unidad
-    </button>
-    <button (click)="vistaActiva = 'historial'"
-            class="px-4 py-2.5 text-sm font-bold border-b-2 transition-all"
-            [ngClass]="vistaActiva === 'historial'
-              ? 'border-orange-600 text-orange-600 dark:text-orange-400'
-              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'">
-      📜 Historial de Registros
-    </button>
-  </div>
-
-  <!-- ── VISTA: RESUMEN POR UNIDAD ────────────────────────────────────── -->
-  <div *ngIf="vistaActiva === 'resumen'">
-    <div *ngIf="cargandoResumen" class="flex justify-center py-8">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
-    </div>
-
-    <div *ngIf="!cargandoResumen && resumenUnidades.length === 0"
-         class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-8 text-center">
-      <div class="text-4xl mb-3">📊</div>
-      <p class="text-gray-500 dark:text-gray-400 text-sm">No hay unidades de construcción en este proyecto.</p>
-      <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-        Registra primero las unidades en la pestaña "Estructura de la Obra".
-      </p>
-    </div>
-
-    <div *ngIf="!cargandoResumen && resumenUnidades.length > 0"
-         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      <div *ngFor="let u of resumenUnidades; trackBy: trackByUnidad"
-           class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl p-4 space-y-3 hover:shadow-md transition-shadow">
-
-        <!-- Header tarjeta -->
-        <div class="flex items-start justify-between gap-2">
-          <div class="flex-1 min-w-0">
-            <p class="text-xs font-mono text-orange-600 dark:text-orange-400 font-bold truncate">
-              {{ u.codigo_unidad }}
-            </p>
-            <p class="text-sm font-bold text-gray-900 dark:text-white truncate mt-0.5" [title]="u.nombre_unidad">
-              {{ u.nombre_unidad }}
-            </p>
-          </div>
-          <span class="text-xs px-2 py-0.5 rounded-full font-bold shrink-0" [ngClass]="colorEstado(u.estado_unidad)">
-            {{ u.estado_unidad }}
-          </span>
-        </div>
-
-        <!-- Barra de avance -->
-        <div>
-          <div class="flex justify-between items-center mb-1">
-            <span class="text-xs text-gray-500">Avance</span>
-            <span class="text-sm font-black" 
-                  [class.text-green-600]="u.ultimo_avance >= 100"
-                  [class.text-amber-600]="u.ultimo_avance >= 60 && u.ultimo_avance < 100"
-                  [class.text-orange-600]="u.ultimo_avance > 0 && u.ultimo_avance < 60"
-                  [class.text-gray-400]="u.ultimo_avance === 0">
-              {{ u.ultimo_avance | number:'1.0-1' }}%
-            </span>
-          </div>
-          <div class="w-full bg-gray-100 dark:bg-slate-800 rounded-full h-2">
-            <div class="h-2 rounded-full transition-all"
-                 [class]="colorBarra(u.ultimo_avance)"
-                 [style.width.%]="u.ultimo_avance">
-            </div>
-          </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="flex items-center justify-between text-xs text-gray-400">
-          <span>{{ u.tipo_unidad }}</span>
-          <span *ngIf="u.fecha_ultimo">{{ u.fecha_ultimo | date:'dd/MM/yyyy' }}</span>
-          <span *ngIf="!u.fecha_ultimo">Sin registros</span>
+    <!-- KPI 1: Avance Global de la Obra -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200/80 dark:border-slate-800 shadow-xs relative overflow-hidden group">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Avance Global</span>
+        <div class="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center text-sm font-black">
+          %
         </div>
       </div>
-    </div>
-  </div>
-
-  <!-- ── VISTA: HISTORIAL DE AVANCES ─────────────────────────────────── -->
-  <div *ngIf="vistaActiva === 'historial'" class="space-y-4">
-
-    <!-- Filtro por unidad -->
-    <div class="flex items-center gap-3 flex-wrap">
-      <label class="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
-        Filtrar por unidad:
-      </label>
-      <select id="filtro-unidad-avance"
-              [(ngModel)]="filtroUnidad"
-              (change)="onFiltroUnidadChange()"
-              class="form-select text-sm py-1.5 px-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white">
-        <option [ngValue]="null">Todas las unidades</option>
-        <option *ngFor="let u of unidades" [ngValue]="u.id_unidad">
-          {{ u.codigo }} – {{ u.nombre }}
-        </option>
-      </select>
-    </div>
-
-    <!-- Loading -->
-    <div *ngIf="cargando" class="flex justify-center py-8">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
-    </div>
-
-    <!-- Sin avances -->
-    <div *ngIf="!cargando && avancesFiltrados.length === 0"
-         class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-8 text-center">
-      <div class="text-4xl mb-3">📜</div>
-      <p class="text-gray-500 dark:text-gray-400 text-sm">No hay avances registrados aún.</p>
-      <p *ngIf="puedeRegistrar" class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-        Utiliza el botón "Registrar Avance" para comenzar el seguimiento.
-      </p>
-    </div>
-
-    <!-- Tabla de avances -->
-    <div *ngIf="!cargando && avancesFiltrados.length > 0"
-         class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="bg-gray-50 dark:bg-slate-800/60 border-b border-gray-200 dark:border-slate-700">
-              <th class="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Unidad</th>
-              <th class="text-center px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Avance</th>
-              <th class="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha</th>
-              <th class="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">Observación</th>
-              <th class="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">Registrado por</th>
-              <th *ngIf="puedeRegistrar" class="text-center px-4 py-3"></th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100 dark:divide-slate-800">
-            <tr *ngFor="let a of avancesFiltrados; trackBy: trackByAvance"
-                class="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
-
-              <!-- Unidad -->
-              <td class="px-4 py-3">
-                <div class="text-xs font-mono text-orange-600 dark:text-orange-400">{{ a.codigo_unidad }}</div>
-                <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ a.nombre_unidad }}</div>
-                <span class="text-xs px-1.5 py-0.5 rounded-full font-bold" [ngClass]="colorEstado(a.estado_unidad)">
-                  {{ a.estado_unidad }}
-                </span>
-              </td>
-
-              <!-- Porcentaje -->
-              <td class="px-4 py-3 text-center">
-                <div class="flex flex-col items-center gap-1">
-                  <span class="text-lg font-black"
-                        [class.text-green-600]="a.porcentaje_avance >= 100"
-                        [class.text-amber-600]="a.porcentaje_avance >= 60 && a.porcentaje_avance < 100"
-                        [class.text-orange-600]="a.porcentaje_avance > 0 && a.porcentaje_avance < 60"
-                        [class.text-gray-400]="a.porcentaje_avance === 0">
-                    {{ a.porcentaje_avance | number:'1.0-1' }}%
-                  </span>
-                  <div class="w-16 bg-gray-100 dark:bg-slate-800 rounded-full h-1.5">
-                    <div class="h-1.5 rounded-full" [class]="colorBarra(a.porcentaje_avance)"
-                         [style.width.%]="a.porcentaje_avance"></div>
-                  </div>
-                </div>
-              </td>
-
-              <!-- Fecha -->
-              <td class="px-4 py-3">
-                <span class="text-sm text-gray-700 dark:text-gray-300">
-                  {{ a.fecha_registro | date:'dd/MM/yyyy' }}
-                </span>
-              </td>
-
-              <!-- Observación -->
-              <td class="px-4 py-3 hidden md:table-cell">
-                <span class="text-sm text-gray-500 dark:text-gray-400 italic">
-                  {{ a.observacion || '—' }}
-                </span>
-              </td>
-
-              <!-- Usuario -->
-              <td class="px-4 py-3 hidden lg:table-cell">
-                <span class="text-xs text-gray-500 dark:text-gray-400">{{ a.usuario_nombre }}</span>
-              </td>
-
-              <!-- Acciones -->
-              <td *ngIf="puedeRegistrar" class="px-4 py-3 text-center">
-                <button (click)="eliminarAvance(a.id_avance)"
-                        title="Eliminar avance"
-                        class="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                  </svg>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Footer de tabla -->
-      <div class="px-4 py-3 bg-gray-50 dark:bg-slate-800/60 border-t border-gray-200 dark:border-slate-700">
-        <span class="text-xs text-gray-500 dark:text-gray-400">
-          {{ avancesFiltrados.length }} registro{{ avancesFiltrados.length !== 1 ? 's' : '' }} encontrado{{ avancesFiltrados.length !== 1 ? 's' : '' }}
+      <div class="mt-3 flex items-baseline gap-2">
+        <span class="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+          {{ porcentajeAvance | number:'1.1-2' }}%
+        </span>
+        <span class="text-xs font-semibold"
+              [ngClass]="porcentajeAvance === 100 ? 'text-emerald-600' : (porcentajeAvance > 0 ? 'text-amber-600' : 'text-gray-400')">
+          {{ porcentajeAvance === 100 ? 'Completado' : (porcentajeAvance > 0 ? 'En Progreso' : 'Sin Iniciar') }}
         </span>
       </div>
+      <!-- Barra de progreso -->
+      <div class="mt-3 w-full bg-gray-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+        <div class="h-full rounded-full transition-all duration-700 ease-out"
+             [ngClass]="porcentajeAvance === 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-orange-500 to-amber-500'"
+             [style.width.%]="porcentajeAvance"></div>
+      </div>
+    </div>
+
+    <!-- KPI 2: Total de Órdenes -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200/80 dark:border-slate-800 shadow-xs">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Órdenes</span>
+        <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+          </svg>
+        </div>
+      </div>
+      <div class="mt-3 flex items-baseline gap-2">
+        <span class="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+          {{ totalOrdenes }}
+        </span>
+        <span class="text-xs text-gray-500 dark:text-gray-400">programadas</span>
+      </div>
+      <p class="text-[11px] text-gray-400 mt-2">100% de la carga de trabajo</p>
+    </div>
+
+    <!-- KPI 3: Órdenes Cumplidas -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-200/60 dark:border-emerald-900/40 shadow-xs bg-gradient-to-br from-white via-white to-emerald-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-emerald-950/20">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Cumplidas</span>
+        <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+        </div>
+      </div>
+      <div class="mt-3 flex items-baseline gap-2">
+        <span class="text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
+          {{ ordenesCumplidas }}
+        </span>
+        <span class="text-xs text-emerald-600/80 dark:text-emerald-400/80 font-medium">de {{ totalOrdenes }}</span>
+      </div>
+      <p class="text-[11px] text-emerald-600 dark:text-emerald-400/80 mt-2 font-medium">
+        Sumando {{ porcentajeAvance }}% de avance ejecutado
+      </p>
+    </div>
+
+    <!-- KPI 4: Faltantes por Cumplir -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-amber-900/40 shadow-xs bg-gradient-to-br from-white via-white to-amber-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/20">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Faltan por Cumplir</span>
+        <div class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+      </div>
+      <div class="mt-3 flex items-baseline gap-2">
+        <span class="text-3xl font-black text-amber-600 dark:text-amber-400 tracking-tight">
+          {{ ordenesPendientes }}
+        </span>
+        <span class="text-xs text-amber-600/80 dark:text-amber-400/80 font-medium">pendientes</span>
+      </div>
+      <p class="text-[11px] text-amber-600 dark:text-amber-400/80 mt-2 font-medium">
+        Resta un {{ (100 - porcentajeAvance) | number:'1.1-2' }}% para la finalización
+      </p>
+    </div>
+
+  </div>
+
+  <!-- DESGLOSE POR CUADRILLAS (UNIDADES OPERATIVAS) -->
+  <div *ngIf="cuadrillas.length > 0" class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200/80 dark:border-slate-800 shadow-xs">
+    <div class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+      <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+      </svg>
+      Unidades de Trabajo / Cuadrillas Involucradas
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div *ngFor="let c of cuadrillas" 
+           (click)="filtroCuadrilla = (filtroCuadrilla === c.cuadrilla ? null : c.cuadrilla); aplicarFiltros()"
+           class="p-3.5 rounded-xl border transition-all cursor-pointer text-left"
+           [ngClass]="filtroCuadrilla === c.cuadrilla 
+              ? 'border-orange-500 bg-orange-50/50 dark:bg-orange-950/30 shadow-xs' 
+              : 'border-gray-200 dark:border-slate-800 hover:border-orange-300 dark:hover:border-slate-700 bg-gray-50/50 dark:bg-slate-800/40'">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-xs font-black text-gray-900 dark:text-white">
+            Cuadrilla {{ c.cuadrilla }}
+          </span>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                [ngClass]="c.cumplidas === c.total_ordenes 
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-400' 
+                    : 'bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-400'">
+            {{ c.cumplidas }}/{{ c.total_ordenes }} cumplidas
+          </span>
+        </div>
+        <div class="w-full bg-gray-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden mt-2">
+          <div class="h-full bg-orange-500 rounded-full" [style.width.%]="(c.cumplidas / c.total_ordenes) * 100"></div>
+        </div>
+      </div>
     </div>
   </div>
 
-</div>
-
-<!-- ── MODAL: FORMULARIO DE NUEVO AVANCE ──────────────────────────────── -->
-<div *ngIf="mostrarFormulario"
-     class="fixed inset-0 z-50 flex items-center justify-center p-4"
-     style="background: rgba(0,0,0,0.5);">
-  <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg border border-gray-200 dark:border-slate-700"
-       (click)="$event.stopPropagation()">
-
-    <!-- Header modal -->
-    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-800">
-      <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
-        <span class="text-lg">📊</span>
-        Registrar Avance de Obra
-      </h3>
-      <button (click)="cerrarFormulario()" id="btn-cerrar-avance-form"
-              class="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </button>
-    </div>
-
-    <!-- Body modal -->
-    <form (ngSubmit)="guardarAvance()" class="px-6 py-5 space-y-5" id="form-avance-obra">
-
-      <!-- Unidad de construcción -->
-      <div>
-        <label class="block text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
-          Unidad de Construcción <span class="text-red-500">*</span>
-        </label>
-        <select id="avance-id-unidad"
-                [(ngModel)]="nuevoAvance.id_unidad"
-                name="id_unidad"
-                class="w-full form-select text-sm rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white px-3 py-2.5"
-                [class.border-red-400]="erroresForm['id_unidad']">
-          <option [ngValue]="0" disabled>Seleccione una unidad...</option>
-          <option *ngFor="let u of unidades" [ngValue]="u.id_unidad">
-            {{ u.codigo }} – {{ u.nombre }} ({{ u.tipo_unidad }})
-          </option>
-        </select>
-        <p *ngIf="erroresForm['id_unidad']" class="mt-1 text-xs text-red-500">{{ erroresForm['id_unidad'] }}</p>
-        <p *ngIf="unidades.length === 0" class="mt-1 text-xs text-amber-600">
-          No hay unidades de construcción. Créalas primero en la pestaña Estructura.
-        </p>
+  <!-- BITÁCORA: PESTAÑAS Y FILTROS -->
+  <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200/80 dark:border-slate-800 shadow-xs">
+    
+    <!-- Header de la sección -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-gray-100 dark:border-slate-800">
+      
+      <!-- Pestañas de estado -->
+      <div class="flex items-center gap-1.5 p-1 rounded-xl bg-gray-100/80 dark:bg-slate-800/80 self-start">
+        <button (click)="cambiarTab('todas')" 
+                class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
+                [ngClass]="vistaTab === 'todas' 
+                  ? 'bg-white dark:bg-slate-900 text-gray-900 dark:text-white shadow-xs' 
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'">
+          <span>Todas</span>
+          <span class="text-[10px] px-1.5 py-0.2 rounded-full bg-gray-200 dark:bg-slate-700">{{ totalOrdenes }}</span>
+        </button>
+        <button (click)="cambiarTab('cumplidas')" 
+                class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
+                [ngClass]="vistaTab === 'cumplidas' 
+                  ? 'bg-emerald-600 text-white shadow-xs' 
+                  : 'text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400'">
+          <span>Cumplidas (Avance)</span>
+          <span class="text-[10px] px-1.5 py-0.2 rounded-full"
+                [ngClass]="vistaTab === 'cumplidas' ? 'bg-emerald-700 text-white' : 'bg-gray-200 dark:bg-slate-700'">
+            {{ ordenesCumplidas }}
+          </span>
+        </button>
+        <button (click)="cambiarTab('pendientes')" 
+                class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
+                [ngClass]="vistaTab === 'pendientes' 
+                  ? 'bg-amber-600 text-white shadow-xs' 
+                  : 'text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400'">
+          <span>Faltan por Cumplir</span>
+          <span class="text-[10px] px-1.5 py-0.2 rounded-full"
+                [ngClass]="vistaTab === 'pendientes' ? 'bg-amber-700 text-white' : 'bg-gray-200 dark:bg-slate-700'">
+            {{ ordenesPendientes }}
+          </span>
+        </button>
       </div>
 
-      <!-- Porcentaje de avance -->
-      <div>
-        <label class="block text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
-          Porcentaje de Avance (%) <span class="text-red-500">*</span>
-        </label>
-        <div class="space-y-2">
-          <div class="flex items-center gap-3">
-            <input id="avance-porcentaje"
-                   type="range"
-                   min="0" max="100" step="1"
-                   [(ngModel)]="nuevoAvance.porcentaje_avance"
-                   name="porcentaje_avance"
-                   class="flex-1 accent-orange-600"
-                   [class.border-red-400]="erroresForm['porcentaje_avance']">
-            <input id="avance-porcentaje-num"
-                   type="number"
-                   min="0" max="100" step="0.1"
-                   [(ngModel)]="nuevoAvance.porcentaje_avance"
-                   name="porcentaje_avance_num"
-                   class="w-20 text-center text-sm font-bold border border-gray-200 dark:border-slate-700 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
-                   [class.border-red-400]="erroresForm['porcentaje_avance']">
-            <span class="text-sm font-bold text-gray-600 dark:text-gray-400">%</span>
+      <!-- Buscador y filtro -->
+      <div class="flex items-center gap-2.5">
+        <div class="relative w-full sm:w-64">
+          <input [(ngModel)]="busquedaTexto" 
+                 (input)="aplicarFiltros()"
+                 type="text" 
+                 placeholder="Buscar orden, trabajo, personal..." 
+                 class="w-full text-xs pl-8 pr-3 py-2 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white focus:outline-none focus:border-orange-500">
+          <svg class="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+        </div>
+
+        <button *ngIf="filtroCuadrilla !== null || busquedaTexto || vistaTab !== 'todas'"
+                (click)="limpiarFiltros()"
+                class="px-3 py-2 rounded-xl text-xs font-bold text-gray-500 hover:text-red-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors shrink-0">
+          Limpiar
+        </button>
+
+        <button (click)="recargar()" 
+                title="Actualizar datos" 
+                class="p-2 rounded-xl text-gray-500 hover:text-orange-600 dark:text-gray-400 dark:hover:text-orange-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors shrink-0 border border-gray-200/80 dark:border-slate-700">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Spinner cargando -->
+    <div *ngIf="cargando" class="flex justify-center items-center py-16">
+      <div class="animate-spin rounded-full h-9 w-9 border-b-2 border-orange-500"></div>
+    </div>
+
+    <!-- Lista vacía -->
+    <div *ngIf="!cargando && ordenesFiltradas.length === 0" class="text-center py-16 text-gray-400 dark:text-gray-500">
+      <div class="text-4xl mb-3">📋</div>
+      <p class="text-sm font-bold text-gray-700 dark:text-gray-300">No se encontraron órdenes de trabajo</p>
+      <p class="text-xs text-gray-500 mt-1 max-w-md mx-auto">
+        {{ totalOrdenes === 0 
+            ? 'Esta obra aún no tiene órdenes de trabajo programadas. Para que registre avance físico, genere órdenes en el módulo correspondiente.'
+            : 'No hay órdenes que coincidan con los filtros seleccionados.' }}
+      </p>
+    </div>
+
+    <!-- TABLA / LISTA DE ÓRDENES DE TRABAJO (BITÁCORA) -->
+    <div *ngIf="!cargando && ordenesFiltradas.length > 0" class="divide-y divide-gray-100 dark:divide-slate-800 mt-2">
+      <div *ngFor="let o of ordenesFiltradas" 
+           class="py-4 hover:bg-gray-50/60 dark:hover:bg-slate-800/40 rounded-xl px-3 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4">
+
+        <!-- Columna Izquierda: Nro, Tipo de Trabajo, Cuadrilla, Fechas -->
+        <div class="flex items-start gap-3.5 flex-1 min-w-0">
+          <div class="p-2.5 rounded-xl text-xs font-black shrink-0 mt-0.5"
+               [ngClass]="o.es_cumplida 
+                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-400' 
+                  : 'bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-400'">
+            #OT-{{ o.orden_nro }}
           </div>
-          <!-- Preview barra -->
-          <div class="w-full bg-gray-100 dark:bg-slate-800 rounded-full h-2">
-            <div class="h-2 rounded-full transition-all"
-                 [class]="colorBarra(nuevoAvance.porcentaje_avance || 0)"
-                 [style.width.%]="nuevoAvance.porcentaje_avance || 0">
+
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h4 class="text-sm font-bold text-gray-900 dark:text-white truncate">
+                {{ o.tipo_trab || 'Trabajo general' }}
+              </h4>
+              <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full"
+                    [ngClass]="o.es_cumplida 
+                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' 
+                        : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'">
+                {{ o.es_cumplida ? 'Cumplida (Sumó al avance)' : 'Pendiente por cumplir' }}
+              </span>
+              <span *ngIf="o.cuadrilla" class="text-[11px] font-semibold text-gray-500 dark:text-gray-400">
+                · Cuadrilla {{ o.cuadrilla }}
+              </span>
+            </div>
+
+            <!-- Observación / Detalle -->
+            <p *ngIf="o.observacion" class="text-xs text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">
+              {{ o.observacion }}
+            </p>
+
+            <!-- Personal asignado / Cuadrilla -->
+            <div *ngIf="o.responsables && o.responsables.length > 0" class="flex items-center gap-1.5 mt-2 flex-wrap">
+              <span class="text-[10px] font-bold text-gray-400 uppercase">Personal:</span>
+              <span *ngFor="let r of o.responsables" 
+                    class="text-[11px] px-2 py-0.5 rounded-md bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300">
+                👤 {{ r.nombre_completo }}
+              </span>
             </div>
           </div>
         </div>
-        <p *ngIf="erroresForm['porcentaje_avance']" class="mt-1 text-xs text-red-500">{{ erroresForm['porcentaje_avance'] }}</p>
-      </div>
 
-      <!-- Fecha de registro -->
-      <div>
-        <label class="block text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
-          Fecha de Registro <span class="text-red-500">*</span>
-        </label>
-        <input id="avance-fecha"
-               type="date"
-               [(ngModel)]="nuevoAvance.fecha_registro"
-               name="fecha_registro"
-               class="w-full text-sm border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
-               [class.border-red-400]="erroresForm['fecha_registro']">
-        <p *ngIf="erroresForm['fecha_registro']" class="mt-1 text-xs text-red-500">{{ erroresForm['fecha_registro'] }}</p>
-      </div>
+        <!-- Columna Derecha: Fechas y Aporte al Avance -->
+        <div class="flex sm:flex-col items-end justify-between sm:justify-center gap-1 shrink-0 text-right">
+          <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            <span>
+              {{ o.fecha_inicio ? (o.fecha_inicio | date:'dd/MM/yyyy') : 'Sin fecha inicio' }}
+              <span *ngIf="o.fecha_fin"> → {{ o.fecha_fin | date:'dd/MM/yyyy' }}</span>
+            </span>
+          </div>
 
-      <!-- Observaciones -->
-      <div>
-        <label class="block text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
-          Observaciones
-        </label>
-        <textarea id="avance-observacion"
-                  [(ngModel)]="nuevoAvance.observacion"
-                  name="observacion"
-                  rows="3"
-                  placeholder="Descripción del avance, trabajo realizado, observaciones..."
-                  class="w-full text-sm border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 bg-white dark:bg-slate-800 text-gray-900 dark:text-white resize-none">
-        </textarea>
-      </div>
+          <div class="text-xs font-bold"
+               [ngClass]="o.es_cumplida ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400'">
+            {{ o.es_cumplida ? 'Aporte: +' + o.peso_porcentual + '% al proyecto' : 'Aportará: +' + o.peso_porcentual + '%' }}
+          </div>
+        </div>
 
-      <!-- Pie del modal -->
-      <div class="flex gap-3 pt-2">
-        <button type="button"
-                (click)="cerrarFormulario()"
-                [disabled]="procesando"
-                class="flex-1 px-4 py-2.5 text-sm font-bold border border-gray-200 dark:border-slate-700 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50">
-          Cancelar
-        </button>
-        <button type="submit"
-                id="btn-guardar-avance"
-                [disabled]="procesando || unidades.length === 0"
-                class="flex-1 px-4 py-2.5 text-sm font-bold bg-orange-600 hover:bg-orange-700 text-white rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-          <div *ngIf="procesando" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-          {{ procesando ? 'Guardando...' : 'Guardar Avance' }}
-        </button>
       </div>
-    </form>
+    </div>
+
   </div>
+
 </div>
