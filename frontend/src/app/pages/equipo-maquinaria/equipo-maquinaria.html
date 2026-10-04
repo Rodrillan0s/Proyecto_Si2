@@ -1,0 +1,797 @@
+<div class="equipos-page">
+
+  <!-- NOTIFICACIÓN -->
+  <div
+    class="toast"
+    *ngIf="mensajeAlerta"
+    [class.toast-success]="mensajeAlerta.tipo === 'success'"
+    [class.toast-error]="mensajeAlerta.tipo === 'error'"
+  >
+    <span class="toast-icon">
+      {{ mensajeAlerta.tipo === 'success' ? '✓' : '!' }}
+    </span>
+    <span>{{ mensajeAlerta.texto }}</span>
+  </div>
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <div>
+      <span class="eyebrow">EQUIPOS & MAQUINARIA</span>
+
+      <h1>Equipos y Maquinaria</h1>
+
+      <p>
+        Administra los equipos y maquinaria disponibles para las obras de tu empresa.
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <div class="empresa-badge" *ngIf="empresaActual">
+        <span class="empresa-dot"></span>
+        {{ empresaActual.nombre_empresa }}
+      </div>
+
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="abrirModalRegistrar()"
+      >
+        <span>+</span>
+        Registrar Equipo
+      </button>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button
+      type="button"
+      [class.active]="tabActiva === 'equipos'"
+      (click)="cambiarTab('equipos')"
+    >
+      Equipos y Maquinaria
+    </button>
+
+    <button
+      type="button"
+      [class.active]="tabActiva === 'asignaciones'"
+      (click)="cambiarTab('asignaciones')"
+    >
+      Asignaciones a Obras
+    </button>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+
+    <div class="kpi-card">
+      <div class="kpi-icon">⚙</div>
+      <div>
+        <span>Total equipos</span>
+        <strong>{{ totalEquipos }}</strong>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon">✓</div>
+      <div>
+        <span>Disponibles</span>
+        <strong>{{ equiposDisponibles }}</strong>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon">▣</div>
+      <div>
+        <span>Asignados</span>
+        <strong>{{ equiposAsignados }}</strong>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon">!</div>
+      <div>
+        <span>Mantenimiento / Fuera de servicio</span>
+        <strong>{{ equiposMantenimiento }}</strong>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- EQUIPOS -->
+  <section *ngIf="tabActiva === 'equipos'">
+
+    <div class="section-header">
+      <div>
+        <h2>Equipos registrados</h2>
+        <p>
+          Consulta y administra la maquinaria perteneciente a tu empresa.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="cargarEquipos()"
+      >
+        Actualizar
+      </button>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="filters-card">
+
+      <div class="filter-group search-group">
+        <label>Buscar</label>
+
+        <div class="search-box">
+          <span>⌕</span>
+
+          <input
+            type="text"
+            placeholder="Código, nombre, marca, modelo..."
+            [value]="filtroTexto"
+            (input)="onBuscarInput($event)"
+          />
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label>Tipo</label>
+
+        <select
+          [(ngModel)]="filtroTipo"
+          (ngModelChange)="cambiarFiltroTipo($event)"
+        >
+          <option value="">Todos los tipos</option>
+          <option value="MAQUINARIA">Maquinaria</option>
+          <option value="EQUIPO">Equipo</option>
+          <option value="VEHICULO">Vehículo</option>
+          <option value="HERRAMIENTA">Herramienta</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Estado</label>
+
+        <select
+          [(ngModel)]="filtroEstado"
+          (ngModelChange)="cambiarFiltroEstado($event)"
+        >
+          <option value="">Todos los estados</option>
+          <option value="DISPONIBLE">Disponible</option>
+          <option value="ASIGNADO">Asignado</option>
+          <option value="MANTENIMIENTO">Mantenimiento</option>
+          <option value="FUERA_SERVICIO">Fuera de servicio</option>
+        </select>
+      </div>
+
+    </div>
+
+    <!-- TABLA -->
+    <div class="table-card">
+
+      <div class="table-wrapper" *ngIf="!cargandoEquipos && equipos.length > 0">
+
+        <table>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Equipo</th>
+              <th>Tipo</th>
+              <th>Marca</th>
+              <th>Modelo</th>
+              <th>N° Serie</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let equipo of equipos">
+
+              <td>
+                <strong class="codigo">{{ equipo.codigo }}</strong>
+              </td>
+
+              <td>
+                <div class="item-main">
+                  <strong>{{ equipo.nombre }}</strong>
+
+                  <span *ngIf="equipo.descripcion">
+                    {{ equipo.descripcion }}
+                  </span>
+                </div>
+              </td>
+
+              <td>
+                {{ equipo.tipo || '—' }}
+              </td>
+
+              <td>
+                {{ equipo.marca || '—' }}
+              </td>
+
+              <td>
+                {{ equipo.modelo || '—' }}
+              </td>
+
+              <td>
+                {{ equipo.numero_serie || '—' }}
+              </td>
+
+              <td>
+                <span
+                  class="badge"
+                  [ngClass]="badgeClase(equipo.estado)"
+                >
+                  {{ formatoEstado(equipo.estado) }}
+                </span>
+              </td>
+
+              <td>
+                <div class="actions">
+
+                  <button
+                    type="button"
+                    class="action-btn"
+                    title="Editar"
+                    (click)="abrirModalEditar(equipo)"
+                  >
+                    Editar
+                  </button>
+
+                  <button
+                    type="button"
+                    class="action-btn"
+                    *ngIf="equipo.estado === 'DISPONIBLE'"
+                    title="Asignar a obra"
+                    (click)="abrirModalAsignacion(equipo)"
+                  >
+                    Asignar
+                  </button>
+
+                  <select
+                    class="state-select"
+                    [ngModel]="equipo.estado"
+                    (ngModelChange)="cambiarEstadoEquipo(equipo, $event)"
+                  >
+                    <option value="DISPONIBLE">Disponible</option>
+                    <option value="MANTENIMIENTO">Mantenimiento</option>
+                    <option value="FUERA_SERVICIO">Fuera de servicio</option>
+                  </select>
+
+                </div>
+              </td>
+
+            </tr>
+          </tbody>
+        </table>
+
+      </div>
+
+      <!-- LOADING -->
+      <div class="state-container" *ngIf="cargandoEquipos">
+        <div class="loader"></div>
+        <p>Cargando equipos y maquinaria...</p>
+      </div>
+
+      <!-- EMPTY -->
+      <div
+        class="state-container empty-state"
+        *ngIf="!cargandoEquipos && equipos.length === 0"
+      >
+        <div class="empty-icon">⚙</div>
+
+        <h3>No hay equipos registrados</h3>
+
+        <p>
+          Registra tu primer equipo o maquinaria para comenzar.
+        </p>
+
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="abrirModalRegistrar()"
+        >
+          Registrar Equipo
+        </button>
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- ASIGNACIONES -->
+  <section *ngIf="tabActiva === 'asignaciones'">
+
+    <div class="section-header">
+      <div>
+        <h2>Asignaciones a obras</h2>
+        <p>
+          Consulta los equipos asignados actualmente y su historial de retiro.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="cargarAsignaciones()"
+      >
+        Actualizar
+      </button>
+    </div>
+
+    <div class="filters-card">
+
+      <div class="filter-group">
+        <label>Estado de asignación</label>
+
+        <select
+          [(ngModel)]="filtroEstadoAsignacion"
+          (ngModelChange)="cambiarFiltroEstadoAsignacion($event)"
+        >
+          <option value="">Todos</option>
+          <option value="ASIGNADO">Asignado</option>
+          <option value="RETIRADO">Retirado</option>
+        </select>
+      </div>
+
+    </div>
+
+    <div class="table-card">
+
+      <div
+        class="table-wrapper"
+        *ngIf="!cargandoAsignaciones && asignaciones.length > 0"
+      >
+
+        <table>
+          <thead>
+            <tr>
+              <th>Equipo</th>
+              <th>Código</th>
+              <th>Obra</th>
+              <th>Fecha asignación</th>
+              <th>Fecha retiro</th>
+              <th>Estado</th>
+              <th>Observación</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let asignacion of asignaciones">
+
+              <td>
+                <strong>
+                  {{ asignacion.nombre_equipo || '—' }}
+                </strong>
+              </td>
+
+              <td>
+                <span class="codigo">
+                  {{ asignacion.codigo_equipo || '—' }}
+                </span>
+              </td>
+
+              <td>
+                <div class="item-main">
+                  <strong>
+                    {{ asignacion.nombre_obra || 'Obra #' + asignacion.id_obra }}
+                  </strong>
+
+                  <span *ngIf="asignacion.codigo_obra">
+                    {{ asignacion.codigo_obra }}
+                  </span>
+                </div>
+              </td>
+
+              <td>
+                {{ asignacion.fecha_asignacion | date:'dd/MM/yyyy' }}
+              </td>
+
+              <td>
+                {{
+                  asignacion.fecha_retiro
+                    ? (asignacion.fecha_retiro | date:'dd/MM/yyyy')
+                    : '—'
+                }}
+              </td>
+
+              <td>
+                <span
+                  class="badge"
+                  [ngClass]="badgeClase(asignacion.estado)"
+                >
+                  {{ formatoEstado(asignacion.estado) }}
+                </span>
+              </td>
+
+              <td>
+                {{ asignacion.observacion || '—' }}
+              </td>
+
+              <td>
+                <button
+                  type="button"
+                  class="action-btn danger"
+                  *ngIf="asignacion.estado === 'ASIGNADO'"
+                  (click)="abrirModalRetiro(asignacion)"
+                >
+                  Retirar
+                </button>
+              </td>
+
+            </tr>
+          </tbody>
+        </table>
+
+      </div>
+
+      <div class="state-container" *ngIf="cargandoAsignaciones">
+        <div class="loader"></div>
+        <p>Cargando asignaciones...</p>
+      </div>
+
+      <div
+        class="state-container empty-state"
+        *ngIf="!cargandoAsignaciones && asignaciones.length === 0"
+      >
+        <div class="empty-icon">▣</div>
+
+        <h3>No hay asignaciones</h3>
+
+        <p>
+          Los equipos asignados a obras aparecerán aquí.
+        </p>
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- MODAL EQUIPO -->
+  <div
+    class="modal-overlay"
+    *ngIf="modalEquipoAbierto"
+    (click)="cerrarModalEquipo()"
+  >
+    <div
+      class="modal"
+      (click)="$event.stopPropagation()"
+    >
+
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow">
+            {{ editandoEquipo ? 'EDITAR EQUIPO' : 'NUEVO EQUIPO' }}
+          </span>
+
+          <h2>
+            {{ editandoEquipo ? 'Editar equipo' : 'Registrar equipo' }}
+          </h2>
+        </div>
+
+        <button
+          type="button"
+          class="modal-close"
+          (click)="cerrarModalEquipo()"
+        >
+          ×
+        </button>
+      </div>
+
+      <form
+        class="modal-form"
+        (ngSubmit)="guardarEquipo()"
+      >
+
+        <div class="form-grid">
+
+          <div class="form-group">
+            <label>Código *</label>
+
+            <input
+              type="text"
+              name="codigo"
+              [(ngModel)]="formEquipo.codigo"
+              placeholder="EQ-001"
+              maxlength="50"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Nombre *</label>
+
+            <input
+              type="text"
+              name="nombre"
+              [(ngModel)]="formEquipo.nombre"
+              placeholder="Retroexcavadora"
+              maxlength="150"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Tipo</label>
+
+            <select
+              name="tipo"
+              [(ngModel)]="formEquipo.tipo"
+            >
+              <option value="">Seleccionar</option>
+              <option value="MAQUINARIA">Maquinaria</option>
+              <option value="EQUIPO">Equipo</option>
+              <option value="VEHICULO">Vehículo</option>
+              <option value="HERRAMIENTA">Herramienta</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Marca</label>
+
+            <input
+              type="text"
+              name="marca"
+              [(ngModel)]="formEquipo.marca"
+              placeholder="Caterpillar"
+              maxlength="100"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Modelo</label>
+
+            <input
+              type="text"
+              name="modelo"
+              [(ngModel)]="formEquipo.modelo"
+              placeholder="320D"
+              maxlength="100"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>N° de serie</label>
+
+            <input
+              type="text"
+              name="numero_serie"
+              [(ngModel)]="formEquipo.numero_serie"
+              placeholder="Número de serie"
+              maxlength="100"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Estado</label>
+
+            <select
+              name="estado"
+              [(ngModel)]="formEquipo.estado"
+            >
+              <option value="DISPONIBLE">Disponible</option>
+              <option value="MANTENIMIENTO">Mantenimiento</option>
+              <option value="FUERA_SERVICIO">Fuera de servicio</option>
+            </select>
+          </div>
+
+          <div class="form-group full">
+            <label>Descripción</label>
+
+            <textarea
+              name="descripcion"
+              [(ngModel)]="formEquipo.descripcion"
+              rows="3"
+              placeholder="Descripción del equipo..."
+            ></textarea>
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="cerrarModalEquipo()"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="guardandoEquipo"
+          >
+            {{ guardandoEquipo ? 'Guardando...' : (editandoEquipo ? 'Guardar cambios' : 'Registrar equipo') }}
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+  <!-- MODAL ASIGNACIÓN -->
+  <div
+    class="modal-overlay"
+    *ngIf="modalAsignacionAbierto"
+    (click)="cerrarModalAsignacion()"
+  >
+    <div
+      class="modal modal-small"
+      (click)="$event.stopPropagation()"
+    >
+
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow">ASIGNACIÓN</span>
+
+          <h2>Asignar equipo a obra</h2>
+        </div>
+
+        <button
+          type="button"
+          class="modal-close"
+          (click)="cerrarModalAsignacion()"
+        >
+          ×
+        </button>
+      </div>
+
+      <form
+        class="modal-form"
+        (ngSubmit)="guardarAsignacion()"
+      >
+
+        <div
+          class="selected-equipment"
+          *ngIf="equipoSeleccionado"
+        >
+          <span>Equipo seleccionado</span>
+
+          <strong>
+            {{ equipoSeleccionado.codigo }} —
+            {{ equipoSeleccionado.nombre }}
+          </strong>
+        </div>
+
+        <div class="form-group">
+          <label>ID de la obra *</label>
+
+          <input
+            type="number"
+            name="id_obra"
+            [(ngModel)]="formAsignacion.id_obra"
+            min="1"
+            placeholder="Ej. 1"
+          />
+
+          <small>
+            La obra será validada por el backend dentro de la empresa actual.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label>Observación</label>
+
+          <textarea
+            name="observacion"
+            [(ngModel)]="formAsignacion.observacion"
+            rows="4"
+            placeholder="Observaciones de la asignación..."
+          ></textarea>
+        </div>
+
+        <div class="modal-footer">
+
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="cerrarModalAsignacion()"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="guardandoAsignacion"
+          >
+            {{ guardandoAsignacion ? 'Asignando...' : 'Asignar equipo' }}
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+  <!-- MODAL RETIRO -->
+  <div
+    class="modal-overlay"
+    *ngIf="modalRetiroAbierto"
+    (click)="cerrarModalRetiro()"
+  >
+    <div
+      class="modal modal-small"
+      (click)="$event.stopPropagation()"
+    >
+
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow">RETIRO</span>
+
+          <h2>Retirar equipo de la obra</h2>
+        </div>
+
+        <button
+          type="button"
+          class="modal-close"
+          (click)="cerrarModalRetiro()"
+        >
+          ×
+        </button>
+      </div>
+
+      <div class="modal-form">
+
+        <div class="selected-equipment" *ngIf="asignacionSeleccionada">
+          <span>Asignación</span>
+
+          <strong>
+            {{ asignacionSeleccionada.codigo_equipo }}
+            — {{ asignacionSeleccionada.nombre_equipo }}
+          </strong>
+
+          <small>
+            Obra:
+            {{
+              asignacionSeleccionada.nombre_obra ||
+              ('Obra #' + asignacionSeleccionada.id_obra)
+            }}
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label>Observación</label>
+
+          <textarea
+            name="observacionRetiro"
+            [(ngModel)]="formRetiro.observacion"
+            rows="4"
+            placeholder="Motivo u observación del retiro..."
+          ></textarea>
+        </div>
+
+        <div class="modal-footer">
+
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="cerrarModalRetiro()"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-danger"
+            [disabled]="guardandoAsignacion"
+            (click)="retirarEquipo()"
+          >
+            {{ guardandoAsignacion ? 'Retirando...' : 'Retirar equipo' }}
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+</div>

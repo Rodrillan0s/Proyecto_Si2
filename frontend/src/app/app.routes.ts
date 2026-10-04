@@ -23,7 +23,7 @@ import { OrdenesTrabajoComponent } from './pages/ordenes-trabajo/ordenes-trabajo
 import { CrmComponent } from './pages/crm/crm';
 import { ApusComponent } from './pages/apus/apus';
 import { InventarioComponent } from './pages/inventario/inventario';
-
+import { EquipoMaquinariaComponent } from './pages/equipo-maquinaria/equipo-maquinaria';
 //LAYOUTS
 import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout';
 
@@ -146,6 +146,11 @@ export const routes: Routes = [
             { 
                 path: 'perfil', 
                 component: PerfilComponent 
+            },
+            {   path: 'equipos-maquinaria',
+                component: EquipoMaquinariaComponent,
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_materiales'] }
             }
         ]
     },
