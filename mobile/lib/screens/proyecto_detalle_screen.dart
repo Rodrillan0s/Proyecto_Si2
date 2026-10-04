@@ -1178,23 +1178,33 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: borderColor),
                     ),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF2E1C14) : const Color(0xFFFFF7ED),
-                          borderRadius: BorderRadius.circular(8),
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF2E1C14) : const Color(0xFFFFF7ED),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.door_sliding_rounded, color: AppTheme.primary, size: 20),
                         ),
-                        child: const Icon(Icons.door_sliding_rounded, color: AppTheme.primary, size: 20),
-                      ),
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(cod, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w800, color: titleColor)),
-                          ConstructionStatusBadge(status: est, compact: true),
-                        ],
-                      ),
+                        title: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                cod,
+                                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w800, color: titleColor),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            ConstructionStatusBadge(status: est, compact: true),
+                          ],
+                        ),
                       subtitle: Padding(
                         padding: const EdgeInsets.only(top: 4.0),
                         child: Row(
@@ -1216,8 +1226,9 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
                       trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8)),
                       onTap: () => _mostrarModalDetalleUnidad(u),
                     ),
-                  );
-                }),
+                  ),
+                );
+              }),
             ],
           );
         },

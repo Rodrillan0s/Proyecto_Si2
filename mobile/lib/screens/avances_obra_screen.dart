@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 
-import '../services/auth_provider.dart';
 import '../services/avance_service.dart';
-import '../services/unidad_service.dart';
 import '../theme/app_theme.dart';
 
-/// CU18 – Pantalla de Avances de Obra
-/// Permite registrar y consultar avances de las unidades de construcción.
+/// CU18 – Pantalla de Avances de Obra (Bitácora de Órdenes de Trabajo)
+/// El avance físico no es editable directamente; se calcula en base al
+/// cumplimiento de las órdenes de trabajo programadas para la obra.
 class AvancesObraScreen extends StatefulWidget {
   final int idObra;
   final String nombreObra;
@@ -28,550 +26,339 @@ class AvancesObraScreen extends StatefulWidget {
 class _AvancesObraScreenState extends State<AvancesObraScreen>
     with SingleTickerProviderStateMixin {
   final AvanceService _avanceService = AvanceService();
-  final UnidadService _unidadService = UnidadService();
-  late TabController _tabController;
 
-  late Future<Map<String, dynamic>> _futureResumen;
-  late Future<List<Map<String, dynamic>>> _futureHistorial;
-  late Future<List<Map<String, dynamic>>> _futureUnidades;
+  late TabController _tabController;
+  final TextEditingController _searchCtrl = TextEditingController();
+
+  bool _cargando = true;
+  String? _error;
+
+  // Datos
+  List<Map<String, dynamic>> _todasLasOrdenes = [];
+  List<Map<String, dynamic>> _ordenesFiltradas = [];
+
+  double _porcentajeAvance = 0.0;
+  int _totalOrdenes = 0;
+  int _ordenesCumplidas = 0;
+  int _ordenesPendientes = 0;
+  List<dynamic> _cuadrillas = [];
+  int? _cuadrillaSeleccionada;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _recargar();
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        _aplicarFiltros();
+      }
+    });
+    _cargarDatos();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _searchCtrl.dispose();
     super.dispose();
   }
 
-  void _recargar() {
+  Future<void> _cargarDatos() async {
     setState(() {
-      _futureResumen = _avanceService.resumenAvances(widget.idObra);
-      _futureHistorial = _avanceService.listarAvances(widget.idObra);
-      _futureUnidades = _unidadService.listarUnidades(widget.idObra);
+      _cargando = true;
+      _error = null;
+    });
+
+    try {
+      final res = await _avanceService.resumenAvances(widget.idObra);
+      final list = await _avanceService.listarAvances(widget.idObra);
+
+      if (mounted) {
+        setState(() {
+          _porcentajeAvance =
+              double.tryParse((res['porcentaje_avance'] ?? 0).toString()) ??
+                  0.0;
+          _totalOrdenes = (res['total_ordenes'] as num?)?.toInt() ?? 0;
+          _ordenesCumplidas = (res['ordenes_cumplidas'] as num?)?.toInt() ?? 0;
+          _ordenesPendientes =
+              (res['ordenes_pendientes'] as num?)?.toInt() ?? 0;
+          _cuadrillas = (res['cuadrillas'] as List?) ?? [];
+
+          _todasLasOrdenes = list;
+          _aplicarFiltros();
+          _cargando = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString().replaceFirst('Exception: ', '');
+          _cargando = false;
+        });
+      }
+    }
+  }
+
+  void _aplicarFiltros() {
+    List<Map<String, dynamic>> filtradas = List.from(_todasLasOrdenes);
+
+    // Filtro según tab: 0 = Todas, 1 = Cumplidas, 2 = Faltantes por cumplir
+    if (_tabController.index == 1) {
+      filtradas = filtradas.where((o) => o['es_cumplida'] == true).toList();
+    } else if (_tabController.index == 2) {
+      filtradas = filtradas.where((o) => o['es_cumplida'] != true).toList();
+    }
+
+    // Filtro por cuadrilla
+    if (_cuadrillaSeleccionada != null) {
+      filtradas = filtradas
+          .where((o) => o['cuadrilla'] == _cuadrillaSeleccionada)
+          .toList();
+    }
+
+    // Filtro por texto
+    final query = _searchCtrl.text.trim().toLowerCase();
+    if (query.isNotEmpty) {
+      filtradas = filtradas.where((o) {
+        final tipo = (o['tipo_trab'] ?? '').toString().toLowerCase();
+        final obs = (o['observacion'] ?? '').toString().toLowerCase();
+        final nro = (o['orden_nro'] ?? '').toString();
+        final respList = (o['responsables'] as List?) ?? [];
+        final respNombres = respList
+            .map((r) => (r['nombre_completo'] ?? '').toString().toLowerCase())
+            .join(' ');
+        return tipo.contains(query) ||
+            obs.contains(query) ||
+            nro.contains(query) ||
+            respNombres.contains(query);
+      }).toList();
+    }
+
+    setState(() {
+      _ordenesFiltradas = filtradas;
     });
   }
-
-  bool _puedeRegistrar() {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    return auth.hasPermission('Registrar_avances') ||
-        auth.esAdminGlobal ||
-        auth.esAdminEmpresa ||
-        auth.esJefeObra;
-  }
-
-  // ── Colors ────────────────────────────────────────────────────────────────
-
-  Color _colorPorcentaje(double pct, bool isDark) {
-    if (pct >= 100) return isDark ? const Color(0xFF34D399) : AppTheme.success;
-    if (pct >= 60) return isDark ? const Color(0xFFFBBF24) : AppTheme.warning;
-    if (pct > 0) return isDark ? const Color(0xFFFB923C) : AppTheme.primary;
-    return isDark ? const Color(0xFF94A3B8) : AppTheme.textMuted;
-  }
-
-  Color _colorEstado(String estado, bool isDark) {
-    switch (estado.toUpperCase()) {
-      case 'FINALIZADO':
-        return isDark ? const Color(0xFF34D399) : AppTheme.success;
-      case 'EN_CONSTRUCCION':
-        return isDark ? const Color(0xFFFBBF24) : AppTheme.warning;
-      case 'SUSPENDIDO':
-        return isDark ? const Color(0xFFF87171) : AppTheme.error;
-      default:
-        return isDark ? const Color(0xFF94A3B8) : AppTheme.textMuted;
-    }
-  }
-
-  // ── Modal de registro de avance ────────────────────────────────────────────
-
-  void _mostrarModalRegistro(List<Map<String, dynamic>> unidades) {
-    if (unidades.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('No hay unidades de construcción en este proyecto.'),
-      ));
-      return;
-    }
-
-    int? idUnidadSel = unidades.first['id_unidad'] as int?;
-    double porcentaje = 0;
-    DateTime fechaSel = DateTime.now();
-    final obsCtrl = TextEditingController();
-    bool guardando = false;
-    final formKey = GlobalKey<FormState>();
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setModal) {
-          final isDark = Theme.of(context).brightness == Brightness.dark;
-          final sheetBg = isDark ? AppTheme.darkSurface : Colors.white;
-
-          return Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
-            ),
-            child: Container(
-              decoration: BoxDecoration(
-                color: sheetBg,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                border: Border.all(
-                  color: isDark ? AppTheme.darkBorder : AppTheme.border,
-                ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Handle
-                  Container(
-                    margin: const EdgeInsets.only(top: 12),
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: isDark ? AppTheme.darkBorder : AppTheme.border,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                    child: Form(
-                      key: formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Título
-                          Row(
-                            children: [
-                              const Icon(Icons.trending_up_rounded,
-                                  color: AppTheme.primary, size: 22),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Registrar Avance',
-                                style: GoogleFonts.inter(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w800,
-                                  color: isDark
-                                      ? AppTheme.darkTextPrimary
-                                      : AppTheme.textPrimary,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-
-                          // Dropdown de unidad
-                          Text('Unidad de Construcción *',
-                              style: GoogleFonts.inter(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w700,
-                                color: AppTheme.textSecondary,
-                              )),
-                          const SizedBox(height: 6),
-                          DropdownButtonFormField<int>(
-                            initialValue: idUnidadSel,
-                            isExpanded: true,
-                            decoration: const InputDecoration(),
-                            validator: (v) =>
-                                v == null ? 'Seleccione una unidad.' : null,
-                            items: unidades
-                                .map((u) => DropdownMenuItem<int>(
-                                      value: u['id_unidad'] as int,
-                                      child: Text(
-                                        '${u['codigo'] ?? ''} – ${u['nombre'] ?? ''}',
-                                        overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.inter(fontSize: 13),
-                                      ),
-                                    ))
-                                .toList(),
-                            onChanged: (v) =>
-                                setModal(() => idUnidadSel = v),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Porcentaje slider
-                          Row(
-                            children: [
-                              Text('Porcentaje de Avance *',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppTheme.textSecondary,
-                                  )),
-                              const Spacer(),
-                              Text(
-                                '${porcentaje.round()}%',
-                                style: GoogleFonts.inter(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
-                                  color: _colorPorcentaje(porcentaje, isDark),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          SliderTheme(
-                            data: SliderThemeData(
-                              activeTrackColor: AppTheme.primary,
-                              inactiveTrackColor: isDark
-                                  ? AppTheme.darkBorder
-                                  : AppTheme.border,
-                              thumbColor: AppTheme.primary,
-                              overlayColor:
-                                  AppTheme.primary.withValues(alpha: 0.12),
-                            ),
-                            child: Slider(
-                              value: porcentaje,
-                              min: 0,
-                              max: 100,
-                              divisions: 100,
-                              onChanged: (v) =>
-                                  setModal(() => porcentaje = v),
-                            ),
-                          ),
-                          // Barra de preview
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: porcentaje / 100,
-                              minHeight: 6,
-                              backgroundColor:
-                                  isDark ? AppTheme.darkBorder : AppTheme.border,
-                              valueColor: AlwaysStoppedAnimation(
-                                  _colorPorcentaje(porcentaje, isDark)),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Fecha
-                          Text('Fecha de Registro *',
-                              style: GoogleFonts.inter(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w700,
-                                color: AppTheme.textSecondary,
-                              )),
-                          const SizedBox(height: 6),
-                          InkWell(
-                            onTap: () async {
-                              final picked = await showDatePicker(
-                                context: context,
-                                initialDate: fechaSel,
-                                firstDate: DateTime(2020),
-                                lastDate: DateTime.now().add(
-                                    const Duration(days: 1)),
-                              );
-                              if (picked != null) {
-                                setModal(() => fechaSel = picked);
-                              }
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 14),
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                    color: isDark
-                                        ? AppTheme.darkBorder
-                                        : AppTheme.border),
-                                borderRadius: BorderRadius.circular(12),
-                                color: isDark
-                                    ? AppTheme.darkBackground
-                                    : Colors.white,
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.calendar_today_rounded,
-                                      size: 16, color: AppTheme.primary),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    '${fechaSel.day.toString().padLeft(2, '0')}/${fechaSel.month.toString().padLeft(2, '0')}/${fechaSel.year}',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 13.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark
-                                          ? AppTheme.darkTextPrimary
-                                          : AppTheme.textPrimary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Observaciones
-                          Text('Observaciones',
-                              style: GoogleFonts.inter(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w700,
-                                color: AppTheme.textSecondary,
-                              )),
-                          const SizedBox(height: 6),
-                          TextFormField(
-                            controller: obsCtrl,
-                            maxLines: 3,
-                            decoration: const InputDecoration(
-                              hintText:
-                                  'Descripción del trabajo realizado, observaciones...',
-                            ),
-                            style: GoogleFonts.inter(fontSize: 13.5),
-                          ),
-                          const SizedBox(height: 24),
-
-                          // Botones
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: guardando
-                                      ? null
-                                      : () => Navigator.pop(context),
-                                  child: const Text('Cancelar'),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: ElevatedButton(
-                                  onPressed: guardando
-                                      ? null
-                                      : () async {
-                                          if (!formKey.currentState!.validate()) {
-                                            return;
-                                          }
-                                          final scaffoldMessenger =
-                                              ScaffoldMessenger.of(context);
-                                          setModal(() => guardando = true);
-                                          try {
-                                            final fStr =
-                                                '${fechaSel.year}-${fechaSel.month.toString().padLeft(2, '0')}-${fechaSel.day.toString().padLeft(2, '0')}';
-                                            await _avanceService
-                                                .registrarAvance(
-                                              idObra: widget.idObra,
-                                              idUnidad: idUnidadSel!,
-                                              porcentaje: porcentaje,
-                                              fechaRegistro: fStr,
-                                              observacion:
-                                                  obsCtrl.text.trim(),
-                                            );
-                                            if (ctx.mounted) {
-                                              Navigator.pop(ctx);
-                                            }
-                                            _recargar();
-                                            if (mounted) {
-                                              scaffoldMessenger.showSnackBar(
-                                                const SnackBar(
-                                                  content: Text(
-                                                    'Avance registrado exitosamente.',
-                                                  ),
-                                                  backgroundColor:
-                                                      AppTheme.success,
-                                                ),
-                                              );
-                                            }
-                                          } catch (e) {
-                                            setModal(
-                                                () => guardando = false);
-                                            if (mounted) {
-                                              scaffoldMessenger.showSnackBar(
-                                                SnackBar(
-                                                  content: Text(e
-                                                      .toString()
-                                                      .replaceFirst(
-                                                          'Exception: ',
-                                                          '')),
-                                                  backgroundColor:
-                                                      AppTheme.error,
-                                                ),
-                                              );
-                                            }
-                                          }
-                                        },
-                                  child: guardando
-                                      ? const SizedBox(
-                                          height: 20,
-                                          width: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                      : const Text('Guardar'),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppTheme.darkBackground : AppTheme.background,
+      backgroundColor:
+          isDark ? AppTheme.darkBackground : AppTheme.background,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Avances de Obra',
+              'Bitácora de Avances',
               style: GoogleFonts.inter(
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
               ),
             ),
             Text(
-              widget.codigoObra,
+              '${widget.codigoObra} – ${widget.nombreObra}',
               style: GoogleFonts.inter(
                 fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.primary,
+                color: isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary,
               ),
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Actualizar',
+            onPressed: _cargarDatos,
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppTheme.primary,
           labelColor: AppTheme.primary,
           unselectedLabelColor:
               isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary,
-          labelStyle: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700),
-          tabs: const [
-            Tab(text: 'Resumen'),
-            Tab(text: 'Historial'),
+          labelStyle:
+              GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700),
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
+          labelPadding: const EdgeInsets.symmetric(horizontal: 14),
+          tabs: [
+            Tab(text: 'Todas ($_totalOrdenes)'),
+            Tab(text: 'Cumplidas ($_ordenesCumplidas)'),
+            Tab(text: 'Faltantes ($_ordenesPendientes)'),
           ],
         ),
-        actions: [
-          FutureBuilder<List<Map<String, dynamic>>>(
-            future: _futureUnidades,
-            builder: (context, snap) {
-              final unidades = snap.data ?? [];
-              return _puedeRegistrar()
-                  ? IconButton(
-                      icon: const Icon(Icons.add_circle_rounded),
-                      color: AppTheme.primary,
-                      tooltip: 'Registrar avance',
-                      onPressed: () => _mostrarModalRegistro(unidades),
-                    )
-                  : const SizedBox.shrink();
-            },
-          ),
-        ],
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildTabResumen(isDark),
-          _buildTabHistorial(isDark),
-        ],
-      ),
+      body: _cargando
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? _buildErrorView(isDark)
+              : RefreshIndicator(
+                  onRefresh: _cargarDatos,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                    children: [
+                      // 1. Tarjeta de Avance Global (Cálculo Automático)
+                      _buildAvanceGlobalCard(isDark),
+                      const SizedBox(height: 16),
+
+                      // 2. Banner de Cuadrillas / Unidades Operativas
+                      if (_cuadrillas.isNotEmpty) ...[
+                        _buildCuadrillasSection(isDark),
+                        const SizedBox(height: 16),
+                      ],
+
+                      // 3. Barra de búsqueda y conteo
+                      _buildSearchBar(isDark),
+                      const SizedBox(height: 14),
+
+                      // 4. Lista de Órdenes
+                      if (_ordenesFiltradas.isEmpty)
+                        _buildEmptyList(isDark)
+                      else
+                        ..._ordenesFiltradas.map((o) => _buildOrdenCard(o, isDark)),
+                    ],
+                  ),
+                ),
     );
   }
 
-  // ── Tab: Resumen ──────────────────────────────────────────────────────────
-
-  Widget _buildTabResumen(bool isDark) {
-    return FutureBuilder<Map<String, dynamic>>(
-      future: _futureResumen,
-      builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snap.hasError) {
-          return _errorWidget(snap.error.toString(), isDark);
-        }
-        final avanceGlobal =
-            double.tryParse(snap.data?['avance_global']?.toString() ?? '0') ??
-                0.0;
-        final unidades =
-            (snap.data?['unidades'] as List<dynamic>? ?? [])
-                .map((e) => Map<String, dynamic>.from(e as Map))
-                .toList();
-
-        return RefreshIndicator(
-          onRefresh: () async => _recargar(),
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // Barra global
-              _buildCardAvanceGlobal(avanceGlobal, isDark),
-              const SizedBox(height: 16),
-              if (unidades.isEmpty)
-                _emptyWidget(
-                  'No hay unidades de construcción.',
-                  'Registra unidades en la sección Estructura.',
-                  isDark,
-                )
-              else
-                ...unidades.map((u) => _buildCardUnidad(u, isDark)),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildCardAvanceGlobal(double avanceGlobal, bool isDark) {
-    final cardBg = isDark ? AppTheme.darkSurface : Colors.white;
-    final textColor =
-        isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary;
+  // ── Tarjeta de Avance Global ──────────────────────────────────────────────
+  Widget _buildAvanceGlobalCard(bool isDark) {
+    final bool completado = _porcentajeAvance >= 100.0;
+    final Color colorAcento =
+        completado ? AppTheme.success : AppTheme.primary;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(16),
+        color: isDark ? AppTheme.darkSurface : Colors.white,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-            color: isDark ? AppTheme.darkBorder : AppTheme.border),
+          color: isDark ? AppTheme.darkBorder : AppTheme.border,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Avance Global del Proyecto',
-                style: GoogleFonts.inter(
-                    fontSize: 13, fontWeight: FontWeight.w700, color: textColor),
+              Expanded(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: colorAcento.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(Icons.analytics_rounded,
+                          color: colorAcento, size: 20),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'AVANCE FÍSICO',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.8,
+                          color: isDark
+                              ? AppTheme.darkTextSecondary
+                              : AppTheme.textSecondary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              Text(
-                '${avanceGlobal.toStringAsFixed(1)}%',
-                style: GoogleFonts.inter(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                  color: _colorPorcentaje(avanceGlobal, isDark),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: colorAcento.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  completado ? 'COMPLETADO' : 'CÁLCULO AUTO',
+                  style: GoogleFonts.inter(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w800,
+                    color: colorAcento,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
+
+          // Número de Porcentaje
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                '${_porcentajeAvance.toStringAsFixed(1)}%',
+                style: GoogleFonts.inter(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w900,
+                  color: colorAcento,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  '($_ordenesCumplidas de $_totalOrdenes cumplidas)',
+                  style: GoogleFonts.inter(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                    color: isDark
+                        ? AppTheme.darkTextSecondary
+                        : AppTheme.textSecondary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Barra de progreso
           ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
-              value: avanceGlobal / 100,
+              value: (_porcentajeAvance / 100.0).clamp(0.0, 1.0),
               minHeight: 10,
-              backgroundColor:
-                  isDark ? AppTheme.darkBorder : AppTheme.borderLight,
-              valueColor: AlwaysStoppedAnimation(
-                  _colorPorcentaje(avanceGlobal, isDark)),
+              backgroundColor: isDark
+                  ? AppTheme.darkBorder
+                  : const Color(0xFFF1F5F9),
+              valueColor: AlwaysStoppedAnimation<Color>(colorAcento),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Explicación
+          Text(
+            completado
+                ? 'Todas las órdenes de trabajo programadas han sido cumplidas al 100%.'
+                : 'Faltan $_ordenesPendientes órdenes por cumplir para alcanzar el 100% (${(100.0 - _porcentajeAvance).toStringAsFixed(1)}% restante).',
+            style: GoogleFonts.inter(
+              fontSize: 11.5,
+              color: isDark
+                  ? AppTheme.darkTextSecondary
+                  : AppTheme.textSecondary,
             ),
           ),
         ],
@@ -579,313 +366,286 @@ class _AvancesObraScreenState extends State<AvancesObraScreen>
     );
   }
 
-  Widget _buildCardUnidad(Map<String, dynamic> u, bool isDark) {
-    final cardBg = isDark ? AppTheme.darkSurface : Colors.white;
-    final pct =
-        double.tryParse(u['ultimo_avance']?.toString() ?? '0') ?? 0.0;
-    final estado = (u['estado_unidad'] ?? '').toString();
-    final fecha = u['fecha_ultimo']?.toString();
+  // ── Sección de Cuadrillas ────────────────────────────────────────────────
+  Widget _buildCuadrillasSection(bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'UNIDADES OPERATIVAS / CUADRILLAS',
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.8,
+            color: isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: _cuadrillas.map((c) {
+              final cuadrillaNro = c['cuadrilla'];
+              final int tot = (c['total_ordenes'] as num?)?.toInt() ?? 0;
+              final int cump = (c['cumplidas'] as num?)?.toInt() ?? 0;
+              final bool isSelected = _cuadrillaSeleccionada == cuadrillaNro;
+
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FilterChip(
+                  selected: isSelected,
+                  selectedColor: AppTheme.primary.withValues(alpha: 0.15),
+                  backgroundColor: isDark
+                      ? AppTheme.darkSurface
+                      : Colors.white,
+                  side: BorderSide(
+                    color: isSelected
+                        ? AppTheme.primary
+                        : (isDark ? AppTheme.darkBorder : AppTheme.border),
+                  ),
+                  label: Text(
+                    'Cuadrilla $cuadrillaNro ($cump/$tot)',
+                    style: GoogleFonts.inter(
+                      fontSize: 11.5,
+                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                      color: isSelected
+                          ? AppTheme.primary
+                          : (isDark ? Colors.white : AppTheme.textPrimary),
+                    ),
+                  ),
+                  onSelected: (val) {
+                    setState(() {
+                      _cuadrillaSeleccionada = val ? cuadrillaNro : null;
+                      _aplicarFiltros();
+                    });
+                  },
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Barra de Búsqueda ─────────────────────────────────────────────────────
+  Widget _buildSearchBar(bool isDark) {
+    return TextField(
+      controller: _searchCtrl,
+      onChanged: (_) => _aplicarFiltros(),
+      style: GoogleFonts.inter(fontSize: 13),
+      decoration: InputDecoration(
+        hintText: 'Buscar por orden, trabajo o personal...',
+        prefixIcon: const Icon(Icons.search_rounded, size: 18),
+        suffixIcon: _searchCtrl.text.isNotEmpty
+            ? IconButton(
+                icon: const Icon(Icons.close_rounded, size: 16),
+                onPressed: () {
+                  _searchCtrl.clear();
+                  _aplicarFiltros();
+                },
+              )
+            : null,
+      ),
+    );
+  }
+
+  // ── Tarjeta de Orden de Trabajo ───────────────────────────────────────────
+  Widget _buildOrdenCard(Map<String, dynamic> o, bool isDark) {
+    final bool cumplida = o['es_cumplida'] == true;
+    final int ordenNro = (o['orden_nro'] as num?)?.toInt() ?? 0;
+    final String tipoTrab = o['tipo_trab'] ?? 'Trabajo general';
+    final int? cuadrilla = o['cuadrilla'];
+    final String? fInicio = o['fecha_inicio'];
+    final String? fFin = o['fecha_fin'];
+    final String? obs = o['observacion'];
+    final double peso =
+        double.tryParse((o['peso_porcentual'] ?? 0).toString()) ?? 0.0;
+    final List<dynamic> responsables = (o['responsables'] as List?) ?? [];
+
+    final Color badgeColor =
+        cumplida ? AppTheme.success : AppTheme.warning;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(14),
+        color: isDark ? AppTheme.darkSurface : Colors.white,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: isDark ? AppTheme.darkBorder : AppTheme.border),
+          color: isDark ? AppTheme.darkBorder : AppTheme.border,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header de la tarjeta
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      u['codigo_unidad']?.toString() ?? '',
-                      style: GoogleFonts.inter(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w800,
-                        color: AppTheme.primary,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                    Text(
-                      u['nombre_unidad']?.toString() ?? '',
-                      style: GoogleFonts.inter(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                        color: isDark
-                            ? AppTheme.darkTextPrimary
-                            : AppTheme.textPrimary,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _colorEstado(estado, isDark).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
+                  color: badgeColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  estado.replaceAll('_', ' '),
+                  '#OT-$ordenNro',
                   style: GoogleFonts.inter(
-                    fontSize: 10,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    color: badgeColor,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  tipoTrab,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : AppTheme.textPrimary,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: badgeColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  cumplida ? 'CUMPLIDA' : 'PENDIENTE',
+                  style: GoogleFonts.inter(
+                    fontSize: 9.5,
                     fontWeight: FontWeight.w800,
-                    color: _colorEstado(estado, isDark),
+                    color: badgeColor,
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+          // Aporte porcentual y Cuadrilla
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 6,
+            runSpacing: 4,
             children: [
-              Text('Avance',
-                  style: GoogleFonts.inter(
-                      fontSize: 11.5, color: AppTheme.textSecondary)),
-              Text(
-                '${pct.toStringAsFixed(0)}%',
-                style: GoogleFonts.inter(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                  color: _colorPorcentaje(pct, isDark),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: pct / 100,
-              minHeight: 6,
-              backgroundColor:
-                  isDark ? AppTheme.darkBorder : AppTheme.borderLight,
-              valueColor:
-                  AlwaysStoppedAnimation(_colorPorcentaje(pct, isDark)),
-            ),
-          ),
-          if (fecha != null) ...[
-            const SizedBox(height: 6),
-            Text(
-              'Último registro: $fecha',
-              style: GoogleFonts.inter(
-                  fontSize: 10.5, color: AppTheme.textMuted),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  // ── Tab: Historial ────────────────────────────────────────────────────────
-
-  Widget _buildTabHistorial(bool isDark) {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _futureHistorial,
-      builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snap.hasError) {
-          return _errorWidget(snap.error.toString(), isDark);
-        }
-        final avances = snap.data ?? [];
-
-        if (avances.isEmpty) {
-          return _emptyWidget(
-            'Sin registros de avance',
-            'Registra el primer avance con el botón + arriba.',
-            isDark,
-          );
-        }
-
-        return RefreshIndicator(
-          onRefresh: () async => _recargar(),
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: avances.length,
-            itemBuilder: (ctx, i) => _buildCardAvance(avances[i], isDark),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildCardAvance(Map<String, dynamic> a, bool isDark) {
-    final cardBg = isDark ? AppTheme.darkSurface : Colors.white;
-    final pct =
-        double.tryParse(a['porcentaje_avance']?.toString() ?? '0') ?? 0.0;
-    final puede = _puedeRegistrar();
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-            color: isDark ? AppTheme.darkBorder : AppTheme.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      a['codigo_unidad']?.toString() ?? '',
-                      style: GoogleFonts.inter(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: AppTheme.primary,
-                      ),
-                    ),
-                    Text(
-                      a['nombre_unidad']?.toString() ?? '',
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: isDark
-                            ? AppTheme.darkTextPrimary
-                            : AppTheme.textPrimary,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
+                  Icon(Icons.pie_chart_outline_rounded,
+                      size: 14, color: badgeColor),
+                  const SizedBox(width: 5),
                   Text(
-                    '${pct.toStringAsFixed(0)}%',
+                    cumplida
+                        ? 'Aporte: +${peso.toStringAsFixed(1)}%'
+                        : 'Aportará: +${peso.toStringAsFixed(1)}%',
                     style: GoogleFonts.inter(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      color: _colorPorcentaje(pct, isDark),
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: badgeColor,
                     ),
                   ),
-                  if (puede) ...[
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: () async {
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (d) => AlertDialog(
-                            title: const Text('Eliminar avance'),
-                            content: const Text(
-                                '¿Está seguro de que desea eliminar este avance?'),
-                            actions: [
-                              TextButton(
-                                  onPressed: () =>
-                                      Navigator.pop(d, false),
-                                  child: const Text('Cancelar')),
-                              TextButton(
-                                  onPressed: () =>
-                                      Navigator.pop(d, true),
-                                  child: const Text('Eliminar',
-                                      style: TextStyle(
-                                          color: AppTheme.error))),
-                            ],
-                          ),
-                        );
-                        if (confirm == true) {
-                          try {
-                            await _avanceService.eliminarAvance(
-                              widget.idObra,
-                              a['id_avance'] as int,
-                            );
-                            _recargar();
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Avance eliminado.'),
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                    content: Text(e
-                                        .toString()
-                                        .replaceFirst('Exception: ', ''))),
-                              );
-                            }
-                          }
-                        }
-                      },
-                      child: const Icon(Icons.delete_outline_rounded,
-                          color: AppTheme.error, size: 20),
-                    ),
-                  ],
                 ],
               ),
+              if (cuadrilla != null)
+                Text(
+                  '· Cuadrilla $cuadrilla',
+                  style: GoogleFonts.inter(
+                    fontSize: 11.5,
+                    color: isDark
+                        ? AppTheme.darkTextSecondary
+                        : AppTheme.textSecondary,
+                  ),
+                ),
             ],
           ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: pct / 100,
-              minHeight: 5,
-              backgroundColor:
-                  isDark ? AppTheme.darkBorder : AppTheme.borderLight,
-              valueColor:
-                  AlwaysStoppedAnimation(_colorPorcentaje(pct, isDark)),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Icon(Icons.calendar_today_rounded,
-                  size: 12, color: AppTheme.textMuted),
-              const SizedBox(width: 4),
-              Text(
-                a['fecha_registro']?.toString() ?? '',
-                style: GoogleFonts.inter(
-                    fontSize: 11, color: AppTheme.textSecondary),
-              ),
-              const SizedBox(width: 12),
-              const Icon(Icons.person_outline_rounded,
-                  size: 12, color: AppTheme.textMuted),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  a['usuario_nombre']?.toString() ?? '',
+
+          // Fechas
+          if (fInicio != null) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Icon(Icons.calendar_today_rounded,
+                    size: 13,
+                    color: isDark
+                        ? AppTheme.darkTextSecondary
+                        : AppTheme.textSecondary),
+                const SizedBox(width: 6),
+                Text(
+                  fFin != null ? '$fInicio → $fFin' : 'Iniciado el $fInicio',
                   style: GoogleFonts.inter(
-                      fontSize: 11, color: AppTheme.textSecondary),
-                  overflow: TextOverflow.ellipsis,
+                    fontSize: 11,
+                    color: isDark
+                        ? AppTheme.darkTextSecondary
+                        : AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ],
+
+          // Observaciones
+          if (obs != null && obs.trim().isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppTheme.darkBackground
+                    : const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                obs,
+                style: GoogleFonts.inter(
+                  fontSize: 11.5,
+                  color: isDark
+                      ? AppTheme.darkTextSecondary
+                      : AppTheme.textSecondary,
                 ),
               ),
-            ],
-          ),
-          if ((a['observacion']?.toString() ?? '').isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text(
-              a['observacion'].toString(),
-              style: GoogleFonts.inter(
-                fontSize: 11.5,
-                color: isDark
-                    ? AppTheme.darkTextSecondary
-                    : AppTheme.textSecondary,
-                fontStyle: FontStyle.italic,
-              ),
+            ),
+          ],
+
+          // Personal asignado / Cuadrilla
+          if (responsables.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: responsables.map((r) {
+                final String nombre = r['nombre_completo'] ?? 'Personal';
+                return Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppTheme.darkBackground
+                        : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.person_rounded, size: 11),
+                      const SizedBox(width: 4),
+                      Text(
+                        nombre,
+                        style: GoogleFonts.inter(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
             ),
           ],
         ],
@@ -893,9 +653,8 @@ class _AvancesObraScreenState extends State<AvancesObraScreen>
     );
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
-
-  Widget _errorWidget(String msg, bool isDark) {
+  // ── Vista de Error ────────────────────────────────────────────────────────
+  Widget _buildErrorView(bool isDark) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -903,21 +662,31 @@ class _AvancesObraScreenState extends State<AvancesObraScreen>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(Icons.error_outline_rounded,
-                color: AppTheme.error, size: 40),
+                color: AppTheme.error, size: 48),
             const SizedBox(height: 12),
             Text(
-              msg.replaceFirst('Exception: ', ''),
+              'No se pudo cargar la bitácora',
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _error ?? 'Error desconocido',
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
-                  fontSize: 13,
-                  color: isDark
-                      ? AppTheme.darkTextSecondary
-                      : AppTheme.textSecondary),
+                fontSize: 12,
+                color: isDark
+                    ? AppTheme.darkTextSecondary
+                    : AppTheme.textSecondary,
+              ),
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _recargar,
-              child: const Text('Reintentar'),
+            ElevatedButton.icon(
+              onPressed: _cargarDatos,
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('Reintentar'),
             ),
           ],
         ),
@@ -925,31 +694,33 @@ class _AvancesObraScreenState extends State<AvancesObraScreen>
     );
   }
 
-  Widget _emptyWidget(String title, String subtitle, bool isDark) {
+  // ── Lista Vacía ───────────────────────────────────────────────────────────
+  Widget _buildEmptyList(bool isDark) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.symmetric(vertical: 40),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('📊', style: TextStyle(fontSize: 48)),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: GoogleFonts.inter(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
+            Icon(Icons.assignment_outlined,
+                size: 48,
                 color: isDark
-                    ? AppTheme.darkTextPrimary
-                    : AppTheme.textPrimary,
+                    ? AppTheme.darkTextSecondary
+                    : AppTheme.textSecondary),
+            const SizedBox(height: 12),
+            Text(
+              'No hay órdenes de trabajo',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 6),
             Text(
-              subtitle,
-              textAlign: TextAlign.center,
+              _totalOrdenes == 0
+                  ? 'Esta obra no cuenta con órdenes de trabajo programadas.'
+                  : 'Ninguna orden coincide con los filtros aplicados.',
               style: GoogleFonts.inter(
-                fontSize: 12.5,
+                fontSize: 11.5,
                 color: isDark
                     ? AppTheme.darkTextSecondary
                     : AppTheme.textSecondary,
