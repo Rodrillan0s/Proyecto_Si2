@@ -17,7 +17,7 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=[
             "http://localhost:4200",
-            "https://obratech-kjfu.onrender.com"
+            "https://obratec.onrender.com"
         ],
         allow_credentials=True,
         allow_methods=["*"],
