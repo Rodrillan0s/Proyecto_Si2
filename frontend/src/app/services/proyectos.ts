@@ -45,8 +45,6 @@ export interface Proyecto {
   descripcion_cliente?: string;
   observacion?: string;
   responsables?: ResponsableObra[];
-  estimacion?: EstimacionObra | CalculoEstimacion;
-  requisitos_estimacion?: RequisitosEstimacion;
 }
 
 export interface TipoProyecto {
@@ -73,10 +71,7 @@ export interface ApiResponseSimple {
   success: boolean;
   message: string;
   id_obra?: number;
-  id_estimacion?: number;
-  estimacion?: CalculoEstimacion;
 }
-
 
 @Injectable({
   providedIn: 'root'
@@ -153,28 +148,6 @@ export class ProyectosService {
   retirarResponsable(idObra: number, idUsuario: number): Observable<ApiResponseSimple> {
     return this.http.delete<ApiResponseSimple>(
       `${this.apiUrl}/api/proyectos/${idObra}/responsables/${idUsuario}`,
-      { headers: this.getHeaders() }
-    );
-  }
-
-  obtenerParametrosEstimacion(): Observable<{ success: boolean; data: any }> {
-    return this.http.get<{ success: boolean; data: any }>(
-      `${this.apiUrl}/api/proyectos/estimacion/parametros`,
-      { headers: this.getHeaders() }
-    );
-  }
-
-  calcularPreviewEstimacion(requisitos: RequisitosEstimacion): Observable<{ success: boolean; data: CalculoEstimacion }> {
-    return this.http.post<{ success: boolean; data: CalculoEstimacion }>(
-      `${this.apiUrl}/api/proyectos/estimar-preview`,
-      requisitos,
-      { headers: this.getHeaders() }
-    );
-  }
-
-  obtenerEstimacionObra(idObra: number): Observable<{ success: boolean; data: EstimacionObra }> {
-    return this.http.get<{ success: boolean; data: EstimacionObra }>(
-      `${this.apiUrl}/api/proyectos/${idObra}/estimacion`,
       { headers: this.getHeaders() }
     );
   }
