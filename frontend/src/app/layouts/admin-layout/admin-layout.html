@@ -250,8 +250,8 @@
           Dashboard
         </a>
 
-        <!-- GESTION DE OBRAS / PROYECTOS (Requiere Visualizar_obras) -->
-        <div *ngIf="hasPermission('Visualizar_obras')" class="sidebar-group">
+        <!-- GESTION DE OBRAS / PROYECTOS (Requiere Visualizar_obras o Visualizar_incidencias) -->
+        <div *ngIf="hasAnyPermission(['Visualizar_obras', 'Visualizar_incidencias'])" class="sidebar-group">
           <div class="sidebar-item justify-between" (click)="toggleSubmenuObras()" style="cursor: pointer;">
             <div class="flex items-center">
               <svg class="w-5 h-5 mr-3 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
@@ -260,9 +260,12 @@
             <svg class="w-4 h-4 transition-transform duration-200" [class.rotate-180]="menuObrasAbierto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
           </div>
           
-          <div *ngIf="menuObrasAbierto" class="pl-6 space-y-0.5 border-l-2 border-slate-700/50 ml-4 my-1">
-            <!-- 1. Gestión de Proyectos -->
-            <a id="sidebar-gestion-proyectos" class="sidebar-subitem" (click)="navegarA('/proyectos')">
+          <div *ngIf="menuObrasAbierto" class="pl-7 space-y-0.5 border-l-2 border-slate-700/40 ml-4 my-1">
+            <a class="sidebar-subitem" (click)="navegarA('/proyectos')" *ngIf="hasPermission('Visualizar_obras')">
+              <span class="w-1.5 h-1.5 rounded-full bg-slate-400 mr-2.5"></span>
+              Ver obras
+            </a>
+            <a class="sidebar-subitem" (click)="navegarA('/proyectos', 'nuevo')" *ngIf="hasPermission('Registrar_obras')">
               <span class="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2.5"></span>
               Gestión de proyectos
             </a>
@@ -291,6 +294,18 @@
             <a id="sidebar-ordenes-trabajo" class="sidebar-subitem" (click)="navegarA('/ordenes-trabajo')">
               <span class="w-1.5 h-1.5 rounded-full bg-slate-400 mr-2.5"></span>
               Órdenes de Trabajo
+            </a>
+            <a class="sidebar-subitem" (click)="navegarA('/estimaciones')" *ngIf="hasPermission('Visualizar_estimaciones')">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2.5"></span>
+              Presupuestos / APU
+            </a>
+            <a class="sidebar-subitem" (click)="navegarA('/control-costos')" *ngIf="hasPermission('Visualizar_control_costos')">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2.5"></span>
+              Control de costos
+            </a>
+            <a class="sidebar-subitem" (click)="navegarA('/incidencias')" *ngIf="hasPermission('Visualizar_incidencias')">
+              <span class="w-1.5 h-1.5 rounded-full bg-slate-400 mr-2.5"></span>
+              Incidencias
             </a>
           </div>
         </div>

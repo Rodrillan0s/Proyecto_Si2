@@ -11,57 +11,9 @@ export interface ResponsableObra {
   fecha_asignacion?: string;
 }
 
-export interface RequisitosEstimacion {
-  tipo_obra: string;
-  superficie_m2: number;
-  niveles: number;
-  tipo_terreno: string;
-  complejidad: string;
-  ubicacion?: string;
-  caracteristicas_generales?: string;
-  moneda?: string;
-}
-
-export interface CalculoEstimacion {
-  tipo_obra: string;
-  codigo_tipo_obra: string;
-  superficie_m2: number;
-  niveles: number;
-  clave_niveles: string;
-  tipo_terreno: string;
-  codigo_tipo_terreno: string;
-  complejidad: string;
-  codigo_complejidad: string;
-  ubicacion?: string;
-  caracteristicas_generales?: string;
-  costo_referencial_m2: number;
-  factor_niveles: number;
-  factor_terreno: number;
-  factor_complejidad: number;
-  factor_combinado: number;
-  costo_base: number;
-  monto_estimado: number;
-  moneda: string;
-}
-
-export interface EstimacionObra {
-  id_estimacion: number;
-  id_obra: number;
-  tipo_obra: string;
-  superficie_m2: number;
-  niveles: number;
-  tipo_terreno: string;
-  complejidad: string;
-  ubicacion?: string;
-  caracteristicas_generales?: string;
-  costo_referencial_m2: number;
-  factor_niveles: number;
-  factor_terreno: number;
-  factor_complejidad: number;
-  costo_base: number;
-  monto_estimado: number;
-  moneda: string;
-  fecha_estimacion?: string;
+export interface PersonalObra extends ResponsableObra {
+  nombre_rol: string;
+  estado: string;
 }
 
 export interface Proyecto {
@@ -176,6 +128,25 @@ export class ProyectosService {
       `${this.apiUrl}/api/proyectos/${idObra}/responsables`,
       { id_usuario: idUsuario },
       { headers: this.getHeaders() }
+    );
+  }
+
+  listarPersonal(idObra: number): Observable<{ success: boolean; data: PersonalObra[] }> {
+    return this.http.get<{ success: boolean; data: PersonalObra[] }>(
+      `${this.apiUrl}/api/proyectos/${idObra}/personal`, { headers: this.getHeaders() }
+    );
+  }
+
+  candidatosPersonal(idObra: number): Observable<{ success: boolean; data: PersonalObra[] }> {
+    return this.http.get<{ success: boolean; data: PersonalObra[] }>(
+      `${this.apiUrl}/api/proyectos/${idObra}/personal/candidatos`, { headers: this.getHeaders() }
+    );
+  }
+
+  asignarPersonal(idObra: number, idUsuario: number): Observable<ApiResponseSimple> {
+    return this.http.post<ApiResponseSimple>(
+      `${this.apiUrl}/api/proyectos/${idObra}/personal`,
+      { id_usuario: idUsuario }, { headers: this.getHeaders() }
     );
   }
 

@@ -23,6 +23,12 @@ import { OrdenesTrabajoComponent } from './pages/ordenes-trabajo/ordenes-trabajo
 import { CrmComponent } from './pages/crm/crm';
 import { InventarioComponent } from './pages/inventario/inventario';
 import { EquipoMaquinariaComponent } from './pages/equipo-maquinaria/equipo-maquinaria';
+import { EstimacionesComponent } from './pages/estimaciones/estimaciones';
+import { ControlCostosComponent } from './pages/control-costos/control-costos';
+import { IncidenciasComponent } from './pages/incidencias/incidencias';
+import { IncidenciasAsignadasComponent } from './pages/incidencias/asignadas/incidencias-asignadas';
+import { IncidenciaDetalleComponent } from './pages/incidencias/detalle/incidencia-detalle';
+
 //LAYOUTS
 import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout';
 
@@ -130,11 +136,37 @@ export const routes: Routes = [
                 canActivate: [roleGuard], 
                 data: { permissions: ['Visualizar_usuarios'] } 
             },
-            { 
-                path: 'ordenes-trabajo', 
-                component: OrdenesTrabajoComponent, 
-                canActivate: [roleGuard], 
-                data: { permissions: ['Visualizar_obras'] } 
+            {
+                path: 'ordenes-trabajo',
+                component: OrdenesTrabajoComponent,
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_obras'] }
+            },
+            {
+                path: 'incidencias',
+                component: IncidenciasComponent,
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_incidencias'] }
+            },
+            {
+                path: 'incidencias/asignadas',
+                component: IncidenciasAsignadasComponent
+            },
+            {
+                path: 'incidencias/:id',
+                component: IncidenciaDetalleComponent
+            },
+            {
+                path: 'estimaciones',
+                component: EstimacionesComponent,
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_estimaciones'] }
+            },
+            {
+                path: 'control-costos',
+                component: ControlCostosComponent,
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_control_costos'] }
             },
             { 
                 path: 'perfil', 
@@ -144,7 +176,11 @@ export const routes: Routes = [
                 component: EquipoMaquinariaComponent,
                 canActivate: [roleGuard],
                 data: { permissions: ['Visualizar_materiales'] }
-            }
+            },
+            {    path :'estimaciones',
+                component: EstimacionesComponent,
+                canActivate: [roleGuard],}
+                
         ]
     },
     { path: '**', redirectTo: 'login' }

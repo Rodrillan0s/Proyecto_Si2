@@ -763,6 +763,21 @@
     <!-- 6. DASHBOARD: OPERATIVO (ELECTRICO, PLOMERO, MAESTRO_ALBANIL, ALBANIL)-->
     <!-- --------------------------------------------------------------------- -->
     <ng-container *ngIf="['ELECTRICO', 'PLOMERO', 'MAESTRO_ALBANIL', 'ALBANIL'].includes(rolUsuario)">
+      <section class="rounded-xl border border-slate-200 dark:border-slate-700 p-5 mb-6">
+        <h2 class="text-lg font-semibold mb-3">Incidencias asignadas</h2>
+        <a routerLink="/incidencias/asignadas" class="inline-flex px-3 py-2 mb-3 rounded-lg bg-amber-600 text-white text-sm font-bold">Ver incidencias asignadas</a>
+        <p *ngIf="cargandoIncidencias">Cargando incidencias…</p>
+        <p *ngIf="errorIncidencias">{{ errorIncidencias }} <button (click)="cargarIncidenciasAsignadas(paginaIncidencias)">Reintentar</button></p>
+        <p *ngIf="!cargandoIncidencias && !errorIncidencias && !incidenciasAsignadas.length">No tienes incidencias asignadas actualmente.</p>
+        <ul *ngIf="!cargandoIncidencias">
+          <li *ngFor="let inc of incidenciasAsignadas" class="py-2">
+            <a [routerLink]="['/incidencias', inc.id_incidencia]">#{{ inc.id_incidencia }} · {{ inc.titulo }} · {{ inc.estado }}</a>
+          </li>
+        </ul>
+        <button *ngIf="paginaIncidencias > 1" [disabled]="cargandoIncidencias" (click)="cargarIncidenciasAsignadas(paginaIncidencias - 1)">Anterior</button>
+        <button *ngIf="paginaIncidencias < totalPaginasIncidencias" [disabled]="cargandoIncidencias" (click)="cargarIncidenciasAsignadas(paginaIncidencias + 1)">Siguiente</button>
+      </section>
+
       <!-- Tarjetas Operativas -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <app-dashboard-card

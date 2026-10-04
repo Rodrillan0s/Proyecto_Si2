@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../services/auth_provider.dart';
 import '../services/obra_service.dart';
 import '../services/empresa_service.dart';
+import '../services/incidencia_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/construction_widgets.dart';
 import '../widgets/ev_widgets.dart';
@@ -13,7 +14,12 @@ import 'proyectos_screen.dart';
 import 'proyecto_detalle_screen.dart';
 import 'materiales_screen.dart';
 import 'ordenes_trabajo_screen.dart';
+<<<<<<< HEAD
 import 'crm_screen.dart';
+=======
+import 'incidencias_screen.dart';
+import 'incidencia_detalle_screen.dart';
+>>>>>>> d6f0ad7a6ba6a03be781e103fe5a35b3f52d0dd4
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -299,6 +305,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const OrdenesTrabajoScreen()));
                 },
               ),
+              ..._buildIncidenciasToolRows(auth, isDark, dividerColor),
               Divider(height: 1, color: dividerColor),
               _buildToolRow(
                 icon: Icons.contact_phone_outlined,
@@ -457,6 +464,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 iconBg: isDark ? const Color(0xFF064E3B) : const Color(0xFFECFDF5),
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrdenesTrabajoScreen())),
               ),
+              ..._buildIncidenciasToolRows(auth, isDark, dividerColor),
               Divider(height: 1, color: dividerColor),
               _buildToolRow(
                 icon: Icons.contact_phone_outlined,
@@ -560,6 +568,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 iconBg: isDark ? const Color(0xFF064E3B) : const Color(0xFFECFDF5),
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrdenesTrabajoScreen())),
               ),
+              ..._buildIncidenciasToolRows(auth, isDark, dividerColor),
               Divider(height: 1, color: dividerColor),
               _buildToolRow(
                 icon: Icons.account_tree_outlined,
@@ -670,6 +679,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 iconBg: isDark ? const Color(0xFF064E3B) : const Color(0xFFECFDF5),
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrdenesTrabajoScreen())),
               ),
+              ..._buildIncidenciasToolRows(auth, isDark, dividerColor),
               Divider(height: 1, color: dividerColor),
               _buildToolRow(
                 icon: Icons.account_tree_outlined,
@@ -691,6 +701,51 @@ class _HomeScreenState extends State<HomeScreen> {
   // ──────────────────────────────────────────────────────────────────────────
   // 5. DASHBOARD OPERARIOS DE CAMPO (ALBAÑIL, ELÉCTRICO, PLOMERO)
   // ──────────────────────────────────────────────────────────────────────────
+  late Future<Map<String, dynamic>> _incidenciasAsignadas = _cargarIncidenciasAsignadas();
+
+  Future<Map<String, dynamic>> _cargarIncidenciasAsignadas() async {
+    final usuario = await PermisosIncidencia.usuarioActual();
+    if (usuario == null) throw Exception('No se pudo identificar al usuario.');
+    return IncidenciaService().listar(idResponsable: usuario, limit: 20);
+  }
+
+  Widget _buildIncidenciasAsignadas() {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _incidenciasAsignadas,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return TextButton(
+            onPressed: () => setState(() => _incidenciasAsignadas = _cargarIncidenciasAsignadas()),
+            child: const Text('No se pudieron cargar las incidencias. Reintentar'),
+          );
+        }
+        final incidencias = (snapshot.data?['data'] as List?) ?? [];
+        if (incidencias.isEmpty) return const Text('No tienes incidencias asignadas.');
+        return Column(children: [
+          for (final inc in incidencias)
+            ListTile(
+              title: Text(inc['titulo'].toString()),
+              subtitle: Text('#${inc['id_incidencia']} · ${inc['estado']}'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () async {
+                await Navigator.push(context, MaterialPageRoute(builder: (_) =>
+                  IncidenciaDetalleScreen(idIncidencia: (inc['id_incidencia'] as num).toInt())));
+                if (mounted) setState(() => _incidenciasAsignadas = _cargarIncidenciasAsignadas());
+              },
+            ),
+          TextButton(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(
+              builder: (_) => const IncidenciasScreen(soloAsignadas: true))),
+            child: const Text('Ver todas mis incidencias asignadas'),
+          ),
+        ]);
+      },
+    );
+  }
+
   Widget _buildOperarioCampoView(AuthProvider auth, String primerNombre, String nombreCompleto, bool isDark) {
     final cardBg = isDark ? const Color(0xFF131D31) : Colors.white;
     final borderColor = isDark ? const Color(0xFF22304C) : const Color(0xFFE2E8F0);
@@ -807,6 +862,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(height: 20),
+
+        _buildSectionHeader('Incidencias asignadas', titleColor),
+        _buildIncidenciasAsignadas(),
+        const SizedBox(height: 20),
+        ..._buildIncidenciasToolRows(auth, isDark, borderColor),
 
         // Frentes de Obra
         _buildSectionHeader('Frentes de Obra Asignados', titleColor),
@@ -1210,6 +1270,25 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  /// CU19: consulta administrativa o registro y consulta propia de trabajadores.
+  List<Widget> _buildIncidenciasToolRows(AuthProvider auth, bool isDark, Color dividerColor) {
+    if (!PermisosIncidencia.tiene(auth, PermisosIncidencia.visualizar) &&
+        !PermisosIncidencia.puedeRegistrar(auth)) {
+      return const [];
+    }
+    return [
+      Divider(height: 1, color: dividerColor),
+      _buildToolRow(
+        icon: Icons.report_problem_outlined,
+        title: 'Incidencias de Obra',
+        subtitle: auth.esTrabajadorCampo ? 'Registrar y consultar mis incidencias' : 'Registro, seguimiento y cierre de incidencias',
+        iconColor: AppTheme.error,
+        iconBg: isDark ? const Color(0xFF3B1414) : AppTheme.errorBg,
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const IncidenciasScreen())),
+      ),
+    ];
   }
 
   Widget _buildToolRow({
