@@ -21,7 +21,6 @@ import { ProveedoresComponent } from './pages/proveedores/proveedores';
 import { ComprasComponent } from './pages/compras/compras';
 import { OrdenesTrabajoComponent } from './pages/ordenes-trabajo/ordenes-trabajo';
 import { CrmComponent } from './pages/crm/crm';
-import { ApusComponent } from './pages/apus/apus';
 import { InventarioComponent } from './pages/inventario/inventario';
 import { EquipoMaquinariaComponent } from './pages/equipo-maquinaria/equipo-maquinaria';
 //LAYOUTS
@@ -90,12 +89,6 @@ export const routes: Routes = [
                 component: ComprasComponent, 
                 canActivate: [roleGuard], 
                 data: { permissions: ['Visualizar_ordenes_compra'] } 
-            },
-            { 
-                path: 'apus', 
-                component: ApusComponent, 
-                canActivate: [roleGuard], 
-                data: { permissions: ['Visualizar_presupuesto'] } 
             },
             { 
                 path: 'usuarios', 
