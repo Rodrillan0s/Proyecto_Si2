@@ -95,7 +95,7 @@
 
   <section class="catalog-toolbar" aria-label="Filtros y acciones del catálogo APU">
     <div class="toolbar">
-      <select [(ngModel)]="idObra" (change)="cambiarObra($any($event.target).value)" aria-label="Filtrar catálogo por obra">
+     <select [(ngModel)]="idObra" (ngModelChange)="cambiarObra($event)" aria-label="Filtrar catálogo por obra">
         <option [ngValue]="undefined">Todas las obras (plantillas)</option>
         <option *ngFor="let o of obras" [ngValue]="o.id_obra">{{ o.nombre }}</option>
       </select>
