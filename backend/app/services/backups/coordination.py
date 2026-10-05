@@ -3,7 +3,7 @@ import threading
 import time
 from contextlib import contextmanager
 from app.repos import backup_repos as repo
-from .settings import Settings, BackupError
+from .oracle_settings import Settings, BackupError
 
 
 @contextmanager

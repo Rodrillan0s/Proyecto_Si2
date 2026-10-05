@@ -9,7 +9,7 @@ class Contract(BaseModel):
 
 
 class BackupRequest(Contract):
-    alcance: Literal['base_datos', 'sistema_completo'] = 'sistema_completo'
+    alcance: Literal['base_datos'] = 'base_datos'
 
 
 class Schedule(BackupRequest):
@@ -43,7 +43,7 @@ class Schedule(BackupRequest):
 
 
 class ValidateRequest(Contract):
-    archivo: str = Field(min_length=36, max_length=36)
+    archivo: str = Field(pattern=r'^[1-9][0-9]{0,18}$')
 
 
 class ApplyRequest(Contract):

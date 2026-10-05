@@ -36,6 +36,7 @@ def error_category(message):
 
 
 def main():
+    raise SystemExit('Diagnóstico legacy retirado. Usar backup_recovery.py --status/--preflight para el contrato Oracle; no ejecutar pruebas legacy sobre la base VM.')
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--environment', required=True)
     parser.add_argument('--preflight', action='store_true',

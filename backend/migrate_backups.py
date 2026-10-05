@@ -4,7 +4,7 @@ from pathlib import Path
 import psycopg2
 from psycopg2.extensions import parse_dsn
 from app.config import Config
-from app.services.backups.settings import Settings, BackupError
+from app.services.backups.oracle_settings import Settings, BackupError
 
 
 def main():
@@ -20,14 +20,16 @@ def main():
         raise BackupError('Se rechazó migrar la base de negocio.')
     conn = psycopg2.connect(settings.control_dsn, connect_timeout=5)
     try:
+        if not args.apply:
+            conn.set_session(readonly=True)
         with conn:
             with conn.cursor() as cur:
                 if args.apply:
-                    cur.execute((Path(__file__).parent/'database'/'20261004_backup_control.sql').read_text(encoding='utf-8'))
-                    print('Migración de control aplicada al entorno designado.')
+                    cur.execute((Path(__file__).parent/'database'/'20261005_backup_vm_integration.sql').read_text(encoding='utf-8'))
+                    print('Migración auxiliar VM aplicada. Cola y daemon existentes conservados.')
                 else:
-                    cur.execute("SELECT tablename FROM pg_tables WHERE schemaname='backup_control' ORDER BY tablename")
-                    print('Tablas de control presentes:', ', '.join(row[0] for row in cur.fetchall()) or 'ninguna')
+                    cur.execute("SELECT schemaname,tablename FROM pg_tables WHERE schemaname='backup_control' OR (schemaname='public' AND tablename='backup_jobs') ORDER BY schemaname,tablename")
+                    print('Tablas presentes:', ', '.join('.'.join(row) for row in cur.fetchall()) or 'ninguna')
     finally:
         conn.close()
 

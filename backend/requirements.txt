@@ -16,4 +16,3 @@ groq
 reportlab>=4.2,<5
 openpyxl>=3.1,<4
 tzdata>=2025.1
-cryptography==50.0.2

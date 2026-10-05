@@ -6,7 +6,7 @@ import psycopg2
 from psycopg2.extras import Json, RealDictCursor
 from psycopg2.extensions import parse_dsn
 from app.config import Config
-from app.services.backups.settings import Settings, BackupError
+from app.services.backups.oracle_settings import Settings, BackupError
 
 SCHEMA = 'backup_control.'
 TABLES = {'ejecucion', 'archivo', 'restauracion', 'evento', 'programacion', 'control'}
@@ -40,6 +40,8 @@ def transaction():
                 yield cursor
     except psycopg2.errors.UndefinedTable as exc:
         raise BackupError('Falta aplicar la migración de control de respaldos.', 'BACKUP_SETUP_REQUIRED', 503) from exc
+    except psycopg2.errors.InsufficientPrivilege as exc:
+        raise BackupError('La cuenta de control no tiene permisos para esta operación.', 'BACKUP_CONTROL_FORBIDDEN', 503) from exc
     finally:
         conn.close()
 

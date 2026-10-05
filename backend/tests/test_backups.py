@@ -227,7 +227,7 @@ class ApiTests(unittest.TestCase):
             self.assertEqual(self.client.get('/api/backup'+url).status_code,403)
     def test_strict_creation_and_job_202(self):
         with patch.object(service,'create',return_value=dict(id=str(uuid4()),estado='PENDIENTE')) as create:
-            response=self.client.post('/api/backup/ejecuciones',json={'alcance':'sistema_completo'},headers={'Idempotency-Key':'repeatable'})
+            response=self.client.post('/api/backup/ejecuciones',json={'alcance':'base_datos'},headers={'Idempotency-Key':'repeatable'})
             self.assertEqual(response.status_code,202)
             self.assertEqual(create.call_args.args[0],1)
             response=self.client.post('/api/backup/ejecuciones',json={'sql':'SELECT *'})
@@ -241,8 +241,8 @@ class ApiTests(unittest.TestCase):
             response=self.client.post('/api/backup/importaciones',content=b'SELECT x',headers={'Content-Type':'application/sql'})
             self.assertEqual(response.status_code,415);importer.assert_not_called()
     def test_download_requires_ready_archive(self):
-        with patch.object(service.repo,'get',return_value=dict(estado='PENDIENTE',archivo=None)):
-            response=self.client.get('/api/backup/ejecuciones/'+str(uuid4())+'/archivo')
+        with patch.object(service.repo,'get',return_value=dict(tipo='BACKUP',estado='PENDIENTE')):
+            response=self.client.get('/api/backup/ejecuciones/1/archivo')
             self.assertEqual(response.status_code,409)
     def test_wrong_reauthentication_uses_dedicated_code(self):
         with patch('app.services.auth_services.loguear_usuario',side_effect=ValueError('Contraseña incorrecta.')):

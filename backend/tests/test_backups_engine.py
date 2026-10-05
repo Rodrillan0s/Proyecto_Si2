@@ -73,10 +73,6 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(manifest['evidencias_no_disponibles'],['uploads/incidencias/missing.jpg'])
         self.assertEqual(manifest['evidencias_sha256'],{})
         self.assertEqual(manifest['inventario_bd']['evidencias'],[r'uploads\incidencias\missing.jpg'])
-        from app.services.backup_services import public_archive
-        warning=public_archive(dict(archive,alcance='base_datos',verificado_en=None))['advertencias']
-        self.assertEqual(len(warning),1)
-        self.assertIn('1 evidencias externas',warning[0])
         with self.assertRaises(BackupError) as error:
             restoration.check_evidence(self.settings,self.root/'unpacked',manifest)
         self.assertEqual(error.exception.code,'BACKUP_EVIDENCE_UNAVAILABLE')

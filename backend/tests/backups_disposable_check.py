@@ -47,6 +47,7 @@ INSERT INTO obras.t_incidencia_evidencia(id_empresa,ruta_archivo) VALUES(1,'uplo
 
 
 def main():
+    raise SystemExit('Ensayo legacy retirado del pipeline Oracle. No ejecuta restauraciones; coordinar pruebas con el daemon existente y su base temporal.')
     parser=argparse.ArgumentParser()
     parser.add_argument('--allow-create-disposable-databases',action='store_true',required=True)
     parser.add_argument('--environment',required=True)
