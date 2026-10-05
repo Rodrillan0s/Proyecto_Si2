@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.spec.json",
+  "files": [
+    "src/app/services/reportes.service.spec.ts",
+    "src/app/pages/reportes/reportes.spec.ts",
+    "src/app/components/asistente/reportes-asistente.spec.ts"
+  ],
+  "include": [],
+  "exclude": []
+}

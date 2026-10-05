@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.spec.json",
+  "files": ["src/app/services/backup.spec.ts", "src/app/pages/backup/backup.spec.ts"],
+  "include": [],
+  "exclude": []
+}

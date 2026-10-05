@@ -2,8 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'token_storage.dart';
 
-/// 23 Permisos Oficiales de OBRATEC
+/// Catálogo local de navegación; Reportes usa permisos actuales del backend.
 const List<String> permisosOficiales = [
+  'Visualizar_reportes', 'Exportar_reportes', 'Enviar_reportes', 'Programar_reportes', 'Administrar_programaciones_reportes',
   'Visualizar_usuarios', 'Registrar_usuarios', 'Modificar_usuarios', 'Eliminar_usuarios',
   'Visualizar_obras', 'Registrar_obras', 'Modificar_obras', 'Eliminar_obras',
   'Visualizar_empresa', 'Registrar_empresa', 'Modificar_empresa', 'Eliminar_empresa',
@@ -16,6 +17,7 @@ const List<String> permisosOficiales = [
 const Map<String, List<String>> mapaPermisosPorRol = {
   'ADMINISTRADOR': permisosOficiales,
   'ADMINISTRADOR_EMPRESA': [
+    'Visualizar_reportes', 'Exportar_reportes', 'Enviar_reportes', 'Programar_reportes', 'Administrar_programaciones_reportes',
     'Visualizar_usuarios', 'Registrar_usuarios', 'Modificar_usuarios', 'Eliminar_usuarios',
     'Visualizar_obras', 'Registrar_obras', 'Modificar_obras', 'Eliminar_obras',
     'Visualizar_empresa', 'Registrar_empresa', 'Modificar_empresa',
@@ -24,6 +26,7 @@ const Map<String, List<String>> mapaPermisosPorRol = {
     'Visualizar_proveedores', 'Registrar_proveedores', 'Modificar_proveedores',
   ],
   'JEFE_DE_OBRA': [
+    'Visualizar_reportes', 'Exportar_reportes', 'Enviar_reportes', 'Programar_reportes',
     'Visualizar_obras', 'Registrar_obras', 'Modificar_obras',
     'Visualizar_inventario', 'Modificar_inventario',
     'Visualizar_materiales',
@@ -35,24 +38,29 @@ const Map<String, List<String>> mapaPermisosPorRol = {
     'Visualizar_materiales',
   ],
   'CLIENTE': [
+    'Visualizar_reportes', 'Exportar_reportes',
     'Visualizar_obras',
   ],
   'ELECTRICO': [
+    'Visualizar_reportes', 'Exportar_reportes',
     'Visualizar_obras',
     'Visualizar_inventario',
     'Visualizar_materiales',
   ],
   'PLOMERO': [
+    'Visualizar_reportes', 'Exportar_reportes',
     'Visualizar_obras',
     'Visualizar_inventario',
     'Visualizar_materiales',
   ],
   'MAESTRO_ALBANIL': [
+    'Visualizar_reportes', 'Exportar_reportes',
     'Visualizar_obras',
     'Visualizar_inventario',
     'Visualizar_materiales',
   ],
   'ALBANIL': [
+    'Visualizar_reportes', 'Exportar_reportes',
     'Visualizar_obras',
     'Visualizar_inventario',
     'Visualizar_materiales',

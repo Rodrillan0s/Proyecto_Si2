@@ -3,7 +3,7 @@
   <!-- PANEL NAVBAR (PROCORE STYLE) -->
   <header class="panel-header">
     <div class="panel-header-left">
-      <button class="hamburger-btn" (click)="toggleSidebar()">
+      <button class="hamburger-btn" (click)="toggleSidebar()" aria-label="Alternar menú de navegación">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
       </button>
       <span class="panel-brand" (click)="navegarA('/panel')" style="cursor:pointer">OBRATEC</span>
@@ -124,10 +124,10 @@
       </div>
     </div>
 
-    <div class="panel-header-center">
+    <div class="panel-header-center" *ngIf="hasAnyPermission(['Visualizar_reportes', 'Visualizar_clientes'])">
       <div class="search-box">
-        <input type="text" placeholder="Buscar o preguntar algo...">
-        <button class="search-btn">
+        <input type="text" [(ngModel)]="consultaAsistente" (keyup.enter)="abrirConsultaAsistente()" maxlength="2000" placeholder="Pregunta al asistente…" aria-label="Consulta para el asistente">
+        <button class="search-btn" (click)="abrirConsultaAsistente()" aria-label="Abrir consulta en el asistente">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
         </button>
       </div>
@@ -229,7 +229,8 @@
   </header>
 
   <!-- PANEL BODY CONTAINER -->
-  <div class="panel-body" *ngIf="usuarioActual" [class.sidebar-hidden]="sidebarColapsado">
+  <div class="panel-body" *ngIf="usuarioActual" [class.sidebar-hidden]="sidebarColapsado" [class.sidebar-open]="sidebarAbierto">
+    <button *ngIf="sidebarAbierto" class="sidebar-backdrop" (click)="sidebarAbierto = false" aria-label="Cerrar menú de navegación"></button>
     <!-- SIDEBAR (PROCORE STYLE) -->
     <aside class="panel-sidebar" *ngIf="!sidebarColapsado">
       <div class="sidebar-user-card" (click)="navegarA('/perfil')" style="cursor:pointer">
@@ -242,6 +243,7 @@
       </div>
 
       <nav class="sidebar-nav">
+        <a class="sidebar-item" routerLink="/reportes" routerLinkActive="active" (click)="sidebarAbierto = false" *ngIf="hasPermission('Visualizar_reportes')"><svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-4m4 4V9m4 8V5M5 3v18h16"/></svg><span>Reportes</span></a>
         <div class="sidebar-section-title">PRINCIPAL</div>
         
         <!-- DASHBOARD (Siempre disponible para todo usuario autenticado) -->
@@ -419,6 +421,7 @@
     <!-- MAIN ROUTER OUTLET CONTAINER -->
     <main class="panel-content">
       <router-outlet></router-outlet>
+      <app-asistente></app-asistente>
     </main>
   </div>
 

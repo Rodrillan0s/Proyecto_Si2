@@ -1,0 +1,175 @@
+﻿<ng-container *ngIf="available">
+  <section
+    *ngIf="ui.opened()"
+    class="assistant"
+    role="dialog"
+    aria-labelledby="assistant-title"
+    aria-modal="false"
+  >
+    <header>
+      <div class="brand-mark" aria-hidden="true">O</div>
+      <div>
+        <h2 id="assistant-title">Asistente OBRATEC</h2>
+        <p>{{ companyName }}</p>
+      </div>
+      <button class="icon-button" (click)="close()" aria-label="Cerrar asistente">×</button>
+    </header>
+    <div class="modes" *ngIf="messages.length">
+      <label for="assistant-history">Historial</label>
+      <select
+        id="assistant-history"
+        [(ngModel)]="historyFilter"
+        aria-label="Filtrar historial por tema"
+      >
+        <option value="todos">Toda la conversación</option>
+        <option value="reportes">Reportes y proyectos</option>
+        <option value="crm">Clientes y ventas</option>
+        <option value="finanzas">Finanzas</option>
+      </select>
+    </div>
+    <div
+      #log
+      class="conversation"
+      role="log"
+      aria-live="polite"
+      aria-relevant="additions text"
+      [attr.aria-busy]="busy"
+    >
+      <div *ngIf="!messages.length" class="welcome">
+        <span class="eyebrow">¿QUÉ NECESITAS CONSULTAR?</span>
+        <h3>Los datos de tu empresa,<br />en una conversación.</h3>
+        <p>
+          Consulta proyectos, costos, materiales, personal, incidencias, clientes y ventas según tus
+          permisos. Escribe o dicta; el asistente elige las consultas disponibles.
+        </p>
+        <div class="suggestions">
+          <button
+            *ngFor="let suggestion of suggestions"
+            (click)="send(suggestion)"
+            [disabled]="busy || needsCompany"
+          >
+            {{ suggestion }} <span aria-hidden="true">↗</span>
+          </button>
+        </div>
+      </div>
+      <article
+        *ngFor="let message of visibleMessages"
+        class="message"
+        [class.user]="message.author === 'user'"
+      >
+        <span class="sender">{{
+          message.author === 'user' ? 'Tú' : 'OBRATEC · ' + topicLabel(message.topic)
+        }}</span>
+        <p>{{ message.text }}</p>
+        <div class="choices">
+          <button *ngFor="let choice of message.choices" (click)="send(choice)" [disabled]="busy">
+            {{ choice }}</button
+          ><button
+            *ngFor="let work of message.works"
+            (click)="selectWork(message, work)"
+            [disabled]="busy"
+          >
+            {{ work.nombre }}
+          </button>
+        </div>
+        <div
+          *ngFor="
+            let execution of message.executions || (message.execution ? [message.execution] : [])
+          "
+          class="report-actions"
+        >
+          <button (click)="view(execution)" [disabled]="busy">Ver reporte completo ↗</button
+          ><ng-container *ngIf="catalog?.acciones?.includes('Exportar_reportes')"
+            ><button (click)="download(execution, 'pdf')" [disabled]="busy">PDF</button
+            ><button (click)="download(execution, 'xlsx')" [disabled]="busy">
+              Excel
+            </button></ng-container
+          >
+        </div>
+      </article>
+      <p *ngIf="messages.length && !visibleMessages.length" class="working">
+        No hay consultas de este tema. Puedes escribir cualquier consulta abajo.
+      </p>
+      <p *ngIf="busy" class="working" role="status">
+        <span class="dot"></span>Consultando tus datos…
+      </p>
+    </div>
+    <p *ngIf="needsCompany" class="feedback" role="status">
+      Selecciona una empresa en el panel para consultar sus datos.
+    </p>
+    <p *ngIf="error" class="feedback error" role="alert">{{ error }}</p>
+    <form (ngSubmit)="send()" class="composer">
+      <label class="sr-only" for="assistant-input">Tu consulta</label
+      ><textarea
+        #input
+        id="assistant-input"
+        name="consulta"
+        [(ngModel)]="text"
+        rows="2"
+        maxlength="2000"
+        placeholder="Escribe tu consulta…"
+        [disabled]="busy || needsCompany"
+        (keydown.enter)="onEnter($event)"
+      ></textarea>
+      <div class="composer-actions">
+        <button
+          type="button"
+          class="voice"
+          (click)="voice()"
+          [class.recording]="listening"
+          [attr.aria-pressed]="listening"
+          [disabled]="busy || voicePending || needsCompany"
+          [attr.aria-label]="listening ? 'Detener dictado' : 'Dictar consulta'"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            aria-hidden="true"
+          >
+            <rect x="9" y="2" width="6" height="12" rx="3" />
+            <path d="M5 10v2a7 7 0 0014 0v-2M12 19v3M8 22h8" /></svg
+          >{{ listening ? 'Detener' : 'Dictar' }}</button
+        ><small role="status">{{
+          listening
+            ? 'Escuchando…'
+            : voicePending
+              ? 'Procesando voz…'
+              : 'Enter para enviar · Shift + Enter para nueva línea'
+        }}</small
+        ><button
+          type="submit"
+          class="send"
+          [disabled]="busy || listening || voicePending || needsCompany || !text.trim()"
+          aria-label="Enviar consulta"
+        >
+          ↑
+        </button>
+      </div>
+    </form>
+  </section>
+  <button
+    #launcher
+    type="button"
+    class="launcher"
+    (click)="ui.opened() ? close() : ui.open()"
+    [attr.aria-expanded]="ui.opened()"
+    aria-label="Abrir o cerrar asistente OBRATEC"
+  >
+    <svg
+      width="23"
+      height="23"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.8"
+      aria-hidden="true"
+    >
+      <path d="M21 11.5a8.5 8.5 0 01-8.5 8.5H4l-2 2V11.5a9.5 9.5 0 0119 0z" />
+      <path d="M7 10h10M7 14h6" /></svg
+    ><span>Asistente</span>
+  </button>
+</ng-container>

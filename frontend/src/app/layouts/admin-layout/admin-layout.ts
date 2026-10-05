@@ -16,11 +16,13 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { FormsModule } from '@angular/forms';
 import { EmpresaService } from '../../services/empresa';
+import { AsistenteComponent } from '../../components/asistente/asistente';
+import { AsistenteService } from '../../services/asistente.service';
 
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterModule, FormsModule],
+  imports: [CommonModule, RouterOutlet, RouterModule, FormsModule, AsistenteComponent],
   templateUrl: './admin-layout.html',
   styleUrl: './admin-layout.css'
 })
@@ -34,6 +36,8 @@ export class AdminLayoutComponent implements OnInit {
   private cdr                   = inject(ChangeDetectorRef);
   private ngZone                = inject(NgZone);
   private destroyRef            = inject(DestroyRef);
+  private asistente             = inject(AsistenteService);
+  consultaAsistente = '';
 
   // ---- Estado general ----
   usuarioActual: any      = null;
@@ -208,12 +212,21 @@ export class AdminLayoutComponent implements OnInit {
   // ------------------------------------------------------------------
 
   toggleSidebar() {
-    this.sidebarColapsado = !this.sidebarColapsado;
+    if (isPlatformBrowser(this.platformId) && window.matchMedia('(max-width: 850px)').matches) {
+      this.sidebarColapsado = false;
+      this.sidebarAbierto = !this.sidebarAbierto;
+    } else this.sidebarColapsado = !this.sidebarColapsado;
     this.cdr.detectChanges();
+  }
+
+  abrirConsultaAsistente() {
+    this.asistente.open(this.consultaAsistente.trim());
+    this.consultaAsistente = '';
   }
 
   navegarA(ruta: string, tab?: string) {
     this.ngZone.run(() => {
+      this.sidebarAbierto = false;
       if (tab) {
         this.router.navigate([ruta], { queryParams: { tab } });
       } else {

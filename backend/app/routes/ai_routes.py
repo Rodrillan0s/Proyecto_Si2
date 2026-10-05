@@ -2,9 +2,17 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Request
 from app.services.ai.ai_service import ai_service
 from app.services import crm_services
 from app.utils.security import exigir_permiso
+from app.utils.security import verificar_token
+from app.services.reportes.contracts import AssistantRequest
+from app.services import reportes_services
 
 
 router = APIRouter(tags=["Inteligencia Artificial"])
+
+
+@router.post('/consulta')
+def consulta(data: AssistantRequest,id_empresa: int = None,token=Depends(verificar_token)):
+    return reportes_services.assistant(token,data,id_empresa)
 
 
 def _ip(request: Request) -> str:
@@ -34,8 +42,10 @@ def post_consulta_crm(
         )
     except crm_services.CrmError as exc:
         raise HTTPException(status_code=exc.status_code, detail=str(exc))
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Error al procesar la consulta con IA: {str(exc)}")
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=500, detail="No se pudo completar la consulta. Intente nuevamente.")
 
 
 # ─────────────────────────────────────────────────────────────────────────────

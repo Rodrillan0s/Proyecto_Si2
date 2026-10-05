@@ -1,0 +1,4 @@
+# Versión estable verificada en PyPI, compatible con Python 3.14.
+cryptography==50.0.2
+# Solo necesario para réplica S3 compatible; credenciales por cadena estándar de AWS.
+boto3>=1.40,<2

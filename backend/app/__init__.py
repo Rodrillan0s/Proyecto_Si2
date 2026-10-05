@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from app.config import Config
+from app.routes import reportes_routes
+from app.utils.reportes_errors import ReportesSchemaMissing
 
 from app.routes import main_routes, auth_routes, users_routes, tenant_routes, roles_routes, backup_routes, profile_routes,estimacion_routes,control_costos_routes, notificaciones_routes, password_recovery_routes, bitacora_routes, obra_routes, estructura_routes, unidad_routes, material_routes, proveedor_routes, orden_Trabajo_routes, crm_routes, ai_routes, presupuesto_routes, compras_routes, inventario_routes , equipos_maquinaria_routes, incidencia_routes
 
@@ -12,6 +15,21 @@ def create_app() -> FastAPI:
         description="Backend FastAPI Base estructurado en 3 capas"
     )
 
+    from app.services.backups.settings import BackupError
+    from app.services.backups.coordination import MaintenanceMiddleware
+
+    @app.exception_handler(BackupError)
+    async def backup_error(request, exc):
+        return JSONResponse(status_code=exc.status, content={'detail': str(exc), 'code': exc.code})
+
+    app.add_middleware(MaintenanceMiddleware)
+
+    @app.exception_handler(ReportesSchemaMissing)
+    async def reportes_schema_missing(request, exc):
+        return JSONResponse(status_code=503, content={
+            'detail': str(exc), 'code': 'REPORTES_SCHEMA_MISSING'
+        })
+
     # CONFIGURACIÓN DE CORS
     app.add_middleware(
         CORSMiddleware,
@@ -22,6 +40,7 @@ def create_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=['Content-Disposition', 'Retry-After'],
     )
 
     # REGISTRO DE RUTAS
@@ -54,6 +73,8 @@ def create_app() -> FastAPI:
     app.include_router(estimacion_routes.router)
     app.include_router(control_costos_routes.router)
     app.include_router(incidencia_routes.router,prefix='/api/incidencias')
+    app.include_router(reportes_routes.router)
+    app.include_router(reportes_routes.voice_router)
     return app
 
 

@@ -132,12 +132,9 @@
 
     <button 
       (click)="cambiarPestana('asistente_ia')"
-      class="px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 cursor-pointer"
-      [ngClass]="pestanaActiva === 'asistente_ia' 
-        ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-xs' 
-        : 'text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30'">
+      class="px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 cursor-pointer text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30">
       <span>✨</span>
-      <span>Asistente IA (Gemini)</span>
+      <span>Asistente IA</span>
     </button>
   </div>
 
@@ -340,74 +337,6 @@
             Siguiente
           </button>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ========================================================================= -->
-  <!-- PESTAÑA: ASISTENTE INTELIGENTE IA (GEMINI)                                -->
-  <!-- ========================================================================= -->
-  <div *ngIf="pestanaActiva === 'asistente_ia'" class="space-y-4 max-w-4xl mx-auto">
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden">
-      <div class="p-4 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="text-lg">✨</span>
-          <div>
-            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Asistente Comercial IA</h3>
-            <p class="text-[11px] text-slate-500 dark:text-slate-400">Consultas analíticas sobre clientes, pipeline y unidades</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="p-4 md:p-6 space-y-4 min-h-[350px] max-h-[500px] overflow-y-auto">
-        <div *ngFor="let msg of mensajesChat" class="flex flex-col space-y-1">
-          <div class="flex items-center gap-2" [ngClass]="msg.emisor === 'usuario' ? 'justify-end' : 'justify-start'">
-            <span class="text-[10px] text-slate-400">{{ msg.hora }}</span>
-            <span class="text-xs font-bold" [ngClass]="msg.emisor === 'usuario' ? 'text-amber-600' : 'text-purple-600'">
-              {{ msg.emisor === 'usuario' ? 'Tú' : 'OBRATEC IA' }}
-            </span>
-          </div>
-          <div 
-            [ngClass]="msg.emisor === 'usuario' 
-              ? 'bg-amber-500 text-white self-end rounded-2xl rounded-tr-xs' 
-              : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 self-start rounded-2xl rounded-tl-xs'"
-            class="p-3 text-xs max-w-[85%] shadow-xs leading-relaxed whitespace-pre-line">
-            {{ msg.texto }}
-          </div>
-        </div>
-
-        <div *ngIf="consultandoIa" class="flex items-center gap-2 text-xs text-purple-600 self-start p-2">
-          <span class="animate-spin">✨</span> Consultando datos comerciales...
-        </div>
-      </div>
-
-      <!-- Preguntas sugeridas -->
-      <div class="px-4 py-2 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-800 flex flex-wrap gap-1.5 text-[11px]">
-        <span class="text-slate-400 py-1">Sugerencias:</span>
-        <button 
-          *ngFor="let sug of sugerenciasIa"
-          (click)="enviarPreguntaIa(sug)"
-          class="px-2.5 py-1 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-purple-400 hover:text-purple-600 transition-colors cursor-pointer">
-          {{ sug }}
-        </button>
-      </div>
-
-      <!-- Campo de Entrada -->
-      <div class="p-3 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2 bg-white dark:bg-slate-900">
-        <input 
-          type="text" 
-          [(ngModel)]="preguntaIa"
-          (keydown.enter)="enviarPreguntaIa()"
-          [disabled]="consultandoIa"
-          placeholder="Escribe tu consulta sobre prospectos, clientes o unidades..."
-          class="flex-1 text-xs px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-purple-500"
-        />
-        <button 
-          (click)="enviarPreguntaIa()"
-          [disabled]="consultandoIa || !preguntaIa.trim()"
-          class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 disabled:opacity-40 text-white text-xs font-bold transition-all cursor-pointer">
-          Preguntar
-        </button>
       </div>
     </div>
   </div>

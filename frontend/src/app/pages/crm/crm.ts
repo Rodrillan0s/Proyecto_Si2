@@ -16,14 +16,7 @@ import {
   EstadoAsociacionUnidad,
   AsesorComercial
 } from '../../services/crm.service';
-import { AiService } from '../../services/ai.service';
-
-interface ChatMensaje {
-  emisor: 'usuario' | 'ia';
-  texto: string;
-  hora: string;
-  metricas?: any;
-}
+import { AsistenteService } from '../../services/asistente.service';
 
 @Component({
   selector: 'app-crm',
@@ -34,14 +27,14 @@ interface ChatMensaje {
 })
 export class CrmComponent implements OnInit {
   private crmService = inject(CrmService);
-  private aiService = inject(AiService);
+  readonly asistente = inject(AsistenteService);
   private auth = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
   private destroyRef = inject(DestroyRef);
   private busqueda$ = new Subject<string>();
 
   // Pestaña activa
-  pestanaActiva: 'prospectos' | 'clientes' | 'asistente_ia' = 'prospectos';
+  pestanaActiva: 'prospectos' | 'clientes' = 'prospectos';
 
   // Métricas
   metricas: MetricasCRM | null = null;
@@ -142,18 +135,6 @@ export class CrmComponent implements OnInit {
     observaciones: ''
   };
 
-  // Asistente IA (Gemini)
-  mensajesChat: ChatMensaje[] = [];
-  preguntaIa = '';
-  consultandoIa = false;
-  sugerenciasIa: string[] = [
-    '¿Cuántos clientes potenciales tenemos registrados actualmente?',
-    '¿Cuántos prospectos se encuentran actualmente en negociación?',
-    '¿Cuáles son nuestros prospectos con mayor presupuesto?',
-    '¿Qué unidades inmobiliarias están reservadas o en negociación?',
-    '¿Cuál fue la última interacción comercial registrada?'
-  ];
-
   // Mensajes de estado
   mensajeExito = '';
   mensajeError = '';
@@ -173,16 +154,7 @@ export class CrmComponent implements OnInit {
       this.cargarLista();
     });
 
-    // Cargar sugerencias de IA del backend
-    this.aiService.obtenerSugerencias().subscribe({
-      next: (res) => {
-        if (res && res.sugerencias && res.sugerencias.length) {
-          this.sugerenciasIa = res.sugerencias;
-          this.cdr.detectChanges();
-        }
-      },
-      error: () => {}
-    });
+
   }
 
   // ── Cargar Asesores Comerciales de la Empresa ─────────────────────────────
@@ -205,6 +177,7 @@ export class CrmComponent implements OnInit {
 
   // ── Navegación entre pestañas ─────────────────────────────────────────────
   cambiarPestana(p: 'prospectos' | 'clientes' | 'asistente_ia') {
+    if (p === 'asistente_ia') { this.asistente.open(); return; }
     this.pestanaActiva = p;
     this.limpiarMensajes();
     if (p === 'prospectos') {
@@ -217,12 +190,6 @@ export class CrmComponent implements OnInit {
       this.filtroEstado = '';
       this.pagina = 1;
       this.cargarLista();
-    } else if (p === 'asistente_ia' && this.mensajesChat.length === 0) {
-      this.mensajesChat.push({
-        emisor: 'ia',
-        texto: '¡Hola! Soy el Asistente Inteligente de OBRATEC CRM. Puedes preguntarme en lenguaje natural sobre prospectos, clientes comerciales, negociaciones o unidades asociadas.',
-        hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      });
     }
   }
 
@@ -569,47 +536,7 @@ export class CrmComponent implements OnInit {
     });
   }
 
-  // ── Asistente IA (Gemini) ────────────────────────────────────────────────
-  enviarPreguntaIa(texto?: string) {
-    const q = (texto || this.preguntaIa).trim();
-    if (!q || this.consultandoIa) return;
-
-    this.mensajesChat.push({
-      emisor: 'usuario',
-      texto: q,
-      hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    });
-    this.preguntaIa = '';
-    this.consultandoIa = true;
-    this.limpiarMensajes();
-
-    this.aiService.consultarCRM(q).subscribe({
-      next: (res) => {
-        if (res && res.success) {
-          this.mensajesChat.push({
-            emisor: 'ia',
-            texto: res.respuesta,
-            hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            metricas: res.metricas
-          });
-        }
-        this.consultandoIa = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        const errorMsg = err.error?.detail || 'No se pudo obtener respuesta del Asistente IA en este momento.';
-        this.mensajesChat.push({
-          emisor: 'ia',
-          texto: `⚠️ ${errorMsg}`,
-          hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        });
-        this.consultandoIa = false;
-        this.cdr.detectChanges();
-      }
-    });
-  }
-
-  // ── Helpers UI y Pipeline ─────────────────────────────────────────────────
+  // ── Helpers UI y Pipeline ────────────────────────────────────────────────
   getIndiceEtapa(estado: string): number {
     const orden = ['NUEVO', 'CONTACTADO', 'INTERESADO', 'NEGOCIACION', 'RESERVADO', 'VENDIDO'];
     const norm = (estado === 'EN_NEGOCIACION' ? 'NEGOCIACION' : estado || '').toUpperCase();

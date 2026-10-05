@@ -1,0 +1,15 @@
+# Instrucciones del proyecto
+
+## Contexto obligatorio antes de modificar
+
+- Antes de cada modificación, leer [`docs/ARQUITECTURA_Y_PATRONES.md`](docs/ARQUITECTURA_Y_PATRONES.md) y después el código actual del flujo afectado.
+- Para Reportes, IA, voz, exportaciones o automatización, leer también [`docs/ARQUITECTURA_REPORTES_IA.md`](docs/ARQUITECTURA_REPORTES_IA.md) y [`docs/OPERACION_REPORTES.md`](docs/OPERACION_REPORTES.md). Diferenciar migración preparada de migración aplicada; no iniciar el worker en una base no designada para envíos.
+- Para Backup/Restore, mantenimiento, archivos de evidencias, sesiones globales o hooks de despliegue, leer [`docs/ARQUITECTURA_BACKUP_RESTORE.md`](docs/ARQUITECTURA_BACKUP_RESTORE.md) y [`docs/OPERACION_BACKUPS.md`](docs/OPERACION_BACKUPS.md). El control es una base independiente, los respaldos son globales y la migración preparada no acredita instalación. No restaurar la base de negocio ni activar procesos/envíos sin un entorno designado; conservar barreras y generaciones ante promociones ambiguas.
+- Si el cambio afecta base de datos, persistencia, roles, permisos o aislamiento, leer también [`docs/ARQUITECTURA_BASE_DATOS.md`](docs/ARQUITECTURA_BASE_DATOS.md), el inventario y las rutinas enlazados. Comprobar los objetos actuales; la fotografía documentada no garantiza que el esquema o permisos sigan iguales.
+- **Todo análisis de patrones de diseño y arquitectura debe quedar en un archivo `.md`.** Antes de editar código, registrar un análisis proporcional al cambio en `docs/decisiones/AAAA-MM-DD-descripcion.md` o actualizar una nota existente de ese mismo trabajo. Incluir capas, contratos, contexto de tenant/permisos y validación prevista.
+- Preservar el flujo `routes → services → repos → PostgreSQL`, revisando también funciones SQL y excepciones existentes. Evitar cambios amplios sin relación con la solicitud.
+- Verificar pertenencia a empresa y autorización por recurso; la empresa seleccionada en la interfaz no sustituye la empresa autorizada del JWT. Distinguir `ADMINISTRADOR` global de `ADMINISTRADOR_EMPRESA`.
+- Antes de intervenir presupuestos/APU, revisar la coexistencia del modelo antiguo y el flujo de estimaciones, las rutas consumidoras y las migraciones aplicables. No asumir que un script SQL existente está aplicado.
+- Revisar impacto en Angular y Flutter cuando cambien contratos o permisos compartidos. Ejecutar comprobaciones proporcionales y documentar resultados reales.
+- Actualizar la referencia de arquitectura cuando cambien patrones, responsabilidades, aislamiento o modelo de datos, y completar la nota del cambio con su implementación y validación.
+- No ejecutar migraciones ni pruebas que escriban en una base desconocida como parte de una revisión documental.

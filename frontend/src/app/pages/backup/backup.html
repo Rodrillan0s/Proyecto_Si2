@@ -1,128 +1,377 @@
-<div class="p-6 max-w-6xl mx-auto">
-  
-  <div class="flex items-center mb-8">
-    <div class="p-3 bg-slate-900 text-white rounded-full mr-4 shadow-sm">
-      <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path>
-      </svg>
+<main class="backup-page">
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">ADMINISTRACIÓN DE PLATAFORMA</span>
+      <h1>Copias de respaldo</h1>
+      <p>Protege los datos, las evidencias y el software de todas las empresas.</p>
+    </div>
+    <button class="secondary" (click)="actualizar(true)" [disabled]="cargando || !!ocupada">
+      Actualizar estado
+    </button>
+  </header>
+  <div *ngIf="mensaje" class="notice" [class.error]="error" role="status" aria-live="polite">
+    {{ mensaje }}<button aria-label="Cerrar mensaje" (click)="mensaje = ''">×</button>
+  </div>
+  <p *ngIf="cargando" role="status">Consultando estado de protección…</p>
+  <section *ngIf="estado as state" class="protection" aria-label="Estado de protección">
+    <div>
+      <span class="eyebrow">ENTORNO</span><strong>{{ state.entorno }}</strong
+      ><small>Todos los tenants</small>
     </div>
     <div>
-      <h1 class="text-2xl font-bold text-gray-800">Gestión de Copias de Seguridad</h1>
-      <p class="text-gray-500 text-sm mt-1">Protege la base de datos de la red de talleres mediante respaldos manuales o programados.</p>
+      <span class="eyebrow">AUTOMATIZACIÓN</span
+      ><strong>{{ state.worker_activo ? 'Worker operativo' : 'Worker sin latido reciente' }}</strong
+      ><small>{{
+        state.ultimo_latido
+          ? (state.ultimo_latido | date: 'dd/MM/yyyy HH:mm:ss')
+          : 'Sin ejecución registrada'
+      }}</small>
     </div>
+    <div>
+      <span class="eyebrow">ALMACENAMIENTO</span
+      ><strong>{{
+        state.replica_remota ? 'Réplica externa configurada' : 'Solo almacenamiento local'
+      }}</strong
+      ><small>{{
+        state.almacenamiento_persistente
+          ? 'Volumen persistente declarado'
+          : 'Persistencia pendiente de configurar'
+      }}</small>
+    </div>
+  </section>
+  <section *ngIf="estado && !estado.configurado" class="setup">
+    <h2>Configuración necesaria</h2>
+    <p>Las operaciones se habilitarán cuando el servidor esté preparado.</p>
+    <ul>
+      <li *ngFor="let item of estado.requisitos">{{ item }}</li>
+    </ul>
+  </section>
+  <div *ngIf="estado?.mantenimiento" class="notice error" role="alert">
+    <strong>Sistema en mantenimiento.</strong> {{ estado?.motivo }}. La operación se conserva en el
+    historial.
   </div>
-
-  <div *ngIf="mensaje" 
-       [ngClass]="{'bg-green-50 text-green-800 border-green-200': tipoMensaje === 'exito', 'bg-red-50 text-red-800 border-red-200': tipoMensaje === 'error'}"
-       class="p-4 mb-6 rounded-md border flex items-center shadow-sm transition-all duration-300">
-    <span class="mr-3">
-      <svg *ngIf="tipoMensaje === 'exito'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-      <svg *ngIf="tipoMensaje === 'error'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-    </span>
-    <span class="font-medium">{{ mensaje }}</span>
-  </div>
-
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-      <div class="bg-gray-50 border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-        <h3 class="text-lg font-semibold text-gray-800 flex items-center">
-          <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-          Extracción Manual
-        </h3>
-        <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded">Inmediato</span>
+  <div class="configuration-grid">
+    <section class="panel">
+      <div class="section-title">
+        <span class="number">01</span>
+        <h2>Crear una copia</h2>
       </div>
-      
-      <div class="p-6 flex-grow flex flex-col justify-center text-center">
-        <p class="text-gray-600 mb-6 text-sm">
-          Descarga un archivo <strong>.sql</strong> con el estado exacto de la base de datos en este instante. Recomendado antes de realizar actualizaciones de versión o mantenimientos correctivos.
+      <p>
+        La captura se coordina con los escritores del sistema. Podría pausar el acceso brevemente.
+      </p>
+      <label
+        >Contenido<select [(ngModel)]="alcance" [disabled]="!!ocupada">
+          <option value="sistema_completo">Sistema completo · base, evidencias y software</option>
+          <option value="base_datos">Solo base de datos · todos los esquemas</option>
+        </select></label
+      >
+      <p class="hint">
+        {{
+          alcance === 'sistema_completo'
+            ? 'Recomendado para recuperar el sistema. No incluye secretos ni claves.'
+            : 'No contiene archivos de evidencias ni software; la restauración exige que los archivos actuales coincidan con el corte.'
+        }}
+      </p>
+      <button
+        class="primary"
+        (click)="crear()"
+        [disabled]="!estado?.configurado || estado?.mantenimiento || !!ocupada"
+      >
+        {{ ocupada === 'crear' ? 'Registrando…' : 'Crear respaldo manual' }}
+      </button>
+    </section>
+    <section class="panel">
+      <div class="section-title">
+        <span class="number">02</span>
+        <h2>Programación automática</h2>
+      </div>
+      <form (ngSubmit)="guardar()">
+        <label class="check"
+          ><input
+            type="checkbox"
+            name="enabled"
+            [(ngModel)]="programacion.habilitada"
+            [disabled]="!estado?.configurado || !!ocupada"
+          />
+          Habilitar copias automáticas</label
+        >
+        <div class="form-grid">
+          <label
+            >Frecuencia<select name="frequency" [(ngModel)]="programacion.frecuencia">
+              <option value="diario">Diaria</option>
+              <option value="semanal">Semanal</option>
+              <option value="mensual">Mensual</option>
+            </select></label
+          >
+          <label
+            >Hora<input type="time" name="hour" required [(ngModel)]="programacion.hora"
+          /></label>
+          <label *ngIf="programacion.frecuencia === 'semanal'"
+            >Día<select name="weekday" [(ngModel)]="programacion.dia_semana">
+              <option [ngValue]="0">Lunes</option>
+              <option [ngValue]="1">Martes</option>
+              <option [ngValue]="2">Miércoles</option>
+              <option [ngValue]="3">Jueves</option>
+              <option [ngValue]="4">Viernes</option>
+              <option [ngValue]="5">Sábado</option>
+              <option [ngValue]="6">Domingo</option>
+            </select></label
+          >
+          <label *ngIf="programacion.frecuencia === 'mensual'"
+            >Día del mes<input
+              type="number"
+              name="monthday"
+              min="1"
+              max="28"
+              required
+              [(ngModel)]="programacion.dia_mes"
+          /></label>
+          <label
+            >Zona horaria<input
+              name="timezone"
+              required
+              [(ngModel)]="programacion.zona_horaria"
+              placeholder="America/La_Paz"
+          /></label>
+          <label
+            >Retención<select name="retention" [(ngModel)]="programacion.retencion_dias">
+              <option [ngValue]="7">7 días</option>
+              <option [ngValue]="15">15 días</option>
+              <option [ngValue]="30">30 días</option>
+              <option [ngValue]="90">90 días</option>
+            </select></label
+          >
+        </div>
+        <label
+          >Contenido<select name="scope" [(ngModel)]="programacion.alcance">
+            <option value="sistema_completo">Sistema completo</option>
+            <option value="base_datos">Solo base de datos</option>
+          </select></label
+        >
+        <p class="hint">
+          La retención protege las copias preventivas, las que están en uso y la última que superó
+          un ensayo de restauración.
         </p>
-
-        <button 
-          (click)="descargarBackup()" 
-          [disabled]="cargandoManual"
-          class="mx-auto inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full sm:w-auto">
-          
-          <svg *ngIf="cargandoManual" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          
-          {{ cargandoManual ? 'Procesando...' : 'Descargar Ahora' }}
+        <p *ngIf="programacion.habilitada && proxima">
+          Próxima ejecución: {{ proxima | date: 'dd/MM/yyyy HH:mm' }} (hora local del navegador).
+        </p>
+        <button
+          class="secondary"
+          type="submit"
+          [disabled]="!estado?.control_disponible || estado?.mantenimiento || !!ocupada"
+        >
+          {{ ocupada === 'guardar' ? 'Guardando…' : 'Guardar programación' }}
         </button>
-      </div>
-    </div>
-
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-      <div class="bg-gray-50 border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-        <h3 class="text-lg font-semibold text-gray-800 flex items-center">
-          <svg class="w-5 h-5 mr-2 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path></svg>
-          Programación en EC2 (AWS)
-        </h3>
-        <span class="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-semibold rounded">Cron Job</span>
-      </div>
-      
-      <div class="p-6 flex-grow">
-        <p class="text-gray-600 mb-5 text-sm">
-          Configura una tarea en el servidor de despliegue para generar respaldos automáticos sin intervención manual.
-        </p>
-
-        <form (ngSubmit)="guardarConfiguracionAutomatica()" class="space-y-4">
-          
-          <div class="flex items-center justify-between bg-slate-50 p-3 rounded border border-slate-200">
-            <div>
-              <span class="block text-sm font-medium text-gray-700">Estado del servicio</span>
-              <span class="block text-xs text-gray-500">Activa o pausa las copias de seguridad.</span>
-            </div>
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" name="habilitado" [(ngModel)]="configAutomatica.habilitado" class="sr-only peer">
-              <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-slate-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
-            </label>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4" [class.opacity-50]="!configAutomatica.habilitado">
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Frecuencia</label>
-              <select name="frecuencia" [(ngModel)]="configAutomatica.frecuencia" [disabled]="!configAutomatica.habilitado" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-slate-500 focus:ring-slate-500 sm:text-sm p-2 border disabled:bg-gray-100">
-                <option value="diario">Diario</option>
-                <option value="semanal">Semanal (Domingos)</option>
-                <option value="mensual">Mensual (Día 1)</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Hora de ejecución</label>
-              <input type="time" name="hora_ejecucion" [(ngModel)]="configAutomatica.hora_ejecucion" [disabled]="!configAutomatica.habilitado" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-slate-500 focus:ring-slate-500 sm:text-sm p-2 border disabled:bg-gray-100">
-            </div>
-
-            <div class="col-span-2">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Política de Retención</label>
-              <select name="retencion_dias" [(ngModel)]="configAutomatica.retencion_dias" [disabled]="!configAutomatica.habilitado" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-slate-500 focus:ring-slate-500 sm:text-sm p-2 border disabled:bg-gray-100">
-                <option [ngValue]="7">Conservar últimos 7 días</option>
-                <option [ngValue]="15">Conservar últimos 15 días</option>
-                <option [ngValue]="30">Conservar últimos 30 días</option>
-              </select>
-            </div>
-
-          </div>
-
-          <div class="pt-4 mt-4 border-t border-gray-100 text-right">
-            <button 
-              type="submit" 
-              [disabled]="cargandoAuto"
-              class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 disabled:opacity-50 transition-colors">
-              <svg *ngIf="cargandoAuto" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              {{ cargandoAuto ? 'Aplicando...' : 'Guardar Configuración' }}
-            </button>
-          </div>
-        </form>
-
-      </div>
-    </div>
-
+      </form>
+    </section>
   </div>
-</div>
+  <section class="panel history">
+    <div class="section-title">
+      <span class="number">03</span>
+      <h2>Historial de respaldos</h2>
+      <label class="filter"
+        >Estado<select [(ngModel)]="filtro" (ngModelChange)="filtrar()">
+          <option value="">Todos</option>
+          <option>PENDIENTE</option>
+          <option>GENERANDO</option>
+          <option>VERIFICANDO</option>
+          <option>LISTO</option>
+          <option>FALLIDO</option>
+        </select></label
+      >
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Creación</th>
+            <th>Contenido / origen</th>
+            <th>Estado</th>
+            <th>Etapa</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let job of historial">
+            <td>
+              {{ job.created_at | date: 'dd/MM/yyyy HH:mm' }}<small>{{ job.id.slice(0, 8) }}</small>
+            </td>
+            <td>
+              {{ scope(job.solicitud.alcance) }}<small>{{ job.origen }}</small>
+            </td>
+            <td>
+              <span
+                class="badge"
+                [class.ready]="job.estado === 'LISTO'"
+                [class.failed]="job.estado === 'FALLIDO'"
+                >{{ job.estado }}</span
+              >
+            </td>
+            <td>
+              {{ job.etapa }}<small class="error-text" *ngIf="job.error">{{ job.error }}</small>
+            </td>
+            <td class="actions">
+              <button
+                class="link"
+                (click)="descargar(job)"
+                [disabled]="job.estado !== 'LISTO' || !!ocupada"
+              >
+                Descargar</button
+              ><button
+                class="link"
+                (click)="validar(job.archivo!)"
+                [disabled]="
+                  job.estado !== 'LISTO' ||
+                  !job.archivo ||
+                  !estado?.restauracion_habilitada ||
+                  !!ocupada ||
+                  estado?.mantenimiento
+                "
+              >
+                Ensayar restauración
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="!historial.length">
+            <td colspan="5" class="empty">
+              {{
+                estado?.control_disponible
+                  ? 'Todavía no hay copias para este filtro.'
+                  : 'Completa la instalación para consultar el historial.'
+              }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <footer class="pagination">
+      <span>{{ total }} respaldos · página {{ pagina }}</span
+      ><button class="secondary" (click)="cambiarPagina(-1)" [disabled]="pagina === 1 || cargando">
+        Anterior</button
+      ><button
+        class="secondary"
+        (click)="cambiarPagina(1)"
+        [disabled]="pagina * 20 >= total || cargando"
+      >
+        Siguiente
+      </button>
+    </footer>
+  </section>
+  <section class="panel restore">
+    <div class="section-title">
+      <span class="number">04</span>
+      <h2>Restaurar el sistema</h2>
+    </div>
+    <p>
+      Una restauración reemplaza los datos de <strong>todas las empresas</strong> por el corte
+      elegido. Los cambios posteriores se recuperan desde la copia preventiva, no se mezclan
+      automáticamente.
+    </p>
+    <details *ngIf="estado && !estado.restauracion_habilitada">
+      <summary>Requisitos para habilitar la restauración</summary>
+      <ul>
+        <li *ngFor="let item of estado.requisitos_restauracion">{{ item }}</li>
+      </ul>
+    </details>
+    <label class="import"
+      >Importar copia cifrada .obratec<input
+        type="file"
+        accept=".obratec"
+        (change)="importar($event)"
+        [disabled]="!estado?.configurado || !!ocupada || estado?.mantenimiento"
+    /></label>
+    <div *ngIf="importado" class="notice">
+      {{ importado.nombre }} · {{ size(importado.bytes)
+      }}<button
+        class="link"
+        (click)="validar(importado.id)"
+        [disabled]="!estado?.restauracion_habilitada || !!ocupada"
+      >
+        Validar paquete importado
+      </button>
+    </div>
+    <div class="restore-list">
+      <button
+        *ngFor="let item of restauraciones"
+        class="restore-item"
+        [class.active]="seleccion?.id === item.id"
+        (click)="elegirRestore(item)"
+      >
+        <strong>{{ item.estado }}</strong
+        ><span
+          >{{ item.respaldo.corte | date: 'dd/MM/yyyy HH:mm' }} ·
+          {{ scope(item.respaldo.alcance) }}</span
+        >
+      </button>
+    </div>
+    <article *ngIf="seleccion as selected" class="restore-detail">
+      <h3>{{ selected.etapa }}</h3>
+      <p *ngIf="selected.error" class="error-text">{{ selected.error }}</p>
+      <dl>
+        <div>
+          <dt>Corte a recuperar</dt>
+          <dd>{{ selected.respaldo.corte | date: 'dd/MM/yyyy HH:mm:ss' }}</dd>
+        </div>
+        <div>
+          <dt>Origen</dt>
+          <dd>{{ selected.respaldo.entorno_origen }}</dd>
+        </div>
+        <div>
+          <dt>Contenido</dt>
+          <dd>{{ scope(selected.respaldo.alcance) }}</dd>
+        </div>
+        <div>
+          <dt>Integridad SHA-256</dt>
+          <dd class="fingerprint">{{ selected.respaldo.sha256 }}</dd>
+        </div>
+      </dl>
+      <ol *ngIf="selected.pasos.length">
+        <li *ngFor="let step of selected.pasos">{{ step.paso }} · {{ step.estado }}</li>
+      </ol>
+      <form
+        *ngIf="selected.estado === 'VALIDADA' && !selected.aplicar_en"
+        (ngSubmit)="aplicar()"
+        class="confirm-form"
+      >
+        <h3>Confirmar restauración global</h3>
+        <p>
+          El ensayo pasó. Se hará una copia preventiva y se pausará el sistema. Después deberás
+          iniciar sesión; los envíos y programaciones de reportes quedarán en cuarentena.
+        </p>
+        <label
+          >Escribe exactamente: <code>{{ selected.confirmacion_requerida }}</code
+          ><input name="confirmation" autocomplete="off" [(ngModel)]="confirmacion" required
+        /></label>
+        <div class="form-grid">
+          <label
+            >Tu usuario, correo o CI<input
+              name="identity"
+              autocomplete="username"
+              [(ngModel)]="identificador"
+              required /></label
+          ><label
+            >Confirma tu contraseña<input
+              type="password"
+              name="password"
+              autocomplete="current-password"
+              [(ngModel)]="password"
+              required
+          /></label>
+        </div>
+        <button
+          class="danger"
+          type="submit"
+          [disabled]="
+            !!ocupada ||
+            confirmacion !== selected.confirmacion_requerida ||
+            !identificador ||
+            !password ||
+            estado?.mantenimiento
+          "
+        >
+          {{ ocupada === 'aplicar' ? 'Confirmando…' : 'Restaurar todas las empresas' }}
+        </button>
+      </form>
+    </article>
+  </section>
+</main>

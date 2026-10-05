@@ -6,6 +6,11 @@ import { environment } from '../../environments/environment';
 
 
 export type PermisoNombre =
+  | 'Visualizar_reportes'
+  | 'Exportar_reportes'
+  | 'Enviar_reportes'
+  | 'Programar_reportes'
+  | 'Administrar_programaciones_reportes'
   | 'Visualizar_usuarios'
   | 'Registrar_usuarios'
   | 'Modificar_usuarios'
@@ -48,6 +53,7 @@ export type PermisoNombre =
   | 'Cerrar_incidencias';
 
 export const PERMISOS_OFICIALES: PermisoNombre[] = [
+  'Visualizar_reportes', 'Exportar_reportes', 'Enviar_reportes', 'Programar_reportes', 'Administrar_programaciones_reportes',
   'Visualizar_usuarios', 'Registrar_usuarios', 'Modificar_usuarios', 'Eliminar_usuarios',
   'Visualizar_obras', 'Registrar_obras', 'Modificar_obras', 'Eliminar_obras',
   'Visualizar_empresa', 'Registrar_empresa', 'Modificar_empresa', 'Eliminar_empresa',
@@ -63,6 +69,7 @@ export const PERMISOS_OFICIALES: PermisoNombre[] = [
 export const MAPA_PERMISOS_POR_ROL: Record<string, PermisoNombre[]> = {
   'ADMINISTRADOR': [...PERMISOS_OFICIALES],
   'ADMINISTRADOR_EMPRESA': [
+    'Visualizar_reportes', 'Exportar_reportes', 'Enviar_reportes', 'Programar_reportes', 'Administrar_programaciones_reportes',
     'Visualizar_usuarios', 'Registrar_usuarios', 'Modificar_usuarios', 'Eliminar_usuarios',
     'Visualizar_obras', 'Registrar_obras', 'Modificar_obras', 'Eliminar_obras',
     'Visualizar_empresa', 'Registrar_empresa', 'Modificar_empresa',
@@ -75,6 +82,7 @@ export const MAPA_PERMISOS_POR_ROL: Record<string, PermisoNombre[]> = {
     'Visualizar_incidencias', 'Registrar_incidencias', 'Modificar_incidencias', 'Asignar_incidencias', 'Cerrar_incidencias'
   ],
   'JEFE_DE_OBRA': [
+    'Visualizar_reportes', 'Exportar_reportes', 'Enviar_reportes', 'Programar_reportes',
     'Visualizar_obras', 'Registrar_obras', 'Modificar_obras',
     'Visualizar_inventario', 'Modificar_inventario',
     'Visualizar_materiales',
@@ -90,24 +98,29 @@ export const MAPA_PERMISOS_POR_ROL: Record<string, PermisoNombre[]> = {
     'Visualizar_incidencias', 'Modificar_incidencias', 'Cerrar_incidencias'
   ],
   'CLIENTE': [
+    'Visualizar_reportes', 'Exportar_reportes',
     'Visualizar_obras'
   ],
   'ELECTRICO': [
+    'Visualizar_reportes', 'Exportar_reportes',
     'Visualizar_obras',
     'Visualizar_inventario',
     'Visualizar_materiales'
   ],
   'PLOMERO': [
+    'Visualizar_reportes', 'Exportar_reportes',
     'Visualizar_obras',
     'Visualizar_inventario',
     'Visualizar_materiales'
   ],
   'MAESTRO_ALBANIL': [
+    'Visualizar_reportes', 'Exportar_reportes',
     'Visualizar_obras',
     'Visualizar_inventario',
     'Visualizar_materiales'
   ],
   'ALBANIL': [
+    'Visualizar_reportes', 'Exportar_reportes',
     'Visualizar_obras',
     'Visualizar_inventario',
     'Visualizar_materiales'

@@ -14,12 +14,10 @@ import 'proyectos_screen.dart';
 import 'proyecto_detalle_screen.dart';
 import 'materiales_screen.dart';
 import 'ordenes_trabajo_screen.dart';
-<<<<<<< HEAD
 import 'crm_screen.dart';
-=======
 import 'incidencias_screen.dart';
 import 'incidencia_detalle_screen.dart';
->>>>>>> d6f0ad7a6ba6a03be781e103fe5a35b3f52d0dd4
+import 'reportes_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -93,6 +91,8 @@ class _HomeScreenState extends State<HomeScreen> {
         titleSpacing: 16,
         title: ObratecLogo(fontSize: 18, darkBackground: isDark),
         actions: [
+          if (auth.hasPermission('Visualizar_reportes')) IconButton(tooltip: 'Reportes', icon: const Icon(Icons.assessment_outlined),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportesScreen()))),
           // Botón selector de empresa solo para Administrador Global
           if (auth.esAdminGlobal)
             IconButton(

@@ -7,6 +7,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "test:reportes": "ng test --watch=false --ts-config=tsconfig.reportes.spec.json --include=src/app/**/reportes*.spec.ts",
+    "test:backups": "ng test --watch=false --ts-config=tsconfig.backups.spec.json --include=src/app/**/backup.spec.ts",
     "serve:ssr:frontend": "node dist/frontend/server/server.mjs"
   },
   "private": true,

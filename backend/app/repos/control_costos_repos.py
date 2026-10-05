@@ -287,8 +287,10 @@ def anular_costo(id_costo, motivo, id_empresa, id_usuario):
         db.close_connection()
 
 
-def comparacion_por_obra(id_empresa, id_obra):
-    return _read_many(
+def comparacion_por_obra(id_empresa, id_obra, db=None):
+    # Los reportes comparten una transacción de corte consistente.
+    read = (lambda sql, params: _many(db, sql, params)) if db else _read_many
+    return read(
         f"""
         WITH control AS (
             SELECT *

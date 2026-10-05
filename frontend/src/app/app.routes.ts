@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { ReportesComponent } from './pages/reportes/reportes';
 
 //COMPONENTES
 import { LoginComponent } from './pages/login/login';
@@ -53,6 +54,7 @@ export const routes: Routes = [
         component: AdminLayoutComponent,
         canActivate: [authGuard],
         children: [
+            { path: 'reportes', component: ReportesComponent },
             { path: 'panel', component: PanelComponent },
             { 
                 path: 'proyectos', 
@@ -124,7 +126,7 @@ export const routes: Routes = [
                 path: 'backup', 
                 component: BackupComponent, 
                 canActivate: [roleGuard], 
-                data: { permissions: ['Visualizar_empresa'] } 
+                data: { roles: ['ADMINISTRADOR'] }
             },
             { 
                 path: 'notificaciones', 

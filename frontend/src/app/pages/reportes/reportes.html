@@ -1,0 +1,564 @@
+<main class="reports">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">INFORMACIÓN PARA DECIDIR · {{ companyName }}</p>
+      <h1>Reportes</h1>
+      <p class="intro">El avance de tus proyectos, los recursos y los costos en un solo lugar.</p>
+    </div>
+    <div class="header-actions">
+      <button (click)="load()" [disabled]="busy || loading || needsCompany">
+        {{ loading ? 'Actualizando…' : 'Actualizar' }}</button
+      ><button class="primary" (click)="asistente.open()">Consultar al asistente ↗</button>
+    </div>
+  </header>
+  <p *ngIf="error" role="alert" class="alert">{{ error }}</p>
+  <p *ngIf="notice" role="status" class="notice">{{ notice }}</p>
+  <section *ngIf="needsCompany" class="empty">
+    <h2>Selecciona una empresa</h2>
+    <p>Usa el selector del panel para consultar los reportes de esa empresa.</p>
+  </section>
+  <div
+    *ngIf="loading && !catalog.reportes.length"
+    class="skeleton"
+    role="status"
+    aria-label="Cargando reportes"
+  >
+    <div></div>
+    <div></div>
+    <div></div>
+    <span>Cargando tus reportes…</span>
+  </div>
+  <section *ngIf="!loading && !needsCompany && !catalog.reportes.length" class="empty">
+    <h2>{{ error ? 'No pudimos cargar los reportes' : 'No hay reportes disponibles' }}</h2>
+    <p>
+      {{
+        error
+          ? 'Puedes intentar nuevamente cuando el servicio esté disponible.'
+          : 'Los reportes disponibles dependen de tus permisos y obras asignadas.'
+      }}
+    </p>
+    <button (click)="load()">Volver a cargar</button>
+  </section>
+  <ng-container *ngIf="catalog.reportes.length">
+    <nav class="tabs" aria-label="Secciones de reportes">
+      <button
+        (click)="tab = 'generar'"
+        [class.active]="tab === 'generar'"
+        [attr.aria-current]="tab === 'generar' ? 'page' : null"
+      >
+        Generar reporte</button
+      ><button
+        (click)="tab = 'historial'"
+        [class.active]="tab === 'historial'"
+        [attr.aria-current]="tab === 'historial' ? 'page' : null"
+      >
+        Historial <span>{{ history.length }}</span></button
+      ><button
+        *ngIf="can('Programar_reportes')"
+        (click)="tab = 'programaciones'"
+        [class.active]="tab === 'programaciones'"
+        [attr.aria-current]="tab === 'programaciones' ? 'page' : null"
+      >
+        Programaciones <span>{{ schedules.length }}</span>
+      </button>
+    </nav>
+    <div *ngIf="tab === 'generar'" class="workspace">
+      <section class="section preparation">
+        <div class="section-heading">
+          <span class="step">01</span>
+          <div>
+            <h2>Prepara tu reporte</h2>
+            <p>Selecciona el tipo y el alcance de la consulta.</p>
+          </div>
+        </div>
+        <fieldset [disabled]="busy || loading">
+          <label
+            >Tipo de reporte<select [(ngModel)]="selected" (ngModelChange)="changeReport()">
+              <option *ngFor="let report of catalog.reportes" [value]="report.id">
+                {{ report.titulo }}
+              </option>
+            </select></label
+          >
+          <p class="description">{{ definition?.descripcion }}</p>
+          <label *ngIf="selected !== 'stock'"
+            >Obra <span *ngIf="definition?.requiere_obra" class="required">obligatoria</span
+            ><select [(ngModel)]="work">
+              <option [ngValue]="null">
+                {{
+                  definition?.requiere_obra ? 'Selecciona una obra' : 'Todas las obras accesibles'
+                }}
+              </option>
+              <option *ngFor="let obra of catalog.obras" [ngValue]="obra.id_obra">
+                {{ obra.nombre }}
+              </option>
+            </select></label
+          >
+          <div class="date-range" *ngIf="definition?.fechas">
+            <label class="period-select"
+              >Período<select [(ngModel)]="datePreset" (ngModelChange)="setPeriod()">
+                <option value="todo">Todas las fechas</option>
+                <option value="hoy">Hoy</option>
+                <option value="7">Últimos 7 días</option>
+                <option value="30">Últimos 30 días</option>
+                <option value="mes">Este mes</option>
+                <option value="anterior">Mes anterior</option>
+                <option value="manual">Rango personalizado</option>
+              </select></label
+            >
+            <label
+              >Desde<input
+                type="date"
+                [(ngModel)]="desde"
+                (ngModelChange)="datePreset = 'manual'" /></label
+            ><label
+              >Hasta<input
+                type="date"
+                [(ngModel)]="hasta"
+                [min]="desde"
+                (ngModelChange)="datePreset = 'manual'"
+            /></label>
+          </div>
+          <p class="description">
+            {{
+              definition?.fechas
+                ? (definition?.fecha_campo || 'Fecha de registro') +
+                  '. Desde y hasta se incluyen; puedes dejar un extremo abierto.'
+                : 'Este reporte muestra el estado actual. No hay un historial que permita filtrarlo por fechas.'
+            }}
+          </p>
+          <button
+            class="text-button"
+            (click)="advanced = !advanced"
+            [attr.aria-expanded]="advanced"
+          >
+            {{ advanced ? '− Ocultar filtros' : '+ Más filtros' }}
+          </button>
+          <div *ngIf="advanced" class="advanced">
+            <label
+              >Búsqueda<input
+                [(ngModel)]="query"
+                maxlength="200"
+                placeholder="Nombre o código" /></label
+            ><label
+              >Estado<input [(ngModel)]="estado" maxlength="40" placeholder="Opcional" /></label
+            ><label *ngIf="selected === 'stock'"
+              >Categoría por ID<input
+                type="number"
+                min="1"
+                step="1"
+                [(ngModel)]="category"
+                placeholder="Opcional" /></label
+            ><label *ngIf="selected === 'incidencias'"
+              >Prioridad<select [(ngModel)]="priority">
+                <option value="">Todas</option>
+                <option value="BAJA">Baja</option>
+                <option value="MEDIA">Media</option>
+                <option value="ALTA">Alta</option>
+                <option value="CRITICA">Crítica</option>
+              </select></label
+            >
+          </div>
+          <details class="presentation">
+            <summary>Personalizar presentación y exportación</summary>
+            <label
+              >Título<input
+                [(ngModel)]="customTitle"
+                maxlength="120"
+                [placeholder]="definition?.titulo || 'Título del reporte'"
+            /></label>
+            <label
+              >Orientación PDF<select [(ngModel)]="orientation">
+                <option value="horizontal">Horizontal</option>
+                <option value="vertical">Vertical</option>
+              </select></label
+            >
+            <ng-container *ngIf="columnChoices.length; else columnsAfterGeneration">
+              <label
+                >Ordenar por<select [(ngModel)]="sortField">
+                  <option value="">Orden original</option>
+                  <option *ngFor="let column of columnChoices" [value]="column.campo">
+                    {{ column.titulo }}
+                  </option>
+                </select></label
+              >
+              <label *ngIf="sortField"
+                >Dirección<select [(ngModel)]="sortOrder">
+                  <option value="asc">Ascendente</option>
+                  <option value="desc">Descendente</option>
+                </select></label
+              >
+              <label class="check-label"
+                ><input
+                  type="checkbox"
+                  [(ngModel)]="customColumns"
+                  (ngModelChange)="enableColumns()"
+                />Elegir columnas y su orden</label
+              >
+              <div *ngIf="customColumns" class="column-selection">
+                <label *ngFor="let column of columnChoices" class="check-label"
+                  ><input
+                    type="checkbox"
+                    [checked]="selectedColumns.includes(column.campo)"
+                    (change)="toggleColumn(column.campo, $any($event.target).checked)"
+                  />{{ column.titulo }}</label
+                >
+                <div class="column-order" *ngFor="let field of selectedColumns; let i = index">
+                  <span>{{ field.replaceAll('_', ' ') }}</span>
+                  <button
+                    type="button"
+                    (click)="moveColumn(field, -1)"
+                    [disabled]="i === 0"
+                    [attr.aria-label]="'Subir columna ' + field"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    (click)="moveColumn(field, 1)"
+                    [disabled]="i === selectedColumns.length - 1"
+                    [attr.aria-label]="'Bajar columna ' + field"
+                  >
+                    ↓
+                  </button>
+                </div>
+              </div>
+            </ng-container>
+            <ng-template #columnsAfterGeneration
+              ><p class="description">Genera el reporte para elegir sus columnas.</p></ng-template
+            >
+            <p class="description">
+              Pulsa Generar para aplicar estos cambios. La vista, PDF, Excel y los envíos usarán
+              esta configuración.
+            </p>
+          </details>
+          <p *ngIf="validation" class="validation">{{ validation }}</p>
+          <button
+            class="primary generate"
+            (click)="generate()"
+            [disabled]="busy || loading || !!validation"
+          >
+            {{ busy ? 'Procesando…' : 'Generar reporte' }}
+          </button>
+        </fieldset>
+        <details class="natural">
+          <summary>Preparar filtros escribiendo</summary>
+          <p class="description">
+            Describe el reporte y revisa los filtros antes de generarlo. Para conversar o dictar,
+            abre el asistente.
+          </p>
+          <label class="sr-only" for="report-command">Descripción del reporte</label
+          ><textarea
+            id="report-command"
+            [(ngModel)]="texto"
+            maxlength="2000"
+            rows="2"
+            placeholder="Ej.: incidencias críticas del mes pasado"
+            [disabled]="busy || loading"
+          ></textarea
+          ><button (click)="interpret()" [disabled]="busy || loading || !texto.trim()">
+            Preparar filtros
+          </button>
+          <div *ngIf="response" class="notice">
+            <p>{{ response.mensaje }}</p>
+            <button
+              *ngFor="let option of response.opciones"
+              (click)="choose(option)"
+              [disabled]="busy"
+            >
+              {{ option }}</button
+            ><button
+              *ngFor="let obra of response.obras"
+              (click)="work = obra.id_obra; response = undefined"
+              [disabled]="busy"
+            >
+              {{ obra.nombre }}
+            </button>
+          </div>
+        </details>
+      </section>
+      <div class="results-column">
+        <section *ngIf="!execution" class="section empty preview">
+          <div class="preview-icon" aria-hidden="true">
+            <svg
+              width="38"
+              height="38"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.2"
+            >
+              <path d="M5 3h14v18H5zM8 7h8M8 11h8M8 15h5" />
+            </svg>
+          </div>
+          <h2>Tu próximo reporte empieza aquí</h2>
+          <p>
+            Selecciona un reporte y pulsa Generar.<br />Podrás revisar los datos y usar las opciones
+            disponibles para tu cuenta.
+          </p>
+          <span class="formats"
+            ><ng-container *ngIf="can('Exportar_reportes')">PDF · Excel</ng-container
+            ><ng-container *ngIf="can('Programar_reportes')">
+              · Envío programado</ng-container
+            ></span
+          >
+        </section>
+        <section *ngIf="execution && !result" class="section empty">
+          <h2>{{ status(execution.estado) }}</h2>
+          <p>
+            {{
+              execution.error ||
+                'El resultado todavía no está disponible o su período de conservación terminó.'
+            }}
+          </p>
+          <button (click)="open(execution.id)" [disabled]="busy || loading">
+            Consultar estado
+          </button>
+        </section>
+        <section class="section result" *ngIf="result as data">
+          <div class="result-header">
+            <div>
+              <p class="eyebrow">REPORTE GENERADO</p>
+              <h2>{{ data.titulo }}</h2>
+              <p class="description">Corte: {{ data.corte | date: 'dd/MM/yyyy HH:mm' }}</p>
+            </div>
+            <div class="exports" *ngIf="can('Exportar_reportes')">
+              <button (click)="download('pdf')" [disabled]="busy || loading">↓ PDF</button
+              ><button (click)="download('xlsx')" [disabled]="busy || loading">↓ Excel</button>
+            </div>
+          </div>
+          <div class="metrics">
+            <div *ngFor="let metric of data.resumen | keyvalue">
+              <span>{{ metric.key.replaceAll('_', ' ') }}</span
+              ><strong>{{ display(metric.value) }}</strong>
+            </div>
+          </div>
+          <div class="warnings" *ngIf="data.advertencias.length">
+            <p *ngFor="let note of data.advertencias">{{ note }}</p>
+          </div>
+          <div class="table-scroll" *ngIf="data.filas.length">
+            <table>
+              <caption class="sr-only">
+                {{
+                  data.titulo
+                }}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col" *ngFor="let column of data.columnas">{{ column.titulo }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of visibleRows">
+                  <td
+                    *ngFor="let column of data.columnas"
+                    [class.numeric]="column.tipo === 'decimal' || column.tipo === 'number'"
+                  >
+                    {{ display(row[column.campo]) }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div *ngIf="!data.filas.length" class="empty">
+            <h3>Sin registros en este alcance</h3>
+            <p>Prueba otra obra o cambia los filtros.</p>
+          </div>
+          <div class="pagination" *ngIf="data.filas.length">
+            <span>{{ data.filas.length }} registros · Página {{ page }} de {{ pages }}</span>
+            <div>
+              <button
+                (click)="page = page - 1"
+                [disabled]="page === 1"
+                aria-label="Página anterior"
+              >
+                ←</button
+              ><button
+                (click)="page = page + 1"
+                [disabled]="page === pages"
+                aria-label="Página siguiente"
+              >
+                →
+              </button>
+            </div>
+          </div>
+          <p class="description" *ngIf="data.filas.length">
+            La descarga incluye todos los registros del reporte.
+          </p>
+          <details *ngIf="data.recomendaciones.length">
+            <summary>Recomendaciones basadas en registros</summary>
+            <p *ngFor="let recommendation of data.recomendaciones" class="recommendation">
+              {{ display(recommendation) }}
+            </p>
+          </details>
+        </section>
+        <section
+          class="section sharing"
+          *ngIf="can('Enviar_reportes') || can('Programar_reportes')"
+        >
+          <div class="section-heading">
+            <span class="step">02</span>
+            <div>
+              <h2>Comparte la información</h2>
+              <p>Selecciona las personas y el formato de entrega.</p>
+            </div>
+          </div>
+          <p class="description">
+            Cada persona recibe los datos que permiten sus accesos actuales.
+          </p>
+          <fieldset [disabled]="busy || loading">
+            <div class="recipients">
+              <label class="inline" *ngFor="let recipient of recipients"
+                ><input
+                  type="checkbox"
+                  [checked]="receiverIds.includes(recipient.id_usuario)"
+                  (change)="toggleReceiver(recipient.id_usuario, $event)"
+                />{{ recipient.nombre }}</label
+              >
+            </div>
+            <p *ngIf="!recipients.length" class="description">
+              No hay destinatarios disponibles para tu empresa.
+            </p>
+            <label
+              >Formato<select [(ngModel)]="formato">
+                <option value="pdf">PDF</option>
+                <option value="xlsx">Excel</option>
+              </select></label
+            ><button
+              *ngIf="can('Enviar_reportes')"
+              (click)="send()"
+              [disabled]="!result || !receiverIds.length"
+            >
+              Enviar reporte
+            </button>
+            <p *ngIf="can('Enviar_reportes') && !result" class="description">
+              Genera un reporte para habilitar el envío manual.
+            </p>
+          </fieldset>
+          <div *ngIf="deliveries.length" class="delivery-list" aria-live="polite">
+            <h3>Estado de los envíos</h3>
+            <div *ngFor="let delivery of deliveries" class="delivery">
+              <span>{{ recipientName(delivery.id_usuario) }}</span
+              ><span
+                class="badge"
+                [class.failed]="delivery.estado === 'FALLIDO' || delivery.estado === 'INCIERTO'"
+                >{{ status(delivery.estado) }}</span
+              >
+              <p *ngIf="delivery.error" class="validation">{{ delivery.error }}</p>
+            </div>
+          </div>
+          <details *ngIf="can('Programar_reportes')" class="schedule-form">
+            <summary>Programar este reporte</summary>
+            <p class="description">Se usarán el tipo, la obra y los destinatarios seleccionados.</p>
+            <fieldset [disabled]="busy || loading">
+              <div class="filters">
+                <label
+                  >Frecuencia<select [(ngModel)]="frequency" (ngModelChange)="day = 1">
+                    <option value="diaria">Diaria</option>
+                    <option value="semanal">Semanal</option>
+                    <option value="mensual">Mensual</option>
+                  </select></label
+                ><label>Hora<input type="time" [(ngModel)]="hour" /></label
+                ><label
+                  >Zona horaria<input [(ngModel)]="timezone" placeholder="America/La_Paz" /></label
+                ><label *ngIf="frequency === 'semanal'"
+                  >Día de la semana<select [(ngModel)]="day">
+                    <option [ngValue]="1">Lunes</option>
+                    <option [ngValue]="2">Martes</option>
+                    <option [ngValue]="3">Miércoles</option>
+                    <option [ngValue]="4">Jueves</option>
+                    <option [ngValue]="5">Viernes</option>
+                    <option [ngValue]="6">Sábado</option>
+                    <option [ngValue]="7">Domingo</option>
+                  </select></label
+                ><label *ngIf="frequency === 'mensual'"
+                  >Día del mes<input
+                    type="number"
+                    min="1"
+                    max="31"
+                    step="1"
+                    [(ngModel)]="day" /></label
+                ><label
+                  >Período<select [(ngModel)]="period">
+                    <option value="fijo">Filtros actuales</option>
+                    <ng-container *ngIf="definition?.fechas"
+                      ><option value="ayer">Ayer</option>
+                      <option value="semana_anterior">Semana anterior</option>
+                      <option value="mes_anterior">Mes anterior</option></ng-container
+                    >
+                  </select></label
+                >
+              </div>
+              <p *ngIf="frequency === 'mensual'" class="description">
+                Si el mes no tiene ese día, se usa su último día.
+              </p>
+              <p *ngIf="scheduleValidation" class="validation">{{ scheduleValidation }}</p>
+              <button class="primary" (click)="saveSchedule()" [disabled]="!!scheduleValidation">
+                Guardar programación
+              </button>
+            </fieldset>
+          </details>
+        </section>
+      </div>
+    </div>
+    <section class="section" *ngIf="tab === 'historial'">
+      <div class="section-heading">
+        <div>
+          <h2>Tus reportes recientes</h2>
+          <p>
+            Consulta el resultado y sus envíos. Los trabajos pendientes se actualizan
+            automáticamente.
+          </p>
+        </div>
+      </div>
+      <div class="empty" *ngIf="!history.length">
+        <h3>Todavía no has generado reportes</h3>
+        <p>El primer reporte que generes aparecerá aquí.</p>
+        <button (click)="tab = 'generar'">Crear un reporte</button>
+      </div>
+      <article class="job" *ngFor="let item of history">
+        <div>
+          <h3>{{ reportTitle(item.solicitud?.reporte) }}</h3>
+          <p>{{ item.created_at | date: 'dd/MM/yyyy HH:mm' }}</p>
+          <p *ngIf="item.error" class="validation">{{ item.error }}</p>
+        </div>
+        <span class="badge" [class.failed]="item.estado === 'FALLIDO'">{{
+          status(item.estado)
+        }}</span
+        ><button (click)="open(item.id)" [disabled]="busy || loading">Consultar ↗</button>
+      </article>
+    </section>
+    <section class="section" *ngIf="tab === 'programaciones' && can('Programar_reportes')">
+      <div class="section-heading">
+        <div>
+          <h2>Envíos programados</h2>
+          <p>Controla las próximas entregas y pausa las que ya no necesites.</p>
+        </div>
+        <button (click)="tab = 'generar'">Nueva programación</button>
+      </div>
+      <div class="empty" *ngIf="!schedules.length">
+        <h3>Sin programaciones</h3>
+        <p>Prepara un reporte, selecciona destinatarios y abre «Programar este reporte».</p>
+      </div>
+      <article class="job" *ngFor="let item of schedules">
+        <div>
+          <h3>{{ scheduleTitle(item) }}</h3>
+          <p>
+            {{ item.configuracion['frecuencia'] }} · {{ item.configuracion['hora'] }} ·
+            {{ item.configuracion['zona'] }}
+          </p>
+          <p>
+            {{ item.habilitada ? 'Próxima ejecución:' : 'Programación pausada · Último horario:' }}
+            {{ item.next_run | date: 'dd/MM/yyyy HH:mm' }}
+          </p>
+          <p *ngIf="item.error" class="validation">{{ item.error }}</p>
+        </div>
+        <span class="badge">{{ item.habilitada ? 'Activa' : 'Pausada' }}</span
+        ><button (click)="pause(item)" [disabled]="busy || loading">
+          {{ item.habilitada ? 'Pausar' : 'Activar' }}</button
+        ><button (click)="run(item)" [disabled]="busy || loading || !item.habilitada">
+          Ejecutar ahora
+        </button>
+      </article>
+    </section>
+  </ng-container>
+</main>

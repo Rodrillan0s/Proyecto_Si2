@@ -184,6 +184,7 @@
 /* SIDEBAR */
 .panel-sidebar {
   width: 260px;
+  flex-shrink: 0;
   background-color: #0c1824; /* Matching Procore dark sidebar */
   border-right: 1px solid rgba(255,255,255,0.05);
   padding: 1.5rem 1rem;
@@ -306,6 +307,7 @@
 /* CONTENT PANEL */
 .panel-content {
   flex: 1;
+  min-width: 0;
   padding: 2rem;
   overflow-y: auto;
 }
@@ -774,4 +776,26 @@
 .status-pending {
   background-color: #fef3c7;
   color: #92400e;
+}
+
+/* El shell también debe permitir consultar reportes en pantallas pequeñas. */
+.sidebar-backdrop { display: none; }
+@media (max-width: 1200px) {
+  .panel-header-center { display: none; }
+  .panel-header-left { min-width: 0; }
+  .panel-content { padding: 1rem; }
+}
+@media (max-width: 850px) {
+  .panel-header { padding: 0 12px; gap: 8px; }
+  .panel-header-left { gap: 8px; flex: 1; }
+  .panel-header-left > div:not(.project-selector) { min-width: 0; max-width: 160px; margin-left: 0; padding-left: 6px; padding-right: 6px; }
+  .panel-header-left > div > span:last-child:not([title]) { display: none; }
+  .panel-header-left > div > span[title] { min-width: 0; max-width: 110px; }
+  .panel-brand { font-size: 1rem; }
+  .project-selector, .user-profile-badge, .panel-action-btn[title="Ayuda y Soporte"], .logout-btn { display: none; }
+  .panel-header-right { gap: 4px; }
+  .panel-sidebar { position: fixed; top: 4.5rem; left: 0; bottom: 0; z-index: 90; overflow-y: auto; transform: translateX(-100%); visibility: hidden; }
+  .sidebar-open .panel-sidebar { transform: translateX(0); visibility: visible; }
+  .sidebar-backdrop { display: block; position: fixed; inset: 4.5rem 0 0; z-index: 80; background: #0f172a66; border: 0; }
+  .panel-content { padding: 0; width: 100%; }
 }

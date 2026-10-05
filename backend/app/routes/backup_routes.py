@@ -1,39 +1,116 @@
-import io
-from fastapi import APIRouter, HTTPException, Depends
-from fastapi.responses import StreamingResponse
-from app.services import backup_services
+from typing import Annotated
+from uuid import UUID
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
+from fastapi.responses import FileResponse
+from pydantic import Field
 from app.utils.security import verificar_token
+from app.services import backup_services as service
+from app.services.backups.contracts import BackupRequest, Schedule, ValidateRequest, ApplyRequest, Contract
+from app.repos import backup_repos as repo
 
-router = APIRouter(tags=["Backups"])
+router = APIRouter(tags=['Backups'])
 
-@router.get('/manual')
-def manual_backup(token_data: dict = Depends(verificar_token)):
 
-    #VALIDACION DE ROL, SOLO EL ADMIN PUEDE SACAR BACKUP DE LA DB
-    rol_usuario = token_data.get('nombre_rol')
-    if rol_usuario != 'ADMINISTRADOR':
-        raise HTTPException(
-            status_code=403, 
-            detail="Acceso denegado. Solo los administradores pueden generar backups."
-        )
+def global_admin(token=Depends(verificar_token)):
+    return service.administrator(token)
 
-    try:
-        #EJECUTAR EL SERVICIO
-        res = backup_services.generar_backup_bd_memoria()
-        
-        
-        buffer_memoria = io.BytesIO(res['file_bytes'])
-        
-        #RETORNAR ARCHIVO .SQL
-        return StreamingResponse(
-            buffer_memoria, 
-            media_type="application/sql",
-            headers={"Content-Disposition": f"attachment; filename={res['file_name']}"}
-        )
-        
-    except RuntimeError as e:
-        print(f"ERROR REAL DEL SERVICIO DE BACKUP: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-    except Exception as e:
-        print(f'ERROR INESPERADO: {e}')
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
+class Reauthentication(Contract):
+    identificador: str = Field(min_length=1, max_length=200)
+    password: str = Field(min_length=1, max_length=200)
+
+
+@router.get('/estado')
+def estado(actor=Depends(global_admin)):
+    return service.status()
+
+
+@router.post('/ejecuciones', status_code=202)
+def crear(request: BackupRequest, actor=Depends(global_admin), idempotency_key: Annotated[str | None, Header()] = None):
+    return service.create(actor, request, idempotency_key)
+
+
+@router.get('/ejecuciones')
+def historial(pagina: int = Query(1, ge=1), limite: int = Query(20, ge=1, le=100),
+              estado: str | None = Query(None, pattern='^(PENDIENTE|GENERANDO|VERIFICANDO|LISTO|FALLIDO)$'), actor=Depends(global_admin)):
+    result = repo.history(pagina, limite, estado)
+    result['items'] = [service.public_job(row) for row in result['items']]
+    return result
+
+
+@router.get('/ejecuciones/{id}')
+def ejecucion(id: UUID, actor=Depends(global_admin)):
+    return service.execution(id)
+
+
+@router.get('/ejecuciones/{id}/archivo')
+def descargar(id: UUID, actor=Depends(global_admin)):
+    path, name = service.download(id)
+    repo.event(id, actor, 'DESCARGA_AUTORIZADA')
+    return FileResponse(path, filename=name, media_type='application/octet-stream')
+
+
+@router.get('/programacion')
+def programacion(actor=Depends(global_admin)):
+    return service.schedule()
+
+
+@router.put('/programacion')
+def guardar(request: Schedule, actor=Depends(global_admin)):
+    return service.save_schedule(actor, request)
+
+
+@router.patch('/programacion')
+def pausar(request: dict, actor=Depends(global_admin)):
+    if set(request) != {'habilitada'} or type(request['habilitada']) is not bool:
+        raise HTTPException(422, 'Envía únicamente habilitada: true o false.')
+    config = service.schedule()['configuracion']
+    return service.save_schedule(actor, Schedule.model_validate(dict(config, **request)))
+
+
+@router.post('/importaciones', status_code=201)
+async def importar(request: Request, actor=Depends(global_admin)):
+    if request.headers.get('content-type', '').split(';')[0] != 'application/octet-stream':
+        raise HTTPException(415, 'Envía el paquete OBRATEC como application/octet-stream.')
+    return await service.import_archive(actor, request)
+
+
+@router.get('/restauraciones')
+def restauraciones(actor=Depends(global_admin)):
+    return [service.public_restore(row) for row in repo.restore_history()]
+
+
+@router.post('/restauraciones/validar', status_code=202)
+def validar(request: ValidateRequest, actor=Depends(global_admin)):
+    return service.validate(actor, request)
+
+
+@router.get('/restauraciones/{id}')
+def restauracion(id: UUID, actor=Depends(global_admin)):
+    return service.restore(id)
+
+
+@router.post('/reautenticacion')
+def reautenticar(request: Reauthentication, actor=Depends(global_admin)):
+    from app.services.auth_services import loguear_usuario
+    from app.services.backups.coordination import writer
+    with writer('BACKUP_REAUTH'):
+        try:
+            response = loguear_usuario(request.model_dump())
+        except ValueError as exc:
+            from app.services.backups.settings import BackupError
+            raise BackupError(str(exc), 'BACKUP_REAUTH_FAILED', 401) from exc
+        if response['usuario']['nro_usuario'] != actor:
+            raise HTTPException(403, 'Confirma con la misma cuenta de administrador.')
+        return {'token': response['token']}
+
+
+@router.post('/restauraciones/{id}/aplicar', status_code=202)
+def aplicar(id: UUID, request: ApplyRequest, actor=Depends(global_admin), authorization: str = Header(...)):
+    return service.apply(actor, id, request, authorization.removeprefix('Bearer ').strip())
+
+
+@router.get('/manual', status_code=202, deprecated=True)
+def manual(actor=Depends(global_admin), idempotency_key: Annotated[str | None, Header()] = None):
+    """Transición: devuelve el trabajo durable; descargar por su endpoint al quedar LISTO."""
+    return service.create(actor, BackupRequest(alcance='base_datos'), idempotency_key)
