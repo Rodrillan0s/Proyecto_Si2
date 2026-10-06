@@ -12,6 +12,11 @@ import { AuthService } from '../../../services/auth';
 import { environment } from '../../../../environments/environment';
 
 import { ProyectoEstructuraComponent } from '../estructura/proyecto-estructura';
+<<<<<<< HEAD
+=======
+import { ProyectoPresupuestoComponent } from '../presupuesto/proyecto-presupuesto';
+import { ProyectoAvancesComponent } from '../avances/proyecto-avances';
+>>>>>>> 23ed517e922328483f60633df421d97f987059f4
 
 export interface UsuarioEmpresa {
   nro_usuario: number;
@@ -22,7 +27,11 @@ export interface UsuarioEmpresa {
 @Component({
   selector: 'app-proyecto-detalle',
   standalone: true,
+<<<<<<< HEAD
   imports: [CommonModule, FormsModule, ProyectoEstructuraComponent],
+=======
+  imports: [CommonModule, FormsModule, ProyectoEstructuraComponent, ProyectoPresupuestoComponent, ProyectoAvancesComponent],
+>>>>>>> 23ed517e922328483f60633df421d97f987059f4
   templateUrl: './proyecto-detalle.html',
   styleUrl: './proyecto-detalle.css'
 })
@@ -54,7 +63,11 @@ export class ProyectoDetalleComponent implements OnInit, OnDestroy {
   errorCandidatosPersonal = '';
 
   // Control de pestañas
+<<<<<<< HEAD
   tabActivo: 'general' | 'estructura' = 'general';
+=======
+  tabActivo: 'general' | 'estructura' | 'presupuesto' | 'avances' = 'general';
+>>>>>>> 23ed517e922328483f60633df421d97f987059f4
 
   cargando: boolean = false;
   procesandoAccion: boolean = false;
@@ -85,7 +98,11 @@ export class ProyectoDetalleComponent implements OnInit, OnDestroy {
     });
   }
 
+<<<<<<< HEAD
   seleccionarTab(tab: 'general' | 'estructura') {
+=======
+  seleccionarTab(tab: 'general' | 'estructura' | 'presupuesto' | 'avances') {
+>>>>>>> 23ed517e922328483f60633df421d97f987059f4
     this.tabActivo = tab;
     if (tab === 'general') {
       this.iniciarMapaDetalle();
@@ -355,6 +372,10 @@ export class ProyectoDetalleComponent implements OnInit, OnDestroy {
 
   volverAProyectos() {
     this.router.navigate(['/proyectos']);
+  }
+
+  irAAvances() {
+    this.seleccionarTab('avances');
   }
 
   irAEstructura() {

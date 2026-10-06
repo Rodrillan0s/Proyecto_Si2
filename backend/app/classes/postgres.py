@@ -14,13 +14,18 @@ class PostgreSQL():
                 if cls._pool is None:
                     try:
                         cls._pool = pool.ThreadedConnectionPool(
-                            minconn=2,
+                            minconn=1,
                             maxconn=20,
                             host=Config.DB_HOST,
                             port=Config.DB_PORT,
                             dbname=Config.DB_NAME,
                             user=Config.DB_USER,
-                            password=Config.DB_PASSWORD
+                            password=Config.DB_PASSWORD,
+                            connect_timeout=10,
+                            keepalives=1,
+                            keepalives_idle=30,
+                            keepalives_interval=10,
+                            keepalives_count=5
                         )
                     except Exception as e:
                         print(f"ERROR AL CREAR CONNECTION POOL: {e}")
@@ -38,6 +43,7 @@ class PostgreSQL():
         self._from_pool = False
 
     def create_connection(self):
+        p = None
         try:
             p = self.get_pool()
             self.conn = p.getconn()
@@ -57,29 +63,63 @@ class PostgreSQL():
             self.cur = self.conn.cursor()
             self._from_pool = True
         except Exception as e:
-            try:
-                self.conn = psycopg2.connect(
-                    host=self.db_host,
-                    port=self.db_port,
-                    dbname=self.db_name,
-                    user=self.db_user,
-                    password=self.db_password
-                )
-                self.cur = self.conn.cursor()
-                self._from_pool = False
-            except Exception as e2:
-                print(f'ERROR DE CONEXION A LA DB: {e2}')
+            print(f"No se pudo inicializar el connection pool: {e}")
+
+        # Intentar obtener una conexión activa del pool (hasta 3 intentos)
+        if p:
+            for _ in range(3):
+                conn = None
+                try:
+                    conn = p.getconn()
+                    if conn.closed:
+                        p.putconn(conn, close=True)
+                        continue
+                    # Probar si la conexión remota no fue cerrada por inactividad
+                    with conn.cursor() as test_cur:
+                        test_cur.execute("SELECT 1;")
+                    self.conn = conn
+                    self.cur = self.conn.cursor()
+                    self._from_pool = True
+                    return
+                except Exception:
+                    if conn:
+                        try:
+                            p.putconn(conn, close=True)
+                        except Exception:
+                            pass
+
+        # Fallback a conexión directa si el pool falla o no tiene conexiones vivas
+        try:
+            self.conn = psycopg2.connect(
+                host=self.db_host,
+                port=self.db_port,
+                dbname=self.db_name,
+                user=self.db_user,
+                password=self.db_password,
+                connect_timeout=10,
+                keepalives=1,
+                keepalives_idle=30,
+                keepalives_interval=10,
+                keepalives_count=5
+            )
+            self.cur = self.conn.cursor()
+            self._from_pool = False
+        except Exception as e2:
+            print(f'ERROR DE CONEXION A LA DB: {e2}')
+            raise
 
     def close_connection(self, commit=False):
         try:
             if self.conn:
-                if commit:
-                    self.conn.commit()
-                else:
+                is_dead = (self.conn.closed != 0)
+                if not is_dead:
                     try:
-                        self.conn.rollback()
+                        if commit:
+                            self.conn.commit()
+                        else:
+                            self.conn.rollback()
                     except Exception:
-                        pass
+                        is_dead = True
                 
                 if self.cur:
                     try:
@@ -90,32 +130,38 @@ class PostgreSQL():
 
                 if self._from_pool:
                     p = self.get_pool()
-                    p.putconn(self.conn)
+                    p.putconn(self.conn, close=is_dead)
                 else:
-                    self.conn.close()
+                    try:
+                        self.conn.close()
+                    except Exception:
+                        pass
 
                 self.conn = None
         except Exception as e:
             print(f'ERROR AL CERRAR LA CONEXION CON LA DB: {e}')
             if self.conn:
                 try:
-                    self.conn.close()
+                    if self._from_pool:
+                        self.get_pool().putconn(self.conn, close=True)
+                    else:
+                        self.conn.close()
                 except Exception:
                     pass
                 self.conn = None
 
 
-    def execute_query(self,query,params=None,fetchall=False,fetchone=False,commit=False):
+    def execute_query(self, query, params=None, fetchall=False, fetchone=False, commit=False):
         if not self.conn or not self.cur:
             print('NO HAY UNA CONEXION ACTIVA A LA BASE DE DATOS')
-            return
+            return None
         
         if fetchall and fetchone:
             print('SOLO PUEDE HACER UNA OPCION "FETCHALL" O "FETCHONE"')
-            return
+            return None
 
         try:
-            self.cur.execute(query,params)
+            self.cur.execute(query, params)
 
             if commit:
                 self.conn.commit()
@@ -129,8 +175,12 @@ class PostgreSQL():
             return self.cur.rowcount
         except Exception as e:
             if self.conn:
-                self.conn.rollback()
-            print(f'ERROR: {e}, EJECUTANDO ROLLBACK')
+                try:
+                    if not self.conn.closed:
+                        self.conn.rollback()
+                except Exception:
+                    pass
+            print(f'ERROR: {e}')
             raise
 
     #def insert_log():

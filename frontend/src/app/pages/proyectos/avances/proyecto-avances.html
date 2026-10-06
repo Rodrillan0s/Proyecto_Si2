@@ -1,0 +1,290 @@
+<div class="space-y-6">
+
+  <!-- ALERTAS DE ERROR -->
+  <div *ngIf="mensajeError" class="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs dark:bg-red-950/30 dark:border-red-900/50 dark:text-red-400 flex items-center gap-2">
+    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+    </svg>
+    <span>{{ mensajeError }}</span>
+  </div>
+
+  <!-- TARJETAS DE INDICADORES (KPIs) -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+    <!-- KPI 1: Avance Global de la Obra -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200/80 dark:border-slate-800 shadow-xs relative overflow-hidden group">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Avance Global</span>
+        <div class="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center text-sm font-black">
+          %
+        </div>
+      </div>
+      <div class="mt-3 flex items-baseline gap-2">
+        <span class="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+          {{ porcentajeAvance | number:'1.1-2' }}%
+        </span>
+        <span class="text-xs font-semibold"
+              [ngClass]="porcentajeAvance === 100 ? 'text-emerald-600' : (porcentajeAvance > 0 ? 'text-amber-600' : 'text-gray-400')">
+          {{ porcentajeAvance === 100 ? 'Completado' : (porcentajeAvance > 0 ? 'En Progreso' : 'Sin Iniciar') }}
+        </span>
+      </div>
+      <!-- Barra de progreso -->
+      <div class="mt-3 w-full bg-gray-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+        <div class="h-full rounded-full transition-all duration-700 ease-out"
+             [ngClass]="porcentajeAvance === 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-orange-500 to-amber-500'"
+             [style.width.%]="porcentajeAvance"></div>
+      </div>
+    </div>
+
+    <!-- KPI 2: Total de Órdenes -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200/80 dark:border-slate-800 shadow-xs">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Órdenes</span>
+        <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+          </svg>
+        </div>
+      </div>
+      <div class="mt-3 flex items-baseline gap-2">
+        <span class="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+          {{ totalOrdenes }}
+        </span>
+        <span class="text-xs text-gray-500 dark:text-gray-400">programadas</span>
+      </div>
+      <p class="text-[11px] text-gray-400 mt-2">100% de la carga de trabajo</p>
+    </div>
+
+    <!-- KPI 3: Órdenes Cumplidas -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-200/60 dark:border-emerald-900/40 shadow-xs bg-gradient-to-br from-white via-white to-emerald-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-emerald-950/20">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Cumplidas</span>
+        <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+        </div>
+      </div>
+      <div class="mt-3 flex items-baseline gap-2">
+        <span class="text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
+          {{ ordenesCumplidas }}
+        </span>
+        <span class="text-xs text-emerald-600/80 dark:text-emerald-400/80 font-medium">de {{ totalOrdenes }}</span>
+      </div>
+      <p class="text-[11px] text-emerald-600 dark:text-emerald-400/80 mt-2 font-medium">
+        Sumando {{ porcentajeAvance }}% de avance ejecutado
+      </p>
+    </div>
+
+    <!-- KPI 4: Faltantes por Cumplir -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-amber-900/40 shadow-xs bg-gradient-to-br from-white via-white to-amber-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/20">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Faltan por Cumplir</span>
+        <div class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+      </div>
+      <div class="mt-3 flex items-baseline gap-2">
+        <span class="text-3xl font-black text-amber-600 dark:text-amber-400 tracking-tight">
+          {{ ordenesPendientes }}
+        </span>
+        <span class="text-xs text-amber-600/80 dark:text-amber-400/80 font-medium">pendientes</span>
+      </div>
+      <p class="text-[11px] text-amber-600 dark:text-amber-400/80 mt-2 font-medium">
+        Resta un {{ (100 - porcentajeAvance) | number:'1.1-2' }}% para la finalización
+      </p>
+    </div>
+
+  </div>
+
+  <!-- DESGLOSE POR CUADRILLAS (UNIDADES OPERATIVAS) -->
+  <div *ngIf="cuadrillas.length > 0" class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200/80 dark:border-slate-800 shadow-xs">
+    <div class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+      <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+      </svg>
+      Unidades de Trabajo / Cuadrillas Involucradas
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div *ngFor="let c of cuadrillas" 
+           (click)="filtroCuadrilla = (filtroCuadrilla === c.cuadrilla ? null : c.cuadrilla); aplicarFiltros()"
+           class="p-3.5 rounded-xl border transition-all cursor-pointer text-left"
+           [ngClass]="filtroCuadrilla === c.cuadrilla 
+              ? 'border-orange-500 bg-orange-50/50 dark:bg-orange-950/30 shadow-xs' 
+              : 'border-gray-200 dark:border-slate-800 hover:border-orange-300 dark:hover:border-slate-700 bg-gray-50/50 dark:bg-slate-800/40'">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-xs font-black text-gray-900 dark:text-white">
+            Cuadrilla {{ c.cuadrilla }}
+          </span>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                [ngClass]="c.cumplidas === c.total_ordenes 
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-400' 
+                    : 'bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-400'">
+            {{ c.cumplidas }}/{{ c.total_ordenes }} cumplidas
+          </span>
+        </div>
+        <div class="w-full bg-gray-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden mt-2">
+          <div class="h-full bg-orange-500 rounded-full" [style.width.%]="(c.cumplidas / c.total_ordenes) * 100"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BITÁCORA: PESTAÑAS Y FILTROS -->
+  <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200/80 dark:border-slate-800 shadow-xs">
+    
+    <!-- Header de la sección -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-gray-100 dark:border-slate-800">
+      
+      <!-- Pestañas de estado -->
+      <div class="flex items-center gap-1.5 p-1 rounded-xl bg-gray-100/80 dark:bg-slate-800/80 self-start">
+        <button (click)="cambiarTab('todas')" 
+                class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
+                [ngClass]="vistaTab === 'todas' 
+                  ? 'bg-white dark:bg-slate-900 text-gray-900 dark:text-white shadow-xs' 
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'">
+          <span>Todas</span>
+          <span class="text-[10px] px-1.5 py-0.2 rounded-full bg-gray-200 dark:bg-slate-700">{{ totalOrdenes }}</span>
+        </button>
+        <button (click)="cambiarTab('cumplidas')" 
+                class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
+                [ngClass]="vistaTab === 'cumplidas' 
+                  ? 'bg-emerald-600 text-white shadow-xs' 
+                  : 'text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400'">
+          <span>Cumplidas (Avance)</span>
+          <span class="text-[10px] px-1.5 py-0.2 rounded-full"
+                [ngClass]="vistaTab === 'cumplidas' ? 'bg-emerald-700 text-white' : 'bg-gray-200 dark:bg-slate-700'">
+            {{ ordenesCumplidas }}
+          </span>
+        </button>
+        <button (click)="cambiarTab('pendientes')" 
+                class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
+                [ngClass]="vistaTab === 'pendientes' 
+                  ? 'bg-amber-600 text-white shadow-xs' 
+                  : 'text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400'">
+          <span>Faltan por Cumplir</span>
+          <span class="text-[10px] px-1.5 py-0.2 rounded-full"
+                [ngClass]="vistaTab === 'pendientes' ? 'bg-amber-700 text-white' : 'bg-gray-200 dark:bg-slate-700'">
+            {{ ordenesPendientes }}
+          </span>
+        </button>
+      </div>
+
+      <!-- Buscador y filtro -->
+      <div class="flex items-center gap-2.5">
+        <div class="relative w-full sm:w-64">
+          <input [(ngModel)]="busquedaTexto" 
+                 (input)="aplicarFiltros()"
+                 type="text" 
+                 placeholder="Buscar orden, trabajo, personal..." 
+                 class="w-full text-xs pl-8 pr-3 py-2 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white focus:outline-none focus:border-orange-500">
+          <svg class="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+        </div>
+
+        <button *ngIf="filtroCuadrilla !== null || busquedaTexto || vistaTab !== 'todas'"
+                (click)="limpiarFiltros()"
+                class="px-3 py-2 rounded-xl text-xs font-bold text-gray-500 hover:text-red-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors shrink-0">
+          Limpiar
+        </button>
+
+        <button (click)="recargar()" 
+                title="Actualizar datos" 
+                class="p-2 rounded-xl text-gray-500 hover:text-orange-600 dark:text-gray-400 dark:hover:text-orange-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors shrink-0 border border-gray-200/80 dark:border-slate-700">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Spinner cargando -->
+    <div *ngIf="cargando" class="flex justify-center items-center py-16">
+      <div class="animate-spin rounded-full h-9 w-9 border-b-2 border-orange-500"></div>
+    </div>
+
+    <!-- Lista vacía -->
+    <div *ngIf="!cargando && ordenesFiltradas.length === 0" class="text-center py-16 text-gray-400 dark:text-gray-500">
+      <div class="text-4xl mb-3">📋</div>
+      <p class="text-sm font-bold text-gray-700 dark:text-gray-300">No se encontraron órdenes de trabajo</p>
+      <p class="text-xs text-gray-500 mt-1 max-w-md mx-auto">
+        {{ totalOrdenes === 0 
+            ? 'Esta obra aún no tiene órdenes de trabajo programadas. Para que registre avance físico, genere órdenes en el módulo correspondiente.'
+            : 'No hay órdenes que coincidan con los filtros seleccionados.' }}
+      </p>
+    </div>
+
+    <!-- TABLA / LISTA DE ÓRDENES DE TRABAJO (BITÁCORA) -->
+    <div *ngIf="!cargando && ordenesFiltradas.length > 0" class="divide-y divide-gray-100 dark:divide-slate-800 mt-2">
+      <div *ngFor="let o of ordenesFiltradas" 
+           class="py-4 hover:bg-gray-50/60 dark:hover:bg-slate-800/40 rounded-xl px-3 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4">
+
+        <!-- Columna Izquierda: Nro, Tipo de Trabajo, Cuadrilla, Fechas -->
+        <div class="flex items-start gap-3.5 flex-1 min-w-0">
+          <div class="p-2.5 rounded-xl text-xs font-black shrink-0 mt-0.5"
+               [ngClass]="o.es_cumplida 
+                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-400' 
+                  : 'bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-400'">
+            #OT-{{ o.orden_nro }}
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h4 class="text-sm font-bold text-gray-900 dark:text-white truncate">
+                {{ o.tipo_trab || 'Trabajo general' }}
+              </h4>
+              <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full"
+                    [ngClass]="o.es_cumplida 
+                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' 
+                        : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'">
+                {{ o.es_cumplida ? 'Cumplida (Sumó al avance)' : 'Pendiente por cumplir' }}
+              </span>
+              <span *ngIf="o.cuadrilla" class="text-[11px] font-semibold text-gray-500 dark:text-gray-400">
+                · Cuadrilla {{ o.cuadrilla }}
+              </span>
+            </div>
+
+            <!-- Observación / Detalle -->
+            <p *ngIf="o.observacion" class="text-xs text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">
+              {{ o.observacion }}
+            </p>
+
+            <!-- Personal asignado / Cuadrilla -->
+            <div *ngIf="o.responsables && o.responsables.length > 0" class="flex items-center gap-1.5 mt-2 flex-wrap">
+              <span class="text-[10px] font-bold text-gray-400 uppercase">Personal:</span>
+              <span *ngFor="let r of o.responsables" 
+                    class="text-[11px] px-2 py-0.5 rounded-md bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300">
+                👤 {{ r.nombre_completo }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Columna Derecha: Fechas y Aporte al Avance -->
+        <div class="flex sm:flex-col items-end justify-between sm:justify-center gap-1 shrink-0 text-right">
+          <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            <span>
+              {{ o.fecha_inicio ? (o.fecha_inicio | date:'dd/MM/yyyy') : 'Sin fecha inicio' }}
+              <span *ngIf="o.fecha_fin"> → {{ o.fecha_fin | date:'dd/MM/yyyy' }}</span>
+            </span>
+          </div>
+
+          <div class="text-xs font-bold"
+               [ngClass]="o.es_cumplida ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400'">
+            {{ o.es_cumplida ? 'Aporte: +' + o.peso_porcentual + '% al proyecto' : 'Aportará: +' + o.peso_porcentual + '%' }}
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+</div>

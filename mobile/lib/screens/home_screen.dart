@@ -194,15 +194,19 @@ class _HomeScreenState extends State<HomeScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'ADMINISTRACIÓN GLOBAL',
-                    style: GoogleFonts.inter(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.0,
-                      color: AppTheme.primary,
+                  Expanded(
+                    child: Text(
+                      'ADMINISTRACIÓN GLOBAL',
+                      style: GoogleFonts.inter(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.0,
+                        color: AppTheme.primary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
@@ -814,28 +818,32 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
           ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            leading: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFF10B981).withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(10),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.assignment_turned_in_rounded, color: Color(0xFF10B981), size: 24),
               ),
-              child: const Icon(Icons.assignment_turned_in_rounded, color: Color(0xFF10B981), size: 24),
+              title: const Text(
+                'Mis Órdenes de Trabajo',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5),
+              ),
+              subtitle: const Text(
+                'Consultar tareas asignadas, avance y reportar estado',
+                style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF10B981)),
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const OrdenesTrabajoScreen()));
+              },
             ),
-            title: const Text(
-              'Mis Órdenes de Trabajo',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5),
-            ),
-            subtitle: const Text(
-              'Consultar tareas asignadas, avance y reportar estado',
-              style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
-            ),
-            trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF10B981)),
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const OrdenesTrabajoScreen()));
-            },
           ),
         ),
         const SizedBox(height: 16),
@@ -950,20 +958,24 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: borderColor),
           ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            leading: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF2E1C14) : const Color(0xFFFFF7ED),
-                borderRadius: BorderRadius.circular(8),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF2E1C14) : const Color(0xFFFFF7ED),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.settings_outlined, color: AppTheme.primary, size: 20),
               ),
-              child: const Icon(Icons.settings_outlined, color: AppTheme.primary, size: 20),
+              title: Text('Ajustes y Seguridad', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13.5, color: titleColor)),
+              subtitle: Text('Gestionar datos de contacto, contraseña y tema', style: GoogleFonts.inter(fontSize: 11.5, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+              trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8)),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PerfilScreen())),
             ),
-            title: Text('Ajustes y Seguridad', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13.5, color: titleColor)),
-            subtitle: Text('Gestionar datos de contacto, contraseña y tema', style: GoogleFonts.inter(fontSize: 11.5, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
-            trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8)),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PerfilScreen())),
           ),
         ),
         const SizedBox(height: 20),
@@ -1301,26 +1313,29 @@ class _HomeScreenState extends State<HomeScreen> {
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: iconBg,
-          borderRadius: BorderRadius.circular(8),
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: iconBg,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: iconColor, size: 20),
         ),
-        child: Icon(icon, color: iconColor, size: 20),
+        title: Text(
+          title,
+          style: GoogleFonts.inter(fontSize: 13.5, fontWeight: FontWeight.w700, color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A)),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: GoogleFonts.inter(fontSize: 11.5, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+        ),
+        trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8), size: 20),
+        onTap: onTap,
       ),
-      title: Text(
-        title,
-        style: GoogleFonts.inter(fontSize: 13.5, fontWeight: FontWeight.w700, color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A)),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: GoogleFonts.inter(fontSize: 11.5, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
-      ),
-      trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8), size: 20),
-      onTap: onTap,
     );
   }
 }
