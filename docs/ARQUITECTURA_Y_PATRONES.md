@@ -1,6 +1,10 @@
 # OBRATEC: arquitectura, patrones y contexto de cambios
 
+Actualización web 2026-10-05: [navegación y rendimiento implementados](decisiones/2026-10-05-frontend-navegacion-rendimiento.md). Registro declarativo por permisos existentes, contexto Empresa/Obra derivado sin modificar JWT/AuthService, componentes por ruta bajo demanda y GET simultáneos compartidos sin caché permanente. Se conserva el outlet y los contratos backend. El asistente mantiene una instancia con consulta rápida, conversación y módulo. La mejora no modifica SQL ni autorización.
+
 Fecha de análisis: 2026-10-04 (America/La_Paz).
+
+Actualización 2026-10-05: [Backup Service Oracle](decisiones/2026-10-05-integracion-backup-service-oracle.md). El motor vigente es el daemon existente en VM y public.backup_jobs; FastAPI solo autoriza/encola/consulta. Se conservan barrera, writers, epoch, auditoría y programación. [Operación vigente](OPERACION_BACKUP_SERVICE_ORACLE.md). Las referencias siguientes a worker Render, paquetes locales y S3 de Backup son históricas. RESTORE/heartbeat siguen pendientes; producción bloqueada. [Descarga OCI integrada](decisiones/2026-10-05-descarga-backups-par-oci.md): cola existente backup_download_requests, PAR validado por objeto/actor/vigencia, polling acotado y descarga directa del navegador, sin credenciales OCI en FastAPI.
 
 Evolución posterior de Backup: [copias base con evidencias ausentes](decisiones/2026-10-04-backup-base-evidencias-ausentes.md), autorizadas por el usuario. El manifiesto y la etapa pública explicitan la omisión; la copia completa sigue estricta y no se certifica recuperación completa de archivos ausentes. Se preservan datos de negocio, esquema, capas y alcance global.
 

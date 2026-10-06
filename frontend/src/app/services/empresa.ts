@@ -1,3 +1,4 @@
+import { LecturasCompartidas } from './lecturas';
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -28,6 +29,7 @@ export interface RespuestaApiEmpresaAccion {
   providedIn: 'root'
 })
 export class EmpresaService {
+  private shared = inject(LecturasCompartidas);
 
   private http = inject(HttpClient);
   private authService = inject(AuthService);
@@ -42,10 +44,10 @@ export class EmpresaService {
   }
 
   listarEmpresas(): Observable<RespuestaApiEmpresas> {
-    return this.http.get<RespuestaApiEmpresas>(
+    return this.shared.obtener('empresas', () => this.http.get<RespuestaApiEmpresas>(
       `${this.apiUrl}/api/empresas/`,
       { headers: this.getHeaders() }
-    );
+    ));
   }
 
   crearEmpresa(empresa: Empresa): Observable<RespuestaApiEmpresaAccion> {

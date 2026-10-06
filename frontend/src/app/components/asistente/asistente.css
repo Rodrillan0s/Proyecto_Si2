@@ -293,3 +293,7 @@ textarea {
     transition: none;
   }
 }
+
+.assistant.quick-mode { top: 84px; bottom: auto; height: min(520px, calc(100dvh - 100px)); }
+.assistant.module-mode { position: relative; inset: auto; width: 100%; max-width: none; height: min(740px, calc(100dvh - 260px)); min-height: 380px; margin: 0; }
+@media (max-width: 600px) { .assistant.quick-mode { top: 84px; right: 12px; left: 12px; width: auto; } .assistant.module-mode { min-height: 420px; } }

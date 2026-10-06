@@ -1,3 +1,5 @@
+import { LecturasVigentes } from '../../services/lecturas';
+import { ContextoOperativo } from '../../services/contexto-operativo';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -26,11 +28,13 @@ type TabInventario = 'stock' | 'movimientos' | 'compras';
   styleUrl: './inventario.css'
 })
 export class InventarioComponent implements OnInit {
+  private contexto = inject(ContextoOperativo);
   private inventarioSvc = inject(InventarioService);
   private empresaSvc = inject(EmpresaService);
   private auth = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
   private destroyRef = inject(DestroyRef);
+  private reads = new LecturasVigentes(this.destroyRef);
   private busqueda$ = new Subject<string>();
 
   tabActiva: TabInventario = 'stock';
@@ -91,13 +95,16 @@ export class InventarioComponent implements OnInit {
   mensajeAlerta: { tipo: 'success' | 'error'; texto: string } | null = null;
 
   ngOnInit(): void {
+    this.contexto.proteger(() => this.modalAjusteAbierto, this.destroyRef);
+    this.contexto.protegerEscritura(() => this.guardandoAjuste, this.destroyRef);
     this.esAdminGlobal = this.auth.esVistaGlobal();
     this.empresaActual = this.auth.obtenerEmpresaActiva();
 
-    this.auth.empresaActiva$
+    this.contexto.empresa$
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((empresa: Empresa | null) => {
-        this.empresaActual = empresa;
+      .subscribe(() => {
+        this.empresaActual = this.auth.obtenerEmpresaActiva();
+        this.reads.cancelar(); this.stockItems = []; this.movimientos = []; this.modalAjusteAbierto = false;
         this.paginaStock = 1;
         this.paginaMovimientos = 1;
         this.cargarTodo();
@@ -111,7 +118,7 @@ export class InventarioComponent implements OnInit {
         this.cargarStock();
       });
 
-    this.cargarTodo();
+
   }
 
   get idEmpresaFiltro(): number | undefined {
@@ -152,7 +159,7 @@ export class InventarioComponent implements OnInit {
 
   cargarKpis(): void {
     this.cargandoKpis = true;
-    this.inventarioSvc.obtenerKpis(this.idEmpresaFiltro).subscribe({
+    this.inventarioSvc.obtenerKpis(this.idEmpresaFiltro).pipe(this.reads.reemplazar('kpis')).subscribe({
       next: (res) => {
         if (res.success && res.data) {
           this.kpis = res.data;
@@ -177,7 +184,7 @@ export class InventarioComponent implements OnInit {
         limit: this.limiteStock,
         id_empresa: this.idEmpresaFiltro
       })
-      .subscribe({
+      .pipe(this.reads.reemplazar('stock')).subscribe({
         next: (res) => {
           this.stockItems = res.data || [];
           this.totalStock = res.total || 0;
@@ -201,7 +208,7 @@ export class InventarioComponent implements OnInit {
         limit: this.limiteMovimientos,
         id_empresa: this.idEmpresaFiltro
       })
-      .subscribe({
+      .pipe(this.reads.reemplazar('movimientos')).subscribe({
         next: (res) => {
           this.movimientos = res.data || [];
           this.totalMovimientos = res.total || 0;

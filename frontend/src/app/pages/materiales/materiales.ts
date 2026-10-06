@@ -1,3 +1,5 @@
+import { LecturasVigentes } from '../../services/lecturas';
+import { ContextoOperativo } from '../../services/contexto-operativo';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -22,10 +24,12 @@ interface MaterialFormModel extends MaterialCreatePayload {
   styleUrl: './materiales.css'
 })
 export class MaterialesComponent implements OnInit {
+  private contexto = inject(ContextoOperativo);
   private service = inject(MaterialsService);
   private auth = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
   private destroyRef = inject(DestroyRef);
+  private reads = new LecturasVigentes(this.destroyRef);
   private busqueda$ = new Subject<string>();
 
   materiales: Material[] = [];
@@ -74,16 +78,19 @@ export class MaterialesComponent implements OnInit {
   modalCopiarBase = false;
 
   ngOnInit(): void {
+    this.contexto.proteger(() => this.modal === 'formulario' || this.modalAdopcionAbierto, this.destroyRef);
+    this.contexto.protegerEscritura(() => this.savingMaterial || this.updatingMaterial || this.adoptingMaterial || this.copiandoBase, this.destroyRef);
     this.busqueda$.pipe(debounceTime(400), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         this.pagina = 1;
         this.cargarMateriales();
       });
 
-    this.auth.empresaActiva$
+    this.contexto.empresa$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((emp) => {
-        this.empresaActiva = emp;
+        this.reads.cancelar(); this.materiales = []; this.materialesBase = []; this.modal = null; this.modalAdopcionAbierto = false;
+        this.empresaActiva = this.auth.obtenerEmpresaActiva();
         this.pagina = 1;
         this.cargarMateriales();
       });
@@ -106,7 +113,7 @@ export class MaterialesComponent implements OnInit {
         error: err => this.mostrarError(this.mensajeError(err, 'No se pudieron cargar los catálogos.'))
       });
 
-    this.cargarMateriales();
+
   }
 
   formularioVacio(): MaterialFormModel {
@@ -141,7 +148,7 @@ export class MaterialesComponent implements OnInit {
         this.loadingMaterials = false;
         this.cdr.detectChanges();
       }))
-      .subscribe({
+      .pipe(this.reads.reemplazar('materiales')).subscribe({
         next: res => {
           this.materiales = res.data || [];
           this.total = res.pagination.total;

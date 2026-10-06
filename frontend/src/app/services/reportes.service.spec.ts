@@ -14,6 +14,14 @@ describe('Reportes: contratos compartidos', () => {
     http = TestBed.inject(HttpTestingController);
   });
   afterEach(() => http.verify());
+  it('transporta la obra como contexto separado sin alterar la pregunta', async () => {
+    const result = api.assistant('Stock de materiales', 7, undefined, undefined, 9);
+    const request = http.expectOne(r => r.url.endsWith('/api/ai/consulta'));
+    expect(request.request.body.texto).toBe('Stock de materiales');
+    expect(request.request.body.id_obra_contexto).toBe(9);
+    request.flush({ estado: 'ready', mensaje: 'Listo' });
+    await result;
+  });
   it('consulta al asistente con empresa y conversación mediante el contrato común', async () => {
     const result = api.assistant('reporte de stock', 7, 'conversation-id');
     const request = http.expectOne((r) => r.url.endsWith('/api/ai/consulta'));

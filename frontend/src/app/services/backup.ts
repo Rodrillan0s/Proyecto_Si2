@@ -1,12 +1,13 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpResponse } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom, timeout } from 'rxjs';
 import { environment } from '../../environments/environment';
 
-export type BackupScope = 'base_datos' | 'sistema_completo';
+export type BackupScope = 'base_datos';
 export interface BackupStatus {
   configurado: boolean;
   control_disponible: boolean;
+  cola_disponible: boolean;
   requisitos: string[];
   worker_activo: boolean;
   ultimo_latido: string | null;
@@ -14,7 +15,13 @@ export interface BackupStatus {
   mantenimiento: boolean;
   motivo: string | null;
   replica_remota: boolean;
-  almacenamiento_persistente: boolean;
+  heartbeat_integrado: boolean;
+  almacenamiento: 'oci_object_storage';
+  descarga_habilitada: boolean;
+  requisitos_descarga: string[];
+  importacion_habilitada: boolean;
+  retencion_gestionada: boolean;
+  advertencias: string[];
   restauracion_habilitada: boolean;
   requisitos_restauracion: string[];
 }
@@ -28,22 +35,35 @@ export interface BackupSchedule {
   dia_mes: number;
   retencion_dias: 7 | 15 | 30 | 90;
 }
+export interface BackupDownload {
+  id: string;
+  job_id: string;
+  estado: 'PENDIENTE' | 'PROCESANDO' | 'COMPLETADO' | 'FALLIDO' | 'EXPIRADO';
+  url: string | null;
+  expira_en: string | null;
+  nombre: string;
+  error: string | null;
+}
 export interface BackupArchive {
   id: string;
   nombre: string;
-  bytes: number;
+  bytes: number | null;
   sha256: string;
   alcance: BackupScope;
   corte: string;
   entorno_origen: string;
-  release_sha256: string;
   verificado_en: string | null;
   eliminado_en: string | null;
   replica_remota: boolean;
 }
 export interface BackupJob {
   id: string;
-  estado: 'PENDIENTE' | 'GENERANDO' | 'VERIFICANDO' | 'LISTO' | 'FALLIDO';
+  estado: 'PENDIENTE' | 'PROCESANDO' | 'COMPLETADO' | 'FALLIDO';
+  tipo: 'BACKUP' | 'RESTORE' | 'DELETE';
+  object_name: string | null;
+  sha256: string | null;
+  size_bytes: number | null;
+  job_relacionado_id: string | null;
   etapa: string;
   error: string | null;
   archivo: string | null;
@@ -63,7 +83,7 @@ export interface BackupRestore {
   validada_en: string | null;
   aplicar_en: string | null;
   confirmacion_requerida: string;
-  respaldo: BackupArchive;
+  respaldo: BackupArchive | null;
   pasos: { paso: string; estado: string }[];
 }
 
@@ -94,17 +114,15 @@ export class BackupService {
   ejecucion(id: string) {
     return firstValueFrom(this.http.get<BackupJob>(`${this.url}/ejecuciones/${id}`));
   }
-  descargar(id: string): Promise<HttpResponse<Blob>> {
-    return firstValueFrom(
-      this.http.get(`${this.url}/ejecuciones/${id}/archivo`, {
-        observe: 'response',
-        responseType: 'blob',
-      }),
-    );
+  descargar(id: string) {
+    return firstValueFrom(this.http.post<BackupDownload>(`${this.url}/ejecuciones/${id}/archivo`, {}).pipe(timeout(15000)));
+  }
+  descarga(id: string) {
+    return firstValueFrom(this.http.get<BackupDownload>(`${this.url}/descargas/${id}`).pipe(timeout(15000)));
   }
   programacion() {
     return firstValueFrom(
-      this.http.get<{ configuracion: BackupSchedule; next_run: string | null }>(
+      this.http.get<{ configuracion: BackupSchedule; next_run: string | null; advertencias?: string[] }>(
         `${this.url}/programacion`,
       ),
     );
@@ -114,6 +132,13 @@ export class BackupService {
       this.http.put<{ configuracion: BackupSchedule; next_run: string | null }>(
         `${this.url}/programacion`,
         config,
+      ),
+    );
+  }
+  despachar() {
+    return firstValueFrom(
+      this.http.post<{ encolado: boolean; trabajo: BackupJob | null }>(
+        `${this.url}/programacion/ejecutar`, {},
       ),
     );
   }

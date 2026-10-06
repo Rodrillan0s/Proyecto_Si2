@@ -10,6 +10,7 @@
     </div>
   </header>
 
+  <p *ngIf="!contextoCompatible" class="alert" role="status">Este módulo opera con la empresa de tu sesión. Selecciona esa empresa en la cabecera para consultar sus presupuestos.</p>
   <p *ngIf="error" class="alert">{{ error }}</p>
   <p *ngIf="mensaje" class="alert success">{{ mensaje }}</p>
 

@@ -1,7 +1,9 @@
+import { LecturasVigentes } from '../../services/lecturas';
+import { ContextoOperativo } from '../../services/contexto-operativo';
 import { Component, OnInit, inject, ChangeDetectorRef, NgZone, PLATFORM_ID, OnDestroy, DestroyRef } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ProyectosService, Proyecto, TipoProyecto } from '../../services/proyectos';
 import { AuthService } from '../../services/auth';
@@ -14,13 +16,16 @@ import { AuthService } from '../../services/auth';
   styleUrl: './proyectos.css'
 })
 export class ProyectosComponent implements OnInit, OnDestroy {
+  private contexto = inject(ContextoOperativo);
   private proyectosService = inject(ProyectosService);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private cdr = inject(ChangeDetectorRef);
   private ngZone = inject(NgZone);
   private platformId = inject(PLATFORM_ID);
   private destroyRef = inject(DestroyRef);
+  private reads = new LecturasVigentes(this.destroyRef);
 
   proyectos: Proyecto[] = [];
   proyectosFiltrados: Proyecto[] = [];
@@ -60,16 +65,23 @@ export class ProyectosComponent implements OnInit, OnDestroy {
   proyectosPlanificacion = 0;
 
   ngOnInit() {
-    this.authService.empresaActiva$
+    this.contexto.empresa$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(emp => {
         this.ngZone.run(() => {
-          this.empresaActiva = emp;
+          this.empresaActiva = this.authService.obtenerEmpresaActiva();
+          this.cerrarModal();
           this.aplicarFiltros();
           this.calcularEstadisticas();
           this.cdr.detectChanges();
         });
       });
+    this.contexto.proteger(() => this.mostrarModal, this.destroyRef);
+    this.contexto.protegerEscritura(() => this.guardando, this.destroyRef);
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
+      if (params.get('tab') === 'nuevo' && this.hasPermission('Registrar_obras') && !this.mostrarModal) this.abrirModalNuevo();
+      if (params.get('tab') === 'gestion') this.modoVista = 'tabla';
+    });
     this.cargarDatos();
   }
 
@@ -112,7 +124,7 @@ export class ProyectosComponent implements OnInit, OnDestroy {
     this.cargando = true;
     this.mensajeError = '';
 
-    this.proyectosService.listarProyectos().subscribe({
+    this.proyectosService.listarProyectos().pipe(this.reads.reemplazar('proyectos')).subscribe({
       next: (res) => {
         this.ngZone.run(() => {
           if (res && res.success) {
@@ -135,7 +147,7 @@ export class ProyectosComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.proyectosService.obtenerTiposProyecto().subscribe({
+    this.proyectosService.obtenerTiposProyecto().pipe(this.reads.reemplazar('tipos-proyecto')).subscribe({
       next: (res) => {
         if (res && res.success) {
           this.tiposProyecto = res.data || [];
@@ -172,7 +184,8 @@ export class ProyectosComponent implements OnInit, OnDestroy {
 
   verProyecto(id?: number) {
     if (id) {
-      this.router.navigate([`/proyectos/${id}`]);
+      const action = this.route.snapshot.queryParamMap.get('accion');
+      this.router.navigate([`/proyectos/${id}`], { queryParams: action === 'estructura' ? { tab: 'estructura' } : {}, fragment: action === 'responsables' ? 'responsables-obra' : undefined });
     }
   }
 
@@ -241,6 +254,7 @@ export class ProyectosComponent implements OnInit, OnDestroy {
   }
 
   cerrarModal() {
+    if (this.route.snapshot.queryParamMap.get('tab') === 'nuevo') void this.router.navigate([], { relativeTo: this.route, queryParams: { tab: null }, queryParamsHandling: 'merge', replaceUrl: true });
     this.destruirMapa();
     this.mostrarModal = false;
     this.guardando = false;

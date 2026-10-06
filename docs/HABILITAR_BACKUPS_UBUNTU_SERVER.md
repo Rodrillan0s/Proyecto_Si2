@@ -1,5 +1,7 @@
 # Habilitar copias de respaldo con PostgreSQL en Ubuntu Server
 
+**Guía histórica del motor local anterior.** Desde 2026-10-05 se utiliza el daemon Oracle ya existente. Seguir [OPERACION_BACKUP_SERVICE_ORACLE.md](OPERACION_BACKUP_SERVICE_ORACLE.md); no levantar el worker legacy ni configurar AES/S3/discos/herramientas en Render por las instrucciones siguientes.
+
 Fecha: 2026-10-04. Guía para la implementación actual de OBRATEC.
 
 **Tu base de datos se accede a través de Ubuntu Server.** Esto no significa que el backend o el worker estén ejecutándose allí: pueden funcionar desde Windows y conectarse a PostgreSQL de forma remota. Esta guía incluye ambas ubicaciones y la alternativa de túnel SSH.

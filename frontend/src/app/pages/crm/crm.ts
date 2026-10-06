@@ -1,3 +1,5 @@
+import { LecturasVigentes } from '../../services/lecturas';
+import { ContextoOperativo } from '../../services/contexto-operativo';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -26,11 +28,13 @@ import { AsistenteService } from '../../services/asistente.service';
   styleUrl: './crm.css'
 })
 export class CrmComponent implements OnInit {
+  private contexto = inject(ContextoOperativo);
   private crmService = inject(CrmService);
   readonly asistente = inject(AsistenteService);
   private auth = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
   private destroyRef = inject(DestroyRef);
+  private reads = new LecturasVigentes(this.destroyRef);
   private busqueda$ = new Subject<string>();
 
   // Pestaña activa
@@ -140,9 +144,13 @@ export class CrmComponent implements OnInit {
   mensajeError = '';
 
   ngOnInit(): void {
-    this.cargarMetricas();
-    this.cargarAsesores();
-    this.cargarLista();
+    this.contexto.proteger(() => this.mostrarModalFormulario || this.mostrarModalInteraccion || this.mostrarModalCambiarEtapa || this.mostrarModalAsociarUnidad, this.destroyRef);
+    this.contexto.protegerEscritura(() => this.guardandoFormulario || this.guardandoInteraccion || this.guardandoCambioEtapa || this.guardandoAsociacion, this.destroyRef);
+    this.contexto.empresa$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.mostrarModalFormulario = false; this.mostrarModalDetalle = false; this.mostrarModalInteraccion = false; this.mostrarModalCambiarEtapa = false; this.mostrarModalAsociarUnidad = false; this.clienteSeleccionado = null; this.unidadesDisponibles = [];
+      this.reads.cancelar(); this.clientes = []; this.pagina = 1; this.filtroAsesor = null;
+      this.cargarMetricas(); this.cargarAsesores(); this.cargarLista();
+    });
 
     // Suscripción reactiva para buscador con debounce
     this.busqueda$.pipe(
@@ -160,7 +168,7 @@ export class CrmComponent implements OnInit {
   // ── Cargar Asesores Comerciales de la Empresa ─────────────────────────────
   cargarAsesores() {
     this.cargandoAsesores = true;
-    this.crmService.listarAsesores().subscribe({
+    this.crmService.listarAsesores(this.auth.obtenerIdEmpresaActiva() || undefined).pipe(this.reads.reemplazar('asesores')).subscribe({
       next: (res) => {
         if (res && res.success) {
           this.asesores = res.data || [];
@@ -200,7 +208,7 @@ export class CrmComponent implements OnInit {
 
   cargarMetricas() {
     this.cargandoMetricas = true;
-    this.crmService.obtenerMetricas().subscribe({
+    this.crmService.obtenerMetricas(this.auth.obtenerIdEmpresaActiva() || undefined).pipe(this.reads.reemplazar('metricas')).subscribe({
       next: (res) => {
         if (res && res.success) {
           this.metricas = res.data;
@@ -218,13 +226,14 @@ export class CrmComponent implements OnInit {
   cargarLista() {
     this.cargandoLista = true;
     this.crmService.listarClientes({
+      id_empresa: this.auth.obtenerIdEmpresaActiva() || undefined,
       tipo_cliente: this.filtroTipo,
       estado: this.filtroEstado || undefined,
       q: this.q.trim() || undefined,
       id_usuario_asignado: this.filtroAsesor || undefined,
       page: this.pagina,
       limit: this.limite
-    }).subscribe({
+    }).pipe(this.reads.reemplazar('clientes')).subscribe({
       next: (res) => {
         if (res && res.success) {
           this.clientes = res.data || [];
@@ -262,7 +271,7 @@ export class CrmComponent implements OnInit {
     this.interacciones = [];
     this.unidadesAsociadas = [];
 
-    this.crmService.obtenerDetalleHistorial(c.id_cliente).subscribe({
+    this.crmService.obtenerDetalleHistorial(c.id_cliente, this.auth.obtenerIdEmpresaActiva() || undefined).pipe(this.reads.reemplazar('detalle')).subscribe({
       next: (res) => {
         if (res && res.success) {
           this.clienteSeleccionado = res.data.cliente;
@@ -340,7 +349,7 @@ export class CrmComponent implements OnInit {
     this.limpiarMensajes();
 
     if (this.modoEdicion && this.formCliente.id_cliente) {
-      this.crmService.actualizarCliente(this.formCliente.id_cliente, this.formCliente).subscribe({
+      this.crmService.actualizarCliente(this.formCliente.id_cliente, this.formCliente, this.auth.obtenerIdEmpresaActiva() || undefined).subscribe({
         next: (res) => {
           this.mostrarExito(res.message || 'Datos actualizados exitosamente.');
           this.guardandoFormulario = false;
@@ -358,7 +367,7 @@ export class CrmComponent implements OnInit {
         }
       });
     } else {
-      this.crmService.registrarCliente(this.formCliente).subscribe({
+      this.crmService.registrarCliente(this.formCliente, this.auth.obtenerIdEmpresaActiva() || undefined).subscribe({
         next: (res) => {
           this.mostrarExito(res.message || 'Registrado exitosamente.');
           this.guardandoFormulario = false;
@@ -397,7 +406,8 @@ export class CrmComponent implements OnInit {
     this.crmService.clasificarProspecto(
       this.clienteParaCambioEtapa.id_cliente,
       this.etapaSeleccionada,
-      this.notaCambioEtapa.trim() || undefined
+      this.notaCambioEtapa.trim() || undefined,
+      this.auth.obtenerIdEmpresaActiva() || undefined
     ).subscribe({
       next: (res) => {
         this.mostrarExito(res.message || 'Etapa comercial actualizada con éxito.');
@@ -446,7 +456,7 @@ export class CrmComponent implements OnInit {
       detalle: this.formInteraccion.detalle.trim(),
       fecha_interaccion: this.formInteraccion.fecha_interaccion || null,
       fecha_proximo_contacto: this.formInteraccion.fecha_proximo_contacto || null
-    }).subscribe({
+    }, this.auth.obtenerIdEmpresaActiva() || undefined).subscribe({
       next: (res) => {
         this.mostrarExito(res.message || 'Interacción registrada exitosamente.');
         this.guardandoInteraccion = false;
@@ -477,7 +487,7 @@ export class CrmComponent implements OnInit {
     this.limpiarMensajes();
     this.mostrarModalAsociarUnidad = true;
 
-    this.crmService.listarUnidadesDisponibles().subscribe({
+    this.crmService.listarUnidadesDisponibles(undefined, this.auth.obtenerIdEmpresaActiva() || undefined).pipe(this.reads.reemplazar('unidades')).subscribe({
       next: (res) => {
         if (res && res.success) {
           this.unidadesDisponibles = res.data || [];
@@ -501,7 +511,7 @@ export class CrmComponent implements OnInit {
     }
 
     this.guardandoAsociacion = true;
-    this.crmService.asociarUnidad(this.clienteSeleccionado.id_cliente, this.formAsociarUnidad).subscribe({
+    this.crmService.asociarUnidad(this.clienteSeleccionado.id_cliente, this.formAsociarUnidad, this.auth.obtenerIdEmpresaActiva() || undefined).subscribe({
       next: (res) => {
         this.mostrarExito(res.message || 'Unidad asociada exitosamente.');
         this.guardandoAsociacion = false;
@@ -520,7 +530,7 @@ export class CrmComponent implements OnInit {
   }
 
   actualizarEstadoAsociacion(asoc: UnidadAsociadaCRM, nuevoEstado: any) {
-    this.crmService.cambiarEstadoAsociacion(asoc.id_cliente_unidad, nuevoEstado).subscribe({
+    this.crmService.cambiarEstadoAsociacion(asoc.id_cliente_unidad, nuevoEstado, undefined, this.auth.obtenerIdEmpresaActiva() || undefined).subscribe({
       next: (res) => {
         this.mostrarExito(res.message || `Estado de la unidad actualizado a ${nuevoEstado}.`);
         asoc.estado_asociacion = nuevoEstado as EstadoAsociacionUnidad;

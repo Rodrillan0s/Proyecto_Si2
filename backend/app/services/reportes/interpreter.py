@@ -35,7 +35,8 @@ def interpret(text, available, works, previous=None, now=None):
         if len(exact)>1 and exact[0][0] == exact[1][0]:
             return {'estado':'needs_clarification','mensaje':'Elige cuál de estos reportes deseas.', 'opciones':[REGISTRY[k].titulo for _,k in exact[:3]]}
     if not scores or scores[0][0] < .77:
-        if previous and any(p in normalized for p in ('mismo', 'ahora', 'pdf', 'excel', 'este mes', 'mes anterior')):
+        named_followup = any(normalize(w['nombre']) == normalized.strip(' ?.¡!') or (w.get('codigo') and normalize(w['codigo']) == normalized.strip(' ?.¡!')) for w in works)
+        if previous and (named_followup or any(p in normalized for p in ('mismo', 'ahora', 'pdf', 'excel', 'este mes', 'mes anterior'))):
             request = {'reporte': previous['reporte'], 'filtros': dict(previous.get('filtros',{}))}
             if previous.get('presentacion'):
                 request['presentacion'] = dict(previous['presentacion'])
@@ -50,7 +51,7 @@ def interpret(text, available, works, previous=None, now=None):
         category = re.search(r'\bcategoria\s+(\d+)\b',normalized)
         if category:
             filters['id_categoria']=int(category[1])
-        if any(phrase in normalized for phrase in ('stock bajo','bajo minimo','poco stock')):
+        if any(similarity(normalized, phrase)>=.86 for phrase in ('stock bajo','bajo minimo','poco stock','por agotarse','criticos','criticas','faltantes','escasez')):
             filters['estado']='STOCK_BAJO'
         elif any(phrase in normalized for phrase in ('sin stock','agotados','agotadas')):
             filters['estado']='SIN_STOCK'
@@ -103,6 +104,8 @@ def interpret(text, available, works, previous=None, now=None):
         filters.update(desde=(today-timedelta(days=29)).isoformat(),hasta=today.isoformat())
     if request['reporte']=='comparativo_costos' and (filters.get('desde') or filters.get('hasta')) and 'costos_periodo' in available:
         request['reporte']='costos_periodo'
+    if request['reporte']=='stock':
+        filters.pop('id_obra', None)
     if REGISTRY[request['reporte']].obra and not filters.get('id_obra'):
         return {'estado':'needs_clarification','mensaje':'Selecciona la obra para comparar sus costos.', 'obras':works,'solicitud':request}
     if (filters.get('desde') or filters.get('hasta')) and not REGISTRY[request['reporte']].fecha:

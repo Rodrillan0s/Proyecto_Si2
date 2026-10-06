@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.spec.json",
+  "files": ["src/app/services/lecturas.spec.ts", "src/app/pages/inventario/rendimiento.spec.ts", "src/app/layouts/admin-layout/admin-layout.spec.ts"],
+  "include": [],
+  "exclude": []
+}

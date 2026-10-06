@@ -9,7 +9,8 @@
     "test": "ng test",
     "test:reportes": "ng test --watch=false --ts-config=tsconfig.reportes.spec.json --include=src/app/**/reportes*.spec.ts",
     "test:backups": "ng test --watch=false --ts-config=tsconfig.backups.spec.json --include=src/app/**/backup.spec.ts",
-    "serve:ssr:frontend": "node dist/frontend/server/server.mjs"
+    "serve:ssr:frontend": "node dist/frontend/server/server.mjs",
+    "test:navigation": "ng test --watch=false --ts-config=tsconfig.navigation.spec.json --include=src/app/**/lecturas.spec.ts --include=src/app/**/rendimiento.spec.ts --include=src/app/**/admin-layout.spec.ts"
   },
   "private": true,
   "packageManager": "npm@10.9.2",

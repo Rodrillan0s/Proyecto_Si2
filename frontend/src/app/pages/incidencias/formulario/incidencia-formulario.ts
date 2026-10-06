@@ -1,4 +1,5 @@
-import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, inject } from '@angular/core';
+import { Component, DestroyRef, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, inject } from '@angular/core';
+import { ContextoOperativo } from '../../../services/contexto-operativo';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -26,6 +27,8 @@ interface IncidenciaFormModel {
   templateUrl: './incidencia-formulario.html',
 })
 export class IncidenciaFormularioComponent implements OnInit, OnChanges {
+  private contexto = inject(ContextoOperativo);
+  private destroyRef = inject(DestroyRef);
   private proyectosService = inject(ProyectosService);
   private unidadesService = inject(UnidadesService);
   private incidenciasService = inject(IncidenciasService);
@@ -55,6 +58,8 @@ export class IncidenciaFormularioComponent implements OnInit, OnChanges {
   }
 
   ngOnInit(): void {
+    this.contexto.proteger(() => !!(this.form.titulo || this.form.descripcion || this.form.ubicacion), this.destroyRef);
+    this.contexto.protegerEscritura(() => this.guardando, this.destroyRef);
     this.cargarProyectos();
     if (this.incidencia) {
       this.cargarDesdeIncidencia(this.incidencia);

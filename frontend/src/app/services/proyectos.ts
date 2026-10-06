@@ -1,3 +1,4 @@
+import { LecturasCompartidas } from './lecturas';
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -77,6 +78,7 @@ export interface ApiResponseSimple {
   providedIn: 'root'
 })
 export class ProyectosService {
+  private shared = inject(LecturasCompartidas);
   private http = inject(HttpClient);
   private authService = inject(AuthService);
   private apiUrl = environment.apiUrl;
@@ -87,7 +89,7 @@ export class ProyectosService {
   }
 
   listarProyectos(): Observable<ApiResponseList> {
-    return this.http.get<ApiResponseList>(`${this.apiUrl}/api/proyectos/`, { headers: this.getHeaders() });
+    return this.shared.obtener('obras', () => this.http.get<ApiResponseList>(`${this.apiUrl}/api/proyectos/`, { headers: this.getHeaders() }));
   }
 
   obtenerSiguienteCodigo(): Observable<{ success: boolean; codigo: string }> {
@@ -95,7 +97,7 @@ export class ProyectosService {
   }
 
   obtenerTiposProyecto(): Observable<ApiResponseTipos> {
-    return this.http.get<ApiResponseTipos>(`${this.apiUrl}/api/proyectos/tipos`, { headers: this.getHeaders() });
+    return this.shared.obtener('tipos', () => this.http.get<ApiResponseTipos>(`${this.apiUrl}/api/proyectos/tipos`, { headers: this.getHeaders() }));
   }
 
   obtenerProyectoDetalle(id: number): Observable<ApiResponseDetail> {

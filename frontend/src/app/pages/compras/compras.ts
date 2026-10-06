@@ -1,3 +1,5 @@
+import { LecturasVigentes } from '../../services/lecturas';
+import { ContextoOperativo } from '../../services/contexto-operativo';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
@@ -45,6 +47,7 @@ interface RecepcionItemForm {
   styleUrl: './compras.css'
 })
 export class ComprasComponent implements OnInit {
+  private contexto = inject(ContextoOperativo);
   private comprasSvc = inject(ComprasService);
   private proveedorSvc = inject(ProveedorService);
   private materialSvc = inject(MaterialsService);
@@ -52,6 +55,7 @@ export class ComprasComponent implements OnInit {
   private auth = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
   private destroyRef = inject(DestroyRef);
+  private reads = new LecturasVigentes(this.destroyRef);
   private busqueda$ = new Subject<string>();
 
   // Listado principal
@@ -110,6 +114,8 @@ export class ComprasComponent implements OnInit {
   motivoCancelacion = '';
 
   ngOnInit(): void {
+    this.contexto.proteger(() => this.modalActivo !== null, this.destroyRef);
+    this.contexto.protegerEscritura(() => this.guardando || this.procesandoAccion, this.destroyRef);
     this.busqueda$
       .pipe(debounceTime(350), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
@@ -117,13 +123,14 @@ export class ComprasComponent implements OnInit {
         this.cargarOrdenes();
       });
 
-    this.auth.empresaActiva$
+    this.contexto.empresa$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(emp => {
-        this.empresaActiva = emp;
+        this.empresaActiva = this.auth.obtenerEmpresaActiva();
+        this.reads.cancelar(); this.modalActivo = null; this.ordenes = []; this.materiales = [];
         this.pagina = 1;
         this.cargarOrdenes();
-        this.cargarCatalogos();
+        this.cargarProveedoresFiltro();
       });
 
     this.empresaActiva = this.auth.obtenerEmpresaActiva();
@@ -136,8 +143,7 @@ export class ComprasComponent implements OnInit {
       });
     }
 
-    this.cargarOrdenes();
-    this.cargarCatalogos();
+
   }
 
   esVistaGlobal(): boolean {
@@ -183,7 +189,7 @@ export class ComprasComponent implements OnInit {
       id_empresa: idEmpresa || undefined,
       page: this.pagina,
       limit: this.limite
-    }).subscribe({
+    }).pipe(this.reads.reemplazar('compras')).subscribe({
       next: res => {
         this.ordenes = res.data || [];
         this.total = res.pagination?.total || 0;
@@ -198,15 +204,30 @@ export class ComprasComponent implements OnInit {
     });
   }
 
+  private cargarProveedoresFiltro() {
+    this.proveedorSvc.listar({ estado: 'ACTIVO', limit: 100, id_empresa: this.auth.obtenerIdEmpresaActiva() || undefined }).pipe(this.reads.reemplazar('proveedores')).subscribe({
+      next: response => { this.proveedores = response.data || []; this.cdr.markForCheck(); },
+      error: () => { this.proveedores = []; this.cdr.markForCheck(); },
+    });
+  }
+
   cargarCatalogos(idEmpresaOverride?: number): void {
     const idEmpresa = idEmpresaOverride !== undefined ? idEmpresaOverride : this.auth.obtenerIdEmpresaActiva();
-    this.proveedorSvc.listar({ estado: 'ACTIVO', limit: 100, id_empresa: idEmpresa || undefined }).subscribe({
+    this.proveedorSvc.listar({ estado: 'ACTIVO', limit: 100, id_empresa: idEmpresa || undefined }).pipe(this.reads.reemplazar('catalogos-compra')).subscribe({
       next: res => { this.proveedores = res.data || []; this.cdr.detectChanges(); }
     });
 
-    this.materialSvc.listar({ estado: 'ACTIVO', limit: 500, id_empresa: idEmpresa || undefined }).subscribe({
-      next: res => { this.materiales = res.data || []; this.cdr.detectChanges(); },
-      error: err => { console.error('Error al cargar materiales:', err); }
+    this.cargarMaterialesFormulario(idEmpresa || undefined);
+  }
+
+  private cargarMaterialesFormulario(company?: number, page = 1, accumulated: Material[] = []): void {
+    this.materialSvc.listar({ estado: 'ACTIVO', limit: 100, page, id_empresa: company }).pipe(this.reads.reemplazar('materiales-compra')).subscribe({
+      next: response => {
+        const materials = [...accumulated, ...(response.data || [])];
+        if (page < (response.pagination?.total_pages || 1)) this.cargarMaterialesFormulario(company, page + 1, materials);
+        else { this.materiales = materials; this.cdr.markForCheck(); }
+      },
+      error: () => this.mostrarError('No se pudieron cargar los materiales del formulario.'),
     });
   }
 

@@ -1,3 +1,8 @@
+import { DestroyRef } from '@angular/core';
+import { LecturasVigentes } from '../../services/lecturas';
+import { ContextoOperativo } from '../../services/contexto-operativo';
+import { AuthService } from '../../services/auth';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -28,6 +33,14 @@ interface InsumoFila {
   styleUrl: './estimaciones.css'
 })
 export class EstimacionesComponent implements OnInit {
+  private auth = inject(AuthService);
+  private materialCatalogStarted = false;
+  get contextoCompatible() { return this.auth.obtenerIdEmpresaActiva() === Number(this.auth.obtenerUsuario()?.id_empresa); }
+  private asegurarMateriales() { if (!this.materialCatalogStarted) { this.materialCatalogStarted = true; this.cargarMateriales(); } }
+
+  private contexto = inject(ContextoOperativo);
+  private destroyRef = inject(DestroyRef);
+  private reads = new LecturasVigentes(this.destroyRef);
   private readonly service = inject(EstimacionesService);
   private readonly materials = inject(MaterialsService);
   private readonly proyectos = inject(ProyectosService);
@@ -70,17 +83,25 @@ export class EstimacionesComponent implements OnInit {
   ngOnInit(): void {
     const id = this.route.snapshot.queryParamMap.get('id_obra');
     this.idObra = id ? Number(id) : undefined;
-    this.cargarCatalogo();
+    this.contexto.proteger(() => this.editor.abierto || this.est.abierto, this.destroyRef);
+    this.contexto.protegerEscritura(() => this.guardando || this.guardandoDetalle, this.destroyRef);
+    let initialWork = true;
+    this.contexto.operativo$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.reads.cancelar(); this.editor.abierto = false; this.est.abierto = false; this.mostrarDetalle = false;
+      this.apus = []; this.estimaciones = []; this.materiales = []; this.materialCatalogStarted = false;
+      if (!this.contextoCompatible) { this.obras = []; this.cargando = false; return; }
+      this.idObra = this.contexto.obra?.id_obra || (initialWork && id ? Number(id) : undefined); initialWork = false;
+      this.cargarCatalogo();
+    });
   }
 
   private cargarCatalogo(): void {
     this.materials.unidadesMedida().subscribe({ next: r => { this.unidades = r.data || []; this.cdr.detectChanges(); } });
-    this.cargarMateriales();
     this.cargarObras();
   }
 
   private cargarMateriales(page = 1, acumulados: Material[] = []): void {
-    this.materials.listar({ limit: 100, page }).subscribe({
+    this.materials.listar({ limit: 100, page, id_empresa: this.auth.obtenerIdEmpresaActiva() || undefined }).pipe(this.reads.reemplazar('materiales')).subscribe({
       next: response => {
         const materiales = [...acumulados, ...(response.data || [])];
         if (page < (response.pagination?.total_pages || 1)) {
@@ -91,6 +112,7 @@ export class EstimacionesComponent implements OnInit {
         this.cdr.detectChanges();
       },
       error: () => {
+        this.materialCatalogStarted = false;
         this.error = 'No se pudo cargar el catálogo de materiales.';
         this.cdr.detectChanges();
       }
@@ -98,27 +120,30 @@ export class EstimacionesComponent implements OnInit {
   }
 
   private cargarObras(): void {
-    this.proyectos.listarProyectos().subscribe({
-      next: r => { this.obras = r.data || []; if (!this.idObra && this.obras.length && this.obras[0].id_obra) this.idObra = this.obras[0].id_obra; this.cargar(); this.cdr.detectChanges(); },
+    this.proyectos.listarProyectos().pipe(this.reads.reemplazar('obras')).subscribe({
+      next: r => { this.obras = (r.data || []).filter(work => Number(work.id_empresa) === this.auth.obtenerIdEmpresaActiva()); if (this.idObra && !this.obras.some(work => work.id_obra === this.idObra)) this.idObra = undefined; this.cargar(); this.cdr.detectChanges(); },
       error: () => { this.cargar(); }
     });
   }
 
   cambiarObra(obraId: number): void {
+    if (!this.contexto.confirmarCambio()) return;
     this.idObra = obraId || undefined;
+    this.contexto.seleccionar(this.obras.find(work => work.id_obra === this.idObra) || null);
     this.filtro.tipo = '';
     this.filtro.calidad = '';
-    this.cargar();
+
   }
 
   cargar(): void {
+    if (!this.contextoCompatible) return;
     this.cargando = true;
     this.error = '';
-    this.service.listarApu({ id_obra: this.idObra, tipo_analisis_precio_unitario: this.filtro.tipo || undefined, calidad: this.filtro.calidad || undefined }).subscribe({
+    this.service.listarApu({ id_obra: this.idObra, tipo_analisis_precio_unitario: this.filtro.tipo || undefined, calidad: this.filtro.calidad || undefined }).pipe(this.reads.reemplazar('apu')).subscribe({
       next: response => { this.apus = response.data || []; this.cargando = false; this.cdr.detectChanges(); },
       error: error => { this.error = error?.error?.error || error?.error?.detail || 'No se pudieron cargar las partidas.'; this.cargando = false; this.cdr.detectChanges(); }
     });
-    this.service.listarEstimaciones(this.idObra).subscribe({ next: response => { this.estimaciones = response.data || []; this.cdr.detectChanges(); } });
+    this.service.listarEstimaciones(this.idObra).pipe(this.reads.reemplazar('estimaciones')).subscribe({ next: response => { this.estimaciones = response.data || []; this.cdr.detectChanges(); } });
   }
 
   get apusFiltradas(): Apu[] {
@@ -156,15 +181,17 @@ export class EstimacionesComponent implements OnInit {
   // ---------------- Editor de partida (APU) ----------------
 
   abrirNuevaPartida(): void {
+    this.asegurarMateriales();
     this.editor = { abierto: true, editar: false, form: { codigo: '', nombre: '', descripcion: '', id_unidad_medida: undefined, rendimiento: null, mano_de_obra: 0, porcentaje_utilidad: 10, tipo_analisis_precio_unitario: 'OBRA_GRIS', calidad: '' } };
     this.insumos = [];
     this.error = '';
   }
 
   abrirEditar(apu: Apu): void {
+    this.asegurarMateriales();
     this.error = '';
     this.mensaje = '';
-    this.service.detalleApu(apu.id_analisis_precio_unitario).subscribe({
+    this.service.detalleApu(apu.id_analisis_precio_unitario).pipe(this.reads.reemplazar('detalle-apu')).subscribe({
       next: r => {
         const d: ApuDetalle = r.data;
         this.editor = {

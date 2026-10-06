@@ -12,6 +12,8 @@
     </div>
   </header>
   <p *ngIf="error" role="alert" class="alert">{{ error }}</p>
+  <p *ngIf="auxiliaryLoading" role="status" class="notice">Cargando información complementaria…</p>
+  <p *ngIf="auxiliaryError" role="alert" class="alert">{{ auxiliaryError }} <button (click)="retryAuxiliary()">Reintentar</button></p>
   <p *ngIf="notice" role="status" class="notice">{{ notice }}</p>
   <section *ngIf="needsCompany" class="empty">
     <h2>Selecciona una empresa</h2>
@@ -42,20 +44,20 @@
   <ng-container *ngIf="catalog.reportes.length">
     <nav class="tabs" aria-label="Secciones de reportes">
       <button
-        (click)="tab = 'generar'"
+        (click)="changeTab('generar')"
         [class.active]="tab === 'generar'"
         [attr.aria-current]="tab === 'generar' ? 'page' : null"
       >
         Generar reporte</button
       ><button
-        (click)="tab = 'historial'"
+        (click)="changeTab('historial')"
         [class.active]="tab === 'historial'"
         [attr.aria-current]="tab === 'historial' ? 'page' : null"
       >
         Historial <span>{{ history.length }}</span></button
       ><button
         *ngIf="can('Programar_reportes')"
-        (click)="tab = 'programaciones'"
+        (click)="changeTab('programaciones')"
         [class.active]="tab === 'programaciones'"
         [attr.aria-current]="tab === 'programaciones' ? 'page' : null"
       >
@@ -74,7 +76,7 @@
         <fieldset [disabled]="busy || loading">
           <label
             >Tipo de reporte<select [(ngModel)]="selected" (ngModelChange)="changeReport()">
-              <option *ngFor="let report of catalog.reportes" [value]="report.id">
+              <option *ngFor="let report of reportOptions" [value]="report.id">
                 {{ report.titulo }}
               </option>
             </select></label
@@ -415,7 +417,7 @@
                 />{{ recipient.nombre }}</label
               >
             </div>
-            <p *ngIf="!recipients.length" class="description">
+            <p *ngIf="!recipients.length && !auxiliaryLoading && !auxiliaryError" class="description">
               No hay destinatarios disponibles para tu empresa.
             </p>
             <label
@@ -510,10 +512,10 @@
           </p>
         </div>
       </div>
-      <div class="empty" *ngIf="!history.length">
+      <div class="empty" *ngIf="!history.length && !auxiliaryLoading && !auxiliaryError">
         <h3>Todavía no has generado reportes</h3>
         <p>El primer reporte que generes aparecerá aquí.</p>
-        <button (click)="tab = 'generar'">Crear un reporte</button>
+        <button (click)="changeTab('generar')">Crear un reporte</button>
       </div>
       <article class="job" *ngFor="let item of history">
         <div>
@@ -533,9 +535,9 @@
           <h2>Envíos programados</h2>
           <p>Controla las próximas entregas y pausa las que ya no necesites.</p>
         </div>
-        <button (click)="tab = 'generar'">Nueva programación</button>
+        <button (click)="changeTab('generar')">Nueva programación</button>
       </div>
-      <div class="empty" *ngIf="!schedules.length">
+      <div class="empty" *ngIf="!schedules.length && !auxiliaryLoading && !auxiliaryError">
         <h3>Sin programaciones</h3>
         <p>Prepara un reporte, selecciona destinatarios y abre «Programar este reporte».</p>
       </div>

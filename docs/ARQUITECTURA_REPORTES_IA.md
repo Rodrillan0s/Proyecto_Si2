@@ -1,8 +1,10 @@
 # Arquitectura implementada de Reportes, IA y automatización
 
+Actualización web 2026-10-05: [decisión de navegación y rendimiento](decisiones/2026-10-05-frontend-navegacion-rendimiento.md). Familias del sidebar filtran el catálogo autorizado existente. Historial/programaciones/destinatarios se cargan bajo demanda. El shell conserva un asistente único para consulta rápida, burbuja y `/asistente`; cambiar modo conserva conversación y cambiar empresa/obra invalida respuestas anteriores. No cambian queries, proveedores, permisos, payloads ni automatización del backend.
+
 Secuencias del flujo web y backend actual: [CU25 CRM, CU26 Asistente Inteligente y CU27 Reportes](DIAGRAMAS_SECUENCIA_CU25_CU26_CU27.md). Los diagramas distinguen consultas síncronas, exportación y cola de entregas, incluyendo contexto de actor/empresa y los límites de las excepciones SQL actuales.
 
-Coordinación Backup/Restore: el tick entero del worker participa en la barrera independiente de [Backup/Restore](ARQUITECTURA_BACKUP_RESTORE.md). Durante mantenimiento no genera ni envía. Una restauración pausa programaciones/trabajos y pone envíos pendientes en cuarentena INCIERTO, porque Brevo no revierte efectos externos. Reactivar únicamente después de revisión; no iniciar un worker sin control operativo cuando BACKUP_ENABLED está activado.
+Coordinación Backup/Restore: el tick entero del worker de Reportes participa en la barrera independiente de [Backup/Restore](ARQUITECTURA_BACKUP_RESTORE.md). Durante mantenimiento no genera ni envía. Desde 2026-10-05, Backup utiliza el daemon Oracle existente; RESTORE desde FastAPI está bloqueado y aún debe integrarse la coordinación del daemon con esa barrera. La pausa/cuarentena INCIERTO documentada para la restauración legacy no se presupone ejecutada por el daemon actual: Brevo no revierte efectos externos. No iniciar Reportes sin control operativo cuando BACKUP_ENABLED está activado.
 
 Fecha: 2026-10-04. La migración `20261004_reportes.sql` ya se aplicó a la base configurada: comprobación posterior sin tablas de Reportes pendientes. Este documento complementa la arquitectura general y el inventario histórico de 68 tablas anterior a incorporar las siete nuevas. El worker no se inició durante esta corrección.
 

@@ -1,3 +1,5 @@
+import { ContextoOperativo } from '../../services/contexto-operativo';
+import { REPORT_FAMILIES } from '../../layouts/admin-layout/navegacion';
 import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -29,6 +31,40 @@ import {
   styleUrls: ['./reportes-results.css', './reportes.css', './reportes-personalizacion.css'],
 })
 export class ReportesComponent implements OnInit, OnDestroy {
+  private contexto = inject(ContextoOperativo);
+  family = '';
+  auxiliaryError = '';
+  auxiliaryLoading = false;
+  private auxiliary = new Set<string>();
+  private auxiliaryPending = new Map<string, Promise<void>>();
+  get reportOptions() { return this.family ? this.catalog.reportes.filter(report => REPORT_FAMILIES[this.family]?.includes(report.id)) : this.catalog.reportes; }
+  private navigationFilters() {
+    if (!this.reportOptions.some(report => report.id === this.selected)) this.selected = this.reportOptions[0]?.id || '';
+    const work = this.contexto.obra?.id_obra || Number(this.route?.snapshot.queryParamMap.get('id_obra'));
+    if (work && this.catalog.obras.some(item => item.id_obra === work)) this.work = work;
+  }
+  changeTab(tab: 'generar' | 'historial' | 'programaciones') {
+    this.tab = tab;
+    if (tab !== 'generar') void this.loadAuxiliary(tab);
+  }
+  private loadAuxiliary(kind: 'historial' | 'programaciones' | 'destinatarios', force = false): Promise<void> {
+    if ((!force && this.auxiliary.has(kind)) || this.needsCompany) return Promise.resolve();
+    const pending = this.auxiliaryPending.get(kind); if (pending) return pending;
+    const version = this.generation; this.auxiliaryLoading = true; this.auxiliaryError = '';
+    const task = (async () => {
+      try {
+        if (kind === 'historial') { const data = await this.api.history(this.company); if (version === this.generation) this.history = data; }
+        if (kind === 'programaciones' && this.can('Programar_reportes')) { const data = await this.api.schedules(this.company); if (version === this.generation) this.schedules = data; }
+        if (kind === 'destinatarios' && this.can('Enviar_reportes')) { const data = await this.api.recipients(this.company); if (version === this.generation) this.recipients = data; }
+        if (version === this.generation) this.auxiliary.add(kind);
+      } catch (error) { if (version === this.generation) this.auxiliaryError = reportError(error); }
+      finally { if (version === this.generation) { this.auxiliaryPending.delete(kind); this.auxiliaryLoading = this.auxiliaryPending.size > 0; this.cdr.markForCheck(); } }
+    })();
+    this.auxiliaryPending.set(kind, task); return task;
+  }
+  retryAuxiliary() { void this.loadAuxiliary(this.tab === 'generar' ? 'destinatarios' : this.tab, true); }
+  prepareDelivery() { void this.loadAuxiliary('destinatarios'); }
+
   private api = inject(ReportesService);
   private auth = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
@@ -250,9 +286,12 @@ export class ReportesComponent implements OnInit, OnDestroy {
     return String(value);
   }
   ngOnInit() {
-    this.auth.empresaActiva$.pipe(takeUntilDestroyed(this.destroy)).subscribe(() => {
+    this.contexto.protegerEscritura(() => this.busy, this.destroy);
+    this.contexto.proteger(() => this.receiverIds.length > 0, this.destroy);
+    this.contexto.empresa$.pipe(takeUntilDestroyed(this.destroy)).subscribe(() => {
       this.company = this.auth.obtenerIdEmpresaActiva();
       this.generation++;
+      this.auxiliary.clear(); this.auxiliaryPending.clear(); this.auxiliaryLoading = false; this.auxiliaryError = '';
       this.busy = false;
       this.loading = false;
       if (this.generation > 1) this.routeId = null;
@@ -283,8 +322,17 @@ export class ReportesComponent implements OnInit, OnDestroy {
       void this.load();
     });
     this.route?.queryParamMap.pipe(takeUntilDestroyed(this.destroy)).subscribe((params) => {
+      const family = params.get('familia') || '';
+      if (this.family !== family) { this.family = REPORT_FAMILIES[family] ? family : ''; if (!params.get('ejecucion')) this.changeReport(); }
+      this.navigationFilters();
       this.routeId = params.get('ejecucion');
       if (this.routeId && this.catalog.reportes.length && !this.loading) this.open(this.routeId);
+    });
+    this.contexto.obra$.pipe(takeUntilDestroyed(this.destroy)).subscribe(obra => {
+      const id = obra?.id_obra || null;
+      if (id === this.work) return;
+      this.work = id && this.catalog.obras.some(work => work.id_obra === id) ? id : null;
+      this.changeReport(); this.cdr.markForCheck();
     });
     interval(15000)
       .pipe(takeUntilDestroyed(this.destroy))
@@ -333,30 +381,10 @@ export class ReportesComponent implements OnInit, OnDestroy {
       if (!catalog.reportes.some((r) => r.id === this.selected))
         this.selected = catalog.reportes[0]?.id ?? '';
       if (!catalog.obras.some((w) => w.id_obra === this.work)) this.work = null;
-      const jobs: Promise<void>[] = [
-        this.api.history(this.company).then((value) => {
-          if (version === this.generation) this.history = value;
-        }),
-      ];
-      if (this.can('Enviar_reportes'))
-        jobs.push(
-          this.api.recipients(this.company).then((value) => {
-            if (version === this.generation) this.recipients = value;
-          }),
-        );
-      if (this.can('Programar_reportes'))
-        jobs.push(
-          this.api.schedules(this.company).then((value) => {
-            if (version === this.generation) this.schedules = value;
-          }),
-        );
-      if (this.execution && this.can('Enviar_reportes'))
-        jobs.push(
-          this.api.deliveries(this.execution.id).then((value) => {
-            if (version === this.generation) this.deliveries = value;
-          }),
-        );
-      await Promise.all(jobs);
+      this.navigationFilters();
+      this.auxiliary.clear();
+      if (this.tab !== 'generar') void this.loadAuxiliary(this.tab, true);
+      if (this.execution) this.prepareDelivery();
     } catch (error) {
       if (version === this.generation) this.error = reportError(error);
     } finally {
@@ -378,6 +406,7 @@ export class ReportesComponent implements OnInit, OnDestroy {
         const execution = await this.api.execution(this.execution.id);
         if (version !== this.generation) return;
         this.execution = execution;
+      this.prepareDelivery();
         if (this.can('Enviar_reportes')) {
           const deliveries = await this.api.deliveries(execution.id);
           if (version !== this.generation) return;
@@ -411,6 +440,10 @@ export class ReportesComponent implements OnInit, OnDestroy {
       });
   }
   changeReport() {
+    if (this.catalog.reportes.length && !this.loading) {
+      this.generation++; this.busy = false;
+      this.auxiliary.clear(); this.auxiliaryPending.clear(); this.auxiliaryLoading = false;
+    }
     this.resetPresentation();
     this.clearExecutionLink();
     this.response = undefined;
@@ -478,6 +511,7 @@ export class ReportesComponent implements OnInit, OnDestroy {
       const execution = await this.api.create(this.request(), this.company);
       if (version !== this.generation) return;
       this.execution = execution;
+      this.prepareDelivery();
       this.page = 1;
       this.deliveries = [];
       this.response = undefined;
@@ -493,6 +527,7 @@ export class ReportesComponent implements OnInit, OnDestroy {
       const execution = await this.api.execution(id);
       if (version !== this.generation) return;
       this.execution = execution;
+      this.prepareDelivery();
       this.page = 1;
       this.tab = 'generar';
       this.deliveries = [];

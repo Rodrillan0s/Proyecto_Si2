@@ -1,6 +1,49 @@
-# Arquitectura implementada de Backup/Restore
+# Arquitectura de Backup/Restore
 
-Fecha: 2026-10-04. [Plan aprobado](PLAN_BACKUP_RESTORE.md), [decisión](decisiones/2026-10-04-implementacion-backup-restore.md) y [operación](OPERACION_BACKUPS.md).
+## Arquitectura vigente: Oracle VM (2026-10-05)
+
+El motor es el **daemon existente** `/opt/obratec-backup/backup_service.py`, supervisado por `obratec-backup.service`. FastAPI solo autoriza/encola/consulta; pg_dump/pg_restore, PRE_RESTORE, integridad y OCI Instance Principal pertenecen exclusivamente a la VM. [Decisión y validación](decisiones/2026-10-05-integracion-backup-service-oracle.md) y [operación vigente](OPERACION_BACKUP_SERVICE_ORACLE.md).
+
+```mermaid
+flowchart TD
+    A[Angular /backup · ADMINISTRADOR global] --> R[backup_routes]
+    R --> S[backup_services · autorización y contratos]
+    S --> J[backup_jobs_repos · adaptador de cola VM]
+    J --> Q[(obratec_control.public.backup_jobs)]
+    D[Daemon Oracle existente · systemd] --> Q
+    D --> P[PostgreSQL · schema obras]
+    D --> O[OCI Object Storage privado]
+    J --> L[(public.backup_download_requests)]
+    D --> L
+    L --> T[PAR temporal ObjectRead · un objeto]
+    T --> S
+    A --> O
+    S --> C[backup_repos · barrera / writers / epoch / auditoría / programación]
+    C --> B[(obratec_control.backup_control)]
+    X[Scheduler externo · ciclo de encolado] --> J
+```
+
+Se preservan Service Layer, Repository funcional, Application Factory, middleware único y control independiente. ADMINISTRADOR global se reconsulta en negocio; ADMINISTRADOR_EMPRESA no administra copias. No hay filtro por tenant: el schema obras incluye todas sus empresas y excluye comercio. El dump custom no contiene evidencias o software; el motor anterior de paquetes/AES/releases deja de ser el flujo activo.
+
+La cola mantiene ID BIGINT, tipos BACKUP/RESTORE/DELETE, orígenes MANUAL/AUTOMATICO/PRE_RESTORE y estados PENDIENTE/PROCESANDO/COMPLETADO/FALLIDO. FastAPI serializa IDs como strings para preservar precisión JavaScript. object_name/sha256/size_bytes proceden del daemon. job_relacionado_id mantiene PRE_RESTORE → RESTORE. Los eventos usan UUID5 del job para preservar recurso UUID en el diario y guardan el ID físico en detalle.
+
+`20261005_backup_vm_integration.sql` añade únicamente una tabla auxiliar de idempotencia sin sustituir la cola/system_state. La programación se conserva: un despachador finito inserta ocurrencias en la misma cola, con revalidación de actor y transacción. No hay scheduler en el daemon o en cada proceso HTTP, ni un nuevo worker. Retención/DELETE pendientes.
+
+RESTORE desde FastAPI queda bloqueado en código, conservando endpoints y reautenticación/confirmación. El flag legacy no habilita producción. El daemon mantiene obratec_restore_test2/protección contra obras, según confirmación del usuario, sin editar su archivo. Heartbeat y coordinación del daemon con barrera/writers quedan pendientes; un latido legacy no acredita disponibilidad. Importación legacy retirada: no hay FileResponse u operaciones OCI en FastAPI.
+
+La [descarga PAR](decisiones/2026-10-05-descarga-backups-par-oci.md) reutiliza `public.backup_download_requests`, ya instalada por el operador y consumida por el daemon. FastAPI inserta solo job_id/solicitado_por para un BACKUP COMPLETADO conocido; la VM publica par_url/expira_en. POST `/ejecuciones/{id}/archivo` (GET compatible) devuelve 202 pendiente o 200 al completar; GET `/descargas/{id}` consulta exclusivamente solicitudes del administrador actual. Se reutilizan pendientes/enlaces vigentes del mismo actor bajo lock transaccional, sin UPDATE/DELETE, nuevas tablas ni workers. La capacidad de descarga se comprueba separadamente de creación de backups.
+
+Solo se entrega PAR HTTPS de host `objectstorage.<región>.oraclecloud.com`, namespace/bucket configurados y objeto exactamente coincidente, con expiración vigente. URLs no aparecen en auditoría/errores; resultados usan no-store. Angular espera hasta dos minutos, limita cada petición a quince segundos, cancela seguimiento/navegación al salir y conserva el enlace solo en memoria hasta su vencimiento. El navegador accede directamente a OCI sin JWT; existe enlace alternativo con noreferrer/no-referrer. El usuario confirma PAR ObjectRead de diez minutos y bucket privado; la aplicación no genera ni prolonga su vigencia.
+
+Los entrypoints worker/diagnósticos físicos legacy están bloqueados y sus adaptadores quedan desconectados de HTTP para retirada progresiva/revisión histórica. No se editó .env, se borraron claves/artefactos o se modificó el daemon. Flutter no tiene consumidores del módulo encontrados; Angular se adapta a IDs/estados/capacidades actuales conservando la pantalla.
+
+La primera revisión de catálogo confirmó cola/constraints/PG17.11/puerto 5433 y encontró permisos de cola pendientes. Posteriormente el usuario confirmó BACKUP manual funcional (Job 7) y PAR generado (solicitud 2). La revisión actual de solo lectura confirma tabla de descargas, SELECT/INSERT, USAGE en secuencia y resultado COMPLETADO de esa solicitud con host/objeto esperados. El agente no aplicó migraciones/permisos ni generó solicitudes reales: ver resultados y límites en ambas decisiones.
+
+## Implementación anterior: referencia histórica
+
+Los apartados siguientes documentan el motor sustituido. AES/S3/discos/herramientas en Render y comandos del worker/restauración antigua ya no aplican a FastAPI. OPERACION_BACKUPS.md fue eliminado en el árbol del usuario; se conserva esa eliminación y se utiliza la operación Oracle enlazada arriba.
+
+Fecha: 2026-10-04. [Plan anterior](PLAN_BACKUP_RESTORE.md) y [decisión histórica](decisiones/2026-10-04-implementacion-backup-restore.md).
 
 Excepción autorizada para evidencias externas ausentes: [decisión](decisiones/2026-10-04-backup-base-evidencias-ausentes.md). `base_datos` permite capturarlas como referencias originales y registra los archivos ausentes en `evidencias_no_disponibles`, sin borrar registros. Su trabajo LISTO y metadata pública informan la omisión. `sistema_completo` mantiene la exigencia de archivos. La ausencia registrada impide certificar recuperación completa en el ensayo/promoción existente, aunque el artefacto PostgreSQL puede verificarse y descargarse. La nueva prueba real llegó a LISTO y verificó integridad/catálogo; las observaciones de bloqueo inicial del párrafo siguiente son históricas.
 

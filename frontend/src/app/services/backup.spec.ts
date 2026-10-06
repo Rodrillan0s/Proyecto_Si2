@@ -15,9 +15,9 @@ describe('Backup: contratos del plano de control', () => {
   });
   afterEach(() => http.verify());
   it('encola una copia global con idempotencia y sin empresa', async () => {
-    const result = api.crear('sistema_completo', 'key-123456');
+    const result = api.crear('base_datos', 'key-123456');
     const req = http.expectOne((r) => r.url.endsWith('/api/backup/ejecuciones'));
-    expect(req.request.body).toEqual({ alcance: 'sistema_completo' });
+    expect(req.request.body).toEqual({ alcance: 'base_datos' });
     expect(req.request.headers.get('Idempotency-Key')).toBe('key-123456');
     expect(req.request.params.has('id_empresa')).toBe(false);
     req.flush({ id: 'job', estado: 'PENDIENTE' });
@@ -26,7 +26,7 @@ describe('Backup: contratos del plano de control', () => {
   it('guarda la programación real con zona y retención', async () => {
     const config: BackupSchedule = {
       habilitada: true,
-      alcance: 'sistema_completo',
+      alcance: 'base_datos',
       frecuencia: 'semanal',
       hora: '02:00',
       zona_horaria: 'America/La_Paz',
@@ -66,13 +66,28 @@ describe('Backup: contratos del plano de control', () => {
     req.flush({ estado: 'VALIDADA', aplicar_en: 'now' });
     expect((await result).aplicar_en).toBe('now');
   });
-  it('la descarga conserva Content-Disposition y usa Blob', async () => {
-    const result = api.descargar('job');
-    const req = http.expectOne((r) => r.url.endsWith('/ejecuciones/job/archivo'));
-    expect(req.request.responseType).toBe('blob');
-    req.flush(new Blob(['encrypted']), {
-      headers: { 'Content-Disposition': 'attachment; filename="test.obratec"' },
-    });
-    expect((await result).headers.get('Content-Disposition')).toContain('test.obratec');
+  it('solicita el PAR mediante POST sin enviar objeto, empresa ni URL', async () => {
+    const result = api.descargar('9223372036854775807');
+    const req = http.expectOne((r) => r.url.endsWith('/ejecuciones/9223372036854775807/archivo'));
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({});
+    expect(req.request.responseType).toBe('json');
+    req.flush({ id: '2', estado: 'PENDIENTE', url: null }, { status: 202, statusText: 'Accepted' });
+    expect((await result).url).toBeNull();
+  });
+  it('consulta la solicitud autenticada sin descargar el objeto con HttpClient', async () => {
+    const result = api.descarga('2');
+    const req = http.expectOne((r) => r.url.endsWith('/descargas/2'));
+    expect(req.request.method).toBe('GET');
+    req.flush({ id: '2', estado: 'COMPLETADO', url: 'https://objectstorage.example/p/token' });
+    expect((await result).estado).toBe('COMPLETADO');
+  });
+  it('el despachador solo solicita el encolado de una ocurrencia vencida', async () => {
+    const result = api.despachar();
+    const req = http.expectOne((r) => r.url.endsWith('/programacion/ejecutar'));
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({});
+    req.flush({ encolado: false, trabajo: null });
+    expect((await result).encolado).toBe(false);
   });
 });

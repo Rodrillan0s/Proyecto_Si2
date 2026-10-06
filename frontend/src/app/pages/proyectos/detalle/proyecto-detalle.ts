@@ -1,3 +1,7 @@
+import { ContextoOperativo } from '../../../services/contexto-operativo';
+import { LecturasVigentes } from '../../../services/lecturas';
+import { DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Component, OnInit, inject, ChangeDetectorRef, NgZone, PLATFORM_ID, OnDestroy } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -23,6 +27,9 @@ export interface UsuarioEmpresa {
   styleUrl: './proyecto-detalle.css'
 })
 export class ProyectoDetalleComponent implements OnInit, OnDestroy {
+  private contexto = inject(ContextoOperativo);
+  private destroy = inject(DestroyRef);
+  private reads = new LecturasVigentes(this.destroy);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private proyectosService = inject(ProyectosService);
@@ -57,9 +64,12 @@ export class ProyectoDetalleComponent implements OnInit, OnDestroy {
   private mapa: any = null;
 
   ngOnInit() {
-    this.route.paramMap.subscribe(params => {
+    this.contexto.proteger(() => this.mostrarModalPersonal, this.destroy);
+    this.contexto.protegerEscritura(() => this.procesandoAccion, this.destroy);
+    this.route.paramMap.pipe(takeUntilDestroyed(this.destroy)).subscribe(params => {
       const idStr = params.get('id');
       if (idStr) {
+        this.reads.cancelar(); this.proyecto = null; this.personalObra = []; this.usuariosDisponibles = []; this.mostrarModalPersonal = false;
         this.idObra = Number(idStr);
         this.cargarProyecto();
       } else {
@@ -67,7 +77,7 @@ export class ProyectoDetalleComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.route.queryParamMap.subscribe(qp => {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroy)).subscribe(qp => {
       const tab = qp.get('tab');
       if (tab === 'estructura') {
         this.tabActivo = 'estructura';
@@ -90,11 +100,15 @@ export class ProyectoDetalleComponent implements OnInit, OnDestroy {
     this.cargando = true;
     this.mensajeError = '';
 
-    this.proyectosService.obtenerProyectoDetalle(this.idObra).subscribe({
+    this.proyectosService.obtenerProyectoDetalle(this.idObra).pipe(this.reads.reemplazar('detalle')).subscribe({
       next: (res) => {
         this.ngZone.run(() => {
           if (res.success) {
             this.proyecto = res.data;
+            const company = this.authService.obtenerIdEmpresaActiva();
+            if (company && Number(res.data.id_empresa) !== company) { void this.router.navigate(['/proyectos']); return; }
+            this.contexto.seleccionar(res.data);
+            if (this.route.snapshot.fragment === 'responsables-obra') setTimeout(() => document.getElementById('responsables-obra')?.scrollIntoView({ block: 'start' }));
             this.cargarUsuariosEmpresa();
             this.cargarPersonal();
             this.iniciarMapaDetalle();
@@ -167,7 +181,7 @@ export class ProyectoDetalleComponent implements OnInit, OnDestroy {
   }
 
   cargarUsuariosEmpresa() {
-    this.http.get<{ success: boolean; data: UsuarioEmpresa[] }>(`${this.apiUrl}/api/usuarios/`).subscribe({
+    this.http.get<{ success: boolean; data: UsuarioEmpresa[] }>(`${this.apiUrl}/api/usuarios/`).pipe(this.reads.reemplazar('usuarios')).subscribe({
       next: (res) => {
         if (res.success) {
           const idsAsignados = this.proyecto?.responsables?.map(r => r.id_usuario) || [];
@@ -184,7 +198,7 @@ export class ProyectoDetalleComponent implements OnInit, OnDestroy {
     this.cargandoPersonal = true;
     this.errorPersonal = '';
     this.personalObra = [];
-    this.proyectosService.listarPersonal(this.idObra).subscribe({
+    this.proyectosService.listarPersonal(this.idObra).pipe(this.reads.reemplazar('personal')).subscribe({
       next: res => {
         this.personalObra = res.data || [];
         this.cargandoPersonal = false;

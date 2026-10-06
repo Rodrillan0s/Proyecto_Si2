@@ -1,3 +1,8 @@
+import { NAVIGATION, NavItem, NavSection, REPORT_FAMILIES } from './navegacion';
+import { ContextoOperativo } from '../../services/contexto-operativo';
+import { ProyectosService, Proyecto } from '../../services/proyectos';
+import { ReportesService } from '../../services/reportes.service';
+import { filter, firstValueFrom } from 'rxjs';
 import {
   Component,
   OnInit,
@@ -9,7 +14,7 @@ import {
   DestroyRef
 } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { Router, RouterOutlet, RouterModule } from '@angular/router';
+import { Router, RouterOutlet, RouterModule, NavigationEnd } from '@angular/router';
 import { AuthService } from '../../services/auth';
 import { NotificacionesService, Notificacion } from '../../services/notificaciones';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -17,7 +22,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { EmpresaService } from '../../services/empresa';
 import { AsistenteComponent } from '../../components/asistente/asistente';
-import { AsistenteService } from '../../services/asistente.service';
+import { AsistenteService, ASSISTANT_PERMISSIONS } from '../../services/asistente.service';
 
 @Component({
   selector: 'app-admin-layout',
@@ -27,6 +32,69 @@ import { AsistenteService } from '../../services/asistente.service';
   styleUrl: './admin-layout.css'
 })
 export class AdminLayoutComponent implements OnInit {
+  readonly assistantPermissions = ASSISTANT_PERMISSIONS;
+  readonly contexto = inject(ContextoOperativo);
+  private proyectos = inject(ProyectosService);
+  private reportes = inject(ReportesService);
+  obras: Proyecto[] = [];
+  cargandoObras = false;
+  errorObras = '';
+  mostrarSelectorObras = false;
+  private workVersion = 0;
+  private reportIds: string[] | undefined;
+  private reportVersion = 0;
+  currentUrl = '';
+  expanded = new Set(['principal', 'proyectos']);
+  get nombreEmpresa() { return this.authService.obtenerNombreEmpresaActiva(); }
+  get sections() { return NAVIGATION.map(section => ({ ...section, items: section.items.filter(item =>
+    (!item.global || this.esAdministradorGlobal()) && (!item.permissions || this.hasAnyPermission(item.permissions)) &&
+    (!item.all || this.authService.hasAllPermissions(item.all)) &&
+    (!item.family || this.reportIds === undefined || REPORT_FAMILIES[item.family].some(id => this.reportIds!.includes(id)))
+  ) })).filter(section => section.items.length); }
+  trackSection(_index: number, section: NavSection) { return section.id; }
+  trackItem(_index: number, item: NavItem) { return item.id; }
+  toggleSection(section: NavSection) { this.expanded.has(section.id) ? this.expanded.delete(section.id) : this.expanded.add(section.id); if (section.id === 'reportes' && this.expanded.has('reportes')) void this.cargarFamilias(); }
+  itemRoute(item: NavItem) { return item.context && this.contexto.obra ? '/proyectos/'+this.contexto.obra.id_obra : item.route; }
+  itemQuery(item: NavItem) { return item.context ? (this.contexto.obra ? (item.context === 'estructura' ? { tab: 'estructura' } : {}) : { accion: item.context, tab: 'gestion' }) : (item.query || {}); }
+  itemFragment(item: NavItem) { return item.context === 'responsables' && this.contexto.obra ? 'responsables-obra' : undefined; }
+  itemActive(item: NavItem) {
+    const url = this.router.parseUrl(this.currentUrl || this.router.url);
+    const path = '/'+(url.root.children['primary']?.segments.map(segment => segment.path).join('/') || '');
+    if (item.context) return (path === this.itemRoute(item) && (url.queryParams['accion'] === item.context || (item.context === 'estructura' ? url.queryParams['tab'] === 'estructura' : url.fragment === 'responsables-obra')));
+    return path === item.route && Object.entries(item.query || {}).every(([key,value]) => url.queryParams[key] === value) &&
+      (item.id !== 'obras' || (!url.queryParams['tab'] && !url.queryParams['accion'])) && (item.id !== 'panel' || !url.queryParams['tab']);
+  }
+  sectionActive(section: NavSection) { return section.items.some(item => this.itemActive(item)) || (section.id === 'reportes' && this.currentUrl.split('?')[0] === '/reportes'); }
+  get moduloActual() { return this.sections.flatMap(section => section.items).find(item => this.itemActive(item))?.label || (this.currentUrl.startsWith('/proyectos/') ? 'Detalle de obra' : this.currentUrl.startsWith('/reportes') ? 'Reportes' : 'Panel'); }
+  private updateNavigation() { this.currentUrl = this.router.url; this.sections.filter(section => this.sectionActive(section)).forEach(section => this.expanded.add(section.id)); this.sidebarAbierto = false; if (this.currentUrl.startsWith('/reportes') && this.reportIds === undefined) void this.cargarFamilias(); }
+  toggleSelectorObras() { this.mostrarSelectorObras = !this.mostrarSelectorObras; if (this.mostrarSelectorObras) void this.cargarObrasSelector(); }
+  async cargarObrasSelector() {
+    const version = ++this.workVersion; this.cargandoObras = true; this.errorObras = '';
+    try {
+      const result = await firstValueFrom(this.proyectos.listarProyectos());
+      if (version !== this.workVersion) return;
+      const company = this.authService.obtenerIdEmpresaActiva();
+      this.obras = (result.data || []).filter(work => !company || Number(work.id_empresa) === company);
+    } catch { if (version === this.workVersion) this.errorObras = 'No se pudieron cargar las obras.'; }
+    finally { if (version === this.workVersion) { this.cargandoObras = false; this.cdr.markForCheck(); } }
+  }
+  seleccionarObra(id: string) {
+    if (!this.contexto.confirmarCambio()) return;
+    this.contexto.seleccionar(this.obras.find(work => work.id_obra === Number(id)) || null);
+    this.mostrarSelectorObras = false;
+    if (/^\/proyectos\/\d+/.test(this.router.url) && this.contexto.obra) void this.router.navigate(['/proyectos', this.contexto.obra.id_obra]);
+    this.cdr.markForCheck();
+  }
+  private async cargarFamilias() {
+    if (!this.hasPermission('Visualizar_reportes')) return;
+    const company = this.authService.obtenerIdEmpresaActiva(); const version = ++this.reportVersion;
+    this.reportIds = undefined;
+    if (!company && this.esAdministradorGlobal()) return;
+    try { const catalog = await this.reportes.catalog(company); if (version === this.reportVersion) this.reportIds = catalog.reportes.map(report => report.id); }
+    catch { /* Un error de catálogo no modifica los permisos ni bloquea navegación. */ }
+    this.cdr.markForCheck();
+  }
+
 
   private authService           = inject(AuthService);
   private notificacionesService  = inject(NotificacionesService);
@@ -67,6 +135,18 @@ export class AdminLayoutComponent implements OnInit {
       return;
     }
 
+    this.authService.obtenerEmpresaSeleccionada();
+    this.empresaSeleccionada = this.authService.obtenerEmpresaActiva();
+    this.updateNavigation();
+    this.router.events.pipe(filter(event => event instanceof NavigationEnd), takeUntilDestroyed(this.destroyRef)).subscribe(() => { this.updateNavigation(); this.cdr.markForCheck(); });
+    let initialCompany = true;
+    this.contexto.empresa$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.workVersion++; this.obras = []; this.cargandoObras = false; this.mostrarSelectorObras = false;
+      this.reportVersion++; this.reportIds = undefined;
+      if (this.expanded.has('reportes')) void this.cargarFamilias();
+      if (!initialCompany && /^\/proyectos\/\d+/.test(this.router.url)) void this.router.navigate(['/proyectos']);
+      initialCompany = false;
+    });
     // Restaurar tema guardado
     if (localStorage.getItem('tema_sistema') === 'dark') {
       this.modoOscuro = true;
@@ -176,6 +256,7 @@ export class AdminLayoutComponent implements OnInit {
   }
 
   seleccionarEmpresa(empresa: any | null) {
+    if (!this.contexto.confirmarCambio()) return;
     this.authService.seleccionarEmpresaActiva(empresa);
     this.mostrarSelectorEmpresas = false;
     this.cdr.detectChanges();
@@ -184,6 +265,7 @@ export class AdminLayoutComponent implements OnInit {
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent) {
     const target = event.target as HTMLElement;
+    if (this.mostrarSelectorObras && !target.closest('[data-work-selector]')) this.mostrarSelectorObras = false;
     if (this.mostrarSelectorEmpresas && !target.closest('[data-company-selector]')) {
       this.mostrarSelectorEmpresas = false;
       this.cdr.detectChanges();
@@ -220,7 +302,7 @@ export class AdminLayoutComponent implements OnInit {
   }
 
   abrirConsultaAsistente() {
-    this.asistente.open(this.consultaAsistente.trim());
+    this.asistente.quick(this.consultaAsistente.trim());
     this.consultaAsistente = '';
   }
 

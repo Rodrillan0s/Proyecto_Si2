@@ -1,3 +1,5 @@
+import { LecturasVigentes } from '../../services/lecturas';
+import { ContextoOperativo } from '../../services/contexto-operativo';
 import { Incidencia, IncidenciasService } from '../../services/incidencias';
 import { Component, OnInit, inject, PLATFORM_ID, ChangeDetectorRef, NgZone, DestroyRef } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
@@ -33,6 +35,10 @@ import { EmptyStateComponent } from '../../components/ui/empty-state';
   styleUrl: './panel.css'
 })
 export class PanelComponent implements OnInit {
+  resourceErrors: Record<string, string> = {};
+  get errorCarga() { return Object.values(this.resourceErrors).join(' '); }
+  get nombreEmpresaActual() { return this.authService.obtenerNombreEmpresaActiva(); }
+  private contexto = inject(ContextoOperativo);
   
   private authService = inject(AuthService);
   private proyectosService = inject(ProyectosService);
@@ -47,6 +53,7 @@ export class PanelComponent implements OnInit {
   private cdr = inject(ChangeDetectorRef);
   private ngZone = inject(NgZone);
   private destroyRef = inject(DestroyRef);
+  private reads = new LecturasVigentes(this.destroyRef);
 
   incidenciasAsignadas: Incidencia[] = [];
   paginaIncidencias = 1;
@@ -138,11 +145,12 @@ export class PanelComponent implements OnInit {
     }
 
     // Escuchar empresa activa reactiva
-    this.authService.empresaActiva$
+    this.contexto.empresa$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((empresa) => {
         this.ngZone.run(() => {
-          this.empresaActiva = empresa;
+          this.resourceErrors = {}; this.materiales = []; this.totalMateriales = 0; this.totalProveedores = 0;
+          this.empresaActiva = this.authService.obtenerEmpresaActiva();
           this.filtrarDatosEmpresaActiva();
           if (this.hasPermission('Visualizar_materiales') || this.hasPermission('Visualizar_inventario')) {
             this.cargarMateriales();
@@ -187,16 +195,6 @@ export class PanelComponent implements OnInit {
       this.cargarObras();
     }
 
-    // 2. Materiales e Inventario (si tiene permisos)
-    if (this.hasPermission('Visualizar_materiales') || this.hasPermission('Visualizar_inventario')) {
-      this.cargarMateriales();
-    }
-
-    // 3. Proveedores (si tiene permiso)
-    if (this.hasPermission('Visualizar_proveedores')) {
-      this.cargarProveedores();
-    }
-
     // 4. Empresas (si tiene Visualizar_empresa)
     if (this.hasPermission('Visualizar_empresa')) {
       this.cargarEmpresas();
@@ -212,8 +210,9 @@ export class PanelComponent implements OnInit {
   }
 
   cargarObras() {
+    delete this.resourceErrors['obras'];
     this.cargandoProyectos = true;
-    this.proyectosService.listarProyectos().subscribe({
+    this.proyectosService.listarProyectos().pipe(this.reads.reemplazar('obras')).subscribe({
       next: (res) => {
         this.ngZone.run(() => {
           if (res && res.success) {
@@ -224,12 +223,15 @@ export class PanelComponent implements OnInit {
             this.proyectosFinalizados = this.proyectos.filter(p => p.estado_obra === 'FINALIZADO').length;
           }
           this.cargandoProyectos = false;
+          this.filtrarDatosEmpresaActiva();
           this.cdr.detectChanges();
         });
       },
       error: () => {
+        this.resourceErrors['obras'] = 'No se pudieron consultar las obras.';
         this.ngZone.run(() => {
           this.cargandoProyectos = false;
+          this.filtrarDatosEmpresaActiva();
           this.cdr.detectChanges();
         });
       }
@@ -237,9 +239,10 @@ export class PanelComponent implements OnInit {
   }
 
   cargarMateriales() {
+    delete this.resourceErrors['materiales'];
     this.cargandoMateriales = true;
     const idEmpresa = this.empresaActiva?.id_empresa ? Number(this.empresaActiva.id_empresa) : undefined;
-    this.materialsService.listar({ limit: 8, id_empresa: idEmpresa }).subscribe({
+    this.materialsService.listar({ limit: 8, id_empresa: idEmpresa }).pipe(this.reads.reemplazar('materiales')).subscribe({
       next: (res) => {
         this.ngZone.run(() => {
           if (res && res.data) {
@@ -248,12 +251,15 @@ export class PanelComponent implements OnInit {
             this.materialesStockBajo = this.materiales.filter(m => (m.stock_actual || 0) <= (m.stock_minimo || 0)).length;
           }
           this.cargandoMateriales = false;
+          this.filtrarDatosEmpresaActiva();
           this.cdr.detectChanges();
         });
       },
       error: () => {
+        this.resourceErrors['materiales'] = 'No se pudieron consultar los materiales.';
         this.ngZone.run(() => {
           this.cargandoMateriales = false;
+          this.filtrarDatosEmpresaActiva();
           this.cdr.detectChanges();
         });
       }
@@ -261,8 +267,9 @@ export class PanelComponent implements OnInit {
   }
 
   cargarProveedores() {
+    delete this.resourceErrors['proveedores'];
     const idEmpresa = this.empresaActiva?.id_empresa ? Number(this.empresaActiva.id_empresa) : undefined;
-    this.proveedorService.listar({ limit: 1, id_empresa: idEmpresa }).subscribe({
+    this.proveedorService.listar({ limit: 1, id_empresa: idEmpresa }).pipe(this.reads.reemplazar('proveedores')).subscribe({
       next: (res) => {
         this.ngZone.run(() => {
           if (res && res.pagination) {
@@ -271,13 +278,14 @@ export class PanelComponent implements OnInit {
           this.cdr.detectChanges();
         });
       },
-      error: () => {}
+      error: () => {
+        this.resourceErrors['proveedores'] = 'No se pudieron consultar los proveedores.';}
     });
   }
 
   cargarEmpresas() {
     this.cargandoEmpresas = true;
-    this.empresaService.listarEmpresas().subscribe({
+    this.empresaService.listarEmpresas().pipe(this.reads.reemplazar('empresas')).subscribe({
       next: (res) => {
         this.ngZone.run(() => {
           if (res && res.success) {
@@ -300,7 +308,7 @@ export class PanelComponent implements OnInit {
 
   cargarBitacora() {
     this.cargandoBitacora = true;
-    this.bitacoraService.obtenerBitacora({ limit: 6 }).subscribe({
+    this.bitacoraService.obtenerBitacora({ limit: 6 }).pipe(this.reads.reemplazar('bitacora')).subscribe({
       next: (res) => {
         this.ngZone.run(() => {
           if (res && res.success) {
@@ -324,7 +332,7 @@ export class PanelComponent implements OnInit {
     const token = this.authService.obtenerToken();
     this.http.get<any>(`${environment.apiUrl}/api/usuarios/`, {
       headers: { Authorization: `Bearer ${token}` }
-    }).subscribe({
+    }).pipe(this.reads.reemplazar('usuarios')).subscribe({
       next: (res) => {
         this.ngZone.run(() => {
           if (res && res.success && Array.isArray(res.data)) {

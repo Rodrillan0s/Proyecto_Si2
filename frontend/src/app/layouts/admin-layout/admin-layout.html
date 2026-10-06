@@ -22,7 +22,7 @@
           title="Cambiar Empresa Activa">
           <span class="text-sm">🏢</span>
           <span class="truncate max-w-[130px] md:max-w-[200px]">
-            {{ empresaSeleccionada?.nombre_empresa || '🌐 Vista Global (Todas)' }}
+            {{ empresaSeleccionada?.nombre_empresa || 'Todas las empresas' }}
           </span>
           <svg class="w-3.5 h-3.5 transition-transform duration-200 text-slate-400" [class.rotate-180]="mostrarSelectorEmpresas" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -118,13 +118,18 @@
         <span class="text-[9px] px-1 py-0.2 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 font-normal">Asignada</span>
       </div>
 
-      <div class="project-selector" (click)="navegarA('/proyectos')">
-        <span>Seleccionar Obra</span>
-        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+      <div class="work-selector" data-work-selector *ngIf="hasPermission('Visualizar_obras')">
+        <button class="project-selector" (click)="toggleSelectorObras()" [attr.aria-expanded]="mostrarSelectorObras" aria-label="Seleccionar obra" [title]="contexto.obra?.nombre || 'Todas las obras'">🏗 <span>{{ contexto.obra?.nombre || 'Todas las obras' }}</span> ▾</button>
+        <div class="work-options" *ngIf="mostrarSelectorObras">
+          <p *ngIf="cargandoObras" role="status">Cargando obras…</p>
+          <p *ngIf="errorObras" role="alert">{{ errorObras }} <button (click)="cargarObrasSelector()">Reintentar</button></p>
+          <label>Obra activa<select [value]="contexto.obra?.id_obra || ''" (change)="seleccionarObra($any($event.target).value)"><option value="">Todas las obras</option><option *ngFor="let obra of obras" [value]="obra.id_obra">{{ obra.codigo }} · {{ obra.nombre }}</option></select></label>
+          <p *ngIf="!cargandoObras && !errorObras && !obras.length">No hay obras disponibles en este contexto.</p>
+        </div>
       </div>
     </div>
 
-    <div class="panel-header-center" *ngIf="hasAnyPermission(['Visualizar_reportes', 'Visualizar_clientes'])">
+    <div class="panel-header-center" *ngIf="hasAnyPermission(assistantPermissions)">
       <div class="search-box">
         <input type="text" [(ngModel)]="consultaAsistente" (keyup.enter)="abrirConsultaAsistente()" maxlength="2000" placeholder="Pregunta al asistente…" aria-label="Consulta para el asistente">
         <button class="search-btn" (click)="abrirConsultaAsistente()" aria-label="Abrir consulta en el asistente">
@@ -213,14 +218,6 @@
         </div>
       </div>
 
-      <!-- User Profile Badge -->
-      <div class="user-profile-badge" (click)="navegarA('/perfil')" style="cursor:pointer">
-        <div class="avatar-circle">
-          {{ usuarioActual.nombre_completo.substring(0, 2).toUpperCase() }}
-        </div>
-        <span class="user-name">{{ usuarioActual.nombre_completo }}</span>
-      </div>
-
       <!-- Logout -->
       <button (click)="cerrarSesion()" class="panel-action-btn logout-btn" title="Cerrar Sesion" style="margin-left: 0.5rem">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
@@ -232,194 +229,31 @@
   <div class="panel-body" *ngIf="usuarioActual" [class.sidebar-hidden]="sidebarColapsado" [class.sidebar-open]="sidebarAbierto">
     <button *ngIf="sidebarAbierto" class="sidebar-backdrop" (click)="sidebarAbierto = false" aria-label="Cerrar menú de navegación"></button>
     <!-- SIDEBAR (PROCORE STYLE) -->
-    <aside class="panel-sidebar" *ngIf="!sidebarColapsado">
-      <div class="sidebar-user-card" (click)="navegarA('/perfil')" style="cursor:pointer">
-        <div class="sidebar-avatar">
-          {{ usuarioActual.nombre_completo.substring(0, 1).toUpperCase() }}
-        </div>
-        <h4 class="sidebar-user-name">{{ usuarioActual.nombre_completo }}</h4>
+    <aside class="panel-sidebar" [class.is-collapsed]="sidebarColapsado" aria-label="Navegación principal">
+      <a class="sidebar-user-card" routerLink="/perfil" aria-label="Mi perfil" [title]="usuarioActual.nombre_completo || 'Mi perfil'">
+        <div class="sidebar-avatar">{{ (usuarioActual.nombre_completo || usuarioActual.nombre_usuario || 'U').substring(0,1).toUpperCase() }}</div>
+        <h4 class="sidebar-user-name">{{ usuarioActual.nombre_completo || usuarioActual.nombre_usuario }}</h4>
         <p class="sidebar-user-role">{{ usuarioActual.nombre_rol }}</p>
-        <span class="sidebar-tenant">{{ usuarioActual.nombre_empresa || 'Constructora General' }}</span>
-      </div>
-
+        <span class="sidebar-tenant">{{ nombreEmpresa }}</span>
+      </a>
       <nav class="sidebar-nav">
-        <a class="sidebar-item" routerLink="/reportes" routerLinkActive="active" (click)="sidebarAbierto = false" *ngIf="hasPermission('Visualizar_reportes')"><svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-4m4 4V9m4 8V5M5 3v18h16"/></svg><span>Reportes</span></a>
-        <div class="sidebar-section-title">PRINCIPAL</div>
-        
-        <!-- DASHBOARD (Siempre disponible para todo usuario autenticado) -->
-        <a class="sidebar-item" (click)="navegarA('/panel')">
-          <svg class="w-5 h-5 mr-3 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-          Dashboard
-        </a>
-
-        <!-- GESTION DE OBRAS / PROYECTOS (Requiere Visualizar_obras o Visualizar_incidencias) -->
-        <div *ngIf="hasAnyPermission(['Visualizar_obras', 'Visualizar_incidencias'])" class="sidebar-group">
-          <div class="sidebar-item justify-between" (click)="toggleSubmenuObras()" style="cursor: pointer;">
-            <div class="flex items-center">
-              <svg class="w-5 h-5 mr-3 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-              <span>Obras & Proyectos</span>
-            </div>
-            <svg class="w-4 h-4 transition-transform duration-200" [class.rotate-180]="menuObrasAbierto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-          </div>
-          
-          <div *ngIf="menuObrasAbierto" class="pl-7 space-y-0.5 border-l-2 border-slate-700/40 ml-4 my-1">
-            <a class="sidebar-subitem" (click)="navegarA('/proyectos')" *ngIf="hasPermission('Visualizar_obras')">
-              <span class="w-1.5 h-1.5 rounded-full bg-slate-400 mr-2.5"></span>
-              Ver obras
-            </a>
-            <a class="sidebar-subitem" (click)="navegarA('/proyectos', 'nuevo')" *ngIf="hasPermission('Registrar_obras')">
-              <span class="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2.5"></span>
-              Gestión de proyectos
-            </a>
-
-            <!-- 2. Editar / Registrar Proyecto -->
-            <a id="sidebar-editar-proyectos" class="sidebar-subitem" (click)="navegarA('/proyectos', 'nuevo')" *ngIf="hasPermission('Registrar_obras')">
-              <span class="w-1.5 h-1.5 rounded-full bg-blue-400 mr-2.5"></span>
-              Editar / Nuevo proyecto
-            </a>
-
-      
-
-            <!-- 4. Asignación de Unidades (Estructura WBS) -->
-            <a id="sidebar-unidades-obra" class="sidebar-subitem" (click)="navegarA('/proyectos', 'estructura')">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-2.5"></span>
-              Asignación de unidades
-            </a>
-
-            <!-- 5. Asignar Jefes de Obras -->
-            <a id="sidebar-jefes-obra" class="sidebar-subitem" (click)="navegarA('/proyectos', 'jefes')">
-              <span class="w-1.5 h-1.5 rounded-full bg-purple-400 mr-2.5"></span>
-              Asignar jefes de obras
-            </a>
-
-            <!-- 6. Órdenes de Trabajo -->
-            <a id="sidebar-ordenes-trabajo" class="sidebar-subitem" (click)="navegarA('/ordenes-trabajo')">
-              <span class="w-1.5 h-1.5 rounded-full bg-slate-400 mr-2.5"></span>
-              Órdenes de Trabajo
-            </a>
-            <a class="sidebar-subitem" (click)="navegarA('/estimaciones')" *ngIf="hasPermission('Visualizar_estimaciones')">
-              <span class="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2.5"></span>
-              Presupuestos / APU
-            </a>
-            <a class="sidebar-subitem" (click)="navegarA('/control-costos')" *ngIf="hasPermission('Visualizar_control_costos')">
-              <span class="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2.5"></span>
-              Control de costos
-            </a>
-            <a class="sidebar-subitem" (click)="navegarA('/incidencias')" *ngIf="hasPermission('Visualizar_incidencias')">
-              <span class="w-1.5 h-1.5 rounded-full bg-slate-400 mr-2.5"></span>
-              Incidencias
+        <section *ngFor="let section of sections; trackBy: trackSection" class="nav-section">
+          <button class="category-toggle" (click)="toggleSection(section)" [class.active]="sectionActive(section)" [attr.aria-expanded]="expanded.has(section.id) || sidebarColapsado" [attr.aria-controls]="'nav-'+section.id" [attr.aria-label]="section.label" [title]="section.label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path [attr.d]="section.icon"/></svg><span>{{ section.label }}</span><b aria-hidden="true">{{ expanded.has(section.id) ? '⌃' : '⌄' }}</b>
+          </button>
+          <div *ngIf="expanded.has(section.id) || sidebarColapsado" [id]="'nav-'+section.id">
+            <a *ngFor="let item of section.items; trackBy: trackItem" class="sidebar-item" [routerLink]="itemRoute(item)" [queryParams]="itemQuery(item)" [fragment]="itemFragment(item)" [class.active]="itemActive(item)" [attr.aria-current]="itemActive(item) ? 'page' : null" [attr.aria-label]="item.label" [title]="item.label" (click)="sidebarAbierto = false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path [attr.d]="item.icon"/></svg><span>{{ item.label }}</span>
             </a>
           </div>
-        </div>
-
-        <!-- GESTIÓN COMERCIAL & CRM (Requiere Visualizar_clientes) -->
-        <div class="sidebar-section-title" *ngIf="hasPermission('Visualizar_clientes')">COMERCIAL & CLIENTES</div>
-        <a id="sidebar-crm" class="sidebar-item" (click)="navegarA('/crm')" *ngIf="hasPermission('Visualizar_clientes')">
-          <svg class="w-5 h-5 mr-3 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-          CRM & Clientes
-        </a>
-
-        <!-- INVENTARIO & LOGÍSTICA -->
-        <div class="sidebar-section-title" *ngIf="hasAnyPermission(['Visualizar_inventario', 'Visualizar_materiales', 'Visualizar_proveedores', 'Visualizar_ordenes_compra', 'Visualizar_presupuesto', 'Visualizar_obras'])">INVENTARIO & LOGÍSTICA</div>
-
-        <!-- INVENTARIO / STOCK (Requiere Visualizar_inventario o Visualizar_materiales) -->
-        <a id="sidebar-inventario" class="sidebar-item" (click)="navegarA('/inventario')" *ngIf="hasAnyPermission(['Visualizar_inventario', 'Visualizar_materiales'])">
-          <svg class="w-5 h-5 mr-3 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-          Inventario / Stock
-        </a>
-    
-
-        <!-- EQUIPOS Y MAQUINARIA -->
-<a
-  id="sidebar-equipos-maquinaria"
-  class="sidebar-item"
-  (click)="navegarA('/equipos-maquinaria')"
-  *ngIf="hasPermission('Visualizar_equipos_maquinaria')"
->
-  <svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-width="2"
-      d="M8 17h8m-9-4h10m-8-8h4l3 4H6l3-4zm-3 4v8a2 2 0 002 2h8a2 2 0 002-2v-8M9 17h.01M15 17h.01"
-    />
-  </svg>
-  Equipos y Maquinaria
-</a>
-        <!-- ÓRDENES DE COMPRA (Requiere Visualizar_ordenes_compra) -->
-        <a id="sidebar-compras" class="sidebar-item" (click)="navegarA('/compras')" *ngIf="hasPermission('Visualizar_ordenes_compra')">
-          <svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-          Órdenes de Compra
-        </a>
-
-        <!-- MATERIALES (Requiere Visualizar_materiales) -->
-        <a class="sidebar-item" (click)="navegarA('/materiales')" *ngIf="hasPermission('Visualizar_materiales')">
-          <svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-          Catálogo Materiales
-        </a>
-
-        <!-- PROVEEDORES (Requiere Visualizar_proveedores) -->
-        <a id="sidebar-proveedores" class="sidebar-item" (click)="navegarA('/proveedores')" *ngIf="hasPermission('Visualizar_proveedores')">
-          <svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-          Proveedores
-        </a>
-
-      
-        <!-- GESTION Y CONTROL -->
-        <div class="sidebar-section-title" *ngIf="hasAnyPermission(['Visualizar_usuarios', 'Visualizar_empresa'])">ADMINISTRACIÓN</div>
-
-        <!-- USUARIOS (Requiere Visualizar_usuarios) -->
-        <a class="sidebar-item" (click)="navegarA('/usuarios')" *ngIf="hasPermission('Visualizar_usuarios')">
-          <svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-          Usuarios
-        </a>
-
-        <!-- ROLES Y PERMISOS (Para administradores con Visualizar_usuarios) -->
-        <a class="sidebar-item" (click)="navegarA('/roles')" *ngIf="hasPermission('Visualizar_usuarios') && (hasPermission('Modificar_usuarios') || esAdministradorGlobal())">
-          <svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-          Roles y Permisos
-        </a>
-
-        <!-- EMPRESA / TENANTS (Requiere Visualizar_empresa) -->
-        <a class="sidebar-item" (click)="irAEmpresaOLista()" *ngIf="hasPermission('Visualizar_empresa')">
-          <svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-          {{ esAdministradorGlobal() ? 'Tenants (Empresas)' : 'Mi Empresa' }}
-        </a>
-
-        <!-- BITACORA (Auditoría del sistema) -->
-        <a class="sidebar-item" (click)="navegarA('/bitacora')" *ngIf="hasPermission('Visualizar_usuarios')">
-          <svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-          Bitácora
-        </a>
-
-        <!-- BACKUP (Solo Administrador global de plataforma) -->
-        <a class="sidebar-item" (click)="navegarA('/backup')" *ngIf="esAdministradorGlobal()">
-          <svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-          Copias de Respaldo
-        </a>
-        
-        <div class="sidebar-section-title">USUARIO & AJUSTES</div>
-        
-        <!-- CU09: Mi Perfil -->
-        <a id="sidebar-mi-perfil" class="sidebar-item" (click)="navegarA('/perfil')">
-          <svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-          Mi Perfil
-        </a>
-
-        <a class="sidebar-item" (click)="navegarA('/panel', 'seguridad')">
-          <svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-          Seguridad & Sesión
-        </a>
-
-        <a class="sidebar-item" (click)="cerrarSesion()" style="color: #fca5a5; margin-top: 1.5rem;">
-          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-          Cerrar Sesión
-        </a>
+        </section>
+        <button class="sidebar-item logout-navigation" (click)="cerrarSesion()" title="Cerrar sesión" aria-label="Cerrar sesión"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 8l4 4-4 4m-8-4h12M9 4H3v16h6"/></svg><span>Cerrar sesión</span></button>
       </nav>
     </aside>
 
     <!-- MAIN ROUTER OUTLET CONTAINER -->
     <main class="panel-content">
+      <p class="module-context">{{ moduloActual }}</p>
       <router-outlet></router-outlet>
       <app-asistente></app-asistente>
     </main>

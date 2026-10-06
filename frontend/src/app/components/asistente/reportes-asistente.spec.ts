@@ -7,6 +7,7 @@ import { AsistenteService } from '../../services/asistente.service';
 import { AuthService } from '../../services/auth';
 import { AiService } from '../../services/ai.service';
 import { AssistantResponse, ReportesService } from '../../services/reportes.service';
+import { ContextoOperativo } from '../../services/contexto-operativo';
 
 describe('Asistente flotante', () => {
   let company: number;
@@ -18,6 +19,23 @@ describe('Asistente flotante', () => {
     create: ReturnType<typeof vi.fn>;
   };
   const crm = { consultarCRM: vi.fn(() => of({ respuesta: 'Dos prospectos.' })) };
+  it('consulta con permiso de proveedor sin exigir un catalogo de Reportes', async () => {
+    vi.spyOn(TestBed.inject(AuthService), 'hasPermission').mockImplementation(permission => permission === 'Visualizar_proveedores');
+    const fixture = TestBed.createComponent(AsistenteComponent); fixture.detectChanges();
+    TestBed.inject(AsistenteService).open(); fixture.detectChanges();
+    expect(fixture.componentInstance.available).toBe(true);
+    await fixture.componentInstance.send('Cuantos proveedores activos tenemos');
+    expect(api.catalog).not.toHaveBeenCalled();
+    expect(api.assistant).toHaveBeenCalled();
+    fixture.destroy();
+  });
+  it('la obra seleccionada se envia separada del texto de stock', async () => {
+    const fixture = TestBed.createComponent(AsistenteComponent); fixture.detectChanges();
+    TestBed.inject(ContextoOperativo).seleccionar({ id_empresa: 7, id_obra: 9, nombre: 'Laguna', codigo: 'LAG' });
+    await fixture.componentInstance.send('Stock de materiales');
+    expect(api.assistant).toHaveBeenLastCalledWith('Stock de materiales', 7, undefined, undefined, 9);
+    fixture.destroy();
+  });
   beforeEach(() => {
     company = 7;
     role = 'ADMINISTRADOR_EMPRESA';
@@ -67,7 +85,7 @@ describe('Asistente flotante', () => {
     expect(root.querySelector('[role="dialog"]')).not.toBeNull();
     await fixture.componentInstance.send('reporte de stock');
     fixture.detectChanges();
-    expect(api.assistant).toHaveBeenCalledWith('reporte de stock', 7, undefined);
+    expect(api.assistant).toHaveBeenCalledWith('reporte de stock', 7, undefined, undefined, undefined);
     expect(root.textContent).toContain('Stock actual');
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     await fixture.componentInstance.view({ id: 'exec', estado: 'LISTO', resultado: null });
@@ -100,7 +118,7 @@ describe('Asistente flotante', () => {
     await request;
     expect(fixture.componentInstance.messages).toEqual([]);
     await fixture.componentInstance.send('stock nuevo');
-    expect(api.assistant).toHaveBeenLastCalledWith('stock nuevo', 8, undefined);
+    expect(api.assistant).toHaveBeenLastCalledWith('stock nuevo', 8, undefined, undefined, undefined);
     fixture.destroy();
   });
   it('transmite la empresa seleccionada al asistente comercial', async () => {
@@ -109,7 +127,7 @@ describe('Asistente flotante', () => {
     TestBed.inject(AsistenteService).open();
     fixture.detectChanges();
     await fixture.componentInstance.send('prospectos');
-    expect(api.assistant).toHaveBeenCalledWith('prospectos', 7, undefined);
+    expect(api.assistant).toHaveBeenCalledWith('prospectos', 7, undefined, undefined, undefined);
     expect(crm.consultarCRM).not.toHaveBeenCalled();
     fixture.destroy();
   });
@@ -193,7 +211,7 @@ describe('Asistente flotante', () => {
     ]);
     expect(fixture.componentInstance.messages.length).toBe(4);
     await fixture.componentInstance.send('¿Y los avances?');
-    expect(api.assistant).toHaveBeenLastCalledWith('¿Y los avances?', 7, 'unica');
+    expect(api.assistant).toHaveBeenLastCalledWith('¿Y los avances?', 7, 'unica', undefined, undefined);
     expect(fixture.componentInstance.historyFilter).toBe('todos');
     fixture.destroy();
   });

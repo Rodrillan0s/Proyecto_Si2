@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
   BackupArchive,
+  BackupDownload,
   BackupJob,
   BackupRestore,
   BackupSchedule,
@@ -23,6 +24,9 @@ export class BackupComponent implements OnInit, OnDestroy {
   private cdr = inject(ChangeDetectorRef);
   private timer?: ReturnType<typeof setInterval>;
   private destroyed = false;
+  private downloadExpiry?: ReturnType<typeof setTimeout>;
+  private cancelDownloadWait?: () => void;
+  descargaLista: BackupDownload | null = null;
   private refreshing = false;
   private requestKey: string | null = null;
   private requestScope: BackupScope | null = null;
@@ -30,10 +34,10 @@ export class BackupComponent implements OnInit, OnDestroy {
   historial: BackupJob[] = [];
   restauraciones: BackupRestore[] = [];
   seleccion: BackupRestore | null = null;
-  alcance: BackupScope = 'sistema_completo';
+  alcance: BackupScope = 'base_datos';
   programacion: BackupSchedule = {
     habilitada: false,
-    alcance: 'sistema_completo',
+    alcance: 'base_datos',
     frecuencia: 'diario',
     hora: '02:00',
     zona_horaria: 'America/La_Paz',
@@ -63,6 +67,9 @@ export class BackupComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.destroyed = true;
     clearInterval(this.timer);
+    clearTimeout(this.downloadExpiry);
+    this.cancelDownloadWait?.();
+    this.descargaLista = null;
     this.password = '';
   }
   private paint() {
@@ -74,6 +81,7 @@ export class BackupComponent implements OnInit, OnDestroy {
     this.paint();
   }
   private async fail(error: any) {
+    if (this.destroyed) return;
     let body = error?.error;
     if (body instanceof Blob) {
       try {
@@ -104,7 +112,7 @@ export class BackupComponent implements OnInit, OnDestroy {
       const state = await this.api.estado();
       if (this.destroyed) return;
       this.estado = state;
-      if (state.control_disponible) {
+      if (state.cola_disponible) {
         const [history, restores] = await Promise.all([
           this.api.historial(this.pagina, this.filtro),
           this.api.restauraciones(),
@@ -115,10 +123,13 @@ export class BackupComponent implements OnInit, OnDestroy {
         this.restauraciones = restores;
         if (this.seleccion)
           this.seleccion = restores.find((r) => r.id === this.seleccion?.id) ?? this.seleccion;
+      }
+      if (state.control_disponible) {
         if (inicial) {
           const schedule = await this.api.programacion();
           this.programacion = { ...schedule.configuracion };
           this.proxima = schedule.next_run;
+          if (schedule.advertencias?.length) this.notify(schedule.advertencias.join(' '));
         }
       }
     } catch (error) {
@@ -141,7 +152,7 @@ export class BackupComponent implements OnInit, OnDestroy {
       this.pagina = 1;
       this.filtro = '';
       this.notify(
-        `Copia en cola (${job.id.slice(0, 8)}). El historial mostrará sus etapas y permitirá descargarla al terminar.`,
+        `Copia en cola (job ${job.id}). El daemon Oracle la procesará y el historial mostrará su resultado.`,
       );
       await this.actualizar();
     } catch (error) {
@@ -152,23 +163,47 @@ export class BackupComponent implements OnInit, OnDestroy {
     }
   }
   async descargar(job: BackupJob) {
-    if (this.ocupada) return;
+    if (this.destroyed || this.ocupada || !this.estado?.descarga_habilitada || job.estado !== 'COMPLETADO') return;
     this.ocupada = job.id;
+    clearTimeout(this.downloadExpiry);
+    this.descargaLista = null;
+    this.notify(`Preparando descarga del job ${job.id}…`);
     try {
-      const response = await this.api.descargar(job.id);
-      if (!response.body) throw new Error('Archivo ausente');
-      const name =
-        /filename="?([^";]+)"?/.exec(response.headers.get('Content-Disposition') ?? '')?.[1] ??
-        `obratec_${job.id}.obratec`;
-      const url = URL.createObjectURL(response.body);
+      let result = await this.api.descargar(job.id);
+      const deadline = Date.now() + 120000;
+      let attempts = 0;
+      while (!this.destroyed && (result.estado === 'PENDIENTE' || result.estado === 'PROCESANDO')) {
+        if (++attempts > 60 || Date.now() >= deadline) {
+          this.notify('El servicio sigue preparando la descarga. Vuelve a pulsar Descargar para consultar la misma solicitud.', true);
+          return;
+        }
+        await this.waitDownload();
+        if (this.destroyed) return;
+        result = await this.api.descarga(result.id);
+      }
+      if (this.destroyed) return;
+      if (result.estado === 'FALLIDO' || result.estado === 'EXPIRADO') {
+        this.notify(result.error || 'No se pudo preparar la descarga. Inténtalo nuevamente.', true);
+        return;
+      }
+      const remaining = Date.parse(result.expira_en ?? '') - Date.now();
+      if (result.estado !== 'COMPLETADO' || result.job_id !== job.id || !result.url || !(remaining > 0)) {
+        this.notify('No hay un enlace vigente para esta copia. Solicita la descarga nuevamente.', true);
+        return;
+      }
+      this.descargaLista = result;
+      this.downloadExpiry = setTimeout(() => { this.descargaLista = null; this.paint(); }, remaining);
+      // Navegación directa: el HttpClient autenticado nunca envía el JWT a OCI.
       const link = document.createElement('a');
-      link.href = url;
-      link.download = name;
+      link.href = result.url;
+      link.download = result.nombre;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.referrerPolicy = 'no-referrer';
+      document.body.appendChild(link);
       link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      this.notify(
-        'Copia cifrada descargada. Conserva su clave de recuperación en un depósito separado.',
-      );
+      link.remove();
+      this.notify('Descarga preparada. Si no se abrió, usa el enlace temporal que aparece debajo del historial.');
     } catch (error) {
       await this.fail(error);
     } finally {
@@ -185,7 +220,7 @@ export class BackupComponent implements OnInit, OnDestroy {
       this.proxima = result.next_run;
       this.notify(
         this.programacion.habilitada
-          ? 'Programación guardada. Su ejecución depende del worker; revisa el estado operativo.'
+          ? 'Programación guardada. Un scheduler externo debe encolar las ocurrencias para el daemon Oracle.'
           : 'Programación pausada.',
       );
     } catch (error) {
@@ -194,6 +229,26 @@ export class BackupComponent implements OnInit, OnDestroy {
       this.ocupada = '';
       this.paint();
     }
+  }
+  async despachar() {
+    if (this.ocupada || !this.estado?.configurado || this.estado.mantenimiento) return;
+    this.ocupada = 'despachar';
+    try {
+      const result = await this.api.despachar();
+      this.notify(result.encolado ? `Ejecución automática en cola (job ${result.trabajo?.id}).` : 'No hay una ejecución programada vencida.');
+      await this.actualizar();
+    } catch (error) {
+      await this.fail(error);
+    } finally {
+      this.ocupada = '';
+      this.paint();
+    }
+  }
+  private waitDownload(): Promise<void> {
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => { this.cancelDownloadWait = undefined; resolve(); }, 2000);
+      this.cancelDownloadWait = () => { clearTimeout(timer); this.cancelDownloadWait = undefined; resolve(); };
+    });
   }
   async validar(archivo: string) {
     if (this.ocupada || !this.estado?.restauracion_habilitada || this.estado.mantenimiento) return;
@@ -216,7 +271,7 @@ export class BackupComponent implements OnInit, OnDestroy {
   async importar(event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    if (!file || this.ocupada) return;
+    if (!file || this.ocupada || !this.estado?.importacion_habilitada) return;
     if (!file.name.endsWith('.obratec')) {
       this.notify('Selecciona un paquete cifrado .obratec.', true);
       input.value = '';
@@ -238,6 +293,8 @@ export class BackupComponent implements OnInit, OnDestroy {
     const selected = this.seleccion;
     if (
       !selected ||
+      !this.estado?.restauracion_habilitada ||
+      this.estado.mantenimiento ||
       this.ocupada ||
       selected.estado !== 'VALIDADA' ||
       this.confirmacion !== selected.confirmacion_requerida ||
@@ -256,7 +313,7 @@ export class BackupComponent implements OnInit, OnDestroy {
         fresh.token,
       );
       this.notify(
-        'Restauración global confirmada. Se generará una copia preventiva, entrará en mantenimiento y tendrás que iniciar sesión al finalizar.',
+        'Solicitud de restauración confirmada. Consulta el resultado del servicio Oracle.',
       );
     } catch (error) {
       await this.fail(error);
@@ -280,9 +337,10 @@ export class BackupComponent implements OnInit, OnDestroy {
     this.password = '';
   }
   scope(value: BackupScope) {
-    return value === 'sistema_completo' ? 'Sistema completo' : 'Base de datos';
+    return 'Schema obras';
   }
-  size(value: number) {
+  size(value: number | null) {
+    if (value === null) return 'Sin tamaño registrado';
     return value < 1024 ** 2
       ? (value / 1024).toFixed(1) + ' KiB'
       : (value / 1024 ** 2).toFixed(1) + ' MiB';

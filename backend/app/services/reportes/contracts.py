@@ -51,6 +51,7 @@ class Delivery(BaseModel):
 
 class AssistantRequest(Interpretation):
     solicitud: ReportRequest | None = None
+    id_obra_contexto: int | None = Field(default=None, gt=0)
 
 
 class Schedule(Delivery):

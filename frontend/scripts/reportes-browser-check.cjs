@@ -97,7 +97,11 @@ let schedule;
     requests.push({ pathname, method: request.method });
     let body = {};
     let status = 200;
-    if (pathname.endsWith('/catalogo')) body = catalog;
+    if (pathname.endsWith('/proyectos/')) body = { success: true, data: [{ id_obra: 9, id_empresa: 7, nombre: 'Residencial Alameda', codigo: 'ALM', estado: 'PLANIFICACION' }] };
+    else if (pathname.endsWith('/materiales')) body = { success: true, data: [], pagination: { total: 0 } };
+    else if (pathname.endsWith('/proveedores')) body = { success: true, data: [], pagination: { total: 0 } };
+    else if (pathname.endsWith('/empresas/')) body = { success: true, data: [{ id_empresa: 7, nombre_empresa: 'Constructora Alameda' }, { id_empresa: 8, nombre_empresa: 'Constructora Norte' }] };
+    else if (pathname.endsWith('/catalogo')) body = catalog;
     else if (pathname.endsWith('/destinatarios'))
       body = [
         { id_usuario: 2, nombre: 'María López' },
@@ -163,7 +167,7 @@ let schedule;
       returnByValue: true,
       awaitPromise: true,
     });
-    if (result.exceptionDetails) throw new Error(result.exceptionDetails.text);
+    if (result.exceptionDetails) throw new Error(result.exceptionDetails.exception?.description || result.exceptionDetails.text);
     return result.result.value;
   };
   const wait = async (expression) => {
@@ -189,7 +193,7 @@ let schedule;
     patterns: [{ urlPattern: '*127.0.0.1:5000*', requestStage: 'Request' }],
   });
   await send('Page.addScriptToEvaluateOnNewDocument', {
-    source: `localStorage.setItem('token','fixture.' + btoa(JSON.stringify({exp:4102444800})) + '.fixture'); localStorage.setItem('usuario', JSON.stringify({nro_usuario:1,id_empresa:7,nombre_empresa:'Constructora Alameda',nombre_rol:'ADMINISTRADOR_EMPRESA',nombre_completo:'Usuario de prueba',permisos:['Visualizar_reportes','Exportar_reportes','Enviar_reportes','Programar_reportes','Visualizar_clientes']})); window.WebSocket = class {close(){} send(){}};`,
+    source: `localStorage.setItem('token','fixture.' + btoa(JSON.stringify({exp:4102444800})) + '.fixture'); localStorage.setItem('usuario', JSON.stringify({nro_usuario:1,id_empresa:7,nombre_empresa:'Constructora Alameda',nombre_rol:'ADMINISTRADOR',nombre_completo:'Usuario de prueba',permisos:['Visualizar_reportes','Exportar_reportes','Enviar_reportes','Programar_reportes','Visualizar_clientes']})); localStorage.setItem('empresa_seleccionada',JSON.stringify({id_empresa:7,nombre_empresa:'Constructora Alameda'})); window.WebSocket = class {close(){} send(){}};`,
   });
   await send('Emulation.setDeviceMetricsOverride', {
     width: 1366,
@@ -202,10 +206,23 @@ let schedule;
     `document.querySelector('.generate') && !document.querySelector('.generate').disabled`,
   );
   await screenshot('desktop-empty');
+  assert.ok(!requests.some(request => request.pathname.endsWith('/auth/contexto')), 'No debe existir dependencia de un endpoint nuevo');
+  assert.ok(!requests.some(request => request.pathname.endsWith('/destinatarios') || request.pathname.endsWith('/programaciones') || request.pathname.endsWith('/ejecuciones')), 'No cargar pestañas auxiliares antes de necesitarlas');
+  await evaluate(`document.querySelector('.hamburger-btn').click()`);
+  await wait(`document.querySelector('aside.is-collapsed')`);
+  assert.equal(await evaluate(`document.querySelector('aside').getBoundingClientRect().width`), 68);
+  await screenshot('desktop-sidebar-icons');
+  await evaluate(`document.querySelector('.hamburger-btn').click()`);
+  await evaluate(`document.querySelector('[aria-label="Seleccionar obra"]').click()`);
+  await wait(`document.querySelector('[data-work-selector] select option[value="9"]')`);
+  await evaluate(`(() => { const select = document.querySelector('[data-work-selector] select'); select.value='9'; select.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+  await wait(`document.querySelector('[data-work-selector] button').textContent.includes('Residencial')`);
+
   await evaluate(`document.querySelector('.generate').click()`);
   await wait(`document.querySelector('.result table')`);
   await screenshot('desktop-result');
   assert.equal(await evaluate(`document.querySelectorAll('.result tbody tr').length`), 3);
+  await wait(`document.querySelector('.recipients input')`);
   await evaluate(`document.querySelector('.recipients input').click()`);
   await click('Enviar reporte');
   await wait(`document.querySelector('.notice')?.textContent.includes('Solicitud de envío')`);
@@ -249,6 +266,27 @@ let schedule;
     await evaluate(`document.documentElement.scrollWidth <= innerWidth`),
     'La página desborda el ancho móvil',
   );
+  await evaluate(`document.querySelector('.hamburger-btn').click()`);
+  await wait(`document.querySelector('.sidebar-open')`);
+  await screenshot('mobile-sidebar');
+  await evaluate(`document.querySelector('.sidebar-backdrop').click()`);
+  await send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 900, deviceScaleFactor: 1, mobile: false });
+  await evaluate(`(() => { const input = document.querySelector('.search-box input'); input.value='reporte de stock'; input.dispatchEvent(new Event('input',{bubbles:true})); document.querySelector('.search-btn').click(); })()`);
+  await wait(`document.querySelector('.assistant.quick-mode .message:not(.user)')`);
+  await screenshot('desktop-quick-query');
+  await evaluate(`document.querySelector('[aria-label="Abrir conversación completa"]').click()`);
+  await wait(`document.querySelector('.assistant:not(.quick-mode)')`);
+  await evaluate(`document.querySelector('.assistant [aria-label="Cerrar asistente"]').click()`);
+  await evaluate(`document.querySelector('[aria-label="INTELIGENCIA ARTIFICIAL"]').click()`);
+  await evaluate(`document.querySelector('a[aria-label="Asistente Inteligente"]').click()`);
+  await wait(`document.querySelector('.assistant.module-mode')`);
+  assert.equal(await evaluate(`document.querySelectorAll('app-asistente').length`), 1);
+  assert.equal(await evaluate(`document.querySelector('.launcher') === null`), true);
+  await screenshot('desktop-assistant-workspace');
+  await evaluate(`document.querySelector('a[aria-label="Dashboard"]').click()`);
+  await wait(`document.querySelector('app-panel')?.textContent.includes('Residencial Alameda')`);
+  assert.ok(await evaluate(`document.querySelector('app-panel').textContent.includes('Constructora Alameda')`));
+  await screenshot('desktop-dashboard');
   assert.equal(errors.length, 0, errors.join('\n'));
   assert.ok(requests.some((r) => r.pathname.endsWith('/ai/consulta')));
   console.log(

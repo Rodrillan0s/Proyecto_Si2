@@ -1,3 +1,4 @@
+import { ContextoOperativo } from '../../services/contexto-operativo';
 import {
   ChangeDetectorRef,
   Component,
@@ -15,7 +16,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../services/auth';
-import { AsistenteService } from '../../services/asistente.service';
+import { AsistenteService, ASSISTANT_PERMISSIONS } from '../../services/asistente.service';
 import {
   Execution,
   Interpretation,
@@ -55,6 +56,8 @@ interface Recognition {
 })
 export class AsistenteComponent implements OnInit, OnDestroy {
   readonly ui = inject(AsistenteService);
+  readonly contexto = inject(ContextoOperativo);
+  private submitted = 0;
   private auth = inject(AuthService);
   private api = inject(ReportesService);
   private router = inject(Router);
@@ -81,10 +84,7 @@ export class AsistenteComponent implements OnInit, OnDestroy {
   private stream?: MediaStream;
   private timer?: ReturnType<typeof setTimeout>;
   get available() {
-    return (
-      this.auth.hasPermission('Visualizar_reportes') ||
-      this.auth.hasPermission('Visualizar_clientes')
-    );
+    return ASSISTANT_PERMISSIONS.some(permission => this.auth.hasPermission(permission));
   }
   get canReports() {
     return this.auth.hasPermission('Visualizar_reportes');
@@ -109,6 +109,7 @@ export class AsistenteComponent implements OnInit, OnDestroy {
     ];
   }
   get visibleMessages() {
+    if (this.ui.mode() === 'quick') return this.messages.slice(-2);
     return this.historyFilter === 'todos'
       ? this.messages
       : this.messages.filter((m) => m.topic === this.historyFilter);
@@ -123,6 +124,12 @@ export class AsistenteComponent implements OnInit, OnDestroy {
   constructor() {
     effect(() => {
       const opened = this.ui.opened();
+      const submissions = this.ui.submissions();
+      if (submissions > this.submitted) {
+        this.submitted = submissions;
+        const request = this.ui.draft(); const version = this.version;
+        if (request) queueMicrotask(() => { if (version === this.version && this.ui.opened()) void this.send(request); });
+      }
       const draft = this.ui.draft();
       if (draft !== null) {
         this.text = draft.slice(0, 2000);
@@ -135,7 +142,7 @@ export class AsistenteComponent implements OnInit, OnDestroy {
     });
   }
   ngOnInit() {
-    this.auth.empresaActiva$.pipe(takeUntilDestroyed(this.destroy)).subscribe(() => {
+    this.contexto.operativo$.pipe(takeUntilDestroyed(this.destroy)).subscribe(() => {
       this.version++;
       this.company = this.auth.obtenerIdEmpresaActiva();
       this.messages = [];
@@ -201,7 +208,8 @@ export class AsistenteComponent implements OnInit, OnDestroy {
     this.messages.push(userMessage);
     this.update();
     try {
-      const response = await this.api.assistant(text, this.company, this.conversation);
+      const work = this.contexto.obra;
+      const response = await this.api.assistant(text, this.company, this.conversation, undefined, work?.id_obra);
       if (version !== this.version) return;
       this.conversation = response.conversacion;
       userMessage.topic = response.tema || 'reportes';

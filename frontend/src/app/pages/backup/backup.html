@@ -3,374 +3,138 @@
     <div>
       <span class="eyebrow">ADMINISTRACIÓN DE PLATAFORMA</span>
       <h1>Copias de respaldo</h1>
-      <p>Protege los datos, las evidencias y el software de todas las empresas.</p>
+      <p>Respaldos de la Base de Datos de la plataforma</p>
     </div>
     <button class="secondary" (click)="actualizar(true)" [disabled]="cargando || !!ocupada">
-      Actualizar estado
+      ACTUALIZAR ESTADO
     </button>
   </header>
   <div *ngIf="mensaje" class="notice" [class.error]="error" role="status" aria-live="polite">
     {{ mensaje }}<button aria-label="Cerrar mensaje" (click)="mensaje = ''">×</button>
   </div>
-  <p *ngIf="cargando" role="status">Consultando estado de protección…</p>
+  <p *ngIf="cargando" role="status">Recuperando información…</p>
   <section *ngIf="estado as state" class="protection" aria-label="Estado de protección">
+    <div><span class="eyebrow">ENTORNO</span><strong>{{ state.entorno }}</strong><small>RESPALDO DE LA BASE DE DATOS</small></div>
     <div>
-      <span class="eyebrow">ENTORNO</span><strong>{{ state.entorno }}</strong
-      ><small>Todos los tenants</small>
+      <span class="eyebrow">SERVICIO: ORACLE</span>
+      <strong>{{ !state.heartbeat_integrado ? 'ACTIVO' : state.worker_activo ? ' ACTIVO 24/7' : 'Sin latido reciente' }}</strong>
+      <small>{{ state.ultimo_latido ? (state.ultimo_latido | date: 'dd/MM/yyyy HH:mm:ss') : 'El servicio se encuentra activo' }}</small>
     </div>
-    <div>
-      <span class="eyebrow">AUTOMATIZACIÓN</span
-      ><strong>{{ state.worker_activo ? 'Worker operativo' : 'Worker sin latido reciente' }}</strong
-      ><small>{{
-        state.ultimo_latido
-          ? (state.ultimo_latido | date: 'dd/MM/yyyy HH:mm:ss')
-          : 'Sin ejecución registrada'
-      }}</small>
-    </div>
-    <div>
-      <span class="eyebrow">ALMACENAMIENTO</span
-      ><strong>{{
-        state.replica_remota ? 'Réplica externa configurada' : 'Solo almacenamiento local'
-      }}</strong
-      ><small>{{
-        state.almacenamiento_persistente
-          ? 'Volumen persistente declarado'
-          : 'Persistencia pendiente de configurar'
-      }}</small>
-    </div>
+    <div><span class="eyebrow">ALMACENAMIENTO</span><strong>Oracle</strong><small>Disponible</small></div>
   </section>
   <section *ngIf="estado && !estado.configurado" class="setup">
     <h2>Configuración necesaria</h2>
-    <p>Las operaciones se habilitarán cuando el servidor esté preparado.</p>
-    <ul>
-      <li *ngFor="let item of estado.requisitos">{{ item }}</li>
-    </ul>
+    <p>La aplicación necesita acceso a la cola y a su plano de control.</p>
+    <ul><li *ngFor="let item of estado.requisitos">{{ item }}</li></ul>
   </section>
   <div *ngIf="estado?.mantenimiento" class="notice error" role="alert">
-    <strong>Sistema en mantenimiento.</strong> {{ estado?.motivo }}. La operación se conserva en el
-    historial.
+    <strong>Sistema en mantenimiento.</strong> {{ estado?.motivo }}. La barrera se conserva hasta revisión.
   </div>
+  <p *ngFor="let item of estado?.advertencias" class="hint">{{ item }}</p>
   <div class="configuration-grid">
     <section class="panel">
-      <div class="section-title">
-        <span class="number">01</span>
-        <h2>Crear una copia</h2>
-      </div>
-      <p>
-        La captura se coordina con los escritores del sistema. Podría pausar el acceso brevemente.
-      </p>
-      <label
-        >Contenido<select [(ngModel)]="alcance" [disabled]="!!ocupada">
-          <option value="sistema_completo">Sistema completo · base, evidencias y software</option>
-          <option value="base_datos">Solo base de datos · todos los esquemas</option>
-        </select></label
-      >
-      <p class="hint">
-        {{
-          alcance === 'sistema_completo'
-            ? 'Recomendado para recuperar el sistema. No incluye secretos ni claves.'
-            : 'No contiene archivos de evidencias ni software; la restauración exige que los archivos actuales coincidan con el corte.'
-        }}
-      </p>
-      <button
-        class="primary"
-        (click)="crear()"
-        [disabled]="!estado?.configurado || estado?.mantenimiento || !!ocupada"
-      >
-        {{ ocupada === 'crear' ? 'Registrando…' : 'Crear respaldo manual' }}
+      <div class="section-title"><span class="number">01</span><h2>Crear una copia</h2></div>
+      <p>La solicitud se encuentra pendiente, verifique su estado en el historial.</p>
+      <label>Contenido<select [(ngModel)]="alcance" [disabled]="!!ocupada">
+        <option value="base_datos">Base de datos</option>
+      </select></label>
+      <p class="hint">Formato PostgreSQL custom (dump).</p>
+      <button class="primary" (click)="crear()" [disabled]="!estado?.configurado || estado?.mantenimiento || !!ocupada">
+        {{ ocupada === 'crear' ? 'Registrando…' : 'Crear respaldo' }}
       </button>
     </section>
     <section class="panel">
-      <div class="section-title">
-        <span class="number">02</span>
-        <h2>Programación automática</h2>
-      </div>
+      <div class="section-title"><span class="number">02</span><h2>Programación automática de respaldos</h2></div>
       <form (ngSubmit)="guardar()">
-        <label class="check"
-          ><input
-            type="checkbox"
-            name="enabled"
-            [(ngModel)]="programacion.habilitada"
-            [disabled]="!estado?.configurado || !!ocupada"
-          />
-          Habilitar copias automáticas</label
-        >
+        <label class="check"><input type="checkbox" name="enabled" [(ngModel)]="programacion.habilitada" [disabled]="!estado?.configurado || !!ocupada" />Habilitar copias automáticas</label>
         <div class="form-grid">
-          <label
-            >Frecuencia<select name="frequency" [(ngModel)]="programacion.frecuencia">
-              <option value="diario">Diaria</option>
-              <option value="semanal">Semanal</option>
-              <option value="mensual">Mensual</option>
-            </select></label
-          >
-          <label
-            >Hora<input type="time" name="hour" required [(ngModel)]="programacion.hora"
-          /></label>
-          <label *ngIf="programacion.frecuencia === 'semanal'"
-            >Día<select name="weekday" [(ngModel)]="programacion.dia_semana">
-              <option [ngValue]="0">Lunes</option>
-              <option [ngValue]="1">Martes</option>
-              <option [ngValue]="2">Miércoles</option>
-              <option [ngValue]="3">Jueves</option>
-              <option [ngValue]="4">Viernes</option>
-              <option [ngValue]="5">Sábado</option>
-              <option [ngValue]="6">Domingo</option>
-            </select></label
-          >
-          <label *ngIf="programacion.frecuencia === 'mensual'"
-            >Día del mes<input
-              type="number"
-              name="monthday"
-              min="1"
-              max="28"
-              required
-              [(ngModel)]="programacion.dia_mes"
-          /></label>
-          <label
-            >Zona horaria<input
-              name="timezone"
-              required
-              [(ngModel)]="programacion.zona_horaria"
-              placeholder="America/La_Paz"
-          /></label>
-          <label
-            >Retención<select name="retention" [(ngModel)]="programacion.retencion_dias">
-              <option [ngValue]="7">7 días</option>
-              <option [ngValue]="15">15 días</option>
-              <option [ngValue]="30">30 días</option>
-              <option [ngValue]="90">90 días</option>
-            </select></label
-          >
+          <label>Frecuencia<select name="frequency" [(ngModel)]="programacion.frecuencia">
+            <option value="diario">Diaria</option><option value="semanal">Semanal</option><option value="mensual">Mensual</option>
+          </select></label>
+          <label>Hora<input type="time" name="hour" required [(ngModel)]="programacion.hora" /></label>
+          <label *ngIf="programacion.frecuencia === 'semanal'">Día<select name="weekday" [(ngModel)]="programacion.dia_semana">
+            <option [ngValue]="0">Lunes</option><option [ngValue]="1">Martes</option><option [ngValue]="2">Miércoles</option><option [ngValue]="3">Jueves</option><option [ngValue]="4">Viernes</option><option [ngValue]="5">Sábado</option><option [ngValue]="6">Domingo</option>
+          </select></label>
+          <label *ngIf="programacion.frecuencia === 'mensual'">Día del mes<input type="number" name="monthday" min="1" max="28" required [(ngModel)]="programacion.dia_mes" /></label>
+          <label>Zona horaria<input name="timezone" required [(ngModel)]="programacion.zona_horaria" placeholder="America/La_Paz" /></label>
         </div>
-        <label
-          >Contenido<select name="scope" [(ngModel)]="programacion.alcance">
-            <option value="sistema_completo">Sistema completo</option>
-            <option value="base_datos">Solo base de datos</option>
-          </select></label
-        >
-        <p class="hint">
-          La retención protege las copias preventivas, las que están en uso y la última que superó
-          un ensayo de restauración.
-        </p>
-        <p *ngIf="programacion.habilitada && proxima">
-          Próxima ejecución: {{ proxima | date: 'dd/MM/yyyy HH:mm' }} (hora local del navegador).
-        </p>
-        <button
-          class="secondary"
-          type="submit"
-          [disabled]="!estado?.control_disponible || estado?.mantenimiento || !!ocupada"
-        >
+        <p class="hint">La programación se guardará y se aplicará automáticamente.</p>
+        <p *ngIf="programacion.habilitada && proxima">Próxima ocurrencia: {{ proxima | date: 'dd/MM/yyyy HH:mm' }} (hora local del navegador).</p>
+        <button class="secondary" type="submit" [disabled]="!estado?.control_disponible || estado?.mantenimiento || !!ocupada">
           {{ ocupada === 'guardar' ? 'Guardando…' : 'Guardar programación' }}
+        </button>
+        <button class="secondary" type="button" (click)="despachar()" [disabled]="!estado?.configurado || !programacion.habilitada || estado?.mantenimiento || !!ocupada">
+          Ejecutar ahora
         </button>
       </form>
     </section>
   </div>
   <section class="panel history">
     <div class="section-title">
-      <span class="number">03</span>
-      <h2>Historial de respaldos</h2>
-      <label class="filter"
-        >Estado<select [(ngModel)]="filtro" (ngModelChange)="filtrar()">
-          <option value="">Todos</option>
-          <option>PENDIENTE</option>
-          <option>GENERANDO</option>
-          <option>VERIFICANDO</option>
-          <option>LISTO</option>
-          <option>FALLIDO</option>
-        </select></label
-      >
+      <span class="number">03</span><h2>Historial de respaldos</h2>
+      <label class="filter">Estado<select [(ngModel)]="filtro" (ngModelChange)="filtrar()">
+        <option value="">Todos</option><option>PENDIENTE</option><option>PROCESANDO</option><option>COMPLETADO</option><option>FALLIDO</option>
+      </select></label>
     </div>
     <div class="table-scroll">
       <table>
-        <thead>
-          <tr>
-            <th>Creación</th>
-            <th>Contenido / origen</th>
-            <th>Estado</th>
-            <th>Etapa</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
+        <thead><tr><th>Solicitud</th><th>Contenido / origen</th><th>Estado</th><th>Detalle</th><th>Acciones</th></tr></thead>
         <tbody>
           <tr *ngFor="let job of historial">
+            <td>{{ job.created_at | date: 'dd/MM/yyyy HH:mm' }}<small>Job {{ job.id }}</small></td>
+            <td>{{ scope(job.solicitud.alcance) }}<small>{{ job.origen }}</small></td>
+            <td><span class="badge" [class.ready]="job.estado === 'COMPLETADO'" [class.failed]="job.estado === 'FALLIDO'">{{ job.estado }}</span></td>
             <td>
-              {{ job.created_at | date: 'dd/MM/yyyy HH:mm' }}<small>{{ job.id.slice(0, 8) }}</small>
-            </td>
-            <td>
-              {{ scope(job.solicitud.alcance) }}<small>{{ job.origen }}</small>
-            </td>
-            <td>
-              <span
-                class="badge"
-                [class.ready]="job.estado === 'LISTO'"
-                [class.failed]="job.estado === 'FALLIDO'"
-                >{{ job.estado }}</span
-              >
-            </td>
-            <td>
-              {{ job.etapa }}<small class="error-text" *ngIf="job.error">{{ job.error }}</small>
+              {{ job.etapa }}
+              <small *ngIf="job.object_name">{{ job.object_name }} · {{ size(job.size_bytes) }}</small>
+              <small *ngIf="job.sha256" class="fingerprint">SHA-256: {{ job.sha256 }}</small>
+              <small *ngIf="job.job_relacionado_id">PRE_RESTORE de RESTORE {{ job.job_relacionado_id }}</small>
+              <small *ngIf="job.error" class="error-text">{{ job.error }}</small>
             </td>
             <td class="actions">
-              <button
-                class="link"
-                (click)="descargar(job)"
-                [disabled]="job.estado !== 'LISTO' || !!ocupada"
-              >
-                Descargar</button
-              ><button
-                class="link"
-                (click)="validar(job.archivo!)"
-                [disabled]="
-                  job.estado !== 'LISTO' ||
-                  !job.archivo ||
-                  !estado?.restauracion_habilitada ||
-                  !!ocupada ||
-                  estado?.mantenimiento
-                "
-              >
-                Ensayar restauración
-              </button>
+              <button class="link" (click)="descargar(job)" [disabled]="job.estado !== 'COMPLETADO' || !estado?.descarga_habilitada || !!ocupada">{{ ocupada === job.id ? 'Preparando…' : 'Descargar' }}</button>
+              <button class="link" (click)="validar(job.archivo!)" [disabled]="job.estado !== 'COMPLETADO' || !job.archivo || !estado?.restauracion_habilitada || !!ocupada || estado?.mantenimiento">Solicitar restauración</button>
             </td>
           </tr>
-          <tr *ngIf="!historial.length">
-            <td colspan="5" class="empty">
-              {{
-                estado?.control_disponible
-                  ? 'Todavía no hay copias para este filtro.'
-                  : 'Completa la instalación para consultar el historial.'
-              }}
-            </td>
-          </tr>
+          <tr *ngIf="!historial.length"><td colspan="5" class="empty">{{ estado?.control_disponible ? 'Todavía no hay copias para este filtro.' : 'Completa la configuración para consultar el historial.' }}</td></tr>
         </tbody>
       </table>
     </div>
+    <p class="hint" *ngFor="let item of estado?.requisitos_descarga">{{ item }}</p>
+    <p class="hint" *ngIf="descargaLista as download">
+      <a class="link" [href]="download.url" [attr.download]="download.nombre" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Descargar copia del job {{ download.job_id }}</a>
+      · Enlace válido hasta {{ download.expira_en | date: 'dd/MM/yyyy HH:mm:ss' }}.
+    </p>
     <footer class="pagination">
-      <span>{{ total }} respaldos · página {{ pagina }}</span
-      ><button class="secondary" (click)="cambiarPagina(-1)" [disabled]="pagina === 1 || cargando">
-        Anterior</button
-      ><button
-        class="secondary"
-        (click)="cambiarPagina(1)"
-        [disabled]="pagina * 20 >= total || cargando"
-      >
-        Siguiente
-      </button>
+      <span>{{ total }} respaldos · página {{ pagina }}</span>
+      <button class="secondary" (click)="cambiarPagina(-1)" [disabled]="pagina === 1 || cargando">Anterior</button>
+      <button class="secondary" (click)="cambiarPagina(1)" [disabled]="pagina * 20 >= total || cargando">Siguiente</button>
     </footer>
   </section>
   <section class="panel restore">
-    <div class="section-title">
-      <span class="number">04</span>
-      <h2>Restaurar el sistema</h2>
-    </div>
-    <p>
-      Una restauración reemplaza los datos de <strong>todas las empresas</strong> por el corte
-      elegido. Los cambios posteriores se recuperan desde la copia preventiva, no se mezclan
-      automáticamente.
-    </p>
+    <div class="section-title"><span class="number">04</span><h2>Restauraciones</h2></div>
+    <p>La restauración de datos se realiza a través de la aplicación. Los datos restaurados se aplican en el entorno de producción.</p>
     <details *ngIf="estado && !estado.restauracion_habilitada">
-      <summary>Requisitos para habilitar la restauración</summary>
-      <ul>
-        <li *ngFor="let item of estado.requisitos_restauracion">{{ item }}</li>
-      </ul>
+      <summary>Integraciones pendientes</summary>
+      <ul><li *ngFor="let item of estado.requisitos_restauracion">{{ item }}</li></ul>
     </details>
-    <label class="import"
-      >Importar copia cifrada .obratec<input
-        type="file"
-        accept=".obratec"
-        (change)="importar($event)"
-        [disabled]="!estado?.configurado || !!ocupada || estado?.mantenimiento"
-    /></label>
-    <div *ngIf="importado" class="notice">
-      {{ importado.nombre }} · {{ size(importado.bytes)
-      }}<button
-        class="link"
-        (click)="validar(importado.id)"
-        [disabled]="!estado?.restauracion_habilitada || !!ocupada"
-      >
-        Validar paquete importado
-      </button>
-    </div>
     <div class="restore-list">
-      <button
-        *ngFor="let item of restauraciones"
-        class="restore-item"
-        [class.active]="seleccion?.id === item.id"
-        (click)="elegirRestore(item)"
-      >
-        <strong>{{ item.estado }}</strong
-        ><span
-          >{{ item.respaldo.corte | date: 'dd/MM/yyyy HH:mm' }} ·
-          {{ scope(item.respaldo.alcance) }}</span
-        >
+      <button *ngFor="let item of restauraciones" class="restore-item" [class.active]="seleccion?.id === item.id" (click)="elegirRestore(item)">
+        <strong>RESTORE {{ item.id }} · {{ item.estado }}</strong><span>{{ item.etapa }}</span>
       </button>
     </div>
     <article *ngIf="seleccion as selected" class="restore-detail">
       <h3>{{ selected.etapa }}</h3>
       <p *ngIf="selected.error" class="error-text">{{ selected.error }}</p>
-      <dl>
-        <div>
-          <dt>Corte a recuperar</dt>
-          <dd>{{ selected.respaldo.corte | date: 'dd/MM/yyyy HH:mm:ss' }}</dd>
-        </div>
-        <div>
-          <dt>Origen</dt>
-          <dd>{{ selected.respaldo.entorno_origen }}</dd>
-        </div>
-        <div>
-          <dt>Contenido</dt>
-          <dd>{{ scope(selected.respaldo.alcance) }}</dd>
-        </div>
-        <div>
-          <dt>Integridad SHA-256</dt>
-          <dd class="fingerprint">{{ selected.respaldo.sha256 }}</dd>
-        </div>
-      </dl>
-      <ol *ngIf="selected.pasos.length">
-        <li *ngFor="let step of selected.pasos">{{ step.paso }} · {{ step.estado }}</li>
-      </ol>
-      <form
-        *ngIf="selected.estado === 'VALIDADA' && !selected.aplicar_en"
-        (ngSubmit)="aplicar()"
-        class="confirm-form"
-      >
-        <h3>Confirmar restauración global</h3>
-        <p>
-          El ensayo pasó. Se hará una copia preventiva y se pausará el sistema. Después deberás
-          iniciar sesión; los envíos y programaciones de reportes quedarán en cuarentena.
-        </p>
-        <label
-          >Escribe exactamente: <code>{{ selected.confirmacion_requerida }}</code
-          ><input name="confirmation" autocomplete="off" [(ngModel)]="confirmacion" required
-        /></label>
+      <p class="hint">La selección de un elemento del historial no ejecuta una restauración.</p>
+      <form *ngIf="estado?.restauracion_habilitada && selected.estado === 'VALIDADA' && !selected.aplicar_en" (ngSubmit)="aplicar()" class="confirm-form">
+        <h3>Confirmar restauración</h3>
+        <label>Escribe exactamente: <code>{{ selected.confirmacion_requerida }}</code><input name="confirmation" autocomplete="off" [(ngModel)]="confirmacion" required /></label>
         <div class="form-grid">
-          <label
-            >Tu usuario, correo o CI<input
-              name="identity"
-              autocomplete="username"
-              [(ngModel)]="identificador"
-              required /></label
-          ><label
-            >Confirma tu contraseña<input
-              type="password"
-              name="password"
-              autocomplete="current-password"
-              [(ngModel)]="password"
-              required
-          /></label>
+          <label>Tu usuario, correo o CI<input name="identity" autocomplete="username" [(ngModel)]="identificador" required /></label>
+          <label>Confirma tu contraseña<input type="password" name="password" autocomplete="current-password" [(ngModel)]="password" required /></label>
         </div>
-        <button
-          class="danger"
-          type="submit"
-          [disabled]="
-            !!ocupada ||
-            confirmacion !== selected.confirmacion_requerida ||
-            !identificador ||
-            !password ||
-            estado?.mantenimiento
-          "
-        >
-          {{ ocupada === 'aplicar' ? 'Confirmando…' : 'Restaurar todas las empresas' }}
-        </button>
+        <button class="danger" type="submit" [disabled]="!!ocupada || confirmacion !== selected.confirmacion_requerida || !identificador || !password || estado?.mantenimiento">Confirmar solicitud</button>
       </form>
     </article>
   </section>

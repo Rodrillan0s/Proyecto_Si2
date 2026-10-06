@@ -1,3 +1,7 @@
+﻿import { DestroyRef } from '@angular/core';
+import { LecturasVigentes } from '../../services/lecturas';
+import { ContextoOperativo } from '../../services/contexto-operativo';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -61,6 +65,10 @@ interface OrdenForm {
   styleUrl: './control-costos.css'
 })
 export class ControlCostosComponent implements OnInit {
+  get contextoCompatible() { return this.auth.obtenerIdEmpresaActiva() === Number(this.auth.obtenerUsuario()?.id_empresa); }
+  private contexto = inject(ContextoOperativo);
+  private destroyRef = inject(DestroyRef);
+  private reads = new LecturasVigentes(this.destroyRef);
   private readonly service = inject(ControlCostosService);
   private readonly proyectosService = inject(ProyectosService);
   private readonly auth = inject(AuthService);
@@ -97,7 +105,13 @@ export class ControlCostosComponent implements OnInit {
   readonly tiposCambio: TipoCambio[] = ['AUMENTO_CANTIDAD', 'DISMINUCION_CANTIDAD', 'CAMBIO_COSTO', 'NUEVA_PARTIDA', 'ELIMINACION_PARTIDA'];
 
   ngOnInit(): void {
-    this.cargarProyectos();
+    this.contexto.proteger(() => this.modal !== null, this.destroyRef);
+    this.contexto.protegerEscritura(() => this.guardando, this.destroyRef);
+    this.contexto.operativo$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.reads.cancelar(); this.modal = null; this.limpiarContexto(); this.proyectos = [];
+      this.idObra = this.contexto.obra?.id_obra || 0;
+      if (this.contextoCompatible) this.cargarProyectos(); else { this.cargando = false; this.cargandoContexto = false; }
+    });
   }
 
   private hoy(): string { return new Date().toISOString().slice(0, 10); }
@@ -116,17 +130,19 @@ export class ControlCostosComponent implements OnInit {
 
   cargarProyectos(): void {
     this.cargando = true;
-    this.proyectosService.listarProyectos().pipe(finalize(() => { this.cargando = false; this.cdr.detectChanges(); })).subscribe({
-      next: response => { this.proyectos = (response.data || []).filter(p => Boolean(p.id_obra)); },
+    this.proyectosService.listarProyectos().pipe(finalize(() => { this.cargando = false; this.cdr.detectChanges(); })).pipe(this.reads.reemplazar('obras')).subscribe({
+      next: response => { this.proyectos = (response.data || []).filter(p => Boolean(p.id_obra) && Number(p.id_empresa) === this.auth.obtenerIdEmpresaActiva()); if (this.idObra && this.proyectos.some(p => p.id_obra === this.idObra)) this.cambiarObra(); },
       error: error => this.mostrarError(this.mensajeError(error, 'No se pudieron cargar las obras.'))
     });
   }
 
   cambiarObra(): void {
+    if (!this.contextoCompatible) return;
+    if ((this.contexto.obra?.id_obra || 0) !== this.idObra) { if (!this.contexto.confirmarCambio()) return; this.contexto.seleccionar(this.proyectos.find(work => work.id_obra === this.idObra) || null); return; }
     this.limpiarContexto();
     if (!this.idObra) return;
     this.cargandoContexto = true;
-    this.service.presupuestosAprobados(this.idObra).subscribe({
+    this.service.presupuestosAprobados(this.idObra).pipe(this.reads.reemplazar('presupuestos')).subscribe({
       next: response => {
         this.presupuestos = response.data || [];
         this.idEstimacionSeleccionada = this.presupuestos[0]?.id_estimacion || 0;
@@ -134,7 +150,7 @@ export class ControlCostosComponent implements OnInit {
       },
       error: error => this.mostrarError(this.mensajeError(error, 'No se pudieron cargar los presupuestos aprobados.'))
     });
-    this.service.lineaBase(this.idObra).pipe(finalize(() => { this.cargandoContexto = false; this.cdr.detectChanges(); })).subscribe({
+    this.service.lineaBase(this.idObra).pipe(finalize(() => { this.cargandoContexto = false; this.cdr.detectChanges(); })).pipe(this.reads.reemplazar('linea-base')).subscribe({
       next: response => { this.lineaBase = response.data; this.cargarDatosControl(); },
       error: error => {
         const err = error as ErrorHttp;
@@ -160,7 +176,7 @@ export class ControlCostosComponent implements OnInit {
       resumen: this.service.resumen(this.idObra),
       costos: this.service.costos({ id_control_costo: this.lineaBase.id_control_costo, estado: this.filtroEstadoCosto || undefined }),
       ordenes: this.service.ordenes({ id_control_costo: this.lineaBase.id_control_costo, estado: this.filtroEstadoOrden || undefined })
-    }).pipe(finalize(() => { this.cargando = false; this.cdr.detectChanges(); })).subscribe({
+    }).pipe(finalize(() => { this.cargando = false; this.cdr.detectChanges(); })).pipe(this.reads.reemplazar('control')).subscribe({
       next: response => {
         this.partidas = response.comparacion.data.partidas || [];
         this.totales = response.resumen.data.resumen;
@@ -173,7 +189,7 @@ export class ControlCostosComponent implements OnInit {
 
   filtrarCostos(): void {
     if (!this.lineaBase) return;
-    this.service.costos({ id_control_costo: this.lineaBase.id_control_costo, estado: this.filtroEstadoCosto || undefined }).subscribe({
+    this.service.costos({ id_control_costo: this.lineaBase.id_control_costo, estado: this.filtroEstadoCosto || undefined }).pipe(this.reads.reemplazar('costos')).subscribe({
       next: response => { this.costos = response.data || []; this.cdr.detectChanges(); },
       error: error => this.mostrarError(this.mensajeError(error, 'No se pudieron filtrar los costos.'))
     });
@@ -181,7 +197,7 @@ export class ControlCostosComponent implements OnInit {
 
   filtrarOrdenes(): void {
     if (!this.lineaBase) return;
-    this.service.ordenes({ id_control_costo: this.lineaBase.id_control_costo, estado: this.filtroEstadoOrden || undefined }).subscribe({
+    this.service.ordenes({ id_control_costo: this.lineaBase.id_control_costo, estado: this.filtroEstadoOrden || undefined }).pipe(this.reads.reemplazar('ordenes')).subscribe({
       next: response => { this.ordenes = response.data || []; this.cdr.detectChanges(); },
       error: error => this.mostrarError(this.mensajeError(error, 'No se pudieron filtrar las órdenes.'))
     });

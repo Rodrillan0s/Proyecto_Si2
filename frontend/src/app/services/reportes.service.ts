@@ -1,3 +1,4 @@
+import { LecturasCompartidas } from './lecturas';
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
@@ -99,6 +100,7 @@ export interface ReportDelivery {
 
 @Injectable({ providedIn: 'root' })
 export class ReportesService {
+  private shared = inject(LecturasCompartidas);
   private http = inject(HttpClient);
   private base = `${environment.apiUrl}/api/reportes`;
   private params(company: number | null) {
@@ -106,7 +108,7 @@ export class ReportesService {
   }
   catalog(company: number | null) {
     return firstValueFrom(
-      this.http.get<ReportCatalog>(`${this.base}/catalogo`, { params: this.params(company) }),
+      this.shared.obtener(`reportes-catalogo:${company ?? 'global'}`, () => this.http.get<ReportCatalog>(`${this.base}/catalogo`, { params: this.params(company) })),
     );
   }
   interpret(texto: string, company: number | null, conversacion?: string, usar_ia = false) {
@@ -122,12 +124,13 @@ export class ReportesService {
     texto: string,
     company: number | null,
     conversacion?: string,
-    solicitud?: ReportRequest,
+      solicitud?: ReportRequest,
+      idObraContexto?: number,
   ) {
     return firstValueFrom(
       this.http.post<AssistantResponse>(
         `${environment.apiUrl}/api/ai/consulta`,
-        { texto, conversacion, ...(solicitud ? { solicitud } : {}) },
+          { texto, conversacion, ...(solicitud ? { solicitud } : {}), ...(idObraContexto ? { id_obra_contexto: idObraContexto } : {}) },
         { params: this.params(company) },
       ),
     );

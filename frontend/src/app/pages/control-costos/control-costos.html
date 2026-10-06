@@ -10,6 +10,7 @@
     </div>
   </app-page-header>
 
+  <p *ngIf="!contextoCompatible" class="toast toast-error" role="status">Control de costos opera con la empresa de tu sesión. Selecciona esa empresa en la cabecera para continuar.</p>
   <div class="toast toast-success" *ngIf="exito" role="status">{{ exito }}</div>
   <div class="toast toast-error" *ngIf="error" role="alert">{{ error }}</div>
 
