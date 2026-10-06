@@ -1,3 +1,5 @@
+import { LecturasVigentes } from '../../services/lecturas';
+import { ContextoOperativo } from '../../services/contexto-operativo';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -13,16 +15,10 @@ import {
   UnidadDisponible,
   TipoCliente,
   TipoInteraccion,
-  EstadoAsociacionUnidad
+  EstadoAsociacionUnidad,
+  AsesorComercial
 } from '../../services/crm.service';
-import { AiService } from '../../services/ai.service';
-
-interface ChatMensaje {
-  emisor: 'usuario' | 'ia';
-  texto: string;
-  hora: string;
-  metricas?: any;
-}
+import { AsistenteService } from '../../services/asistente.service';
 
 @Component({
   selector: 'app-crm',
@@ -32,19 +28,26 @@ interface ChatMensaje {
   styleUrl: './crm.css'
 })
 export class CrmComponent implements OnInit {
+  private contexto = inject(ContextoOperativo);
   private crmService = inject(CrmService);
-  private aiService = inject(AiService);
+  readonly asistente = inject(AsistenteService);
   private auth = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
   private destroyRef = inject(DestroyRef);
+  private reads = new LecturasVigentes(this.destroyRef);
   private busqueda$ = new Subject<string>();
 
   // Pestaña activa
-  pestanaActiva: 'prospectos' | 'clientes' | 'asistente_ia' = 'prospectos';
+  pestanaActiva: 'prospectos' | 'clientes' = 'prospectos';
 
   // Métricas
   metricas: MetricasCRM | null = null;
   cargandoMetricas = false;
+
+  // Asesores comerciales de la empresa activa
+  asesores: AsesorComercial[] = [];
+  cargandoAsesores = false;
+  filtroAsesor: number | null = null;
 
   // Listado de clientes / prospectos
   clientes: ClienteCRM[] = [];
@@ -56,6 +59,23 @@ export class CrmComponent implements OnInit {
   limite = 15;
   total = 0;
   totalPaginas = 1;
+
+  // Etapas del pipeline comercial para visualización y avance
+  etapasPipeline = [
+    { clave: 'NUEVO', label: 'Nuevo', icono: '🎯' },
+    { clave: 'CONTACTADO', label: 'Contactado', icono: '📞' },
+    { clave: 'INTERESADO', label: 'Interesado', icono: '💡' },
+    { clave: 'NEGOCIACION', label: 'Negociación', icono: '💼' },
+    { clave: 'RESERVADO', label: 'Reservado', icono: '📑' },
+    { clave: 'VENDIDO', label: 'Vendido', icono: '🤝' },
+  ];
+
+  // Modal para avanzar de etapa con notas
+  mostrarModalCambiarEtapa = false;
+  clienteParaCambioEtapa: ClienteCRM | null = null;
+  etapaSeleccionada = '';
+  notaCambioEtapa = '';
+  guardandoCambioEtapa = false;
 
   // Detalle e Historial (HU81)
   clienteSeleccionado: ClienteCRM | null = null;
@@ -81,7 +101,8 @@ export class CrmComponent implements OnInit {
     estado: 'NUEVO',
     origen: 'DIRECTO',
     presupuesto_estimado: null,
-    notas: ''
+    notas: '',
+    id_usuario_asignado: null
   };
 
   // Formulario de Interacción (HU84)
@@ -91,11 +112,13 @@ export class CrmComponent implements OnInit {
     tipo: TipoInteraccion;
     asunto: string;
     detalle: string;
+    fecha_interaccion: string;
     fecha_proximo_contacto: string;
   } = {
     tipo: 'LLAMADA',
     asunto: '',
     detalle: '',
+    fecha_interaccion: '',
     fecha_proximo_contacto: ''
   };
 
@@ -116,25 +139,18 @@ export class CrmComponent implements OnInit {
     observaciones: ''
   };
 
-  // Asistente IA (Gemini)
-  mensajesChat: ChatMensaje[] = [];
-  preguntaIa = '';
-  consultandoIa = false;
-  sugerenciasIa: string[] = [
-    '¿Cuántos clientes potenciales tenemos registrados actualmente?',
-    '¿Cuántos prospectos se encuentran actualmente en negociación?',
-    '¿Cuáles son nuestros prospectos con mayor presupuesto?',
-    '¿Qué unidades inmobiliarias están reservadas o en negociación?',
-    '¿Cuál fue la última interacción comercial registrada?'
-  ];
-
   // Mensajes de estado
   mensajeExito = '';
   mensajeError = '';
 
   ngOnInit(): void {
-    this.cargarMetricas();
-    this.cargarLista();
+    this.contexto.proteger(() => this.mostrarModalFormulario || this.mostrarModalInteraccion || this.mostrarModalCambiarEtapa || this.mostrarModalAsociarUnidad, this.destroyRef);
+    this.contexto.protegerEscritura(() => this.guardandoFormulario || this.guardandoInteraccion || this.guardandoCambioEtapa || this.guardandoAsociacion, this.destroyRef);
+    this.contexto.empresa$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.mostrarModalFormulario = false; this.mostrarModalDetalle = false; this.mostrarModalInteraccion = false; this.mostrarModalCambiarEtapa = false; this.mostrarModalAsociarUnidad = false; this.clienteSeleccionado = null; this.unidadesDisponibles = [];
+      this.reads.cancelar(); this.clientes = []; this.pagina = 1; this.filtroAsesor = null;
+      this.cargarMetricas(); this.cargarAsesores(); this.cargarLista();
+    });
 
     // Suscripción reactiva para buscador con debounce
     this.busqueda$.pipe(
@@ -146,20 +162,30 @@ export class CrmComponent implements OnInit {
       this.cargarLista();
     });
 
-    // Cargar sugerencias de IA del backend
-    this.aiService.obtenerSugerencias().subscribe({
+
+  }
+
+  // ── Cargar Asesores Comerciales de la Empresa ─────────────────────────────
+  cargarAsesores() {
+    this.cargandoAsesores = true;
+    this.crmService.listarAsesores(this.auth.obtenerIdEmpresaActiva() || undefined).pipe(this.reads.reemplazar('asesores')).subscribe({
       next: (res) => {
-        if (res && res.sugerencias && res.sugerencias.length) {
-          this.sugerenciasIa = res.sugerencias;
-          this.cdr.detectChanges();
+        if (res && res.success) {
+          this.asesores = res.data || [];
         }
+        this.cargandoAsesores = false;
+        this.cdr.detectChanges();
       },
-      error: () => {}
+      error: () => {
+        this.cargandoAsesores = false;
+        this.cdr.detectChanges();
+      }
     });
   }
 
   // ── Navegación entre pestañas ─────────────────────────────────────────────
   cambiarPestana(p: 'prospectos' | 'clientes' | 'asistente_ia') {
+    if (p === 'asistente_ia') { this.asistente.open(); return; }
     this.pestanaActiva = p;
     this.limpiarMensajes();
     if (p === 'prospectos') {
@@ -172,12 +198,6 @@ export class CrmComponent implements OnInit {
       this.filtroEstado = '';
       this.pagina = 1;
       this.cargarLista();
-    } else if (p === 'asistente_ia' && this.mensajesChat.length === 0) {
-      this.mensajesChat.push({
-        emisor: 'ia',
-        texto: '¡Hola! Soy el Asistente Inteligente de OBRATEC CRM. Puedes preguntarme en lenguaje natural sobre prospectos, clientes comerciales, negociaciones o unidades asociadas.',
-        hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      });
     }
   }
 
@@ -188,7 +208,7 @@ export class CrmComponent implements OnInit {
 
   cargarMetricas() {
     this.cargandoMetricas = true;
-    this.crmService.obtenerMetricas().subscribe({
+    this.crmService.obtenerMetricas(this.auth.obtenerIdEmpresaActiva() || undefined).pipe(this.reads.reemplazar('metricas')).subscribe({
       next: (res) => {
         if (res && res.success) {
           this.metricas = res.data;
@@ -206,12 +226,14 @@ export class CrmComponent implements OnInit {
   cargarLista() {
     this.cargandoLista = true;
     this.crmService.listarClientes({
+      id_empresa: this.auth.obtenerIdEmpresaActiva() || undefined,
       tipo_cliente: this.filtroTipo,
       estado: this.filtroEstado || undefined,
       q: this.q.trim() || undefined,
+      id_usuario_asignado: this.filtroAsesor || undefined,
       page: this.pagina,
       limit: this.limite
-    }).subscribe({
+    }).pipe(this.reads.reemplazar('clientes')).subscribe({
       next: (res) => {
         if (res && res.success) {
           this.clientes = res.data || [];
@@ -235,6 +257,12 @@ export class CrmComponent implements OnInit {
     this.cargarLista();
   }
 
+  filtrarPorAsesor(idAsesor: any) {
+    this.filtroAsesor = idAsesor ? Number(idAsesor) : null;
+    this.pagina = 1;
+    this.cargarLista();
+  }
+
   // ── Detalle e Historial (HU81) ─────────────────────────────────────────────
   verDetalleCliente(c: ClienteCRM) {
     this.clienteSeleccionado = c;
@@ -243,7 +271,7 @@ export class CrmComponent implements OnInit {
     this.interacciones = [];
     this.unidadesAsociadas = [];
 
-    this.crmService.obtenerDetalleHistorial(c.id_cliente).subscribe({
+    this.crmService.obtenerDetalleHistorial(c.id_cliente, this.auth.obtenerIdEmpresaActiva() || undefined).pipe(this.reads.reemplazar('detalle')).subscribe({
       next: (res) => {
         if (res && res.success) {
           this.clienteSeleccionado = res.data.cliente;
@@ -282,7 +310,8 @@ export class CrmComponent implements OnInit {
       estado: tipo === 'PROSPECTO' ? 'NUEVO' : 'ACTIVO',
       origen: 'DIRECTO',
       presupuesto_estimado: null,
-      notas: ''
+      notas: '',
+      id_usuario_asignado: null
     };
     this.limpiarMensajes();
     this.mostrarModalFormulario = true;
@@ -303,7 +332,8 @@ export class CrmComponent implements OnInit {
       estado: c.estado,
       origen: c.origen || 'DIRECTO',
       presupuesto_estimado: c.presupuesto_estimado,
-      notas: c.notas || ''
+      notas: c.notas || '',
+      id_usuario_asignado: c.id_usuario_asignado || null
     };
     this.limpiarMensajes();
     this.mostrarModalFormulario = true;
@@ -319,7 +349,7 @@ export class CrmComponent implements OnInit {
     this.limpiarMensajes();
 
     if (this.modoEdicion && this.formCliente.id_cliente) {
-      this.crmService.actualizarCliente(this.formCliente.id_cliente, this.formCliente).subscribe({
+      this.crmService.actualizarCliente(this.formCliente.id_cliente, this.formCliente, this.auth.obtenerIdEmpresaActiva() || undefined).subscribe({
         next: (res) => {
           this.mostrarExito(res.message || 'Datos actualizados exitosamente.');
           this.guardandoFormulario = false;
@@ -337,7 +367,7 @@ export class CrmComponent implements OnInit {
         }
       });
     } else {
-      this.crmService.registrarCliente(this.formCliente).subscribe({
+      this.crmService.registrarCliente(this.formCliente, this.auth.obtenerIdEmpresaActiva() || undefined).subscribe({
         next: (res) => {
           this.mostrarExito(res.message || 'Registrado exitosamente.');
           this.guardandoFormulario = false;
@@ -354,20 +384,46 @@ export class CrmComponent implements OnInit {
     }
   }
 
-  // ── Clasificación / Conversión (HU83) ──────────────────────────────────────
-  cambiarEstadoProspecto(c: ClienteCRM, nuevoEstado: string) {
-    this.crmService.clasificarProspecto(c.id_cliente, nuevoEstado).subscribe({
+  // ── Avance del Pipeline y Gestión de Etapas (HU83) ─────────────────────────
+  abrirModalCambiarEtapa(c: ClienteCRM, nuevaEtapa: string) {
+    this.clienteParaCambioEtapa = c;
+    this.etapaSeleccionada = nuevaEtapa;
+    this.notaCambioEtapa = '';
+    this.mostrarModalCambiarEtapa = true;
+  }
+
+  cerrarModalCambiarEtapa() {
+    this.mostrarModalCambiarEtapa = false;
+    this.clienteParaCambioEtapa = null;
+    this.etapaSeleccionada = '';
+    this.notaCambioEtapa = '';
+  }
+
+  confirmarCambioEtapa() {
+    if (!this.clienteParaCambioEtapa || !this.etapaSeleccionada) return;
+
+    this.guardandoCambioEtapa = true;
+    this.crmService.clasificarProspecto(
+      this.clienteParaCambioEtapa.id_cliente,
+      this.etapaSeleccionada,
+      this.notaCambioEtapa.trim() || undefined,
+      this.auth.obtenerIdEmpresaActiva() || undefined
+    ).subscribe({
       next: (res) => {
-        this.mostrarExito(res.message || 'Clasificación actualizada.');
+        this.mostrarExito(res.message || 'Etapa comercial actualizada con éxito.');
+        this.guardandoCambioEtapa = false;
+        this.mostrarModalCambiarEtapa = false;
         this.cargarLista();
         this.cargarMetricas();
-        if (this.clienteSeleccionado && this.clienteSeleccionado.id_cliente === c.id_cliente) {
-          this.clienteSeleccionado.estado = res.estado;
-          this.clienteSeleccionado.tipo_cliente = res.tipo_cliente;
+        if (this.clienteSeleccionado && this.clienteSeleccionado.id_cliente === this.clienteParaCambioEtapa?.id_cliente) {
+          this.verDetalleCliente(this.clienteSeleccionado);
         }
+        this.clienteParaCambioEtapa = null;
       },
       error: (err) => {
-        this.mostrarError(err.error?.detail || 'Error al actualizar clasificación.');
+        this.mostrarError(err.error?.detail || 'Error al actualizar etapa comercial.');
+        this.guardandoCambioEtapa = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -379,6 +435,7 @@ export class CrmComponent implements OnInit {
       tipo: 'LLAMADA',
       asunto: '',
       detalle: '',
+      fecha_interaccion: new Date().toISOString().split('T')[0],
       fecha_proximo_contacto: ''
     };
     this.limpiarMensajes();
@@ -397,8 +454,9 @@ export class CrmComponent implements OnInit {
       tipo: this.formInteraccion.tipo,
       asunto: this.formInteraccion.asunto.trim(),
       detalle: this.formInteraccion.detalle.trim(),
+      fecha_interaccion: this.formInteraccion.fecha_interaccion || null,
       fecha_proximo_contacto: this.formInteraccion.fecha_proximo_contacto || null
-    }).subscribe({
+    }, this.auth.obtenerIdEmpresaActiva() || undefined).subscribe({
       next: (res) => {
         this.mostrarExito(res.message || 'Interacción registrada exitosamente.');
         this.guardandoInteraccion = false;
@@ -429,7 +487,7 @@ export class CrmComponent implements OnInit {
     this.limpiarMensajes();
     this.mostrarModalAsociarUnidad = true;
 
-    this.crmService.listarUnidadesDisponibles().subscribe({
+    this.crmService.listarUnidadesDisponibles(undefined, this.auth.obtenerIdEmpresaActiva() || undefined).pipe(this.reads.reemplazar('unidades')).subscribe({
       next: (res) => {
         if (res && res.success) {
           this.unidadesDisponibles = res.data || [];
@@ -453,7 +511,7 @@ export class CrmComponent implements OnInit {
     }
 
     this.guardandoAsociacion = true;
-    this.crmService.asociarUnidad(this.clienteSeleccionado.id_cliente, this.formAsociarUnidad).subscribe({
+    this.crmService.asociarUnidad(this.clienteSeleccionado.id_cliente, this.formAsociarUnidad, this.auth.obtenerIdEmpresaActiva() || undefined).subscribe({
       next: (res) => {
         this.mostrarExito(res.message || 'Unidad asociada exitosamente.');
         this.guardandoAsociacion = false;
@@ -472,11 +530,14 @@ export class CrmComponent implements OnInit {
   }
 
   actualizarEstadoAsociacion(asoc: UnidadAsociadaCRM, nuevoEstado: any) {
-    this.crmService.cambiarEstadoAsociacion(asoc.id_cliente_unidad, nuevoEstado).subscribe({
+    this.crmService.cambiarEstadoAsociacion(asoc.id_cliente_unidad, nuevoEstado, undefined, this.auth.obtenerIdEmpresaActiva() || undefined).subscribe({
       next: (res) => {
-        this.mostrarExito(res.message || 'Estado de la unidad actualizado.');
+        this.mostrarExito(res.message || `Estado de la unidad actualizado a ${nuevoEstado}.`);
         asoc.estado_asociacion = nuevoEstado as EstadoAsociacionUnidad;
         this.cargarMetricas();
+        if (this.clienteSeleccionado) {
+          this.verDetalleCliente(this.clienteSeleccionado);
+        }
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -485,47 +546,28 @@ export class CrmComponent implements OnInit {
     });
   }
 
-  // ── Asistente IA (Gemini) ────────────────────────────────────────────────
-  enviarPreguntaIa(texto?: string) {
-    const q = (texto || this.preguntaIa).trim();
-    if (!q || this.consultandoIa) return;
-
-    this.mensajesChat.push({
-      emisor: 'usuario',
-      texto: q,
-      hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    });
-    this.preguntaIa = '';
-    this.consultandoIa = true;
-    this.limpiarMensajes();
-
-    this.aiService.consultarCRM(q).subscribe({
-      next: (res) => {
-        if (res && res.success) {
-          this.mensajesChat.push({
-            emisor: 'ia',
-            texto: res.respuesta,
-            hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            metricas: res.metricas
-          });
-        }
-        this.consultandoIa = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        const errorMsg = err.error?.detail || 'No se pudo obtener respuesta del Asistente IA en este momento.';
-        this.mensajesChat.push({
-          emisor: 'ia',
-          texto: `⚠️ ${errorMsg}`,
-          hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        });
-        this.consultandoIa = false;
-        this.cdr.detectChanges();
-      }
-    });
+  // ── Helpers UI y Pipeline ────────────────────────────────────────────────
+  getIndiceEtapa(estado: string): number {
+    const orden = ['NUEVO', 'CONTACTADO', 'INTERESADO', 'NEGOCIACION', 'RESERVADO', 'VENDIDO'];
+    const norm = (estado === 'EN_NEGOCIACION' ? 'NEGOCIACION' : estado || '').toUpperCase();
+    return orden.indexOf(norm);
   }
 
-  // ── Helpers UI ────────────────────────────────────────────────────────────
+  getIconoInteraccion(tipo: string): string {
+    switch (tipo) {
+      case 'LLAMADA': return '📞';
+      case 'MENSAJE': return '💬';
+      case 'REUNION': return '👥';
+      case 'VISITA': return '🏡';
+      case 'CONSULTA': return '❓';
+      case 'SEGUIMIENTO': return '🔄';
+      case 'OBSERVACION': return '📝';
+      case 'CORREO': return '✉️';
+      case 'NOTA': return '📌';
+      default: return '📋';
+    }
+  }
+
   cambiarPagina(nueva: number) {
     if (nueva < 1 || nueva > this.totalPaginas) return;
     this.pagina = nueva;
@@ -552,23 +594,35 @@ export class CrmComponent implements OnInit {
   }
 
   getBadgeEstadoClass(estado: string): string {
-    switch (estado) {
-      case 'NUEVO': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800';
-      case 'CONTACTADO': return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800';
-      case 'INTERESADO': return 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800';
-      case 'EN_NEGOCIACION': return 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 border-orange-200 dark:border-orange-800 font-bold';
+    const norm = (estado || '').toUpperCase();
+    switch (norm) {
+      case 'NUEVO':
+        return 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800';
+      case 'CONTACTADO':
+        return 'bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800';
+      case 'INTERESADO':
+        return 'bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800';
+      case 'NEGOCIACION':
+      case 'EN_NEGOCIACION':
+        return 'bg-orange-100 dark:bg-orange-950/40 text-orange-800 dark:text-orange-300 border-orange-200 dark:border-orange-800 font-bold';
+      case 'RESERVADO':
+        return 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 font-bold';
+      case 'VENDIDO':
       case 'CONVERTIDO':
-      case 'ACTIVO': return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 font-bold';
+      case 'ACTIVO':
+        return 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 font-bold';
       case 'PERDIDO':
-      case 'INACTIVO': return 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700';
-      default: return 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300';
+      case 'INACTIVO':
+        return 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700';
+      default:
+        return 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300';
     }
   }
 
   getBadgeAsocClass(estado: string): string {
     switch (estado) {
       case 'INTERESADO': return 'bg-amber-100 text-amber-800 border-amber-200';
-      case 'RESERVADO': return 'bg-blue-100 text-blue-800 border-blue-200 font-bold';
+      case 'RESERVADO': return 'bg-indigo-100 text-indigo-800 border-indigo-200 font-bold';
       case 'VENDIDO': return 'bg-emerald-100 text-emerald-800 border-emerald-200 font-bold';
       case 'ENTREGADO': return 'bg-teal-100 text-teal-800 border-teal-200';
       case 'CANCELADO': return 'bg-red-100 text-red-800 border-red-200';

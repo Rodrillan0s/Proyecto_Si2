@@ -1,10 +1,11 @@
 <div class="view-panel space-y-6">
+  <p *ngIf="errorCarga" role="alert" class="text-red-600 dark:text-red-400 text-sm">{{ errorCarga }}</p>
 
   <!-- ========================================================================= -->
   <!-- CABECERA DEL PANEL (PAGE HEADER)                                         -->
   <!-- ========================================================================= -->
   <app-page-header
-    [titulo]="'Panel de Control — ' + (usuarioActual?.nombre_empresa || 'OBRATEC')"
+    [titulo]="'Panel de Control — ' + nombreEmpresaActual"
     [subtitulo]="'Vista consolidada de operaciones para ' + usuarioActual?.nombre_completo"
     [categoria]="rolUsuario"
     [codigo]="usuarioActual?.ci ? 'CI: ' + usuarioActual?.ci : undefined"
@@ -20,7 +21,7 @@
       <!-- Botón de acción contextual según permisos -->
       <button
         *ngIf="hasPermission('Registrar_obras')"
-        (click)="navegarA('/proyectos', { action: 'nuevo' })"
+        (click)="navegarA('/proyectos', { tab: 'nuevo' })"
         class="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition shadow-xs"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
@@ -763,6 +764,21 @@
     <!-- 6. DASHBOARD: OPERATIVO (ELECTRICO, PLOMERO, MAESTRO_ALBANIL, ALBANIL)-->
     <!-- --------------------------------------------------------------------- -->
     <ng-container *ngIf="['ELECTRICO', 'PLOMERO', 'MAESTRO_ALBANIL', 'ALBANIL'].includes(rolUsuario)">
+      <section class="rounded-xl border border-slate-200 dark:border-slate-700 p-5 mb-6">
+        <h2 class="text-lg font-semibold mb-3">Incidencias asignadas</h2>
+        <a routerLink="/incidencias/asignadas" class="inline-flex px-3 py-2 mb-3 rounded-lg bg-amber-600 text-white text-sm font-bold">Ver incidencias asignadas</a>
+        <p *ngIf="cargandoIncidencias">Cargando incidencias…</p>
+        <p *ngIf="errorIncidencias">{{ errorIncidencias }} <button (click)="cargarIncidenciasAsignadas(paginaIncidencias)">Reintentar</button></p>
+        <p *ngIf="!cargandoIncidencias && !errorIncidencias && !incidenciasAsignadas.length">No tienes incidencias asignadas actualmente.</p>
+        <ul *ngIf="!cargandoIncidencias">
+          <li *ngFor="let inc of incidenciasAsignadas" class="py-2">
+            <a [routerLink]="['/incidencias', inc.id_incidencia]">#{{ inc.id_incidencia }} · {{ inc.titulo }} · {{ inc.estado }}</a>
+          </li>
+        </ul>
+        <button *ngIf="paginaIncidencias > 1" [disabled]="cargandoIncidencias" (click)="cargarIncidenciasAsignadas(paginaIncidencias - 1)">Anterior</button>
+        <button *ngIf="paginaIncidencias < totalPaginasIncidencias" [disabled]="cargandoIncidencias" (click)="cargarIncidenciasAsignadas(paginaIncidencias + 1)">Siguiente</button>
+      </section>
+
       <!-- Tarjetas Operativas -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <app-dashboard-card

@@ -14,6 +14,7 @@ export interface OrdenTrabajo {
   tipo_trab?: string;
   cuadrilla?: number;
   estado?: string;
+  afectada_por_incidencia?: boolean;
   fecha_inicio?: string;
   fecha_fin?: string;
   observacion?: string;
@@ -94,8 +95,8 @@ export class OrdenesTrabajoService {
     );
   }
 
-  obtenerOrdenTrabajo(orden_nro: number): Observable<OrdenTrabajo> {
-    return this.http.get<OrdenTrabajo>(
+  obtenerOrdenTrabajo(orden_nro: number): Observable<{ success: boolean; data: OrdenTrabajo }> {
+    return this.http.get<{ success: boolean; data: OrdenTrabajo }>(
       `${this.apiUrl}/api/ordenes-trabajo/${orden_nro}`,
       {
         headers: this.getHeaders()

@@ -1,3 +1,4 @@
+import { LecturasCompartidas } from './lecturas';
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -11,57 +12,9 @@ export interface ResponsableObra {
   fecha_asignacion?: string;
 }
 
-export interface RequisitosEstimacion {
-  tipo_obra: string;
-  superficie_m2: number;
-  niveles: number;
-  tipo_terreno: string;
-  complejidad: string;
-  ubicacion?: string;
-  caracteristicas_generales?: string;
-  moneda?: string;
-}
-
-export interface CalculoEstimacion {
-  tipo_obra: string;
-  codigo_tipo_obra: string;
-  superficie_m2: number;
-  niveles: number;
-  clave_niveles: string;
-  tipo_terreno: string;
-  codigo_tipo_terreno: string;
-  complejidad: string;
-  codigo_complejidad: string;
-  ubicacion?: string;
-  caracteristicas_generales?: string;
-  costo_referencial_m2: number;
-  factor_niveles: number;
-  factor_terreno: number;
-  factor_complejidad: number;
-  factor_combinado: number;
-  costo_base: number;
-  monto_estimado: number;
-  moneda: string;
-}
-
-export interface EstimacionObra {
-  id_estimacion: number;
-  id_obra: number;
-  tipo_obra: string;
-  superficie_m2: number;
-  niveles: number;
-  tipo_terreno: string;
-  complejidad: string;
-  ubicacion?: string;
-  caracteristicas_generales?: string;
-  costo_referencial_m2: number;
-  factor_niveles: number;
-  factor_terreno: number;
-  factor_complejidad: number;
-  costo_base: number;
-  monto_estimado: number;
-  moneda: string;
-  fecha_estimacion?: string;
+export interface PersonalObra extends ResponsableObra {
+  nombre_rol: string;
+  estado: string;
 }
 
 export interface Proyecto {
@@ -93,8 +46,6 @@ export interface Proyecto {
   descripcion_cliente?: string;
   observacion?: string;
   responsables?: ResponsableObra[];
-  estimacion?: EstimacionObra | CalculoEstimacion;
-  requisitos_estimacion?: RequisitosEstimacion;
 }
 
 export interface TipoProyecto {
@@ -121,15 +72,13 @@ export interface ApiResponseSimple {
   success: boolean;
   message: string;
   id_obra?: number;
-  id_estimacion?: number;
-  estimacion?: CalculoEstimacion;
 }
-
 
 @Injectable({
   providedIn: 'root'
 })
 export class ProyectosService {
+  private shared = inject(LecturasCompartidas);
   private http = inject(HttpClient);
   private authService = inject(AuthService);
   private apiUrl = environment.apiUrl;
@@ -140,7 +89,7 @@ export class ProyectosService {
   }
 
   listarProyectos(): Observable<ApiResponseList> {
-    return this.http.get<ApiResponseList>(`${this.apiUrl}/api/proyectos/`, { headers: this.getHeaders() });
+    return this.shared.obtener('obras', () => this.http.get<ApiResponseList>(`${this.apiUrl}/api/proyectos/`, { headers: this.getHeaders() }));
   }
 
   obtenerSiguienteCodigo(): Observable<{ success: boolean; codigo: string }> {
@@ -148,7 +97,7 @@ export class ProyectosService {
   }
 
   obtenerTiposProyecto(): Observable<ApiResponseTipos> {
-    return this.http.get<ApiResponseTipos>(`${this.apiUrl}/api/proyectos/tipos`, { headers: this.getHeaders() });
+    return this.shared.obtener('tipos', () => this.http.get<ApiResponseTipos>(`${this.apiUrl}/api/proyectos/tipos`, { headers: this.getHeaders() }));
   }
 
   obtenerProyectoDetalle(id: number): Observable<ApiResponseDetail> {
@@ -179,31 +128,28 @@ export class ProyectosService {
     );
   }
 
+  listarPersonal(idObra: number): Observable<{ success: boolean; data: PersonalObra[] }> {
+    return this.http.get<{ success: boolean; data: PersonalObra[] }>(
+      `${this.apiUrl}/api/proyectos/${idObra}/personal`, { headers: this.getHeaders() }
+    );
+  }
+
+  candidatosPersonal(idObra: number): Observable<{ success: boolean; data: PersonalObra[] }> {
+    return this.http.get<{ success: boolean; data: PersonalObra[] }>(
+      `${this.apiUrl}/api/proyectos/${idObra}/personal/candidatos`, { headers: this.getHeaders() }
+    );
+  }
+
+  asignarPersonal(idObra: number, idUsuario: number): Observable<ApiResponseSimple> {
+    return this.http.post<ApiResponseSimple>(
+      `${this.apiUrl}/api/proyectos/${idObra}/personal`,
+      { id_usuario: idUsuario }, { headers: this.getHeaders() }
+    );
+  }
+
   retirarResponsable(idObra: number, idUsuario: number): Observable<ApiResponseSimple> {
     return this.http.delete<ApiResponseSimple>(
       `${this.apiUrl}/api/proyectos/${idObra}/responsables/${idUsuario}`,
-      { headers: this.getHeaders() }
-    );
-  }
-
-  obtenerParametrosEstimacion(): Observable<{ success: boolean; data: any }> {
-    return this.http.get<{ success: boolean; data: any }>(
-      `${this.apiUrl}/api/proyectos/estimacion/parametros`,
-      { headers: this.getHeaders() }
-    );
-  }
-
-  calcularPreviewEstimacion(requisitos: RequisitosEstimacion): Observable<{ success: boolean; data: CalculoEstimacion }> {
-    return this.http.post<{ success: boolean; data: CalculoEstimacion }>(
-      `${this.apiUrl}/api/proyectos/estimar-preview`,
-      requisitos,
-      { headers: this.getHeaders() }
-    );
-  }
-
-  obtenerEstimacionObra(idObra: number): Observable<{ success: boolean; data: EstimacionObra }> {
-    return this.http.get<{ success: boolean; data: EstimacionObra }>(
-      `${this.apiUrl}/api/proyectos/${idObra}/estimacion`,
       { headers: this.getHeaders() }
     );
   }

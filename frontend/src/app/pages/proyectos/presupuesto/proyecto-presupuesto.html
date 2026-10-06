@@ -198,7 +198,19 @@
 
     <!-- DESGLOSE DE RECURSOS CON BARRAS DE PORCENTAJE -->
     <div class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
-      <h4 class="text-xs font-black uppercase text-gray-500 dark:text-gray-400 tracking-wider">Desglose Consolidado por Tipo de Recurso</h4>
+      <div class="flex justify-between items-center">
+        <div>
+          <h4 class="text-xs font-black uppercase text-gray-500 dark:text-gray-400 tracking-wider">Costo Directo por Categoría de Recurso</h4>
+          <p class="text-xs text-gray-400 mt-0.5">Suma de costos de insumos derivados del análisis de precios unitarios.</p>
+        </div>
+        <div class="text-right">
+          <span class="text-xs font-bold text-gray-500">Costo Directo Total:</span>
+          <span class="text-sm font-mono font-bold text-orange-600 dark:text-orange-400 ml-1">
+            {{ (consolidado!.totales_costo_directo?.total_directo || consolidado!.total_presupuesto) | number:'1.2-2' }} Bs.
+          </span>
+        </div>
+      </div>
+
       <div class="space-y-3">
         <div *ngFor="let r of consolidado?.desglose_recursos" class="space-y-1">
           <div class="flex justify-between text-xs font-bold">
@@ -210,6 +222,146 @@
           <div class="w-full bg-gray-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
             <div class="h-2.5 rounded-full" [ngClass]="r.tipo_recurso === 'MATERIAL' ? 'bg-blue-600' : r.tipo_recurso === 'MANO_OBRA' ? 'bg-amber-600' : r.tipo_recurso === 'EQUIPO' ? 'bg-orange-600' : 'bg-slate-500'" [style.width.%]="r.porcentaje"></div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN EXPLOSIÓN DE INSUMOS (CU16 REGLA 9) -->
+    <div class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-gray-100 dark:border-slate-800 pb-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-base">💥</span>
+            <h4 class="text-sm font-bold text-gray-900 dark:text-white">Explosión de Insumos del Proyecto</h4>
+            <span class="text-[10px] font-bold bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300 px-2 py-0.5 rounded-full">Calculado: Obra × Rendimientos</span>
+          </div>
+          <p class="text-xs text-gray-500 mt-0.5">
+            Consumo total proyectado de materiales, horas de mano de obra y maquinaria para la ejecución completa de la obra.
+          </p>
+        </div>
+
+        <!-- SELECTORES DE TIPO DE INSUMO -->
+        <div class="flex items-center gap-1 bg-gray-100 dark:bg-slate-800 p-1 rounded-xl text-xs font-bold">
+          <button type="button" class="px-3 py-1.5 rounded-lg transition-all" [class.bg-white]="subTabExplosion === 'materiales'" [class.dark:bg-slate-700]="subTabExplosion === 'materiales'" [class.shadow-sm]="subTabExplosion === 'materiales'" [class.text-orange-600]="subTabExplosion === 'materiales'" (click)="subTabExplosion = 'materiales'">
+            📦 Materiales ({{ consolidado?.explosion_insumos?.materiales?.length || 0 }})
+          </button>
+          <button type="button" class="px-3 py-1.5 rounded-lg transition-all" [class.bg-white]="subTabExplosion === 'mano_obra'" [class.dark:bg-slate-700]="subTabExplosion === 'mano_obra'" [class.shadow-sm]="subTabExplosion === 'mano_obra'" [class.text-orange-600]="subTabExplosion === 'mano_obra'" (click)="subTabExplosion = 'mano_obra'">
+            👷 Mano de Obra ({{ consolidado?.explosion_insumos?.mano_obra?.length || 0 }})
+          </button>
+          <button type="button" class="px-3 py-1.5 rounded-lg transition-all" [class.bg-white]="subTabExplosion === 'equipos'" [class.dark:bg-slate-700]="subTabExplosion === 'equipos'" [class.shadow-sm]="subTabExplosion === 'equipos'" [class.text-orange-600]="subTabExplosion === 'equipos'" (click)="subTabExplosion = 'equipos'">
+            🚜 Equipos ({{ consolidado?.explosion_insumos?.equipos?.length || 0 }})
+          </button>
+        </div>
+      </div>
+
+      <!-- TABLA 1: MATERIALES REQUERIDOS -->
+      <div *ngIf="subTabExplosion === 'materiales'">
+        <div *ngIf="!consolidado?.explosion_insumos?.materiales || consolidado?.explosion_insumos?.materiales?.length === 0" class="text-center py-6 text-xs text-gray-400">
+          No hay materiales vinculados a través de los APU de las partidas.
+        </div>
+        <div *ngIf="consolidado?.explosion_insumos?.materiales && (consolidado?.explosion_insumos?.materiales?.length || 0) > 0" class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-gray-100 dark:border-slate-800 text-gray-500">
+                <th class="p-2.5">Insumo / Material</th>
+                <th class="p-2.5 text-center">Unidad</th>
+                <th class="p-2.5 text-right">Cantidad Total Necesaria</th>
+                <th class="p-2.5 text-right">Precio Unit. Prom. (Bs.)</th>
+                <th class="p-2.5 text-right">Subtotal Requerido (Bs.)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let m of consolidado?.explosion_insumos?.materiales" class="border-b border-gray-50 dark:border-slate-800/60 hover:bg-gray-50/50">
+                <td class="p-2.5 font-semibold text-gray-900 dark:text-white">{{ m.descripcion }}</td>
+                <td class="p-2.5 text-center text-gray-500 font-mono">{{ m.unidad }}</td>
+                <td class="p-2.5 text-right font-mono font-bold">{{ m.cantidad_total | number:'1.2-2' }}</td>
+                <td class="p-2.5 text-right font-mono text-gray-600 dark:text-gray-400">{{ m.precio_unitario | number:'1.2-2' }}</td>
+                <td class="p-2.5 text-right font-mono font-bold text-orange-600 dark:text-orange-400">{{ m.subtotal_total | number:'1.2-2' }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="font-bold bg-gray-50/80 dark:bg-slate-800/60">
+                <td colspan="4" class="p-2.5 text-right text-gray-700 dark:text-gray-300">TOTAL DIRECTO MATERIALES:</td>
+                <td class="p-2.5 text-right font-mono text-sm text-orange-600 dark:text-orange-400">
+                  {{ (consolidado?.totales_costo_directo?.materiales || 0) | number:'1.2-2' }} Bs.
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- TABLA 2: MANO DE OBRA REQUERIDA -->
+      <div *ngIf="subTabExplosion === 'mano_obra'">
+        <div *ngIf="!consolidado?.explosion_insumos?.mano_obra || consolidado?.explosion_insumos?.mano_obra?.length === 0" class="text-center py-6 text-xs text-gray-400">
+          No hay mano de obra vinculada a través de los APU de las partidas.
+        </div>
+        <div *ngIf="consolidado?.explosion_insumos?.mano_obra && (consolidado?.explosion_insumos?.mano_obra?.length || 0) > 0" class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-gray-100 dark:border-slate-800 text-gray-500">
+                <th class="p-2.5">Especialidad / Cuadrilla</th>
+                <th class="p-2.5 text-center">Unidad</th>
+                <th class="p-2.5 text-right">Horas / Días Totales</th>
+                <th class="p-2.5 text-right">Tarifa por Hora/Día (Bs.)</th>
+                <th class="p-2.5 text-right">Subtotal Requerido (Bs.)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let mo of consolidado?.explosion_insumos?.mano_obra" class="border-b border-gray-50 dark:border-slate-800/60 hover:bg-gray-50/50">
+                <td class="p-2.5 font-semibold text-gray-900 dark:text-white">{{ mo.descripcion }}</td>
+                <td class="p-2.5 text-center text-gray-500 font-mono">{{ mo.unidad }}</td>
+                <td class="p-2.5 text-right font-mono font-bold">{{ mo.cantidad_total | number:'1.2-2' }}</td>
+                <td class="p-2.5 text-right font-mono text-gray-600 dark:text-gray-400">{{ mo.precio_unitario | number:'1.2-2' }}</td>
+                <td class="p-2.5 text-right font-mono font-bold text-amber-600 dark:text-amber-400">{{ mo.subtotal_total | number:'1.2-2' }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="font-bold bg-gray-50/80 dark:bg-slate-800/60">
+                <td colspan="4" class="p-2.5 text-right text-gray-700 dark:text-gray-300">TOTAL DIRECTO MANO DE OBRA:</td>
+                <td class="p-2.5 text-right font-mono text-sm text-amber-600 dark:text-amber-400">
+                  {{ (consolidado?.totales_costo_directo?.mano_obra || 0) | number:'1.2-2' }} Bs.
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- TABLA 3: EQUIPOS Y MAQUINARIA REQUERIDA -->
+      <div *ngIf="subTabExplosion === 'equipos'">
+        <div *ngIf="!consolidado?.explosion_insumos?.equipos || consolidado?.explosion_insumos?.equipos?.length === 0" class="text-center py-6 text-xs text-gray-400">
+          No hay equipos ni maquinaria vinculados a través de los APU de las partidas.
+        </div>
+        <div *ngIf="consolidado?.explosion_insumos?.equipos && (consolidado?.explosion_insumos?.equipos?.length || 0) > 0" class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-gray-100 dark:border-slate-800 text-gray-500">
+                <th class="p-2.5">Equipo / Maquinaria</th>
+                <th class="p-2.5 text-center">Unidad</th>
+                <th class="p-2.5 text-right">Horas de Uso Totales</th>
+                <th class="p-2.5 text-right">Tarifa por Hora (Bs.)</th>
+                <th class="p-2.5 text-right">Subtotal Requerido (Bs.)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let eq of consolidado?.explosion_insumos?.equipos" class="border-b border-gray-50 dark:border-slate-800/60 hover:bg-gray-50/50">
+                <td class="p-2.5 font-semibold text-gray-900 dark:text-white">{{ eq.descripcion }}</td>
+                <td class="p-2.5 text-center text-gray-500 font-mono">{{ eq.unidad }}</td>
+                <td class="p-2.5 text-right font-mono font-bold">{{ eq.cantidad_total | number:'1.2-2' }}</td>
+                <td class="p-2.5 text-right font-mono text-gray-600 dark:text-gray-400">{{ eq.precio_unitario | number:'1.2-2' }}</td>
+                <td class="p-2.5 text-right font-mono font-bold text-orange-600 dark:text-orange-400">{{ eq.subtotal_total | number:'1.2-2' }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="font-bold bg-gray-50/80 dark:bg-slate-800/60">
+                <td colspan="4" class="p-2.5 text-right text-gray-700 dark:text-gray-300">TOTAL DIRECTO EQUIPOS:</td>
+                <td class="p-2.5 text-right font-mono text-sm text-orange-600 dark:text-orange-400">
+                  {{ (consolidado?.totales_costo_directo?.equipos || 0) | number:'1.2-2' }} Bs.
+                </td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
       </div>
     </div>
@@ -291,47 +443,97 @@
   </div>
 
   <!-- ───────────────────────────────────────────────────────────────────────────── -->
-  <!-- VISTA 4: BIBLIOTECA DE APU CORPORATIVO (HU55) -->
+  <!-- VISTA 4: BIBLIOTECA DE APU CORPORATIVO (HU55 & CU16 REGLAS 1, 3, 4, 5, 7) -->
   <!-- ───────────────────────────────────────────────────────────────────────────── -->
   <div *ngIf="!cargando && vistaActiva === 'apus'" class="space-y-4">
     <div class="flex justify-between items-center">
       <div>
         <h3 class="text-base font-bold text-gray-900 dark:text-white">Biblioteca Corporativa de APU</h3>
-        <p class="text-xs text-gray-500">Recetas analíticas reutilizables con insumos del catálogo CU14.</p>
+        <p class="text-xs text-gray-500">Recetas analíticas por unidad de actividad compuestas de Materiales, Mano de Obra y Equipos.</p>
       </div>
       <button (click)="abrirNuevoApu()" class="btn-primary text-xs">
-        <span>＋</span> Nuevo APU
+        <span>＋</span> Nuevo APU (Wizard)
       </button>
     </div>
 
+    <!-- TARJETAS DE APU -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <div *ngFor="let a of apus" (click)="abrirDetalleApu(a)" class="apu-card" [class.selected]="apuSeleccionadoDetalle?.id_apu === a.id_apu">
         <div class="flex justify-between items-start">
-          <span class="font-mono text-xs font-bold text-orange-600">{{ a.codigo }}</span>
-          <span class="text-xs font-bold text-gray-900 dark:text-white">{{ a.costo_unitario_total | number:'1.2-2' }} Bs./{{ a.unidad_medida_abrev }}</span>
+          <div class="flex items-center gap-1.5">
+            <span class="font-mono text-xs font-bold text-orange-600">{{ a.codigo }}</span>
+            <span class="text-[10px] font-bold bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-300 px-1.5 py-0.5 rounded">v{{ a.version }}</span>
+          </div>
+          <span class="text-xs font-bold text-gray-900 dark:text-white">{{ (a.costo_directo || a.costo_unitario_total) | number:'1.2-2' }} Bs./{{ a.unidad_medida_abrev }}</span>
         </div>
-        <h4 class="font-bold text-sm text-gray-900 dark:text-white mt-1">{{ a.nombre }}</h4>
-        <p class="text-xs text-gray-500 line-clamp-2 mt-1">{{ a.descripcion || 'Sin descripción' }}</p>
+        <h4 class="font-bold text-sm text-gray-900 dark:text-white mt-1.5">{{ a.nombre }}</h4>
+        <p class="text-xs text-gray-500 line-clamp-2 mt-0.5">{{ a.descripcion || 'Sin descripción' }}</p>
+
+        <div class="grid grid-cols-3 gap-1 text-[10px] pt-2 mt-2 border-t border-gray-100 dark:border-slate-800 font-mono">
+          <div class="text-blue-600">Mat: {{ a.costo_materiales | number:'1.2-2' }}</div>
+          <div class="text-amber-600">MO: {{ a.costo_mano_obra | number:'1.2-2' }}</div>
+          <div class="text-orange-600">Eq: {{ a.costo_equipos | number:'1.2-2' }}</div>
+        </div>
       </div>
     </div>
 
     <!-- DETALLE DEL APU SELECCIONADO Y SUS COMPONENTES -->
     <div *ngIf="apuSeleccionadoDetalle" class="bg-white dark:bg-slate-900 border border-orange-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm space-y-4">
-      <div class="flex justify-between items-center border-b border-gray-100 dark:border-slate-800 pb-3">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-gray-100 dark:border-slate-800 pb-3">
         <div>
-          <span class="text-xs font-mono font-bold text-orange-600">{{ apuSeleccionadoDetalle.codigo }}</span>
-          <h4 class="text-base font-bold text-gray-900 dark:text-white">{{ apuSeleccionadoDetalle.nombre }}</h4>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-mono font-bold text-orange-600">{{ apuSeleccionadoDetalle.codigo }}</span>
+            <span class="text-[10px] font-bold bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300 px-2 py-0.5 rounded">Versión {{ apuSeleccionadoDetalle.version }}</span>
+            <span *ngIf="apuSeleccionadoDetalle.en_uso" class="text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 px-2 py-0.5 rounded">
+              🔒 En uso en presupuestos (Versionado activo)
+            </span>
+          </div>
+          <h4 class="text-base font-bold text-gray-900 dark:text-white mt-1">{{ apuSeleccionadoDetalle.nombre }}</h4>
+          <p class="text-xs text-gray-500">{{ apuSeleccionadoDetalle.descripcion || 'Sin descripción' }}</p>
         </div>
+
         <div class="text-right">
-          <span class="text-xs text-gray-400 uppercase font-semibold">Costo Unitario Total</span>
-          <div class="text-lg font-bold text-orange-600">{{ apuSeleccionadoDetalle.costo_unitario_total | number:'1.2-2' }} Bs.</div>
+          <span class="text-[11px] text-gray-400 uppercase font-semibold">Costo Directo Unitario</span>
+          <div class="text-xl font-bold font-mono text-orange-600">
+            {{ (apuSeleccionadoDetalle.costo_directo || apuSeleccionadoDetalle.costo_unitario_total) | number:'1.2-2' }} Bs. / {{ apuSeleccionadoDetalle.unidad_medida_abrev }}
+          </div>
         </div>
       </div>
 
-      <!-- FORMULARIO AGREGAR COMPONENTE -->
-      <div class="grid grid-cols-1 sm:grid-cols-5 gap-2 items-end bg-gray-50 dark:bg-slate-800/40 p-3 rounded-xl">
+      <!-- AVISO DE VERSIONADO SI ESTÁ EN USO -->
+      <div *ngIf="apuSeleccionadoDetalle.en_uso" class="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded-xl text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2">
+        <span>⚠️</span>
         <div>
-          <label class="text-[10px] font-bold uppercase text-gray-500">Tipo</label>
+          <strong>APU en uso en partidas históricas:</strong> Cualquier modificación o agregado de insumos generará automáticamente una nueva versión (v{{ apuSeleccionadoDetalle.version + 1 }}). Los presupuestos y partidas existentes conservarán el snapshot y la versión histórica con la que fueron aprobados.
+        </div>
+      </div>
+
+      <!-- DESGLOSE DE COSTO DIRECTO DEL APU -->
+      <div class="grid grid-cols-3 gap-2">
+        <div class="p-2.5 rounded-xl bg-blue-50/60 dark:bg-slate-800/60 border border-blue-100 dark:border-slate-700">
+          <span class="text-[10px] font-bold uppercase text-blue-800 dark:text-blue-300">Materiales</span>
+          <div class="font-mono font-bold text-sm text-blue-600 mt-0.5">
+            {{ apuSeleccionadoDetalle.costo_materiales | number:'1.2-2' }} Bs.
+          </div>
+        </div>
+        <div class="p-2.5 rounded-xl bg-amber-50/60 dark:bg-slate-800/60 border border-amber-100 dark:border-slate-700">
+          <span class="text-[10px] font-bold uppercase text-amber-800 dark:text-amber-300">Mano de Obra</span>
+          <div class="font-mono font-bold text-sm text-amber-600 mt-0.5">
+            {{ apuSeleccionadoDetalle.costo_mano_obra | number:'1.2-2' }} Bs.
+          </div>
+        </div>
+        <div class="p-2.5 rounded-xl bg-orange-50/60 dark:bg-slate-800/60 border border-orange-100 dark:border-slate-700">
+          <span class="text-[10px] font-bold uppercase text-orange-800 dark:text-orange-300">Equipos y Maquinaria</span>
+          <div class="font-mono font-bold text-sm text-orange-600 mt-0.5">
+            {{ apuSeleccionadoDetalle.costo_equipos | number:'1.2-2' }} Bs.
+          </div>
+        </div>
+      </div>
+
+      <!-- FORMULARIO AGREGAR COMPONENTE AL APU -->
+      <div class="grid grid-cols-1 sm:grid-cols-6 gap-2 items-end bg-gray-50 dark:bg-slate-800/40 p-3 rounded-xl border border-gray-100 dark:border-slate-800">
+        <div>
+          <label class="text-[10px] font-bold uppercase text-gray-500">Tipo Recurso</label>
           <select [(ngModel)]="formComponenteApu.tipo_recurso" class="form-input text-xs">
             <option value="MATERIAL">Material</option>
             <option value="MANO_OBRA">Mano de Obra</option>
@@ -339,21 +541,27 @@
           </select>
         </div>
         <div class="sm:col-span-2">
-          <label class="text-[10px] font-bold uppercase text-gray-500">Recurso / Insumo</label>
-          <input type="text" [(ngModel)]="formComponenteApu.descripcion_recurso" placeholder="Ej: Cemento Portland, Fierro..." class="form-input text-xs">
+          <label class="text-[10px] font-bold uppercase text-gray-500">Descripción Recurso *</label>
+          <input type="text" [(ngModel)]="formComponenteApu.descripcion_recurso" placeholder="Ej: Fierro corrugado, Albañil..." class="form-input text-xs">
         </div>
         <div>
           <label class="text-[10px] font-bold uppercase text-gray-500">Unidad</label>
           <select [(ngModel)]="formComponenteApu.id_unidad_medida" class="form-input text-xs">
-            <option *ngFor="let u of unidades" [value]="u.id_unidad_medida">{{ u.nombre }} ({{ u.abreviatura }})</option>
+            <option *ngFor="let u of unidades" [value]="u.id_unidad_medida">{{ u.abreviatura }}</option>
           </select>
         </div>
         <div>
-          <label class="text-[10px] font-bold uppercase text-gray-500">P. Unitario (Bs.)</label>
-          <input type="number" step="0.01" [(ngModel)]="formComponenteApu.precio_unitario" class="form-input text-xs">
+          <label class="text-[10px] font-bold uppercase text-orange-600">Rendimiento *</label>
+          <input type="number" step="0.0001" min="0.0001" [(ngModel)]="formComponenteApu.rendimiento" class="form-input text-xs font-mono">
         </div>
-        <div class="sm:col-span-5 flex justify-end">
-          <button (click)="agregarComponente()" class="btn-primary text-xs">＋ Agregar Componente</button>
+        <div>
+          <label class="text-[10px] font-bold uppercase text-gray-500">Precio (Bs.)</label>
+          <input type="number" step="0.01" [(ngModel)]="formComponenteApu.precio_unitario" class="form-input text-xs font-mono">
+        </div>
+        <div class="sm:col-span-6 flex justify-end pt-1">
+          <button (click)="agregarComponente()" [disabled]="guardando" class="btn-primary text-xs">
+            {{ guardando ? 'Guardando...' : '＋ Agregar Recurso al APU' }}
+          </button>
         </div>
       </div>
 
@@ -362,8 +570,8 @@
         <thead>
           <tr class="border-b border-gray-100 dark:border-slate-800 text-gray-400">
             <th class="p-2">Tipo</th>
-            <th class="p-2">Recurso</th>
-            <th class="p-2 text-right">Cantidad</th>
+            <th class="p-2">Recurso / Insumo</th>
+            <th class="p-2 text-right">Rendimiento</th>
             <th class="p-2 text-right">Precio Unitario</th>
             <th class="p-2 text-right">Subtotal</th>
             <th class="p-2 text-right">Acción</th>
@@ -371,11 +579,15 @@
         </thead>
         <tbody>
           <tr *ngFor="let c of apuSeleccionadoDetalle.componentes" class="border-b border-gray-100 dark:border-slate-800">
-            <td class="p-2 font-bold">{{ c.tipo_recurso }}</td>
-            <td class="p-2">{{ c.descripcion_recurso }}</td>
-            <td class="p-2 text-right font-mono">{{ c.cantidad }}</td>
+            <td class="p-2 font-bold">
+              <span [ngClass]="c.tipo_recurso === 'MATERIAL' ? 'text-blue-600' : c.tipo_recurso === 'MANO_OBRA' ? 'text-amber-600' : 'text-orange-600'">
+                {{ c.tipo_recurso }}
+              </span>
+            </td>
+            <td class="p-2 font-semibold">{{ c.descripcion_recurso }}</td>
+            <td class="p-2 text-right font-mono font-bold">{{ c.rendimiento || c.cantidad | number:'1.2-4' }}</td>
             <td class="p-2 text-right font-mono">{{ c.precio_unitario | number:'1.2-2' }}</td>
-            <td class="p-2 text-right font-mono font-bold">{{ c.subtotal | number:'1.2-2' }}</td>
+            <td class="p-2 text-right font-mono font-bold text-orange-600">{{ c.subtotal | number:'1.2-2' }}</td>
             <td class="p-2 text-right">
               <button (click)="eliminarComponente(c)" class="text-red-500 hover:text-red-700">✕</button>
             </td>
@@ -386,54 +598,88 @@
   </div>
 
   <!-- ───────────────────────────────────────────────────────────────────────────── -->
-  <!-- MODAL: REGISTRAR PARTIDA -->
+  <!-- MODAL: REGISTRAR PARTIDA (CU16 REGLAS 1, 2, 6, 8) -->
   <!-- ───────────────────────────────────────────────────────────────────────────── -->
   <div *ngIf="modalPartidaAbierto" class="modal-backdrop" (click)="modalPartidaAbierto = false">
     <div class="modal-box" (click)="$event.stopPropagation()">
       <div class="flex justify-between items-center border-b pb-3">
-        <h3 class="font-bold text-sm">Nueva Partida Presupuestaria</h3>
-        <button (click)="modalPartidaAbierto = false" class="text-gray-400 hover:text-gray-600">✕</button>
-      </div>
-      <div class="space-y-3 pt-3">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-xs font-bold text-gray-500">Código *</label>
-            <input type="text" [(ngModel)]="formPartida.codigo" placeholder="Ej: EST-01" class="form-input text-xs">
-          </div>
-          <div>
-            <label class="text-xs font-bold text-gray-500">Nombre *</label>
-            <input type="text" [(ngModel)]="formPartida.nombre" placeholder="Ej: Hormigón Columnas" class="form-input text-xs">
-          </div>
-        </div>
-
         <div>
-          <label class="text-xs font-bold text-gray-500">Vincular APU (Opcional - Snapshot)</label>
-          <select [(ngModel)]="formPartida.id_apu" (ngModelChange)="alSeleccionarApuEnPartida($event)" class="form-input text-xs">
-            <option [ngValue]="null">Sin APU directo (Costo manual)</option>
-            <option *ngFor="let a of apus" [value]="a.id_apu">{{ a.codigo }} - {{ a.nombre }} ({{ a.costo_unitario_total }} Bs.)</option>
-          </select>
+          <h3 class="font-bold text-base text-gray-900 dark:text-white">Nueva Partida Presupuestaria</h3>
+          <p class="text-xs text-gray-500">Asigne la actividad (APU) y la cantidad de obra a ejecutar.</p>
+        </div>
+        <button (click)="modalPartidaAbierto = false" class="text-gray-400 hover:text-gray-600 text-lg">✕</button>
+      </div>
+
+      <div class="space-y-4 pt-3">
+        <!-- CÓDIGO Y ACTIVIDAD / APU -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="text-xs font-bold text-gray-600 dark:text-gray-300">Código Partida *</label>
+            <input type="text" [(ngModel)]="formPartida.codigo" placeholder="Ej: 1.01" class="form-input text-xs font-mono font-bold">
+            <span class="text-[10px] text-gray-400">Jerárquico (1.01, 1.02)</span>
+          </div>
+          <div class="sm:col-span-2">
+            <label class="text-xs font-bold text-gray-600 dark:text-gray-300">Actividad / APU *</label>
+            <select [(ngModel)]="formPartida.id_apu" (ngModelChange)="alSeleccionarApuEnPartida($event)" class="form-input text-xs font-semibold">
+              <option [ngValue]="null">-- Seleccionar actividad de biblioteca APU --</option>
+              <option *ngFor="let a of apus" [value]="a.id_apu">
+                {{ a.codigo }} - {{ a.nombre }} ({{ (a.costo_directo || a.costo_unitario_total) | number:'1.2-2' }} Bs./{{ a.unidad_medida_abrev }})
+              </option>
+            </select>
+          </div>
         </div>
 
-        <div class="grid grid-cols-3 gap-3">
+        <!-- NOMBRE DE LA PARTIDA -->
+        <div>
+          <label class="text-xs font-bold text-gray-600 dark:text-gray-300">Descripción de la Partida *</label>
+          <input type="text" [(ngModel)]="formPartida.nombre" placeholder="Ej: Mampostería de ladrillo 6H con mortero 1:4" class="form-input text-xs">
+        </div>
+
+        <!-- CANTIDAD DE OBRA Y PRECIO UNITARIO -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-gray-50 dark:bg-slate-800/50 p-3 rounded-xl border border-gray-100 dark:border-slate-800">
           <div>
-            <label class="text-xs font-bold text-gray-500">Unidad</label>
+            <label class="text-xs font-bold text-gray-600 dark:text-gray-300">Unidad de Medida</label>
             <select [(ngModel)]="formPartida.id_unidad_medida" class="form-input text-xs">
-              <option *ngFor="let u of unidades" [value]="u.id_unidad_medida">{{ u.abreviatura }}</option>
+              <option *ngFor="let u of unidades" [value]="u.id_unidad_medida">{{ u.nombre }} ({{ u.abreviatura }})</option>
             </select>
           </div>
           <div>
-            <label class="text-xs font-bold text-gray-500">Cantidad</label>
-            <input type="number" step="0.01" [(ngModel)]="formPartida.cantidad" class="form-input text-xs">
+            <label class="text-xs font-bold text-orange-600 dark:text-orange-400">Cantidad de Obra *</label>
+            <input type="number" step="0.01" min="0.01" [(ngModel)]="formPartida.cantidad" (ngModelChange)="calcularSubtotalPartida()" class="form-input text-xs font-mono font-bold">
+            <span class="text-[10px] text-gray-400">Volumen o metraje</span>
           </div>
           <div>
-            <label class="text-xs font-bold text-gray-500">P. Unitario (Bs.)</label>
-            <input type="number" step="0.01" [(ngModel)]="formPartida.precio_unitario" class="form-input text-xs">
+            <label class="text-xs font-bold text-gray-600 dark:text-gray-300">P. Unitario (Bs.)</label>
+            <input type="number" step="0.01" [(ngModel)]="formPartida.precio_unitario" (ngModelChange)="calcularSubtotalPartida()" class="form-input text-xs font-mono">
+            <span class="text-[10px] text-gray-400">Snapshot del APU</span>
           </div>
         </div>
 
-        <div class="flex justify-end gap-2 pt-3 border-t">
+        <!-- TARJETA DE CÁLCULO EN TIEMPO REAL -->
+        <div class="bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-900 rounded-xl p-3 flex justify-between items-center">
+          <div>
+            <span class="text-xs font-bold text-orange-800 dark:text-orange-300 block">Subtotal Calculado</span>
+            <span class="text-[11px] text-orange-600/80 dark:text-orange-400">
+              {{ formPartida.cantidad || 0 }} × {{ (formPartida.precio_unitario || 0) | number:'1.2-2' }} Bs.
+            </span>
+          </div>
+          <div class="text-xl font-bold font-mono text-orange-600 dark:text-orange-400">
+            {{ formPartida.importe_total | number:'1.2-2' }} Bs.
+          </div>
+        </div>
+
+        <div class="text-[11px] text-gray-500 bg-blue-50 dark:bg-slate-800/80 p-2.5 rounded-lg border border-blue-100 dark:border-slate-700 flex items-start gap-2">
+          <span>ℹ️</span>
+          <div>
+            <strong>Consumo automático deducido:</strong> No requiere ingresar materiales en la partida. Los materiales, horas de mano de obra y horas de equipo se calcularán multiplicando la <strong>cantidad de obra</strong> por los <strong>rendimientos</strong> del APU.
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-slate-800">
           <button (click)="modalPartidaAbierto = false" class="btn-secondary text-xs">Cancelar</button>
-          <button (click)="guardarPartida()" [disabled]="guardando" class="btn-primary text-xs">Guardar Partida</button>
+          <button (click)="guardarPartida()" [disabled]="guardando" class="btn-primary text-xs">
+            {{ guardando ? 'Guardando...' : '✓ Registrar Partida' }}
+          </button>
         </div>
       </div>
     </div>
@@ -505,34 +751,423 @@
   </div>
 
   <!-- ───────────────────────────────────────────────────────────────────────────── -->
-  <!-- MODAL: CREAR APU -->
+  <!-- MODAL: WIZARD DE CREACIÓN DE APU PASO A PASO (CU16 REGLAS 1, 3, 4, 5, 8) -->
   <!-- ───────────────────────────────────────────────────────────────────────────── -->
   <div *ngIf="modalApuAbierto" class="modal-backdrop" (click)="modalApuAbierto = false">
-    <div class="modal-box" (click)="$event.stopPropagation()">
-      <div class="flex justify-between items-center border-b pb-3">
-        <h3 class="font-bold text-sm">Nuevo APU Corporativo</h3>
-        <button (click)="modalApuAbierto = false" class="text-gray-400 hover:text-gray-600">✕</button>
-      </div>
-      <div class="space-y-3 pt-3">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-xs font-bold text-gray-500">Código *</label>
-            <input type="text" [(ngModel)]="formApu.codigo" placeholder="Ej: APU-01" class="form-input text-xs">
-          </div>
-          <div>
-            <label class="text-xs font-bold text-gray-500">Nombre *</label>
-            <input type="text" [(ngModel)]="formApu.nombre" placeholder="Ej: Mampostería Ladrillo 6H" class="form-input text-xs">
-          </div>
-        </div>
+    <div class="modal-box modal-box-wide" (click)="$event.stopPropagation()">
+      
+      <!-- CABECERA DEL WIZARD -->
+      <div class="flex justify-between items-center border-b border-gray-100 dark:border-slate-800 pb-3">
         <div>
-          <label class="text-xs font-bold text-gray-500">Unidad de Medida</label>
-          <select [(ngModel)]="formApu.id_unidad_medida" class="form-input text-xs">
-            <option *ngFor="let u of unidades" [value]="u.id_unidad_medida">{{ u.nombre }} ({{ u.abreviatura }})</option>
-          </select>
+          <div class="flex items-center gap-2">
+            <span class="text-base">📐</span>
+            <h3 class="font-bold text-base text-gray-900 dark:text-white">Creador de Análisis de Precios Unitarios (APU)</h3>
+            <span class="text-[10px] font-mono font-bold bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300 px-2 py-0.5 rounded-full">
+              Paso {{ pasoApu }} de 5
+            </span>
+          </div>
+          <p class="text-xs text-gray-500">Defina los rendimientos de consumo de materiales, mano de obra y maquinaria por unidad de obra.</p>
         </div>
-        <div class="flex justify-end gap-2 pt-3 border-t">
-          <button (click)="modalApuAbierto = false" class="btn-secondary text-xs">Cancelar</button>
-          <button (click)="guardarApu()" [disabled]="guardando" class="btn-primary text-xs">Crear APU</button>
+        <button (click)="modalApuAbierto = false" class="text-gray-400 hover:text-gray-600 text-lg">✕</button>
+      </div>
+
+      <!-- STEPPER / INDICADOR DE PASOS -->
+      <div class="grid grid-cols-5 gap-1 py-3 border-b border-gray-100 dark:border-slate-800 text-center text-xs font-bold">
+        <div class="step-pill" [class.active]="pasoApu === 1" [class.completed]="pasoApu > 1" (click)="pasoApu = 1">
+          <span>1. General</span>
+        </div>
+        <div class="step-pill" [class.active]="pasoApu === 2" [class.completed]="pasoApu > 2" (click)="formApu.nombre ? pasoApu = 2 : null">
+          <span>2. Materiales</span>
+        </div>
+        <div class="step-pill" [class.active]="pasoApu === 3" [class.completed]="pasoApu > 3" (click)="formApu.nombre ? pasoApu = 3 : null">
+          <span>3. Mano Obra</span>
+        </div>
+        <div class="step-pill" [class.active]="pasoApu === 4" [class.completed]="pasoApu > 4" (click)="formApu.nombre ? pasoApu = 4 : null">
+          <span>4. Equipos</span>
+        </div>
+        <div class="step-pill" [class.active]="pasoApu === 5" [class.completed]="pasoApu > 5" (click)="formApu.nombre ? pasoApu = 5 : null">
+          <span>5. Resumen</span>
+        </div>
+      </div>
+
+      <!-- CUERPO DEL PASO 1: DATOS GENERALES -->
+      <div *ngIf="pasoApu === 1" class="space-y-4 py-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-bold text-gray-600 dark:text-gray-300">Código APU *</label>
+            <input type="text" [(ngModel)]="formApu.codigo" placeholder="APU-2026-0001" class="form-input text-xs font-mono font-bold">
+            <span class="text-[10px] text-gray-400">Generado bajo formato APU-YYYY-NNNN</span>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-gray-600 dark:text-gray-300">Unidad de Medida de la Actividad *</label>
+            <select [(ngModel)]="formApu.id_unidad_medida" class="form-input text-xs">
+              <option *ngFor="let u of unidades" [value]="u.id_unidad_medida">{{ u.nombre }} ({{ u.abreviatura }})</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs font-bold text-gray-600 dark:text-gray-300">Nombre de la Actividad / Rubro *</label>
+          <input type="text" [(ngModel)]="formApu.nombre" placeholder="Ej: Mampostería de ladrillo adobito con mortero 1:5" class="form-input text-xs">
+        </div>
+
+        <div>
+          <label class="text-xs font-bold text-gray-600 dark:text-gray-300">Descripción o Especificaciones Técnicas</label>
+          <textarea [(ngModel)]="formApu.descripcion" rows="3" placeholder="Detalle constructivo, proporciones de mezcla, tolerancias de colocación..." class="form-input text-xs"></textarea>
+        </div>
+
+        <div>
+          <label class="text-xs font-bold text-gray-600 dark:text-gray-300">Rendimiento Base (Jornada o Unidad Base)</label>
+          <input type="number" step="0.1" [(ngModel)]="formApu.rendimiento_base" class="form-input text-xs font-mono">
+          <span class="text-[10px] text-gray-400">Valor estándar: 1.00 para análisis por unidad unitaria</span>
+        </div>
+      </div>
+
+      <!-- CUERPO DEL PASO 2: MATERIALES -->
+      <div *ngIf="pasoApu === 2" class="space-y-4 py-3">
+        <div class="bg-blue-50/60 dark:bg-slate-800/60 p-3 rounded-xl border border-blue-100 dark:border-slate-700 text-xs">
+          <span class="font-bold text-blue-900 dark:text-blue-300">📦 Paso 2: Insumos y Materiales</span>
+          <p class="text-gray-500 dark:text-gray-400 text-[11px] mt-0.5">
+            Seleccione materiales del catálogo o ingrese un material específico. Defina el <strong>rendimiento unitario</strong> (cantidad consumida por 1 unidad de esta actividad).
+          </p>
+        </div>
+
+        <!-- FORMULARIO RÁPIDO PARA AGREGAR MATERIAL -->
+        <div class="bg-gray-50 dark:bg-slate-800/40 p-3 rounded-xl border border-gray-200 dark:border-slate-700 space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label class="text-[10px] font-bold uppercase text-gray-500">Seleccionar de Catálogo CU14</label>
+              <select [ngModel]="tempRecursoId" (ngModelChange)="onSeleccionarMaterialCatalogo($event)" class="form-input text-xs">
+                <option [ngValue]="null">-- Elegir de catálogo de materiales --</option>
+                <option *ngFor="let m of materiales" [value]="m.id_material">
+                  {{ m.codigo }} - {{ m.nombre_material }} ({{ m.precio | number:'1.2-2' }} Bs./{{ m.unidad_medida.abreviatura }})
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[10px] font-bold uppercase text-gray-500">Descripción del Material *</label>
+              <input type="text" [(ngModel)]="tempDescripcion" placeholder="Ej: Cemento Portland IP-30" class="form-input text-xs">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 items-end">
+            <div>
+              <label class="text-[10px] font-bold uppercase text-gray-500">Unidad</label>
+              <select [(ngModel)]="tempUnidadId" class="form-input text-xs">
+                <option *ngFor="let u of unidades" [value]="u.id_unidad_medida">{{ u.abreviatura }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[10px] font-bold uppercase text-orange-600">Rendimiento Unitario *</label>
+              <input type="number" step="0.0001" min="0.0001" [(ngModel)]="tempRendimiento" placeholder="Ej: 1.05" class="form-input text-xs font-mono font-bold">
+            </div>
+            <div>
+              <label class="text-[10px] font-bold uppercase text-gray-500">Precio Unitario (Bs.)</label>
+              <input type="number" step="0.01" [(ngModel)]="tempPrecioUnitario" placeholder="0.00" class="form-input text-xs font-mono">
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center pt-2">
+            <span class="text-xs text-gray-500">
+              Subtotal: <strong>{{ (tempRendimiento * tempPrecioUnitario) | number:'1.2-2' }} Bs.</strong>
+            </span>
+            <button type="button" (click)="agregarComponenteWizard('MATERIAL')" class="btn-primary text-xs">
+              ＋ Agregar Material a la Receta
+            </button>
+          </div>
+        </div>
+
+        <!-- TABLA DE MATERIALES AGREGADOS -->
+        <div class="table-card">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-gray-100 dark:border-slate-800 text-gray-500">
+                <th class="p-2">Material</th>
+                <th class="p-2 text-center">Unidad</th>
+                <th class="p-2 text-right">Rendimiento</th>
+                <th class="p-2 text-right">Precio (Bs.)</th>
+                <th class="p-2 text-right">Subtotal (Bs.)</th>
+                <th class="p-2 text-right"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngIf="getComponentesPorTipo('MATERIAL').length === 0">
+                <td colspan="6" class="p-4 text-center text-gray-400 italic">No se han agregado materiales todavía.</td>
+              </tr>
+              <tr *ngFor="let c of getComponentesPorTipo('MATERIAL'); let i = index" class="border-b border-gray-50 dark:border-slate-800/60">
+                <td class="p-2 font-semibold text-gray-800 dark:text-gray-200">{{ c.descripcion_recurso }}</td>
+                <td class="p-2 text-center text-gray-500 font-mono">{{ c.unidad_medida_abrev }}</td>
+                <td class="p-2 text-right font-mono font-bold">{{ c.rendimiento | number:'1.2-4' }}</td>
+                <td class="p-2 text-right font-mono text-gray-500">{{ c.precio_unitario | number:'1.2-2' }}</td>
+                <td class="p-2 text-right font-mono font-bold text-orange-600">{{ c.subtotal | number:'1.2-2' }}</td>
+                <td class="p-2 text-right">
+                  <button type="button" (click)="eliminarComponenteWizard(i)" class="text-red-500 hover:text-red-700">✕</button>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="font-bold bg-gray-50 dark:bg-slate-800/60">
+                <td colspan="4" class="p-2 text-right">SUBTOTAL MATERIALES:</td>
+                <td class="p-2 text-right font-mono text-orange-600">{{ subtotalTipoWizard('MATERIAL') | number:'1.2-2' }} Bs.</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- CUERPO DEL PASO 3: MANO DE OBRA -->
+      <div *ngIf="pasoApu === 3" class="space-y-4 py-3">
+        <div class="bg-amber-50/60 dark:bg-slate-800/60 p-3 rounded-xl border border-amber-100 dark:border-slate-700 text-xs">
+          <span class="font-bold text-amber-900 dark:text-amber-300">👷 Paso 3: Mano de Obra</span>
+          <p class="text-gray-500 dark:text-gray-400 text-[11px] mt-0.5">
+            Seleccione categorías laborales (Albañil, Ayudante, Encofrador, etc.) y defina el <strong>rendimiento en horas o días</strong> requeridos por cada unidad de actividad.
+          </p>
+        </div>
+
+        <!-- FORMULARIO RÁPIDO PARA AGREGAR MANO DE OBRA -->
+        <div class="bg-gray-50 dark:bg-slate-800/40 p-3 rounded-xl border border-gray-200 dark:border-slate-700 space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label class="text-[10px] font-bold uppercase text-gray-500">Seleccionar de Catálogo de Mano de Obra</label>
+              <select [ngModel]="tempRecursoId" (ngModelChange)="onSeleccionarManoObraCatalogo($event)" class="form-input text-xs">
+                <option [ngValue]="null">-- Elegir especialidad / categoría --</option>
+                <option *ngFor="let mo of manoObraList" [value]="mo.id_mano_obra">
+                  {{ mo.nombre || mo.categoria }} ({{ mo.costo_unitario | number:'1.2-2' }} Bs./{{ mo.unidad_medida_abrev || 'hr' }})
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[10px] font-bold uppercase text-gray-500">Especialidad / Cuadrilla *</label>
+              <input type="text" [(ngModel)]="tempDescripcion" placeholder="Ej: Albañil de primera" class="form-input text-xs">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 items-end">
+            <div>
+              <label class="text-[10px] font-bold uppercase text-gray-500">Unidad</label>
+              <select [(ngModel)]="tempUnidadId" class="form-input text-xs">
+                <option *ngFor="let u of unidades" [value]="u.id_unidad_medida">{{ u.abreviatura }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[10px] font-bold uppercase text-amber-600">Rendimiento (Horas/Días) *</label>
+              <input type="number" step="0.0001" min="0.0001" [(ngModel)]="tempRendimiento" placeholder="Ej: 0.15" class="form-input text-xs font-mono font-bold">
+            </div>
+            <div>
+              <label class="text-[10px] font-bold uppercase text-gray-500">Costo por Hora/Día (Bs.)</label>
+              <input type="number" step="0.01" [(ngModel)]="tempPrecioUnitario" placeholder="0.00" class="form-input text-xs font-mono">
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center pt-2">
+            <span class="text-xs text-gray-500">
+              Subtotal: <strong>{{ (tempRendimiento * tempPrecioUnitario) | number:'1.2-2' }} Bs.</strong>
+            </span>
+            <button type="button" (click)="agregarComponenteWizard('MANO_OBRA')" class="btn-primary text-xs">
+              ＋ Agregar Mano de Obra
+            </button>
+          </div>
+        </div>
+
+        <!-- TABLA DE MANO DE OBRA AGREGADA -->
+        <div class="table-card">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-gray-100 dark:border-slate-800 text-gray-500">
+                <th class="p-2">Especialidad</th>
+                <th class="p-2 text-center">Unidad</th>
+                <th class="p-2 text-right">Rendimiento (hrs)</th>
+                <th class="p-2 text-right">Tarifa (Bs.)</th>
+                <th class="p-2 text-right">Subtotal (Bs.)</th>
+                <th class="p-2 text-right"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngIf="getComponentesPorTipo('MANO_OBRA').length === 0">
+                <td colspan="6" class="p-4 text-center text-gray-400 italic">No se ha agregado mano de obra todavía.</td>
+              </tr>
+              <tr *ngFor="let c of getComponentesPorTipo('MANO_OBRA'); let i = index" class="border-b border-gray-50 dark:border-slate-800/60">
+                <td class="p-2 font-semibold text-gray-800 dark:text-gray-200">{{ c.descripcion_recurso }}</td>
+                <td class="p-2 text-center text-gray-500 font-mono">{{ c.unidad_medida_abrev }}</td>
+                <td class="p-2 text-right font-mono font-bold">{{ c.rendimiento | number:'1.2-4' }}</td>
+                <td class="p-2 text-right font-mono text-gray-500">{{ c.precio_unitario | number:'1.2-2' }}</td>
+                <td class="p-2 text-right font-mono font-bold text-amber-600">{{ c.subtotal | number:'1.2-2' }}</td>
+                <td class="p-2 text-right">
+                  <button type="button" (click)="eliminarComponenteWizard(i)" class="text-red-500 hover:text-red-700">✕</button>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="font-bold bg-gray-50 dark:bg-slate-800/60">
+                <td colspan="4" class="p-2 text-right">SUBTOTAL MANO DE OBRA:</td>
+                <td class="p-2 text-right font-mono text-amber-600">{{ subtotalTipoWizard('MANO_OBRA') | number:'1.2-2' }} Bs.</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- CUERPO DEL PASO 4: EQUIPOS Y MAQUINARIA -->
+      <div *ngIf="pasoApu === 4" class="space-y-4 py-3">
+        <div class="bg-orange-50/60 dark:bg-slate-800/60 p-3 rounded-xl border border-orange-100 dark:border-slate-700 text-xs">
+          <span class="font-bold text-orange-900 dark:text-orange-300">🚜 Paso 4: Equipos y Maquinaria</span>
+          <p class="text-gray-500 dark:text-gray-400 text-[11px] mt-0.5">
+            Seleccione equipos mecánicos o herramientas menores y defina las <strong>horas de uso de equipo</strong> requeridas por unidad de actividad.
+          </p>
+        </div>
+
+        <!-- FORMULARIO RÁPIDO PARA AGREGAR EQUIPO -->
+        <div class="bg-gray-50 dark:bg-slate-800/40 p-3 rounded-xl border border-gray-200 dark:border-slate-700 space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label class="text-[10px] font-bold uppercase text-gray-500">Seleccionar de Catálogo de Equipos</label>
+              <select [ngModel]="tempRecursoId" (ngModelChange)="onSeleccionarEquipoCatalogo($event)" class="form-input text-xs">
+                <option [ngValue]="null">-- Elegir equipo / maquinaria --</option>
+                <option *ngFor="let eq of equiposList" [value]="eq.id_equipo">
+                  {{ eq.codigo }} - {{ eq.nombre }} ({{ eq.costo_unitario | number:'1.2-2' }} Bs./{{ eq.unidad_medida_abrev || 'hr' }})
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[10px] font-bold uppercase text-gray-500">Nombre del Equipo *</label>
+              <input type="text" [(ngModel)]="tempDescripcion" placeholder="Ej: Mezcladora de hormigón 350L" class="form-input text-xs">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 items-end">
+            <div>
+              <label class="text-[10px] font-bold uppercase text-gray-500">Unidad</label>
+              <select [(ngModel)]="tempUnidadId" class="form-input text-xs">
+                <option *ngFor="let u of unidades" [value]="u.id_unidad_medida">{{ u.abreviatura }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[10px] font-bold uppercase text-orange-600">Rendimiento (Horas/U) *</label>
+              <input type="number" step="0.0001" min="0.0001" [(ngModel)]="tempRendimiento" placeholder="Ej: 0.05" class="form-input text-xs font-mono font-bold">
+            </div>
+            <div>
+              <label class="text-[10px] font-bold uppercase text-gray-500">Costo por Hora (Bs.)</label>
+              <input type="number" step="0.01" [(ngModel)]="tempPrecioUnitario" placeholder="0.00" class="form-input text-xs font-mono">
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center pt-2">
+            <span class="text-xs text-gray-500">
+              Subtotal: <strong>{{ (tempRendimiento * tempPrecioUnitario) | number:'1.2-2' }} Bs.</strong>
+            </span>
+            <button type="button" (click)="agregarComponenteWizard('EQUIPO')" class="btn-primary text-xs">
+              ＋ Agregar Equipo
+            </button>
+          </div>
+        </div>
+
+        <!-- TABLA DE EQUIPOS AGREGADOS -->
+        <div class="table-card">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-gray-100 dark:border-slate-800 text-gray-500">
+                <th class="p-2">Equipo / Maquinaria</th>
+                <th class="p-2 text-center">Unidad</th>
+                <th class="p-2 text-right">Rendimiento (hrs)</th>
+                <th class="p-2 text-right">Tarifa (Bs.)</th>
+                <th class="p-2 text-right">Subtotal (Bs.)</th>
+                <th class="p-2 text-right"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngIf="getComponentesPorTipo('EQUIPO').length === 0">
+                <td colspan="6" class="p-4 text-center text-gray-400 italic">No se han agregado equipos todavía.</td>
+              </tr>
+              <tr *ngFor="let c of getComponentesPorTipo('EQUIPO'); let i = index" class="border-b border-gray-50 dark:border-slate-800/60">
+                <td class="p-2 font-semibold text-gray-800 dark:text-gray-200">{{ c.descripcion_recurso }}</td>
+                <td class="p-2 text-center text-gray-500 font-mono">{{ c.unidad_medida_abrev }}</td>
+                <td class="p-2 text-right font-mono font-bold">{{ c.rendimiento | number:'1.2-4' }}</td>
+                <td class="p-2 text-right font-mono text-gray-500">{{ c.precio_unitario | number:'1.2-2' }}</td>
+                <td class="p-2 text-right font-mono font-bold text-orange-600">{{ c.subtotal | number:'1.2-2' }}</td>
+                <td class="p-2 text-right">
+                  <button type="button" (click)="eliminarComponenteWizard(i)" class="text-red-500 hover:text-red-700">✕</button>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="font-bold bg-gray-50 dark:bg-slate-800/60">
+                <td colspan="4" class="p-2 text-right">SUBTOTAL EQUIPOS:</td>
+                <td class="p-2 text-right font-mono text-orange-600">{{ subtotalTipoWizard('EQUIPO') | number:'1.2-2' }} Bs.</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- CUERPO DEL PASO 5: RESUMEN Y CONFIRMACIÓN -->
+      <div *ngIf="pasoApu === 5" class="space-y-4 py-3">
+        <div class="bg-emerald-50 dark:bg-slate-800/60 p-4 rounded-xl border border-emerald-200 dark:border-slate-700">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="text-xs font-mono font-bold text-orange-600">{{ formApu.codigo }}</span>
+              <h4 class="text-base font-bold text-gray-900 dark:text-white mt-0.5">{{ formApu.nombre }}</h4>
+              <p class="text-xs text-gray-500">{{ formApu.descripcion || 'Sin descripción adicional' }}</p>
+            </div>
+            <span class="badge-vigente">Versión 1.0</span>
+          </div>
+
+          <!-- TARJETAS DE COSTO DIRECTO DEL APU -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-4 border-t border-emerald-100 dark:border-slate-700 mt-4">
+            <div class="bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-gray-100 dark:border-slate-800">
+              <span class="text-[10px] font-bold text-gray-400 uppercase">1. Materiales</span>
+              <div class="font-mono font-bold text-sm text-blue-600 mt-0.5">
+                {{ subtotalTipoWizard('MATERIAL') | number:'1.2-2' }} Bs.
+              </div>
+            </div>
+            <div class="bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-gray-100 dark:border-slate-800">
+              <span class="text-[10px] font-bold text-gray-400 uppercase">2. Mano de Obra</span>
+              <div class="font-mono font-bold text-sm text-amber-600 mt-0.5">
+                {{ subtotalTipoWizard('MANO_OBRA') | number:'1.2-2' }} Bs.
+              </div>
+            </div>
+            <div class="bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-gray-100 dark:border-slate-800">
+              <span class="text-[10px] font-bold text-gray-400 uppercase">3. Equipos</span>
+              <div class="font-mono font-bold text-sm text-orange-600 mt-0.5">
+                {{ subtotalTipoWizard('EQUIPO') | number:'1.2-2' }} Bs.
+              </div>
+            </div>
+            <div class="bg-orange-600 text-white p-2.5 rounded-lg">
+              <span class="text-[10px] font-bold uppercase opacity-90">Costo Directo Unitario</span>
+              <div class="font-mono font-bold text-base mt-0.5">
+                {{ costoDirectoTotalWizard() | number:'1.2-2' }} Bs.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-xs text-gray-500">
+          <span>Resumen de recursos incluidos: </span>
+          <strong>{{ getComponentesPorTipo('MATERIAL').length }}</strong> materiales, 
+          <strong>{{ getComponentesPorTipo('MANO_OBRA').length }}</strong> cuadrillas de mano de obra, 
+          <strong>{{ getComponentesPorTipo('EQUIPO').length }}</strong> equipos y herramientas.
+        </div>
+      </div>
+
+      <!-- BOTONES DE NAVEGACIÓN DEL WIZARD -->
+      <div class="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-slate-800 mt-2">
+        <button type="button" *ngIf="pasoApu > 1" (click)="retrocederPasoWizard()" class="btn-secondary text-xs">
+          ← Paso Anterior
+        </button>
+        <span *ngIf="pasoApu === 1"></span>
+
+        <div class="flex items-center gap-2">
+          <button type="button" (click)="modalApuAbierto = false" class="btn-secondary text-xs">
+            Cancelar
+          </button>
+          <button type="button" *ngIf="pasoApu < 5" (click)="avanzarPasoWizard()" class="btn-primary text-xs">
+            Siguiente Paso →
+          </button>
+          <button type="button" *ngIf="pasoApu === 5" (click)="guardarApuWizard()" [disabled]="guardando" class="btn-approve text-xs">
+            {{ guardando ? 'Guardando APU...' : '✓ Confirmar y Crear APU' }}
+          </button>
         </div>
       </div>
     </div>

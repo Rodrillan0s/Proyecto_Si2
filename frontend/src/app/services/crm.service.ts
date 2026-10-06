@@ -9,20 +9,42 @@ export type EstadoProspecto =
   | 'NUEVO'
   | 'CONTACTADO'
   | 'INTERESADO'
+  | 'NEGOCIACION'
   | 'EN_NEGOCIACION'
+  | 'RESERVADO'
+  | 'VENDIDO'
   | 'CONVERTIDO'
   | 'PERDIDO';
 
-export type EstadoCliente = 'ACTIVO' | 'INACTIVO';
+export type EstadoCliente = 
+  | 'ACTIVO'
+  | 'INACTIVO'
+  | 'NUEVO'
+  | 'CONTACTADO'
+  | 'INTERESADO'
+  | 'NEGOCIACION'
+  | 'RESERVADO'
+  | 'VENDIDO';
 
 export type TipoInteraccion = 
   | 'LLAMADA'
   | 'MENSAJE'
   | 'REUNION'
   | 'VISITA'
-  | 'CORREO'
+  | 'CONSULTA'
   | 'SEGUIMIENTO'
-  | 'NOTA';
+  | 'OBSERVACION'
+  | 'CORREO'
+  | 'NOTA'
+  | 'OTRO';
+
+export interface AsesorComercial {
+  id_usuario: number;
+  nombre_completo: string;
+  username: string;
+  email: string;
+  rol?: string;
+}
 
 export type EstadoAsociacionUnidad = 
   | 'INTERESADO'
@@ -99,14 +121,19 @@ export interface MetricasCRM {
     NUEVO: number;
     CONTACTADO: number;
     INTERESADO: number;
-    EN_NEGOCIACION: number;
+    EN_NEGOCIACION?: number;
+    NEGOCIACION?: number;
+    RESERVADO?: number;
+    VENDIDO?: number;
     CONVERTIDO: number;
     PERDIDO: number;
+    [key: string]: number | undefined;
   };
   unidades_asociadas: {
     INTERESADO: number;
     RESERVADO: number;
     VENDIDO: number;
+    [key: string]: number | undefined;
   };
 }
 
@@ -175,10 +202,16 @@ export class CrmService {
     return this.http.put<{ success: boolean; message: string }>(`${this.apiUrl}/clientes/${idCliente}`, payload, { params });
   }
 
-  clasificarProspecto(idCliente: number, nuevoEstado: string, id_empresa?: number): Observable<any> {
+  clasificarProspecto(idCliente: number, nuevoEstado: string, nota?: string, id_empresa?: number): Observable<any> {
     let params = new HttpParams();
     if (id_empresa) params = params.set('id_empresa', id_empresa.toString());
-    return this.http.patch<any>(`${this.apiUrl}/clientes/${idCliente}/clasificacion`, { estado: nuevoEstado }, { params });
+    return this.http.patch<any>(`${this.apiUrl}/clientes/${idCliente}/clasificacion`, { estado: nuevoEstado, nota }, { params });
+  }
+
+  listarAsesores(id_empresa?: number): Observable<{ success: boolean; data: AsesorComercial[] }> {
+    let params = new HttpParams();
+    if (id_empresa) params = params.set('id_empresa', id_empresa.toString());
+    return this.http.get<{ success: boolean; data: AsesorComercial[] }>(`${this.apiUrl}/asesores`, { params });
   }
 
   registrarInteraccion(idCliente: number, payload: any, id_empresa?: number): Observable<{ success: boolean; message: string; id_interaccion: number }> {

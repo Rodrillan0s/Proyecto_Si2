@@ -192,6 +192,20 @@ def post_versionar_presupuesto(
 # RUTAS DE PARTIDAS (HU54 & HU57)
 # ─────────────────────────────────────────────────────────────────────────────
 
+@router_proyectos.get("/{id_presupuesto}/partidas/siguiente-codigo")
+def get_siguiente_codigo_partida(
+    id_obra: int,
+    id_presupuesto: int,
+    token_data: dict = Depends(exigir_permiso("Visualizar_presupuesto"))
+):
+    try:
+        return presupuesto_services.sugerir_codigo_partida(id_presupuesto, token_data)
+    except PresupuestoError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
+
 @router_proyectos.post("/{id_presupuesto}/partidas")
 def post_partida(
     id_obra: int,
@@ -270,10 +284,52 @@ def get_apus(
     id_obra: int = None,
     q: str = None,
     id_empresa: int = None,
+    solo_vigentes: bool = False,
     token_data: dict = Depends(exigir_permiso("Visualizar_presupuesto"))
 ):
     try:
-        return presupuesto_services.listar_apus(token_data, id_obra=id_obra, q=q, id_empresa=id_empresa)
+        return presupuesto_services.listar_apus(token_data, id_obra=id_obra, q=q, id_empresa=id_empresa, solo_vigentes=solo_vigentes)
+    except PresupuestoError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
+
+@router_apus.get("/siguiente-codigo")
+def get_siguiente_codigo_apu(
+    id_empresa: int = None,
+    token_data: dict = Depends(exigir_permiso("Visualizar_presupuesto"))
+):
+    try:
+        return presupuesto_services.sugerir_codigo_apu(token_data, id_empresa)
+    except PresupuestoError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
+
+@router_apus.get("/recursos/equipos")
+def get_recursos_equipos(
+    id_empresa: int = None,
+    q: str = None,
+    token_data: dict = Depends(exigir_permiso("Visualizar_presupuesto"))
+):
+    try:
+        return presupuesto_services.listar_equipos_catalogo(token_data, id_empresa, q)
+    except PresupuestoError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
+
+@router_apus.get("/recursos/mano-obra")
+def get_recursos_mano_obra(
+    id_empresa: int = None,
+    q: str = None,
+    token_data: dict = Depends(exigir_permiso("Visualizar_presupuesto"))
+):
+    try:
+        return presupuesto_services.listar_mano_obra_catalogo(token_data, id_empresa, q)
     except PresupuestoError as e:
         raise HTTPException(status_code=e.status_code, detail=str(e))
     except Exception as e:

@@ -1,0 +1,268 @@
+<div class="space-y-6">
+
+  <!-- TOASTS -->
+  <div *ngIf="exito" role="status" class="rounded-lg border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 dark:border-emerald-800 px-4 py-3 text-sm text-emerald-800 dark:text-emerald-300">
+    {{ exito }}
+  </div>
+  <div *ngIf="error" role="alert" class="rounded-lg border border-rose-300 bg-rose-50 dark:bg-rose-950/40 dark:border-rose-800 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">
+    {{ error }}
+  </div>
+
+  <!-- ENCABEZADO -->
+  <app-page-header
+    titulo="Gestión de incidencias"
+    subtitulo="Registra, asigna y da seguimiento a las incidencias reportadas en obra."
+    categoria=""
+  >
+    <div actions>
+      <button
+        *ngIf="puedeRegistrar()"
+        type="button"
+        (click)="abrirNueva()"
+        [disabled]="cargando"
+        class="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition shadow-xs disabled:opacity-50"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+        Nueva incidencia
+      </button>
+    </div>
+  </app-page-header>
+
+  <!-- CONTEXTO MULTI-TENANT -->
+  <div *ngIf="empresaActiva" class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs">
+    <div class="flex items-center gap-2">
+      <span class="font-bold text-amber-800 dark:text-amber-400">🏢 Incidencias de:</span>
+      <span class="font-bold text-slate-900 dark:text-white">{{ empresaActiva.nombre_empresa }}</span>
+    </div>
+    <span class="font-bold text-amber-700 dark:text-amber-300">{{ pagination.total }} incidencia(s)</span>
+  </div>
+  <div *ngIf="!empresaActiva && esVistaGlobal()" class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-blue-500/10 border border-blue-500/30 rounded-lg text-xs">
+    <span class="font-bold text-blue-700 dark:text-blue-400">🌐 Vista global: incidencias de todas las empresas</span>
+    <span class="font-bold text-blue-700 dark:text-blue-300">{{ pagination.total }} en total</span>
+  </div>
+
+  <!-- RESUMEN -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+    <app-dashboard-card
+      titulo="Total"
+      [valor]="resumen.total"
+      tipo="default"
+      [clickable]="true"
+      (click)="filtrarPorEstado('')"
+    >
+      <svg icon class="w-5 h-5 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+    </app-dashboard-card>
+
+    <app-dashboard-card
+      titulo="Abiertas"
+      [valor]="resumen.abiertas"
+      tipo="amber"
+      [clickable]="true"
+      (click)="filtrarPorEstado('ABIERTA')"
+    >
+      <svg icon class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+    </app-dashboard-card>
+
+    <app-dashboard-card
+      titulo="En proceso"
+      [valor]="resumen.enProceso"
+      subtitulo="Asignadas + en proceso"
+      tipo="blue"
+      [clickable]="true"
+      (click)="filtrarPorEstado('EN_PROCESO')"
+    >
+      <svg icon class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+    </app-dashboard-card>
+
+    <app-dashboard-card
+      titulo="Resueltas"
+      [valor]="resumen.resueltas"
+      tipo="emerald"
+      [clickable]="true"
+      (click)="filtrarPorEstado('RESUELTA')"
+    >
+      <svg icon class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+    </app-dashboard-card>
+
+    <app-dashboard-card
+      titulo="Cerradas"
+      [valor]="resumen.cerradas"
+      tipo="rose"
+      [clickable]="true"
+      (click)="filtrarPorEstado('CERRADA')"
+    >
+      <svg icon class="w-5 h-5 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+    </app-dashboard-card>
+  </div>
+  <p *ngIf="resumenParcial" class="text-xs text-slate-400 dark:text-slate-500 -mt-2">
+    El resumen por estado se calcula sobre los primeros {{ pagination.limit }} resultados reales recibidos; el total general sí refleja el conteo exacto de la base de datos.
+  </p>
+
+  <!-- FILTROS -->
+  <section class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 shadow-xs space-y-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="lg:col-span-1">
+        <label for="inc-busqueda" class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Buscar</label>
+        <div class="relative">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
+          <input id="inc-busqueda" type="search" [(ngModel)]="busqueda" (ngModelChange)="buscar()"
+            placeholder="Título o descripción..."
+            class="w-full pl-9 pr-3 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+        </div>
+      </div>
+
+      <div>
+        <label for="inc-filtro-obra" class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Proyecto</label>
+        <select id="inc-filtro-obra" [(ngModel)]="filtroObra" (ngModelChange)="onCambiarFiltroObra()"
+          class="w-full px-3 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+          <option [ngValue]="null">Todos los proyectos</option>
+          <option *ngFor="let p of proyectos" [ngValue]="p.id_obra">{{ p.codigo }} · {{ p.nombre }}</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="inc-filtro-unidad" class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Unidad</label>
+        <select id="inc-filtro-unidad" [(ngModel)]="filtroUnidad" (ngModelChange)="filtrar()" [disabled]="!filtroObra"
+          class="w-full px-3 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50">
+          <option [ngValue]="null">{{ filtroObra ? 'Todas las unidades' : 'Seleccione un proyecto' }}</option>
+          <option *ngFor="let u of unidadesFiltro" [ngValue]="u.id_unidad">{{ u.codigo }} · {{ u.nombre }}</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="inc-filtro-prioridad" class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Prioridad</label>
+        <select id="inc-filtro-prioridad" [(ngModel)]="filtroPrioridad" (ngModelChange)="filtrar()"
+          class="w-full px-3 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+          <option value="">Todas</option>
+          <option *ngFor="let p of prioridades" [value]="p">{{ p }}</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="inc-filtro-estado" class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Estado</label>
+        <select id="inc-filtro-estado" [(ngModel)]="filtroEstado" (ngModelChange)="aplicarFiltroEstado()"
+          class="w-full px-3 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+          <option value="">Todos</option>
+          <option *ngFor="let e of estados" [value]="e">{{ e }}</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="inc-filtro-responsable" class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Responsable</label>
+        <select id="inc-filtro-responsable" [(ngModel)]="filtroResponsable" (ngModelChange)="filtrar()"
+          class="w-full px-3 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+          <option [ngValue]="null">Todos</option>
+          <option *ngFor="let u of usuarios" [ngValue]="u.nro_usuario">{{ u.nombre_completo }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
+      <p class="text-xs text-slate-500 dark:text-slate-400">Mostrando {{ incidenciasFiltradas.length }} de {{ pagination.total }} incidencia(s)</p>
+      <button type="button" (click)="limpiarFiltros()" [disabled]="cargando"
+        class="px-3.5 py-1.5 text-xs font-bold rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition disabled:opacity-50">
+        Limpiar filtros
+      </button>
+    </div>
+  </section>
+
+  <!-- LISTADO -->
+  <section class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs overflow-hidden">
+
+    <!-- CARGANDO -->
+    <div *ngIf="cargando" class="flex items-center justify-center gap-2 py-12 text-sm text-slate-500 dark:text-slate-400">
+      <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+      </svg>
+      Cargando incidencias...
+    </div>
+
+    <ng-container *ngIf="!cargando">
+
+      <!-- VACIO -->
+      <div *ngIf="incidenciasFiltradas.length === 0" class="p-8">
+        <app-empty-state
+          titulo="No hay incidencias registradas"
+          [descripcion]="(busqueda || filtroObra || filtroPrioridad || filtroEstado || filtroResponsable) ? 'No se encontraron incidencias con los filtros seleccionados.' : 'Aún no se ha registrado ninguna incidencia en obra.'"
+          [accionTexto]="puedeRegistrar() ? 'Registrar incidencia' : undefined"
+          (onAccion)="abrirNueva()"
+        ></app-empty-state>
+      </div>
+
+      <!-- TABLA (ESCRITORIO) -->
+      <div *ngIf="incidenciasFiltradas.length > 0" class="hidden sm:block overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
+          <thead class="bg-slate-50 dark:bg-slate-950">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Título</th>
+              <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Proyecto</th>
+              <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Unidad</th>
+              <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Prioridad</th>
+              <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Estado</th>
+              <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Responsable</th>
+              <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Fecha</th>
+              <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            <tr *ngFor="let inc of incidenciasFiltradas; trackBy: trackByIncidencia" class="hover:bg-slate-50 dark:hover:bg-slate-950/60 transition-colors cursor-pointer" (click)="verIncidencia(inc)">
+              <td class="px-4 py-3.5 text-sm font-bold text-slate-900 dark:text-white max-w-xs truncate">{{ inc.titulo }}</td>
+              <td class="px-4 py-3.5 text-sm text-slate-600 dark:text-slate-300">{{ inc.obra_codigo || ('#' + inc.id_obra) }}</td>
+              <td class="px-4 py-3.5 text-sm text-slate-600 dark:text-slate-300">{{ inc.unidad_codigo || '—' }}</td>
+              <td class="px-4 py-3.5 text-sm"><app-status-badge [estado]="inc.prioridad" [texto]="inc.prioridad"></app-status-badge></td>
+              <td class="px-4 py-3.5 text-sm"><app-status-badge [estado]="inc.estado" [texto]="inc.estado"></app-status-badge></td>
+              <td class="px-4 py-3.5 text-sm text-slate-600 dark:text-slate-300">{{ inc.responsable_nombre || 'Sin asignar' }}</td>
+              <td class="px-4 py-3.5 text-sm text-slate-500 dark:text-slate-400">{{ inc.created_at | date:'dd/MM/yyyy' }}</td>
+              <td class="px-4 py-3.5 text-right">
+                <button type="button" (click)="verIncidencia(inc); $event.stopPropagation()"
+                  class="px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-900 dark:bg-slate-800 text-white hover:bg-amber-600 transition">
+                  Ver
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- TARJETAS (MOVIL) -->
+      <div *ngIf="incidenciasFiltradas.length > 0" class="sm:hidden divide-y divide-slate-100 dark:divide-slate-800">
+        <div *ngFor="let inc of incidenciasFiltradas; trackBy: trackByIncidencia" class="p-4" (click)="verIncidencia(inc)">
+          <div class="flex items-start justify-between gap-3">
+            <p class="text-sm font-bold text-slate-900 dark:text-white">{{ inc.titulo }}</p>
+            <app-status-badge [estado]="inc.estado" [texto]="inc.estado"></app-status-badge>
+          </div>
+          <div class="mt-2 flex flex-wrap items-center gap-2">
+            <app-status-badge [estado]="inc.prioridad" [texto]="inc.prioridad"></app-status-badge>
+            <span class="text-xs text-slate-400 dark:text-slate-500">{{ inc.created_at | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <div class="mt-2 grid grid-cols-1 gap-1 text-xs text-slate-500 dark:text-slate-400">
+            <p><span class="font-bold">Proyecto:</span> {{ inc.obra_codigo || ('#' + inc.id_obra) }}</p>
+            <p *ngIf="inc.unidad_codigo"><span class="font-bold">Unidad:</span> {{ inc.unidad_codigo }}</p>
+            <p><span class="font-bold">Responsable:</span> {{ inc.responsable_nombre || 'Sin asignar' }}</p>
+          </div>
+          <button type="button" (click)="verIncidencia(inc); $event.stopPropagation()"
+            class="mt-3 w-full px-3 py-2 text-xs font-bold rounded-lg bg-slate-900 dark:bg-slate-800 text-white hover:bg-amber-600 transition">
+            Ver detalle
+          </button>
+        </div>
+      </div>
+
+    </ng-container>
+  </section>
+</div>
+
+<!-- MODAL: NUEVA INCIDENCIA -->
+<div *ngIf="mostrarFormulario" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs" (click)="cerrarFormulario()">
+  <section class="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-2xl" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="form-inc-title">
+    <header class="flex items-center justify-between mb-5">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">HU69 / HU70</p>
+        <h2 id="form-inc-title" class="text-lg font-bold text-slate-900 dark:text-white">Nueva incidencia</h2>
+      </div>
+      <button type="button" (click)="cerrarFormulario()" aria-label="Cerrar" class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-2xl leading-none">×</button>
+    </header>
+
+    <app-incidencia-formulario (guardado)="incidenciaRegistrada($event)" (cancelado)="cerrarFormulario()"></app-incidencia-formulario>
+  </section>
+</div>

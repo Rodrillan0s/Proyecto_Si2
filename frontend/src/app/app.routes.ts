@@ -1,25 +1,12 @@
 import { Routes } from '@angular/router';
+import { ASSISTANT_PERMISSIONS } from './services/asistente.service';
 
 //COMPONENTES
 import { LoginComponent } from './pages/login/login';
-import { ListaUsuariosComponent } from './pages/usuarios/lista-usuarios/lista-usuarios';
 import { HomeComponent } from './pages/home/home';
-import { PerfilComponent } from './pages/perfil/perfil';
-import { PanelComponent } from './pages/panel/panel';
-import { RolesComponent } from './pages/roles/roles';
-import { ListaEmpresasComponent } from './pages/empresas/lista-empresas/lista-empresas';
-import { DetalleEmpresaComponent } from './pages/empresas/detalle-empresa/detalle-empresa';
-import { BackupComponent } from './pages/backup/backup';
-import { NotificacionesComponent } from './pages/notificaciones/notificaciones';
-import { BitacoraComponent } from './pages/bitacora/bitacora';
 import { RegistroComponent } from './pages/registro/registro';
 import { MainClienteComponent } from './pages/main-cliente/main-cliente';
-import { ProyectosComponent } from './pages/proyectos/proyectos';
-import { ProyectoDetalleComponent } from './pages/proyectos/detalle/proyecto-detalle';
-import { MaterialesComponent } from './pages/materiales/materiales';
-import { ProveedoresComponent } from './pages/proveedores/proveedores';             
-import { OrdenesTrabajoComponent } from './pages/ordenes-trabajo/ordenes-trabajo';
-import { CrmComponent } from './pages/crm/crm';
+import { ProveedoresComponent } from './pages/proveedores/proveedores';
 
 //LAYOUTS
 import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout';
@@ -45,88 +32,133 @@ export const routes: Routes = [
         component: AdminLayoutComponent,
         canActivate: [authGuard],
         children: [
-            { path: 'panel', component: PanelComponent },
-            { 
-                path: 'proyectos', 
-                component: ProyectosComponent, 
-                canActivate: [roleGuard], 
-                data: { permissions: ['Visualizar_obras'] } 
+            { path: 'reportes', loadComponent: () => import('./pages/reportes/reportes').then(module => module.ReportesComponent) },
+            { path: 'asistente', loadComponent: () => import('./pages/asistente/asistente-workspace').then(module => module.AsistenteWorkspace), canActivate: [roleGuard], data: { permissions: ASSISTANT_PERMISSIONS } },
+            { path: 'panel', loadComponent: () => import('./pages/panel/panel').then(module => module.PanelComponent) },
+            {
+                path: 'proyectos',
+                loadComponent: () => import('./pages/proyectos/proyectos').then(module => module.ProyectosComponent),
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_obras'] }
             },
-            { 
-                path: 'proyectos/:id', 
-                component: ProyectoDetalleComponent, 
-                canActivate: [roleGuard], 
-                data: { permissions: ['Visualizar_obras'] } 
+            {
+                path: 'proyectos/:id',
+                loadComponent: () => import('./pages/proyectos/detalle/proyecto-detalle').then(module => module.ProyectoDetalleComponent),
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_obras'] }
             },
-            { 
-                path: 'materiales',  
-                component: MaterialesComponent, 
-                canActivate: [roleGuard], 
-                data: { permissions: ['Visualizar_materiales'] } 
+            {
+                path: 'materiales',
+                loadComponent: () => import('./pages/materiales/materiales').then(module => module.MaterialesComponent),
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_materiales'] }
             },
-            { 
-                path: 'crm', 
-                component: CrmComponent, 
-                canActivate: [roleGuard], 
-                data: { permissions: ['Visualizar_clientes'] } 
+            {
+                path: 'crm',
+                loadComponent: () => import('./pages/crm/crm').then(module => module.CrmComponent),
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_clientes'] }
             },
-            { 
-                path: 'proveedores', 
-                component: ProveedoresComponent, 
-                canActivate: [roleGuard], 
-                data: { permissions: ['Visualizar_proveedores'] } 
+            {
+                path: 'proveedores',
+                loadComponent: () => import('./pages/proveedores/proveedores').then(module => module.ProveedoresComponent),
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_proveedores'] }
             },
-            { 
-                path: 'usuarios', 
-                component: ListaUsuariosComponent, 
-                canActivate: [roleGuard], 
-                data: { permissions: ['Visualizar_usuarios'] } 
+            {
+                path: 'inventario',
+                loadComponent: () => import('./pages/inventario/inventario').then(module => module.InventarioComponent),
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_inventario', 'Visualizar_materiales'] }
             },
-            { 
-                path: 'roles', 
-                component: RolesComponent, 
-                canActivate: [roleGuard], 
-                data: { permissions: ['Visualizar_usuarios'] } 
+            {
+                path: 'compras',
+                loadComponent: () => import('./pages/compras/compras').then(module => module.ComprasComponent),
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_ordenes_compra'] }
             },
-            { 
-                path: 'empresas', 
-                component: ListaEmpresasComponent, 
-                canActivate: [roleGuard], 
-                data: { permissions: ['Visualizar_empresa'] } 
+            {
+                path: 'usuarios',
+                loadComponent: () => import('./pages/usuarios/lista-usuarios/lista-usuarios').then(module => module.ListaUsuariosComponent),
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_usuarios'] }
             },
-            { 
-                path: 'empresas/:id', 
-                component: DetalleEmpresaComponent, 
-                canActivate: [roleGuard], 
-                data: { permissions: ['Visualizar_empresa'] } 
+            {
+                path: 'roles',
+                loadComponent: () => import('./pages/roles/roles').then(module => module.RolesComponent),
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_usuarios'] }
             },
-            { 
-                path: 'backup', 
-                component: BackupComponent, 
-                canActivate: [roleGuard], 
-                data: { permissions: ['Visualizar_empresa'] } 
+            {
+                path: 'empresas',
+                loadComponent: () => import('./pages/empresas/lista-empresas/lista-empresas').then(module => module.ListaEmpresasComponent),
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_empresa'] }
             },
-            { 
-                path: 'notificaciones', 
-                component: NotificacionesComponent 
+            {
+                path: 'empresas/:id',
+                loadComponent: () => import('./pages/empresas/detalle-empresa/detalle-empresa').then(module => module.DetalleEmpresaComponent),
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_empresa'] }
             },
-            { 
-                path: 'bitacora', 
-                component: BitacoraComponent, 
-                canActivate: [roleGuard], 
-                data: { permissions: ['Visualizar_usuarios'] } 
+            {
+                path: 'backup',
+                loadComponent: () => import('./pages/backup/backup').then(module => module.BackupComponent),
+                canActivate: [roleGuard],
+                data: { roles: ['ADMINISTRADOR'] }
             },
-            { 
-                path: 'ordenes-trabajo', 
-                component: OrdenesTrabajoComponent, 
-                canActivate: [roleGuard], 
-                data: { permissions: ['Visualizar_obras'] } 
+            {
+                path: 'notificaciones',
+                loadComponent: () => import('./pages/notificaciones/notificaciones').then(module => module.NotificacionesComponent)
             },
-            { 
-                path: 'perfil', 
-                component: PerfilComponent 
-            }
-        ]
+            {
+                path: 'bitacora',
+                loadComponent: () => import('./pages/bitacora/bitacora').then(module => module.BitacoraComponent),
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_usuarios'] }
+            },
+            {
+                path: 'ordenes-trabajo',
+                loadComponent: () => import('./pages/ordenes-trabajo/ordenes-trabajo').then(module => module.OrdenesTrabajoComponent),
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_obras'] }
+            },
+            {
+                path: 'incidencias',
+                loadComponent: () => import('./pages/incidencias/incidencias').then(module => module.IncidenciasComponent),
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_incidencias'] }
+            },
+            {
+                path: 'incidencias/asignadas',
+                loadComponent: () => import('./pages/incidencias/asignadas/incidencias-asignadas').then(module => module.IncidenciasAsignadasComponent)
+            },
+            {
+                path: 'incidencias/:id',
+                loadComponent: () => import('./pages/incidencias/detalle/incidencia-detalle').then(module => module.IncidenciaDetalleComponent)
+            },
+            {
+                path: 'estimaciones',
+                loadComponent: () => import('./pages/estimaciones/estimaciones').then(module => module.EstimacionesComponent),
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_estimaciones'] }
+            },
+            {
+                path: 'control-costos',
+                loadComponent: () => import('./pages/control-costos/control-costos').then(module => module.ControlCostosComponent),
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_control_costos'] }
+            },
+            {
+                path: 'perfil',
+                loadComponent: () => import('./pages/perfil/perfil').then(module => module.PerfilComponent)
+            },
+            {   path: 'equipos-maquinaria',
+                loadComponent: () => import('./pages/equipo-maquinaria/equipo-maquinaria').then(module => module.EquipoMaquinariaComponent),
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_materiales'] }
+            },
+]
     },
     { path: '**', redirectTo: 'login' }
 ];

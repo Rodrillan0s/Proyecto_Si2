@@ -1,0 +1,5 @@
+# Dependencias del formato legacy .obratec, conservado para revisión histórica.
+# NO son necesarias para FastAPI -> backup_jobs -> Oracle. No instalar en Render para el pipeline VM.
+cryptography==50.0.2
+# Solo necesario para réplica S3 compatible; credenciales por cadena estándar de AWS.
+boto3>=1.40,<2

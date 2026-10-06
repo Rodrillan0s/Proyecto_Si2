@@ -30,3 +30,10 @@ class Config:
     # CREDENCIALES GEMINI IA
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
     GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-flash-latest")
+    AI_PROVIDER = os.getenv('AI_PROVIDER', 'deepseek' if os.getenv('DEEPSEEK_API_KEY') else 'gemini')
+    DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY')
+    DEEPSEEK_BASE_URL = os.getenv('DEEPSEEK_BASE_URL', 'https://api.deepseek.com')
+    DEEPSEEK_MODEL = os.getenv('DEEPSEEK_MODEL', 'deepseek-chat')
+    AI_TIMEOUT_SECONDS = int(os.getenv('AI_TIMEOUT_SECONDS', '30'))
+    SPEECH_PROVIDER = os.getenv('SPEECH_PROVIDER', 'disabled')
+    WHISPER_MODEL = os.getenv('WHISPER_MODEL', 'small')

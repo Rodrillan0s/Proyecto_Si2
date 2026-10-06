@@ -33,6 +33,11 @@ def create_access_token(nro_usuario, username, nombre_rol, id_empresa, nombre_em
         'iat': datetime.now(timezone.utc)
     }
 
+    from uuid import uuid4
+    from app.repos.backup_repos import epoch
+    payload['jti'] = str(uuid4())
+    payload['session_epoch'] = epoch()
+
     # Usamos Config.TOKEN_KEY que definiste en tu archivo de configuración
     return jwt.encode(payload, Config.TOKEN_KEY, algorithm="HS256")
 
@@ -49,6 +54,9 @@ def decode_access_token(token: str):
     """
     try:
         payload = jwt.decode(token, Config.TOKEN_KEY, algorithms=["HS256"])
+        from app.repos.backup_repos import epoch
+        if payload.get('session_epoch', 0) != epoch():
+            return {'success': False, 'message': 'La sesión fue revocada tras una restauración. Inicie sesión nuevamente.'}
         
         return {
             'success': True,

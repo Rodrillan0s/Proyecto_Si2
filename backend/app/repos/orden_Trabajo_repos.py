@@ -1,4 +1,5 @@
 from app.classes.postgres import PostgreSQL
+from app.repos.orden_trabajo_afectacion import AFECTADA_POR_INCIDENCIA_SQL
 
 
 def listar_ordenes_trabajo_fn(
@@ -12,7 +13,7 @@ def listar_ordenes_trabajo_fn(
     db.create_connection()
 
     try:
-        query = """
+        query = f"""
             SELECT
                 ot.orden_nro,
                 ot.id_obra,
@@ -25,7 +26,8 @@ def listar_ordenes_trabajo_fn(
                 ot.estado,
                 ot.fecha_inicio,
                 ot.fecha_fin,
-                ot.observacion
+                ot.observacion,
+                {AFECTADA_POR_INCIDENCIA_SQL} AS afectada_por_incidencia
             FROM obras.t_orden_trabajo ot
             INNER JOIN obras.t_obra o
                 ON o.id_obra = ot.id_obra
@@ -81,7 +83,8 @@ def listar_ordenes_trabajo_fn(
             "estado",
             "fecha_inicio",
             "fecha_fin",
-            "observacion"
+            "observacion",
+            "afectada_por_incidencia"
         ]
 
         data = [
@@ -114,7 +117,7 @@ def obtener_orden_trabajo_fn(
     db.create_connection()
 
     try:
-        query = """
+        query = f"""
             SELECT
                 ot.orden_nro,
                 ot.id_obra,
@@ -127,7 +130,8 @@ def obtener_orden_trabajo_fn(
                 ot.estado,
                 ot.fecha_inicio,
                 ot.fecha_fin,
-                ot.observacion
+                ot.observacion,
+                {AFECTADA_POR_INCIDENCIA_SQL} AS afectada_por_incidencia
             FROM obras.t_orden_trabajo ot
             INNER JOIN obras.t_obra o
                 ON o.id_obra = ot.id_obra
@@ -177,7 +181,8 @@ def obtener_orden_trabajo_fn(
             "estado",
             "fecha_inicio",
             "fecha_fin",
-            "observacion"
+            "observacion",
+            "afectada_por_incidencia"
         ]
 
         data = dict(zip(columnas, resultado))
@@ -541,7 +546,7 @@ def listar_historial_orden_trabajo_fn(
     db.create_connection()
 
     try:
-        query = """
+        query = f"""
             SELECT
                 ot.orden_nro,
                 ot.id_obra,
@@ -554,7 +559,8 @@ def listar_historial_orden_trabajo_fn(
                 ot.estado,
                 ot.fecha_inicio,
                 ot.fecha_fin,
-                ot.observacion
+                ot.observacion,
+                {AFECTADA_POR_INCIDENCIA_SQL} AS afectada_por_incidencia
             FROM obras.t_orden_trabajo ot
             INNER JOIN obras.t_obra o
                 ON o.id_obra = ot.id_obra
@@ -601,7 +607,8 @@ def listar_historial_orden_trabajo_fn(
             "estado",
             "fecha_inicio",
             "fecha_fin",
-            "observacion"
+            "observacion",
+            "afectada_por_incidencia"
         ]
 
         data = [

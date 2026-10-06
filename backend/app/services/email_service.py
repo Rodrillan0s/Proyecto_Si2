@@ -1,9 +1,43 @@
 import requests
+import base64
 
 from app.config import Config
 
 
 BREVO_EMAIL_URL = "https://api.brevo.com/v3/smtp/email"
+
+
+class ReportEmailError(RuntimeError):
+    def __init__(self, message, uncertain=False, retryable=False):
+        super().__init__(message)
+        self.uncertain = uncertain
+        self.retryable = retryable
+
+
+def enviar_reporte(destinatario, asunto, contenido, adjuntos, identidad):
+    if not Config.BREVO_API_KEY or not Config.BREVO_SENDER_EMAIL:
+        raise ReportEmailError('Brevo no tiene remitente y credenciales configurados.')
+    payload = {'sender':{'name':Config.BREVO_SENDER_NAME,'email':Config.BREVO_SENDER_EMAIL},
+        'to':[{'email':destinatario}],'subject':asunto,'textContent':contenido,
+        'attachment':[{'name':name,'content':base64.b64encode(content).decode('ascii')} for name,content in adjuntos],
+        'headers':{'X-Obratec-Delivery-ID':identidad}}
+    try:
+        response = requests.post(BREVO_EMAIL_URL,headers={'api-key':Config.BREVO_API_KEY,'Content-Type':'application/json'},json=payload,timeout=Config.BREVO_TIMEOUT_SECONDS)
+    except requests.RequestException:
+        raise ReportEmailError('No se pudo confirmar la aceptación del correo.',uncertain=True)
+    if response.status_code==429:
+        raise ReportEmailError('Brevo limitó temporalmente los envíos.',retryable=True)
+    if response.status_code>=500:
+        raise ReportEmailError('Brevo no confirmó el resultado del envío.',uncertain=True)
+    if not 200<=response.status_code<300:
+        raise ReportEmailError(f'Brevo rechazó el envío (HTTP {response.status_code}).')
+    try:
+        message_id = response.json().get('messageId')
+    except ValueError:
+        message_id = None
+    if not message_id:
+        raise ReportEmailError('Brevo respondió sin identificador de aceptación.',uncertain=True)
+    return message_id
 
 
 def _enviar_mensaje(destinatario: str, asunto: str, contenido: str):

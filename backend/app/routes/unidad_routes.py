@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Body, Depends, HTTPException, Request
-from app.services import unidad_services
-from app.utils.security import exigir_permiso
+from app.services import unidad_services, incidencia_services
+from app.utils.security import exigir_permiso, verificar_token
 
 
 router = APIRouter(prefix="/api/proyectos/{id_obra}/unidades", tags=["Unidades de Construcción"])
@@ -10,8 +10,23 @@ def _ip(request: Request):
     return request.client.host if request.client else "unknown"
 
 
+def acceso_listado_unidades(id_obra: int, token_data: dict = Depends(verificar_token)):
+    """CU19: consulta de unidades solo en las obras habilitadas para registro."""
+    if not incidencia_services.es_trabajador(token_data):
+        return exigir_permiso("Visualizar_obras")(token_data)
+    if not token_data.get("nro_usuario"):
+        raise HTTPException(status_code=403, detail="El token no identifica un trabajador.")
+    try:
+        obras = incidencia_services.obras_registro(token_data)["data"]
+    except incidencia_services.IncidenciaError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=str(exc))
+    if not any(obra["id_obra"] == id_obra for obra in obras):
+        raise HTTPException(status_code=403, detail="No pertenece al personal activo de esta obra o la obra no pertenece a su empresa.")
+    return token_data
+
+
 @router.get("/")
-def get_unidades(id_obra: int, token_data: dict = Depends(exigir_permiso("Visualizar_obras"))):
+def get_unidades(id_obra: int, token_data: dict = Depends(acceso_listado_unidades)):
     try:
         return unidad_services.listar_unidades(id_obra, token_data)
     except ValueError as e:

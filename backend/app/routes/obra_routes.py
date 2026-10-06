@@ -26,23 +26,6 @@ def get_siguiente_codigo(token_data: dict = Depends(exigir_permiso('Registrar_ob
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
-@router.get('/estimacion/parametros')
-def get_parametros_estimacion(token_data: dict = Depends(exigir_permiso('Visualizar_obras'))):
-    try:
-        return obra_services.obtener_parametros_estimacion(token_data)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
-
-@router.post('/estimar-preview')
-def estimar_preview(data: dict = Body(...), token_data: dict = Depends(exigir_permiso('Registrar_obras'))):
-    try:
-        return obra_services.calcular_preview_estimacion(data, token_data)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
-
-
 @router.get('/{id_obra}')
 def get_proyecto_detalle(id_obra: int, token_data: dict = Depends(exigir_permiso('Visualizar_obras'))):
     try:
@@ -51,16 +34,6 @@ def get_proyecto_detalle(id_obra: int, token_data: dict = Depends(exigir_permiso
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
-
-@router.get('/{id_obra}/estimacion')
-def get_proyecto_estimacion(id_obra: int, token_data: dict = Depends(exigir_permiso('Visualizar_obras'))):
-    try:
-        return obra_services.obtener_estimacion_obra(id_obra, token_data)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
-
 
 @router.post('/')
 def create_proyecto(request: Request, data: dict = Body(...), token_data: dict = Depends(exigir_permiso('Registrar_obras'))):
@@ -125,3 +98,29 @@ def remove_proyecto_responsable(id_obra: int, id_usuario: int, request: Request,
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno en BD: {str(e)}")
+
+
+@router.get('/{id_obra}/personal')
+def get_personal(id_obra: int, token_data: dict = Depends(exigir_permiso('Visualizar_obras'))):
+    try:
+        return obra_services.listar_personal(id_obra, token_data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get('/{id_obra}/personal/candidatos')
+def get_personal_candidatos(id_obra: int, token_data: dict = Depends(exigir_permiso('Modificar_obras'))):
+    try:
+        return obra_services.listar_personal(id_obra, token_data, candidatos=True)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post('/{id_obra}/personal')
+def assign_personal(id_obra: int, request: Request, data: dict = Body(...),
+                    token_data: dict = Depends(exigir_permiso('Modificar_obras'))):
+    try:
+        client_ip = request.client.host if request.client else 'unknown'
+        return obra_services.asignar_personal(id_obra, data.get('id_usuario'), token_data, client_ip)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))

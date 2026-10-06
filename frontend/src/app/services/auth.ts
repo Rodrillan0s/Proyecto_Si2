@@ -6,6 +6,11 @@ import { environment } from '../../environments/environment';
 
 
 export type PermisoNombre =
+  | 'Visualizar_reportes'
+  | 'Exportar_reportes'
+  | 'Enviar_reportes'
+  | 'Programar_reportes'
+  | 'Administrar_programaciones_reportes'
   | 'Visualizar_usuarios'
   | 'Registrar_usuarios'
   | 'Modificar_usuarios'
@@ -28,57 +33,94 @@ export type PermisoNombre =
   | 'Desactivar_materiales'
   | 'Visualizar_proveedores'
   | 'Registrar_proveedores'
-  | 'Modificar_proveedores';
+  | 'Modificar_proveedores'
+  | 'Visualizar_estimaciones'
+  | 'Registrar_estimaciones'
+  | 'Modificar_estimaciones'
+  | 'Eliminar_estimaciones'
+  | 'Visualizar_mano_obra'
+  | 'Registrar_mano_obra'
+  | 'Visualizar_control_costos'
+  | 'Registrar_costos_ejecutados'
+  | 'Anular_costos_ejecutados'
+  | 'Registrar_ordenes_cambio'
+  | 'Modificar_ordenes_cambio'
+  | 'Aprobar_ordenes_cambio'
+  | 'Visualizar_incidencias'
+  | 'Registrar_incidencias'
+  | 'Modificar_incidencias'
+  | 'Asignar_incidencias'
+  | 'Cerrar_incidencias';
 
 export const PERMISOS_OFICIALES: PermisoNombre[] = [
+  'Visualizar_reportes', 'Exportar_reportes', 'Enviar_reportes', 'Programar_reportes', 'Administrar_programaciones_reportes',
   'Visualizar_usuarios', 'Registrar_usuarios', 'Modificar_usuarios', 'Eliminar_usuarios',
   'Visualizar_obras', 'Registrar_obras', 'Modificar_obras', 'Eliminar_obras',
   'Visualizar_empresa', 'Registrar_empresa', 'Modificar_empresa', 'Eliminar_empresa',
   'Visualizar_inventario', 'Registrar_inventario', 'Modificar_inventario', 'Eliminar_inventario',
   'Visualizar_materiales', 'Registrar_materiales', 'Modificar_materiales', 'Desactivar_materiales',
-  'Visualizar_proveedores', 'Registrar_proveedores', 'Modificar_proveedores'
+  'Visualizar_proveedores', 'Registrar_proveedores', 'Modificar_proveedores',
+  'Visualizar_estimaciones', 'Registrar_estimaciones', 'Modificar_estimaciones', 'Eliminar_estimaciones', 'Visualizar_mano_obra', 'Registrar_mano_obra',
+  'Visualizar_control_costos', 'Registrar_costos_ejecutados', 'Anular_costos_ejecutados',
+  'Registrar_ordenes_cambio', 'Modificar_ordenes_cambio', 'Aprobar_ordenes_cambio',
+  'Visualizar_incidencias', 'Registrar_incidencias', 'Modificar_incidencias', 'Asignar_incidencias', 'Cerrar_incidencias'
 ];
 
 export const MAPA_PERMISOS_POR_ROL: Record<string, PermisoNombre[]> = {
   'ADMINISTRADOR': [...PERMISOS_OFICIALES],
   'ADMINISTRADOR_EMPRESA': [
+    'Visualizar_reportes', 'Exportar_reportes', 'Enviar_reportes', 'Programar_reportes', 'Administrar_programaciones_reportes',
     'Visualizar_usuarios', 'Registrar_usuarios', 'Modificar_usuarios', 'Eliminar_usuarios',
     'Visualizar_obras', 'Registrar_obras', 'Modificar_obras', 'Eliminar_obras',
     'Visualizar_empresa', 'Registrar_empresa', 'Modificar_empresa',
     'Visualizar_inventario', 'Registrar_inventario', 'Modificar_inventario', 'Eliminar_inventario',
     'Visualizar_materiales', 'Registrar_materiales', 'Modificar_materiales', 'Desactivar_materiales',
-    'Visualizar_proveedores', 'Registrar_proveedores', 'Modificar_proveedores'
+    'Visualizar_proveedores', 'Registrar_proveedores', 'Modificar_proveedores',
+    'Visualizar_estimaciones', 'Registrar_estimaciones', 'Modificar_estimaciones', 'Eliminar_estimaciones', 'Visualizar_mano_obra', 'Registrar_mano_obra',
+    'Visualizar_control_costos', 'Registrar_costos_ejecutados', 'Anular_costos_ejecutados',
+    'Registrar_ordenes_cambio', 'Modificar_ordenes_cambio', 'Aprobar_ordenes_cambio',
+    'Visualizar_incidencias', 'Registrar_incidencias', 'Modificar_incidencias', 'Asignar_incidencias', 'Cerrar_incidencias'
   ],
   'JEFE_DE_OBRA': [
+    'Visualizar_reportes', 'Exportar_reportes', 'Enviar_reportes', 'Programar_reportes',
     'Visualizar_obras', 'Registrar_obras', 'Modificar_obras',
     'Visualizar_inventario', 'Modificar_inventario',
     'Visualizar_materiales',
-    'Visualizar_proveedores'
+    'Visualizar_proveedores',
+    'Visualizar_control_costos', 'Registrar_costos_ejecutados', 'Anular_costos_ejecutados',
+    'Registrar_ordenes_cambio', 'Modificar_ordenes_cambio', 'Aprobar_ordenes_cambio',
+    'Visualizar_incidencias', 'Registrar_incidencias', 'Modificar_incidencias', 'Asignar_incidencias'
   ],
   'SUPERVISOR_OBRA': [
     'Visualizar_obras', 'Modificar_obras',
     'Visualizar_inventario',
-    'Visualizar_materiales'
+    'Visualizar_materiales',
+    'Visualizar_incidencias', 'Modificar_incidencias', 'Cerrar_incidencias'
   ],
   'CLIENTE': [
+    'Visualizar_reportes', 'Exportar_reportes',
     'Visualizar_obras'
   ],
   'ELECTRICO': [
+    'Visualizar_reportes', 'Exportar_reportes',
     'Visualizar_obras',
     'Visualizar_inventario',
     'Visualizar_materiales'
   ],
   'PLOMERO': [
+    'Visualizar_reportes', 'Exportar_reportes',
     'Visualizar_obras',
     'Visualizar_inventario',
     'Visualizar_materiales'
   ],
   'MAESTRO_ALBANIL': [
+    'Visualizar_reportes', 'Exportar_reportes',
     'Visualizar_obras',
     'Visualizar_inventario',
     'Visualizar_materiales'
   ],
   'ALBANIL': [
+    'Visualizar_reportes', 'Exportar_reportes',
     'Visualizar_obras',
     'Visualizar_inventario',
     'Visualizar_materiales'
