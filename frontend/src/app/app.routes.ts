@@ -7,7 +7,7 @@ import { HomeComponent } from './pages/home/home';
 import { RegistroComponent } from './pages/registro/registro';
 import { MainClienteComponent } from './pages/main-cliente/main-cliente';
 import { ProveedoresComponent } from './pages/proveedores/proveedores';
-
+import { ProyectoAvancesComponent } from './pages/proyectos/avances/proyecto-avances';
 //LAYOUTS
 import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout';
 
@@ -158,6 +158,10 @@ export const routes: Routes = [
                 canActivate: [roleGuard],
                 data: { permissions: ['Visualizar_materiales'] }
             },
+            {
+                path: 'proyectos/avances',
+                loadComponent: () => import('./pages/proyectos/avances/proyecto-avances').then(module => module.ProyectoAvancesComponent)
+            }
 ]
     },
     { path: '**', redirectTo: 'login' }
