@@ -16,6 +16,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../services/auth';
+import { SuscripcionService } from '../../services/suscripcion';
 import { AsistenteService, ASSISTANT_PERMISSIONS } from '../../services/asistente.service';
 import {
   Execution,
@@ -55,6 +56,7 @@ interface Recognition {
   styleUrl: './asistente.css',
 })
 export class AsistenteComponent implements OnInit, OnDestroy {
+  readonly suscripcion = inject(SuscripcionService);
   readonly ui = inject(AsistenteService);
   readonly contexto = inject(ContextoOperativo);
   private submitted = 0;
@@ -84,7 +86,7 @@ export class AsistenteComponent implements OnInit, OnDestroy {
   private stream?: MediaStream;
   private timer?: ReturnType<typeof setTimeout>;
   get available() {
-    return ASSISTANT_PERMISSIONS.some(permission => this.auth.hasPermission(permission));
+    return this.suscripcion.iaPermitida && ASSISTANT_PERMISSIONS.some(permission => this.auth.hasPermission(permission));
   }
   get canReports() {
     return this.auth.hasPermission('Visualizar_reportes');

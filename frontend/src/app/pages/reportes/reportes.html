@@ -8,7 +8,7 @@
     <div class="header-actions">
       <button (click)="load()" [disabled]="busy || loading || needsCompany">
         {{ loading ? 'Actualizando…' : 'Actualizar' }}</button
-      ><button class="primary" (click)="asistente.open()">Consultar al asistente ↗</button>
+      ><button *ngIf="can('Usar_ia')" class="primary" (click)="asistente.open()">Consultar al asistente ↗</button>
     </div>
   </header>
   <p *ngIf="error" role="alert" class="alert">{{ error }}</p>
@@ -237,7 +237,7 @@
           <button
             class="primary generate"
             (click)="generate()"
-            [disabled]="busy || loading || !!validation"
+            [disabled]="busy || loading || !!validation || !can('Generar_reportes')"
           >
             {{ busy ? 'Procesando…' : 'Generar reporte' }}
           </button>
@@ -257,7 +257,7 @@
             placeholder="Ej.: incidencias críticas del mes pasado"
             [disabled]="busy || loading"
           ></textarea
-          ><button (click)="interpret()" [disabled]="busy || loading || !texto.trim()">
+          ><button (click)="interpret()" [disabled]="busy || loading || !texto.trim() || !can('Generar_reportes')">
             Preparar filtros
           </button>
           <div *ngIf="response" class="notice">

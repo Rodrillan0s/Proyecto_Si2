@@ -16,6 +16,11 @@ class AIService:
         self.provider = provider
 
     def consultar_crm(self, pregunta: str, token: dict, id_empresa_solicitada=None, ip: str = "unknown") -> dict:
+        from app.services.suscripcion_policy import consulta_ia
+        with consulta_ia(token,id_empresa_solicitada):
+            return self._consultar_crm(pregunta,token,id_empresa_solicitada,ip)
+
+    def _consultar_crm(self, pregunta: str, token: dict, id_empresa_solicitada=None, ip: str = "unknown") -> dict:
         if not pregunta or not pregunta.strip():
             raise ValueError("La pregunta o consulta no puede estar vacía.")
 

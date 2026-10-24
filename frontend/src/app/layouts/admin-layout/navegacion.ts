@@ -44,6 +44,7 @@ export const NAVIGATION: NavSection[] = [
   })) },
   { id: 'ia', label: 'INTELIGENCIA ARTIFICIAL', icon: chat, items: [{ id: 'asistente', label: 'Asistente Inteligente', route: '/asistente', icon: chat, permissions: ASSISTANT_PERMISSIONS }] },
   { id: 'admin', label: 'ADMINISTRACIÓN', icon: settings, items: [
+    { id: 'configuracion-planes', label: 'Configuración de planes', route: '/configuracion-planes', icon: settings, global: true },
     { id: 'usuarios', label: 'Usuarios', route: '/usuarios', icon: people, permissions: ['Visualizar_usuarios'] },
     { id: 'roles', label: 'Roles y permisos', route: '/roles', icon: settings, permissions: ['Visualizar_usuarios'] },
     { id: 'empresas', label: 'Empresas', route: '/empresas', icon: work, permissions: ['Visualizar_empresa'] },
@@ -51,6 +52,7 @@ export const NAVIGATION: NavSection[] = [
     { id: 'backup', label: 'Copias de respaldo', route: '/backup', icon: stock, global: true },
   ] },
   { id: 'cuenta', label: 'CUENTA', icon: people, items: [
+    { id: 'suscripciones', label: 'Suscripción', route: '/suscripciones', icon: work },
     { id: 'perfil', label: 'Mi perfil', route: '/perfil', icon: people },
     { id: 'seguridad', label: 'Seguridad y sesión', route: '/panel', query: { tab: 'seguridad' }, icon: settings },
   ] },

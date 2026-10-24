@@ -34,6 +34,7 @@ export class ProyectoPresupuestoComponent implements OnInit, OnChanges {
 
   // Datos
   presupuestos: Presupuesto[] = [];
+  presupuestoSeleccionado?: Presupuesto;
   presupuestoActivo?: Presupuesto;
   consolidado?: PresupuestoConsolidado;
   comparativa?: ComparativaPresupuesto;
@@ -87,7 +88,7 @@ export class ProyectoPresupuestoComponent implements OnInit, OnChanges {
   formPresupuesto: Partial<Presupuesto> = this.formularioPresupuestoVacio();
   formPartida: any = this.formularioPartidaVacio();
   formCosto: any = this.formularioCostoVacio();
-  formComponenteApu: any = { tipo_recurso: 'MATERIAL', descripcion_recurso: '', id_unidad_medida: 0, cantidad: 1, rendimiento: 1, precio_unitario: 0 };
+  formComponenteApu: any = { tipo_recurso: 'MATERIAL', id_recurso: null, descripcion_recurso: '', id_unidad_medida: 0, unidad_medida_abrev: '', cantidad: 1, rendimiento: 1, precio_unitario: 0 };
   apuSeleccionadoDetalle?: Apu;
 
   ngOnInit() {
@@ -203,6 +204,7 @@ export class ProyectoPresupuestoComponent implements OnInit, OnChanges {
             const vigente = this.presupuestos.find(p => p.es_vigente);
             this.seleccionarPresupuesto(vigente || this.presupuestos[0]);
           } else {
+            this.presupuestoSeleccionado = undefined;
             this.presupuestoActivo = undefined;
           }
           this.cdr.detectChanges();
@@ -220,6 +222,10 @@ export class ProyectoPresupuestoComponent implements OnInit, OnChanges {
   }
 
   seleccionarPresupuesto(p: Presupuesto) {
+    this.presupuestoSeleccionado = p;
+    this.presupuestoActivo = undefined;
+    this.consolidado = undefined;
+    this.comparativa = undefined;
     this.cargando = true;
     this.service.obtenerPresupuesto(this.idObra, p.id_presupuesto)
       .pipe(finalize(() => { this.cargando = false; this.cdr.detectChanges(); }))
@@ -292,6 +298,27 @@ export class ProyectoPresupuestoComponent implements OnInit, OnChanges {
           this.cargarPresupuestos();
         },
         error: err => this.mostrarError(err?.error?.detail || 'No se pudo crear la nueva versión.')
+      });
+  }
+
+  eliminarPresupuesto() {
+    const presupuesto = this.presupuestoSeleccionado;
+    if (!presupuesto || !this.puedeEliminarPresupuesto() || this.guardando) return;
+    if (!confirm(`¿Eliminar el presupuesto borrador "${presupuesto.codigo} - ${presupuesto.nombre}" y todas sus partidas?`)) return;
+
+    this.guardando = true;
+    this.service.eliminarPresupuesto(this.idObra, presupuesto.id_presupuesto)
+      .pipe(finalize(() => { this.guardando = false; this.cdr.detectChanges(); }))
+      .subscribe({
+        next: res => {
+          this.presupuestoSeleccionado = undefined;
+          this.presupuestoActivo = undefined;
+          this.consolidado = undefined;
+          this.comparativa = undefined;
+          this.mostrarExito(res?.message || 'Presupuesto borrador eliminado.');
+          this.cargarPresupuestos();
+        },
+        error: err => this.mostrarError(err?.error?.detail || 'No se pudo eliminar el presupuesto.')
       });
   }
 
@@ -433,12 +460,23 @@ export class ProyectoPresupuestoComponent implements OnInit, OnChanges {
 
   onSeleccionarMaterialCatalogo(idMat: any) {
     const mat = this.materiales.find(m => m.id_material === +idMat);
-    if (mat) {
-      this.tempRecursoId = mat.id_material;
-      this.tempDescripcion = mat.nombre_material;
-      this.tempUnidadId = mat.unidad_medida?.id_unidad_medida || this.tempUnidadId;
-      this.tempPrecioUnitario = mat.precio || 0;
+    if (!idMat || !mat) {
+      this.tempRecursoId = null;
+      this.tempDescripcion = '';
+      this.tempUnidadId = 0;
+      this.tempPrecioUnitario = 0;
+      return;
     }
+    this.tempRecursoId = mat.id_material;
+    this.tempDescripcion = mat.nombre_material;
+    this.tempUnidadId = mat.unidad_medida?.id_unidad_medida || 0;
+    this.tempPrecioUnitario = Number(mat.precio) || 0;
+  }
+
+  unidadTempAbreviatura(): string {
+    const material = this.materiales.find(m => m.id_material === this.tempRecursoId);
+    if (material?.unidad_medida?.abreviatura) return material.unidad_medida.abreviatura;
+    return this.unidades.find(un => un.id_unidad_medida === +this.tempUnidadId)?.abreviatura || '';
   }
 
   onSeleccionarManoObraCatalogo(idMo: any) {
@@ -462,16 +500,33 @@ export class ProyectoPresupuestoComponent implements OnInit, OnChanges {
   }
 
   agregarComponenteWizard(tipo: 'MATERIAL' | 'MANO_OBRA' | 'EQUIPO') {
+    if (tipo === 'MATERIAL') {
+      const material = this.materiales.find(m => m.id_material === this.tempRecursoId);
+      if (!material) {
+        this.mostrarError('Seleccione un material del catálogo.');
+        return;
+      }
+      this.tempDescripcion = material.nombre_material;
+      this.tempUnidadId = material.unidad_medida?.id_unidad_medida || 0;
+      this.tempPrecioUnitario = Number(material.precio) || 0;
+    }
     if (!this.tempDescripcion.trim()) {
       this.mostrarError('Indique la descripción o seleccione un recurso.');
       return;
     }
-    if (this.tempRendimiento <= 0) {
-      this.mostrarError('El rendimiento debe ser mayor a 0.');
+    if (!Number.isFinite(+this.tempRendimiento) || this.tempRendimiento <= 0) {
+      this.mostrarError('La cantidad consumida debe ser mayor a 0.');
+      return;
+    }
+    if (!this.tempUnidadId) {
+      this.mostrarError('El recurso seleccionado no tiene una unidad de medida válida.');
       return;
     }
 
     const u = this.unidades.find(un => un.id_unidad_medida === +this.tempUnidadId);
+    const abreviaturaUnidad = this.materiales.find(m => m.id_material === this.tempRecursoId)?.unidad_medida?.abreviatura
+      || u?.abreviatura
+      || '';
     const subtotal = Math.round(this.tempRendimiento * this.tempPrecioUnitario * 100) / 100;
 
     this.formApu.componentes.push({
@@ -479,7 +534,7 @@ export class ProyectoPresupuestoComponent implements OnInit, OnChanges {
       id_recurso: this.tempRecursoId,
       descripcion_recurso: this.tempDescripcion.trim(),
       id_unidad_medida: +this.tempUnidadId || (this.unidades[0]?.id_unidad_medida || 1),
-      unidad_medida_abrev: u?.abreviatura || '',
+      unidad_medida_abrev: abreviaturaUnidad,
       rendimiento: +this.tempRendimiento,
       precio_unitario: +this.tempPrecioUnitario,
       subtotal: subtotal
@@ -585,22 +640,35 @@ export class ProyectoPresupuestoComponent implements OnInit, OnChanges {
 
   agregarComponente() {
     if (!this.apuSeleccionadoDetalle || this.guardando) return;
-    if (!this.formComponenteApu.descripcion_recurso || !this.formComponenteApu.id_unidad_medida) {
+    const tipo = this.formComponenteApu.tipo_recurso as 'MATERIAL' | 'MANO_OBRA' | 'EQUIPO';
+    const rendimiento = Number(this.formComponenteApu.rendimiento ?? this.formComponenteApu.cantidad);
+    if (!Number.isFinite(rendimiento) || rendimiento <= 0) {
+      this.mostrarError('La cantidad por unidad de APU debe ser mayor a cero.');
+      return;
+    }
+
+    const payload = { ...this.formComponenteApu, rendimiento, cantidad: rendimiento };
+    if (tipo === 'MATERIAL') {
+      const material = this.materiales.find(m => m.id_material === Number(payload.id_recurso));
+      if (!material) {
+        this.mostrarError('Seleccione un material del catálogo.');
+        return;
+      }
+      payload.descripcion_recurso = material.nombre_material;
+      payload.id_unidad_medida = material.unidad_medida.id_unidad_medida;
+      payload.unidad_medida_abrev = material.unidad_medida.abreviatura;
+      payload.precio_unitario = Number(material.precio) || 0;
+    } else if (!payload.descripcion_recurso || !payload.id_unidad_medida) {
       this.mostrarError('Complete la descripción y unidad del componente.');
       return;
     }
+
     this.guardando = true;
-    const rend = this.formComponenteApu.rendimiento || this.formComponenteApu.cantidad || 1;
-    const payload = {
-      ...this.formComponenteApu,
-      rendimiento: rend,
-      cantidad: rend
-    };
     this.service.agregarComponenteApu(this.apuSeleccionadoDetalle.id_apu, payload)
       .pipe(finalize(() => { this.guardando = false; this.cdr.detectChanges(); }))
       .subscribe({
         next: (res: any) => {
-          this.formComponenteApu = { tipo_recurso: 'MATERIAL', descripcion_recurso: '', id_unidad_medida: 0, cantidad: 1, rendimiento: 1, precio_unitario: 0 };
+          this.formComponenteApu = { tipo_recurso: 'MATERIAL', id_recurso: null, descripcion_recurso: '', id_unidad_medida: 0, unidad_medida_abrev: '', cantidad: 1, rendimiento: 1, precio_unitario: 0 };
           if (res?.version_nueva_creada) {
             this.mostrarExito(`El APU estaba en uso. Se ha creado la nueva versión v${res.version} preservando la histórica.`);
           } else {
@@ -611,6 +679,29 @@ export class ProyectoPresupuestoComponent implements OnInit, OnChanges {
         },
         error: err => this.mostrarError(err?.error?.detail || 'Error al agregar componente.')
       });
+  }
+
+  onTipoRecursoComponenteChange() {
+    this.formComponenteApu.id_recurso = null;
+    this.formComponenteApu.descripcion_recurso = '';
+    this.formComponenteApu.id_unidad_medida = 0;
+    this.formComponenteApu.unidad_medida_abrev = '';
+    this.formComponenteApu.precio_unitario = 0;
+  }
+
+  onSeleccionarMaterialComponente(idMaterial: number | null) {
+    const material = this.materiales.find(m => m.id_material === Number(idMaterial));
+    if (!material) {
+      this.formComponenteApu.descripcion_recurso = '';
+      this.formComponenteApu.id_unidad_medida = 0;
+      this.formComponenteApu.unidad_medida_abrev = '';
+      this.formComponenteApu.precio_unitario = 0;
+      return;
+    }
+    this.formComponenteApu.descripcion_recurso = material.nombre_material;
+    this.formComponenteApu.id_unidad_medida = material.unidad_medida.id_unidad_medida;
+    this.formComponenteApu.unidad_medida_abrev = material.unidad_medida.abreviatura;
+    this.formComponenteApu.precio_unitario = Number(material.precio) || 0;
   }
 
   eliminarComponente(c: ApuComponente) {
@@ -689,6 +780,36 @@ export class ProyectoPresupuestoComponent implements OnInit, OnChanges {
   // Permisos y utilidades
   puedeModificar(): boolean {
     return this.auth.hasPermission('Modificar_presupuesto') && this.presupuestoActivo?.estado !== 'APROBADO' && this.presupuestoActivo?.estado !== 'CERRADO';
+  }
+
+  puedeVerAccionEliminarPresupuesto(): boolean {
+    const rol = this.auth.obtenerRolNormalizado();
+    return this.presupuestos.length > 0
+      && (
+        rol === 'ADMINISTRADOR'
+        || rol === 'ADMINISTRADOR_EMPRESA'
+        || this.auth.hasPermission('Modificar_presupuesto')
+      );
+  }
+
+  puedeEliminarPresupuesto(): boolean {
+    return !this.cargando
+      && (
+        this.auth.hasPermission('Modificar_presupuesto')
+        || this.auth.obtenerRolNormalizado() === 'ADMINISTRADOR_EMPRESA'
+        || this.auth.obtenerRolNormalizado() === 'ADMINISTRADOR'
+      )
+      && this.presupuestoSeleccionado?.estado === 'BORRADOR';
+  }
+
+  estadoAccionEliminarPresupuesto(): string {
+    if (this.presupuestoSeleccionado?.estado !== 'BORRADOR') {
+      return 'Selecciona una versión en estado BORRADOR para poder eliminarla.';
+    }
+    if (this.cargando) {
+      return 'Espera a que termine la carga del presupuesto.';
+    }
+    return 'Eliminar el presupuesto borrador seleccionado.';
   }
 
   puedeAprobar(): boolean {

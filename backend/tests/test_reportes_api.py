@@ -48,6 +48,9 @@ class ReportesApiTests(unittest.TestCase):
         self.assertIn('/api/voz/transcribir', app.openapi()['paths'])
 
     def setUp(self):
+        disabled = patch.dict('os.environ', {'BACKUP_ENABLED':'false'})
+        disabled.start()
+        self.addCleanup(disabled.stop)
         self.app = FastAPI()
         self.app.include_router(router)
         self.app.dependency_overrides[verificar_token] = lambda: {'nro_usuario':1,'id_empresa':7}

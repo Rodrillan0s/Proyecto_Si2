@@ -1,0 +1,4 @@
+{
+  "extends": "./tsconfig.spec.json",
+  "include": ["src/app/pages/suscripciones/suscripciones.spec.ts", "src/app/pages/configuracion-planes/configuracion-planes.spec.ts", "src/**/*.d.ts"]
+}

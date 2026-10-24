@@ -1,5 +1,6 @@
 """Pruebas aisladas: no conectan DB, no invocan IA ni envían correos reales."""
 import unittest
+import pytest
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -18,6 +19,18 @@ from app.services.reportes import worker
 from app.services import reportes_services as services, email_service
 from app.services.ai.providers import DeepSeekProvider, ProviderError, get_provider
 from app.config import Config
+
+
+@pytest.fixture(autouse=True)
+def plan_reportes(monkeypatch):
+    """Empresa Empresarial de prueba; la política real sigue ejecutándose sin conexiones."""
+    from app.services import suscripcion_policy as policy
+    from datetime import date
+    monkeypatch.setattr(policy,'obtener',lambda *args: dict(codigo_plan='EMPRESARIAL',estado='ACTIVA',fecha_inicio=date(2020,1,1),
+        fecha_fin=None,consultas_ia_mes=500,nivel_reportes='TODOS',exportar_reportes=True,automatizar_reportes=True,modulos=list(policy.MODULOS)))
+    monkeypatch.setattr(policy.repo,'obtener_usuario',lambda _: dict(id_empresa=7,estado='ACTIVO',nombre_rol='ADMINISTRADOR_EMPRESA'))
+    monkeypatch.setattr(policy.repo,'reservar_ia',lambda *args: True)
+    monkeypatch.setattr(policy.repo,'liberar_ia',lambda *args: None)
 
 
 def actor(role='ADMINISTRADOR_EMPRESA', permissions=None, uid=1, company=7):
@@ -229,7 +242,7 @@ class TransportTests(unittest.TestCase):
         from app.services.ai import assistant_service as assistant
         execution = {'id':'exec','resultado':{'reporte':'stock','solicitud':request,'titulo':'Stock','resumen':{'registros':3},'advertencias':['Existencias actuales.'],'recomendaciones':[], 'filas':[]}}
         with patch.object(services.repo,'transaction',fake_transaction),patch.object(assistant,'context',return_value=actor()),patch.object(services.repo,'works',return_value=[]),patch.object(services,'owned'),patch.object(services,'create',return_value=execution) as query,patch('app.services.ai.assistant_service.get_provider',side_effect=ProviderError()):
-            result = services.assistant({'nro_usuario':1},Interpretation(texto='stock'),7)
+            result = services.assistant({'nro_usuario':1,'id_empresa':7,'nombre_rol':'ADMINISTRADOR_EMPRESA'},Interpretation(texto='stock'),7)
             self.assertIn('3',result['respuesta'])
             self.assertEqual(result['ejecucion']['id'],'exec')
             self.assertEqual(query.call_args.args[1].reporte,'stock')
@@ -244,7 +257,7 @@ class TransportTests(unittest.TestCase):
         crm_actor = actor(permissions=['Visualizar_clientes'])
         provider = MagicMock();provider.generar_respuesta.return_value='Hay 3 prospectos.'
         with patch.object(services.repo,'transaction',fake_transaction),patch('app.services.ai.ai_service.context',return_value=crm_actor),patch('app.services.ai.ai_service.ContextBuilder.construir_contexto_crm',return_value={'empresa_autorizada':7,'metricas_crm':{'prospectos':3}}),patch('app.services.ai.ai_service.crm_services._log'):
-            response = AIService(provider).consultar_crm('Cuántos prospectos',{'nro_usuario':1},7)
+            response = AIService(provider).consultar_crm('Cuántos prospectos',{'nro_usuario':1,'id_empresa':7,'nombre_rol':'ADMINISTRADOR_EMPRESA'},7)
             self.assertTrue(response['success'])
             self.assertEqual(response['respuesta'],'Hay 3 prospectos.')
             self.assertEqual(response['metricas'],{'prospectos':3})

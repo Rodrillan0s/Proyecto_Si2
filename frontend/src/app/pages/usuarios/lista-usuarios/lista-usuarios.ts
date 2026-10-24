@@ -246,9 +246,9 @@ export class ListaUsuariosComponent implements OnInit {
             this.cargarUsuarios();
           });
         },
-        error: () => {
+        error: (err) => {
           this.ngZone.run(() => {
-            alert('Error al actualizar el usuario.');
+            alert(err?.error?.detail || 'Error al actualizar el usuario.');
             this.cargando = false;
             this.cdr.detectChanges();
           });
@@ -268,9 +268,9 @@ export class ListaUsuariosComponent implements OnInit {
             this.cargarUsuarios();
           });
         },
-        error: () => {
+        error: (err) => {
           this.ngZone.run(() => {
-            alert('Error al crear el usuario. Verifique los datos.');
+            alert(err?.error?.detail || 'Error al crear el usuario. Verifique los datos.');
             this.cargando = false;
             this.cdr.detectChanges();
           });

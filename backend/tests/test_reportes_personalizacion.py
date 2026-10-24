@@ -14,7 +14,7 @@ from app.services.reportes.authorization import allowed
 from app.services.reportes.exporters import export
 from app.services.reportes.scheduling import period_request
 from app.services.ai.providers import ProviderError
-from test_reportes import actor, fake_transaction
+from test_reportes import actor, fake_transaction, plan_reportes
 
 
 class CustomReportsTests(unittest.TestCase):

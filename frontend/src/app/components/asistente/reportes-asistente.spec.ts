@@ -8,6 +8,7 @@ import { AuthService } from '../../services/auth';
 import { AiService } from '../../services/ai.service';
 import { AssistantResponse, ReportesService } from '../../services/reportes.service';
 import { ContextoOperativo } from '../../services/contexto-operativo';
+import { SuscripcionService } from '../../services/suscripcion';
 
 describe('Asistente flotante', () => {
   let company: number;
@@ -19,6 +20,13 @@ describe('Asistente flotante', () => {
     create: ReturnType<typeof vi.fn>;
   };
   const crm = { consultarCRM: vi.fn(() => of({ respuesta: 'Dos prospectos.' })) };
+  it('no ofrece el asistente sin capacidad IA aunque tenga permisos de módulos', () => {
+    TestBed.overrideProvider(SuscripcionService, { useValue: { iaPermitida: false } });
+    const fixture=TestBed.createComponent(AsistenteComponent); fixture.detectChanges();
+    expect(fixture.componentInstance.available).toBe(false);
+    expect(fixture.nativeElement.querySelector('.launcher')).toBeNull();
+    fixture.destroy();
+  });
   it('consulta con permiso de proveedor sin exigir un catalogo de Reportes', async () => {
     vi.spyOn(TestBed.inject(AuthService), 'hasPermission').mockImplementation(permission => permission === 'Visualizar_proveedores');
     const fixture = TestBed.createComponent(AsistenteComponent); fixture.detectChanges();
@@ -59,6 +67,7 @@ describe('Asistente flotante', () => {
     TestBed.configureTestingModule({
       imports: [AsistenteComponent],
       providers: [
+        { provide: SuscripcionService, useValue: { iaPermitida: true } },
         provideRouter([]),
         { provide: ReportesService, useValue: api },
         { provide: AiService, useValue: crm },

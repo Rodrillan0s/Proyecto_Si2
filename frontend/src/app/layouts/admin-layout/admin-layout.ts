@@ -23,6 +23,7 @@ import { FormsModule } from '@angular/forms';
 import { EmpresaService } from '../../services/empresa';
 import { AsistenteComponent } from '../../components/asistente/asistente';
 import { AsistenteService, ASSISTANT_PERMISSIONS } from '../../services/asistente.service';
+import { SuscripcionService } from '../../services/suscripcion';
 
 @Component({
   selector: 'app-admin-layout',
@@ -32,6 +33,7 @@ import { AsistenteService, ASSISTANT_PERMISSIONS } from '../../services/asistent
   styleUrl: './admin-layout.css'
 })
 export class AdminLayoutComponent implements OnInit {
+  readonly suscripcion = inject(SuscripcionService);
   readonly assistantPermissions = ASSISTANT_PERMISSIONS;
   readonly contexto = inject(ContextoOperativo);
   private proyectos = inject(ProyectosService);
@@ -49,6 +51,7 @@ export class AdminLayoutComponent implements OnInit {
   get sections() { return NAVIGATION.map(section => ({ ...section, items: section.items.filter(item =>
     (!item.global || this.esAdministradorGlobal()) && (!item.permissions || this.hasAnyPermission(item.permissions)) &&
     (!item.all || this.authService.hasAllPermissions(item.all)) &&
+    (item.id !== 'asistente' || this.suscripcion.iaPermitida) &&
     (!item.family || this.reportIds === undefined || REPORT_FAMILIES[item.family].some(id => this.reportIds!.includes(id)))
   ) })).filter(section => section.items.length); }
   trackSection(_index: number, section: NavSection) { return section.id; }
@@ -129,6 +132,7 @@ export class AdminLayoutComponent implements OnInit {
     if (!isPlatformBrowser(this.platformId)) return;
 
     this.usuarioActual = this.authService.obtenerUsuario();
+    this.suscripcion.cargarAcceso();
 
     if (!this.usuarioActual) {
       this.cerrarSesion();

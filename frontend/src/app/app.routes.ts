@@ -32,6 +32,8 @@ export const routes: Routes = [
         component: AdminLayoutComponent,
         canActivate: [authGuard],
         children: [
+            { path: 'configuracion-planes', loadComponent: () => import('./pages/configuracion-planes/configuracion-planes').then(module => module.ConfiguracionPlanesComponent), canActivate: [roleGuard], data: { roles: ['ADMINISTRADOR'] } },
+            { path: 'suscripciones', loadComponent: () => import('./pages/suscripciones/suscripciones').then(module => module.SuscripcionesComponent) },
             { path: 'reportes', loadComponent: () => import('./pages/reportes/reportes').then(module => module.ReportesComponent) },
             { path: 'asistente', loadComponent: () => import('./pages/asistente/asistente-workspace').then(module => module.AsistenteWorkspace), canActivate: [roleGuard], data: { permissions: ASSISTANT_PERMISSIONS } },
             { path: 'panel', loadComponent: () => import('./pages/panel/panel').then(module => module.PanelComponent) },

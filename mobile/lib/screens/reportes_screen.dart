@@ -101,7 +101,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
 
   Future<void> _interpret() => _perform(() async {
     final generation = _generation;
-    final response = await _api.interpret(_text.text, _company, _conversation, _ai);
+    final response = await _api.interpret(_text.text, _company, _conversation, _ai && _can('Usar_ia'));
     if (!mounted || generation != _generation) return;
     setState(() {
       _response = response; _conversation = response['conversacion'];
@@ -211,15 +211,16 @@ class _ReportesScreenState extends State<ReportesScreen> {
         if (_busy) const LinearProgressIndicator(),
         if (_error != null) Padding(padding: const EdgeInsets.all(8), child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error))),
         if (_notice != null) Text(_notice!),
-        if (_reports.isNotEmpty) _section('Solicitar por texto o voz', [
+        if ((_catalog['suscripcion'] as Map?)?['solo_lectura'] == true) const Text('Tu empresa está en modo de solo lectura. Puedes consultar los reportes existentes.'),
+        if (_reports.isNotEmpty && _can('Generar_reportes')) _section('Solicitar por texto o voz', [
           TextField(controller: _text, maxLength: 2000, decoration: const InputDecoration(labelText: 'Ej.: incidencias críticas del mes pasado')),
-          SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Ayuda de IA para solicitudes complejas'), value: _ai, onChanged: (v) => setState(() => _ai = v)),
-          Wrap(children: [_button(_listening ? 'Detener voz' : 'Micrófono', _voice), _button('Interpretar', _interpret)]),
+          if (_can('Usar_ia')) SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Ayuda de IA para solicitudes complejas'), value: _ai, onChanged: (v) => setState(() => _ai = v)),
+          Wrap(children: [if (_can('Usar_ia')) _button(_listening ? 'Detener voz' : 'Micrófono', _voice), _button('Interpretar', _interpret)]),
           if (_response.isNotEmpty) Text(_response['mensaje'] ?? ''),
           Wrap(children: [for (final title in (_response['opciones'] as List? ?? [])) ActionChip(label: Text(title), onPressed: () { final report = _reports.where((r) => r['titulo'] == title).firstOrNull; if (report != null) setState(() { _selected = report['id']; _response = {}; }); }),
             for (final work in (_response['obras'] as List? ?? [])) ActionChip(label: Text(work['nombre']), onPressed: () => setState(() { _work = work['id_obra']; _response = {}; }))]),
         ]),
-        if (_reports.isNotEmpty) _section('Preparar reporte', [
+        if (_reports.isNotEmpty && _can('Generar_reportes')) _section('Preparar reporte', [
           DropdownButtonFormField<String>(initialValue: _selected, key: ValueKey('report-$_selected'), decoration: const InputDecoration(labelText: 'Reporte'), items: _reports.map((r) => DropdownMenuItem(value: r['id'].toString(), child: Text(r['titulo']))).toList(), onChanged: (v) => setState(() { _selected = v; _execution = {}; _desde = _hasta = null; _priority = null; _state.clear(); _category.clear(); _query.clear(); _period = 'fijo'; })),
           if (_selected != 'stock') DropdownButtonFormField<int>(initialValue: _work, key: ValueKey('work-$_work'), decoration: const InputDecoration(labelText: 'Obra'), items: [const DropdownMenuItem<int>(value: null, child: Text('Todas las obras accesibles')), ..._works.map((w) => DropdownMenuItem<int>(value: w['id_obra'], child: Text(w['nombre'])))], onChanged: (v) => setState(() => _work = v)),
           if (_definition['fechas'] == true) Wrap(children: [_button('Desde: ${_desde ?? 'sin filtro'}', () => _date(true)), _button('Hasta: ${_hasta ?? 'sin filtro'}', () => _date(false))]),

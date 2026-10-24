@@ -62,6 +62,7 @@ class PostgreSQL():
                 self.conn = p.getconn()
             self.cur = self.conn.cursor()
             self._from_pool = True
+            return
         except Exception as e:
             print(f"No se pudo inicializar el connection pool: {e}")
 

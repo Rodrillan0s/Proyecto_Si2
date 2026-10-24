@@ -10,6 +10,7 @@ import { NotificacionesService } from '../../services/notificaciones';
 import { AsistenteService } from '../../services/asistente.service';
 import { ContextoOperativo } from '../../services/contexto-operativo';
 import { AdminLayoutComponent } from './admin-layout';
+import { SuscripcionService } from '../../services/suscripcion';
 describe('Navegación compatible con la sesión existente', () => {
   let company: number; let companies: BehaviorSubject<unknown>; let permissions: Set<string>;
   beforeEach(() => {
@@ -24,6 +25,7 @@ describe('Navegación compatible con la sesión existente', () => {
         hasAnyPermission: (p: string[]) => p.some(id => permissions.has(id)), hasAllPermissions: (p: string[]) => p.every(id => permissions.has(id)),
       } },
       { provide: NotificacionesService, useValue: { conectar: vi.fn(), notificaciones$: of([]) } },
+      { provide: SuscripcionService, useValue: { iaPermitida: true, cargarAcceso: vi.fn(), acceso: () => null } },
       { provide: EmpresaService, useValue: { listarEmpresas: () => of({ data: [] }) } },
       { provide: ProyectosService, useValue: { listarProyectos: () => of({ data: [{ id_obra: 9, id_empresa: 7, nombre: 'Obra nueve', codigo: 'O9' }] }) } },
       { provide: ReportesService, useValue: { catalog: async () => ({ reportes: [{ id: 'incidencias', titulo: 'Incidencias' }], obras: [], acciones: [], id_empresa: company }) } },
@@ -64,5 +66,15 @@ describe('Navegación compatible con la sesión existente', () => {
     const fixture = TestBed.createComponent(AdminLayoutComponent); const component = fixture.componentInstance;
     component.consultaAsistente = 'stock'; component.abrirConsultaAsistente();
     const ui = TestBed.inject(AsistenteService); expect(ui.mode()).toBe('quick'); expect(ui.draft()).toBe('stock'); expect(ui.submissions()).toBe(1); fixture.destroy();
+  });
+  it('oculta IA y muestra solo lectura cuando el plan no permite escribir', () => {
+    TestBed.overrideProvider(SuscripcionService, { useValue: {
+      iaPermitida: false, cargarAcceso: vi.fn(), acceso: () => ({ solo_lectura: true, estado_efectivo: 'VENCIDA' }),
+    } });
+    const fixture=TestBed.createComponent(AdminLayoutComponent); fixture.detectChanges();
+    expect(fixture.componentInstance.sections.some(section => section.id==='ia')).toBe(false);
+    expect(fixture.nativeElement.querySelector('app-asistente')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('modo de solo lectura');
+    fixture.destroy();
   });
 });

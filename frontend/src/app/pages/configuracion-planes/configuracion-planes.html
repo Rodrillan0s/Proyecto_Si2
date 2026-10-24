@@ -1,0 +1,74 @@
+<main class="max-w-6xl mx-auto p-4 sm:p-8 text-slate-900 dark:text-slate-100">
+  <a routerLink="/suscripciones" class="text-sm underline">Volver a suscripciones</a>
+  <h1 class="text-2xl font-bold mt-4">Configuración de planes</h1>
+  <p class="text-sm text-slate-500 dark:text-slate-400 mt-2 mb-6">Edita las capacidades compartidas por todas las empresas de un plan. Los permisos individuales siguen vigentes.</p>
+  <p *ngIf="cargando()" role="status">Cargando planes…</p>
+  <p *ngIf="error()" role="alert" class="p-4 mb-4 bg-red-50 text-red-800 rounded">{{ error() }} <button type="button" (click)="cargar()" [disabled]="trabajando()" class="underline">Recargar planes</button></p>
+  <p *ngIf="mensaje()" role="status" class="p-4 mb-4 bg-green-50 text-green-800 rounded">{{ mensaje() }}</p>
+
+  <div *ngIf="!cargando() && planes().length">
+    <label class="block font-bold mb-6">Plan que deseas configurar
+      <select [ngModel]="codigo" (ngModelChange)="elegir($event)" [disabled]="trabajando()" class="block w-full sm:w-80 mt-2 p-3 border rounded bg-white dark:bg-slate-800">
+        <option *ngFor="let plan of planes()" [value]="plan.codigo">{{ plan.nombre }}</option>
+      </select>
+    </label>
+
+    <form (ngSubmit)="revisar()" #editor="ngForm" class="p-6 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded">
+      <fieldset [disabled]="trabajando()" class="space-y-6">
+        <legend class="text-lg font-bold mb-4">Definición del plan</legend>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="text-sm">Nombre<input name="nombre" [(ngModel)]="form.nombre" (ngModelChange)="cambio()" required maxlength="80" class="block w-full mt-1 p-2 border rounded bg-white dark:bg-slate-800"></label>
+          <label class="text-sm">Descripción<input name="descripcion" [(ngModel)]="form.descripcion" (ngModelChange)="cambio()" maxlength="1000" class="block w-full mt-1 p-2 border rounded bg-white dark:bg-slate-800"></label>
+          <label class="text-sm">Usuarios activos por empresa<input name="usuarios" type="number" [(ngModel)]="form.limite_usuarios" (ngModelChange)="cambio()" required min="1" max="100000" step="1" class="block w-full mt-1 p-2 border rounded bg-white dark:bg-slate-800"></label>
+          <label class="text-sm">Obras activas por empresa<input name="obras" type="number" [(ngModel)]="form.limite_obras" (ngModelChange)="cambio()" required min="1" max="100000" step="1" class="block w-full mt-1 p-2 border rounded bg-white dark:bg-slate-800"></label>
+        </div>
+        <div>
+          <h2 class="font-bold">Módulos habilitados</h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 mb-3">Al retirar un módulo, se conservan sus registros en solo lectura. La IA y la generación de reportes requieren sus capacidades habilitadas.</p>
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <label *ngFor="let modulo of modulos()" class="flex items-center gap-2 text-sm py-2"><input type="checkbox" [checked]="tiene(modulo.codigo)" (change)="alternar(modulo.codigo,$any($event.target).checked)">{{ modulo.nombre }}</label>
+          </div>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="text-sm">Nivel de reportes
+            <select name="reportes" [(ngModel)]="form.nivel_reportes" (ngModelChange)="cambiarReportes()" [disabled]="!tiene('reportes')" class="block w-full mt-1 p-2 border rounded bg-white dark:bg-slate-800">
+              <option value="NINGUNO">Sin generación de reportes</option><option value="OPERATIVOS">Operativos básicos</option><option value="TODOS">Operativos y financieros</option>
+            </select>
+          </label>
+          <label class="text-sm">Consultas de IA por empresa y mes<input name="ia" type="number" [(ngModel)]="form.consultas_ia_mes" (ngModelChange)="cambio()" [disabled]="!tiene('ia')" [min]="tiene('ia') ? 1 : 0" max="1000000" step="1" required class="block w-full mt-1 p-2 border rounded bg-white dark:bg-slate-800"></label>
+          <label class="flex gap-2 items-center text-sm"><input type="checkbox" name="exportar" [(ngModel)]="form.exportar_reportes" (ngModelChange)="cambiarReportes()" [disabled]="!tiene('reportes') || form.nivel_reportes === 'NINGUNO'">Exportación PDF y Excel</label>
+          <label class="flex gap-2 items-center text-sm"><input type="checkbox" name="automatizar" [(ngModel)]="form.automatizar_reportes" (ngModelChange)="cambio()" [disabled]="!form.exportar_reportes">Envíos y programación de reportes</label>
+        </div>
+        <button type="submit" [disabled]="editor.invalid || trabajando()" class="px-5 py-2 bg-amber-600 text-white rounded disabled:opacity-50">{{ trabajando() ? 'Procesando…' : 'Revisar impacto' }}</button>
+      </fieldset>
+    </form>
+
+    <section *ngIf="impacto() as vista" aria-label="Revisión del impacto" class="p-6 mt-6 border border-amber-500 bg-white dark:bg-slate-900 rounded">
+      <h2 class="text-lg font-bold">Revisión antes de guardar</h2>
+      <p class="mt-2">{{ vista.total_empresas }} empresa(s) afectada(s).</p>
+      <p class="text-sm mt-2">{{ vista.mensaje }}</p>
+      <ul class="mt-3 space-y-2"><li *ngFor="let empresa of vista.empresas">{{ empresa.nombre_empresa }} · {{ empresa.usuarios_activos }} usuarios activos · {{ empresa.obras_activas }} obras activas</li></ul>
+      <p *ngIf="!vista.empresas.length" class="mt-3 text-sm">Ninguna empresa tiene este plan actualmente. La configuración regirá para futuras asignaciones.</p>
+      <div *ngIf="vista.modulos_retirados.length" class="mt-4"><h3 class="font-bold">Módulos que pasarán a solo lectura</h3><ul><li *ngFor="let modulo of vista.modulos_retirados">{{ modulo.nombre }}</li></ul></div>
+      <div *ngIf="vista.empresas_sobre_cupo.length" class="mt-4"><h3 class="font-bold">Empresas que quedarán por encima del cupo</h3><ul><li *ngFor="let empresa of vista.empresas_sobre_cupo">{{ empresa.nombre_empresa }}</li></ul><p class="text-sm">Sus datos se conservan; no podrán crear o reactivar recursos hasta liberar capacidad o cambiar de plan.</p></div>
+      <label class="flex items-start gap-2 my-5"><input type="checkbox" [(ngModel)]="confirmado" [disabled]="trabajando()"><span>Revisé los cambios y confirmo su aplicación a todas las empresas de este plan.</span></label>
+      <button type="button" (click)="guardar()" [disabled]="!confirmado || trabajando()" class="px-5 py-2 bg-amber-600 text-white rounded disabled:opacity-50">Guardar configuración</button>
+    </section>
+
+    <section class="mt-8" aria-label="Historial de configuración">
+      <h2 class="text-lg font-bold">Historial del plan</h2>
+      <p *ngIf="cargandoHistorial()" role="status">Cargando historial…</p>
+      <p *ngIf="errorHistorial()" role="alert">{{ errorHistorial() }} <button (click)="cargarHistorial()" class="underline">Reintentar</button></p>
+      <p *ngIf="!cargandoHistorial() && !errorHistorial() && !historial().length" class="text-sm text-slate-500 mt-2">Todavía no hay cambios administrativos registrados.</p>
+      <details *ngFor="let item of historial()" class="mt-3 p-4 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded">
+        <summary class="cursor-pointer font-medium">{{ item.creado_en | date:'medium' }} · Versión {{ item.version }} · Administrador {{ item.id_actor || 'no disponible' }}</summary>
+        <p class="text-sm mt-3">Nombre: {{ item.antes.nombre }} → {{ item.despues.nombre }}</p>
+        <p class="text-sm mt-3">Usuarios: {{ item.antes.limite_usuarios }} → {{ item.despues.limite_usuarios }} · Obras: {{ item.antes.limite_obras }} → {{ item.despues.limite_obras }} · IA: {{ item.antes.consultas_ia_mes }} → {{ item.despues.consultas_ia_mes }}</p>
+        <p class="text-sm mt-2">Módulos anteriores: {{ nombres(item.antes.modulos) }}</p>
+        <p class="text-sm mt-2">Módulos posteriores: {{ nombres(item.despues.modulos) }}</p>
+        <p class="text-sm mt-2">Reportes: {{ item.antes.nivel_reportes }} → {{ item.despues.nivel_reportes }} · Exportación: {{ item.antes.exportar_reportes ? 'Sí' : 'No' }} → {{ item.despues.exportar_reportes ? 'Sí' : 'No' }} · Envíos: {{ item.antes.automatizar_reportes ? 'Sí' : 'No' }} → {{ item.despues.automatizar_reportes ? 'Sí' : 'No' }}</p>
+        <p class="text-sm mt-2">{{ item.empresas_afectadas.length }} empresa(s) afectada(s) al guardar.</p>
+      </details>
+    </section>
+  </div>
+</main>

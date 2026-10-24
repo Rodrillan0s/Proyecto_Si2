@@ -10,7 +10,7 @@ def obtener_todos_los_usuarios(id_empresa=None):
             SELECT 
                 a.id_usuario, b.ci, a.username, a.id_empresa, d.nombre_empresa,
                 b.nombre_completo, a.correo, b.telefono, b.direccion,
-                c.nombre_rol, a.id_rol
+                c.nombre_rol, a.id_rol, a.estado
             FROM {Config.SCHEMA}.t_usuario a
             LEFT JOIN {Config.SCHEMA}.t_persona b ON a.id_persona = b.id_persona
             LEFT JOIN {Config.SCHEMA}.t_rol c ON a.id_rol = c.id_rol
@@ -24,7 +24,7 @@ def obtener_todos_los_usuarios(id_empresa=None):
             for r in resultados:
                 usuarios.append({
                     "nro_usuario": r[0], "ci": r[1], "nombre_usuario": r[2],
-                    "estado": "ACTIVO", "id_empresa": r[3], "nombre_empresa": r[4],
+                    "estado": r[11], "id_empresa": r[3], "nombre_empresa": r[4],
                     "nombre_completo": r[5],
                     "correo": r[6], "telefono": r[7], "direccion": r[8],
                     "nombre_rol": r[9], "nro_rol": r[10]
@@ -34,7 +34,7 @@ def obtener_todos_los_usuarios(id_empresa=None):
         db.close_connection()
 
 # --- CREAR USUARIO ---
-def crear_usuario_db(datos_persona, datos_usuario):
+def crear_usuario_db(datos_persona, datos_usuario, estado='ACTIVO'):
     db = PostgreSQL()
     db.create_connection()
     try:
@@ -48,8 +48,8 @@ def crear_usuario_db(datos_persona, datos_usuario):
 
         #INSERTAR DATOS USUARIO
         query_usuario = f"""
-            INSERT INTO {Config.SCHEMA}.t_usuario (username, password, correo, id_persona, id_rol, id_empresa)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO {Config.SCHEMA}.t_usuario (username, password, correo, id_persona, id_rol, id_empresa, estado)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             RETURNING id_usuario;
         """
         id_empresa = datos_usuario[5]
@@ -64,38 +64,44 @@ def crear_usuario_db(datos_persona, datos_usuario):
             id_empresa = empresa_res[0]
 
         datos_usuario = (datos_usuario[0], datos_usuario[1], datos_usuario[2], persona[0], datos_usuario[4], id_empresa)
-        resultado = db.execute_query(query_usuario, datos_usuario, fetchone=True, commit=True)
+        resultado = db.execute_query(query_usuario, datos_usuario + (estado,), fetchone=True, commit=True)
         
         return resultado[0] if resultado else None
     finally:
         db.close_connection()
 
 # --- ACTUALIZAR USUARIO ---
-def actualizar_usuario_db(nro_usuario, ci, datos_persona, datos_usuario, cambiar_password=False):
+def actualizar_usuario_db(nro_usuario, ci, datos_persona, datos_usuario, cambiar_password=False, estado='ACTIVO', empresa_autorizada=None):
     db = PostgreSQL()
     db.create_connection()
     try:
+        actual = db.execute_query(f'''SELECT u.id_persona,u.id_empresa,r.nombre_rol FROM {Config.SCHEMA}.t_usuario u
+            LEFT JOIN {Config.SCHEMA}.t_rol r USING(id_rol) WHERE u.id_usuario=%s FOR UPDATE OF u''', (nro_usuario,), fetchone=True)
+        if not actual or (empresa_autorizada is not None and actual[1] != empresa_autorizada):
+            raise ValueError('No puede modificar un usuario fuera de su empresa.')
+        if empresa_autorizada is not None and actual[2]=='ADMINISTRADOR':
+            raise ValueError('No puede modificar un administrador global.')
         query_persona = f"""
             UPDATE {Config.SCHEMA}.t_persona
             SET nombre_completo = %s, telefono = %s, direccion = %s
-            WHERE ci = %s;
+            WHERE id_persona = %s;
         """
-        db.execute_query(query_persona, datos_persona + (ci,))
+        db.execute_query(query_persona, datos_persona + (actual[0],))
 
         if cambiar_password:
             query_usuario = f"""
                 UPDATE {Config.SCHEMA}.t_usuario
-                SET username = %s, password = %s, correo = %s, id_rol = %s, id_empresa = %s
+                SET username = %s, password = %s, correo = %s, id_rol = %s, id_empresa = %s, estado = %s
                 WHERE id_usuario = %s;
             """
         else:
             query_usuario = f"""
                 UPDATE {Config.SCHEMA}.t_usuario
-                SET username = %s, correo = %s, id_rol = %s, id_empresa = %s
+                SET username = %s, correo = %s, id_rol = %s, id_empresa = %s, estado = %s
                 WHERE id_usuario = %s;
             """
         
-        db.execute_query(query_usuario, datos_usuario + (nro_usuario,), commit=True)
+        db.execute_query(query_usuario, datos_usuario + (estado,nro_usuario), commit=True)
         return True
     finally:
         db.close_connection()
@@ -105,7 +111,9 @@ def eliminar_usuario_db(nro_usuario: int, id_empresa=None):
     db = PostgreSQL()
     db.create_connection()
     try:
-        query = f"DELETE FROM {Config.SCHEMA}.t_usuario WHERE id_usuario = %s AND (%s IS NULL OR id_empresa = %s);"
+        query = f"""DELETE FROM {Config.SCHEMA}.t_usuario u WHERE id_usuario = %s
+            AND (%s IS NULL OR (id_empresa = %s AND NOT EXISTS
+                (SELECT 1 FROM {Config.SCHEMA}.t_rol r WHERE r.id_rol=u.id_rol AND r.nombre_rol='ADMINISTRADOR')));"""
         filas = db.execute_query(query, (nro_usuario, id_empresa, id_empresa), commit=True)
         return filas > 0
     finally:
