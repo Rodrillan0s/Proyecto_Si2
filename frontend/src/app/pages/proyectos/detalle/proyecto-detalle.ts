@@ -94,6 +94,9 @@ export class ProyectoDetalleComponent implements OnInit, OnDestroy {
     }
   }
 
+  puedeVerCronogramas() { return this.authService.hasPermission('Visualizar_cronograma'); }
+  abrirCronogramas() { this.router.navigate(['/proyectos', this.idObra, 'cronogramas']); }
+
   ngOnDestroy() {
     this.destruirMapa();
   }

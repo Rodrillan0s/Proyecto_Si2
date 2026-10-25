@@ -163,6 +163,19 @@ export const routes: Routes = [
             {
                 path: 'proyectos/avances',
                 loadComponent: () => import('./pages/proyectos/avances/proyecto-avances').then(module => module.ProyectoAvancesComponent)
+            },
+            {
+                path: 'proyectos/:id/cronogramas',
+                loadComponent: () => import('./pages/cronogramas/cronogramas').then(module => module.CronogramasComponent),
+                canActivate: [roleGuard],
+                canDeactivate: [(component: import('./pages/cronogramas/cronogramas').CronogramasComponent) => component.salir()],
+                data: { permissions: ['Visualizar_cronograma'] }
+            },
+            {
+                path: 'cronogramas',
+                loadComponent: () => import('./pages/cronogramas/cronogramas').then(module => module.CronogramasComponent),
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_cronograma'] }
             }
 ]
     },

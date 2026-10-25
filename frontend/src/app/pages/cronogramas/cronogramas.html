@@ -1,0 +1,98 @@
+<section class="planning">
+  <header class="heading">
+    <div><a routerLink="/proyectos">← Proyectos y obras</a><p class="eyebrow">CU39 · PLANIFICACIÓN DE OBRA</p>
+      <h1>Cronogramas</h1><p>{{ idObra ? obra() : 'Selecciona una obra para gestionar su planificación.' }}</p></div>
+    @if (idObra && puedeCrear && !editor()) { <button class="primary" (click)="nuevo()" [disabled]="cargando() || guardando()">+ Crear cronograma</button> }
+  </header>
+  @if (error()) { <div class="notice error" role="alert">{{ error() }}</div> }
+  @if (mensaje()) { <div class="notice success" role="status">{{ mensaje() }}</div> }
+  @if (cargando()) { <p role="status">Cargando planificación…</p> }
+  @if (!idObra) {
+    <label class="selector">Obra<select #obraSelect (change)="elegirObra(obraSelect.value)"><option value="">Selecciona una obra</option>
+      @for (p of obras(); track p.id_obra) { <option [value]="p.id_obra">{{ p.codigo }} · {{ p.nombre }}</option> }
+    </select></label>
+    @if (!cargando() && !obras().length) { <p>No hay obras disponibles en este contexto de empresa.</p> }
+  } @else {
+    @if (!editor()) {
+      <div class="plan-list" aria-label="Cronogramas de la obra">
+        @for (c of planes(); track c.id_cronograma) {
+          <button [class.selected]="actual()?.id_cronograma === c.id_cronograma" (click)="abrir(c.id_cronograma)" [disabled]="guardando()">
+            <strong>{{ c.nombre }}</strong><span>{{ c.fecha_inicio }} — {{ c.fecha_fin }}</span>
+          </button>
+        } @empty { @if (!cargando()) { <div class="empty"><h2>La planificación comienza aquí</h2><p>Aún no hay cronogramas en esta obra. El Jefe de Obra puede crear el primero.</p></div> } }
+      </div>
+      @if (actual(); as plan) {
+        <div class="toolbar"><div><h2>{{ plan.nombre }}</h2><p>{{ plan.descripcion }}</p></div><div class="actions">
+          @if (puedePlanificar || auth.hasPermission('Modificar_cronograma')) { <button (click)="editar()" [disabled]="guardando()">Editar planificación</button> }
+          @if (auth.hasPermission('Modificar_cronograma')) { <button class="danger" (click)="eliminar()" [disabled]="guardando()">Eliminar</button> }
+        </div></div>
+        <form class="filters" (ngSubmit)="filtrar()"><label>Desde<input type="date" name="desde" [(ngModel)]="desde"></label>
+          <label>Hasta<input type="date" name="hasta" [(ngModel)]="hasta"></label>
+          <label>Fecha de corte<input type="date" name="corte" [(ngModel)]="corte" [max]="hoy()" required></label>
+          <button type="submit" [disabled]="cargando()">Consultar período</button>
+          <label class="check"><input type="checkbox" name="retrasos" [(ngModel)]="soloRetrasos"> Solo desviaciones</label>
+        </form>
+        <div class="summary"><div><strong>{{ plan.resumen.total }}</strong><span>Programadas</span></div><div><strong>{{ plan.resumen.completadas }}</strong><span>Completadas</span></div>
+          <div><strong>{{ plan.resumen.retrasadas }}</strong><span>Con retraso al finalizar</span></div><div><strong>{{ plan.resumen.pendientes_inicio }}</strong><span>Inicio vencido</span></div></div>
+        <p class="muted">Corte: {{ plan.corte }} · Días calendario respecto al fin previsto. Las actividades completadas conservan su retraso histórico. El avance mostrado es el último registrado.</p>
+        <div class="table-scroll"><table><thead><tr><th>Actividad / hito</th><th>Fechas previstas</th><th>Ejecución real</th><th>Avance</th><th>Dependencias</th><th>Desviación</th></tr></thead><tbody>
+          @for (a of visibles(); track a.clave) { <tr><td><span class="tag">{{ a.tipo === 'HITO' ? '◆ Hito' : 'Actividad' }}</span><strong>{{ a.nombre }}</strong><p>{{ a.descripcion }}</p></td>
+            <td>{{ a.fecha_inicio }}<br>{{ a.fecha_fin }}</td><td>{{ a.estado }}<br>{{ a.inicio_real || 'Sin inicio' }} → {{ a.fin_real || 'Sin fin' }}</td>
+            <td><progress [value]="a.avance" max="100"></progress><br>{{ a.avance }}%</td><td>{{ nombreDependencias(a) }} @if (a.bloqueada) { <small>Predecesoras pendientes al corte</small> }</td>
+            <td [class.late]="(a.dias_retraso || 0) > 0 || a.inicio_retrasado">{{ a.dias_retraso }} días @if (a.inicio_retrasado) { <small>Inicio vencido</small> }</td></tr>
+          } @empty { <tr><td colspan="6">No hay actividades para estos filtros.</td></tr> }
+        </tbody></table></div>
+      }
+    } @else {
+      <form #planForm="ngForm" (ngSubmit)="guardar()" class="editor">
+        <div class="toolbar"><h2>{{ editId ? 'Editar planificación' : 'Nuevo cronograma' }}</h2><p>Los cambios se guardan juntos.</p></div>
+        <fieldset [disabled]="guardando()"><div class="form-grid">
+          <label>Nombre del cronograma<input name="nombre" [(ngModel)]="borrador.nombre" required maxlength="180" [readonly]="!puedeCabecera"></label>
+          <label>Inicio previsto<input type="date" name="inicio" [(ngModel)]="borrador.fecha_inicio" required [readonly]="!puedeCabecera"></label>
+          <label>Fin previsto<input type="date" name="fin" [(ngModel)]="borrador.fecha_fin" required [min]="borrador.fecha_inicio" [readonly]="!puedeCabecera"></label>
+          <label class="wide">Descripción<textarea name="descripcion" [(ngModel)]="borrador.descripcion" maxlength="2000" [readonly]="!puedeCabecera"></textarea></label>
+        </div>
+        <h3>Actividades e hitos</h3><p class="muted">Las dependencias son fin-inicio: la sucesora comienza cuando termina la predecesora. Un hito ocupa un solo día.</p>
+        @for (a of borrador.actividades; track a.clave; let i = $index) {
+          <article class="activity-editor"><div class="toolbar"><h3>{{ i + 1 }} · {{ a.tipo === 'HITO' ? 'Hito' : 'Actividad' }}</h3><button type="button" class="danger" (click)="quitar(a)">Quitar</button></div>
+            <div class="form-grid"><label>Nombre<input [name]="'nombre'+i" [(ngModel)]="a.nombre" required maxlength="180"></label>
+              @if (a.tipo === 'HITO') {
+                <label>Fecha prevista<input type="date" [name]="'hito'+i" [ngModel]="a.fecha_inicio" (ngModelChange)="cambiarFechaPrevista(a, 'fecha_inicio', $event)" required [min]="borrador.fecha_inicio" [max]="borrador.fecha_fin"></label>
+              } @else {
+                <label>Inicio previsto<input type="date" [name]="'ai'+i" [ngModel]="a.fecha_inicio" (ngModelChange)="cambiarFechaPrevista(a, 'fecha_inicio', $event)" required [min]="borrador.fecha_inicio" [max]="borrador.fecha_fin"></label>
+                <label>Fin previsto<input type="date" [name]="'af'+i" [ngModel]="a.fecha_fin" (ngModelChange)="cambiarFechaPrevista(a, 'fecha_fin', $event)" required [min]="a.fecha_inicio" [max]="borrador.fecha_fin"></label>
+              }
+              <label class="wide">Descripción<textarea [name]="'desc'+i" [(ngModel)]="a.descripcion" maxlength="2000"></textarea></label>
+              <label>Inicio real<input type="date" [name]="'ir'+i" [(ngModel)]="a.inicio_real" [max]="hoy()"></label>
+              <label>Fin real<input type="date" [name]="'fr'+i" [(ngModel)]="a.fin_real" [max]="hoy()" [min]="a.inicio_real || ''"></label>
+              <label>Avance (%) @if (a.tipo === 'HITO') { <select [name]="'av'+i" [(ngModel)]="a.avance"><option [ngValue]="0">Pendiente · 0%</option><option [ngValue]="100">Cumplido · 100%</option></select> }
+                @else { <input type="number" [name]="'av'+i" [(ngModel)]="a.avance" min="0" max="100" step="1" required> }</label>
+              <fieldset class="wide predecessors">
+                <legend>Predecesoras</legend>
+                <p class="muted">Marca o desmarca las actividades que deben finalizar antes. Puedes dejar todas sin marcar.</p>
+                <div class="predecessor-options">
+                  @for (p of borrador.actividades; track p.clave; let j = $index) {
+                    @if (p.clave !== a.clave) {
+                      <label class="predecessor-option">
+                        <input #predecesora type="checkbox" [name]="'dep'+i+'-'+j"
+                          [attr.aria-label]="'Predecesora: ' + (p.nombre || 'Sin nombre')"
+                          [checked]="a.dependencias.includes(p.clave)"
+                          (change)="alternarPredecesora(a, p.clave, predecesora.checked)">
+                        <span>{{ j + 1 }} · {{ p.nombre || 'Sin nombre' }}</span>
+                      </label>
+                    }
+                  }
+                  @if (borrador.actividades.length < 2) { <p class="muted">Agrega otra actividad para poder elegir una predecesora.</p> }
+                </div>
+              </fieldset>
+            </div>
+          </article>
+        }
+        <div class="actions"><button type="button" (click)="agregar('ACTIVIDAD')">+ Actividad</button><button type="button" (click)="agregar('HITO')">+ Hito</button></div>
+        <p class="muted">Para completar una actividad registra inicio real, fin real y avance 100%. No se aceptan ciclos ni fechas reales futuras.</p>
+        <div class="actions footer"><button class="primary" type="submit" [disabled]="planForm.invalid || guardando()">{{ guardando() ? 'Guardando…' : 'Guardar planificación' }}</button><button type="button" (click)="cancelar()">Cancelar</button></div>
+        </fieldset>
+      </form>
+    }
+  }
+</section>

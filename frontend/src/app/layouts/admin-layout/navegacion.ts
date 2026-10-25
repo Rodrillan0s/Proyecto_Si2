@@ -19,6 +19,7 @@ export const NAVIGATION: NavSection[] = [
   { id: 'principal', label: 'PRINCIPAL', icon: home, items: [{ id: 'panel', label: 'Dashboard', route: '/panel', icon: home }] },
   { id: 'proyectos', label: 'PROYECTOS Y OBRAS', icon: work, items: [
     { id: 'obras', label: 'Ver obras', route: '/proyectos', icon: work, permissions: ['Visualizar_obras'] },
+    { id: 'cronogramas', label: 'Cronogramas y planificación', route: '/cronogramas', icon: settings, permissions: ['Visualizar_cronograma'] },
     { id: 'gestion', label: 'Gestión de proyectos', route: '/proyectos', query: { tab: 'gestion' }, icon: settings, all: ['Visualizar_obras', 'Modificar_obras'] },
     { id: 'nuevo', label: 'Nuevo proyecto', route: '/proyectos', query: { tab: 'nuevo' }, icon: 'M12 5v14M5 12h14', all: ['Visualizar_obras', 'Registrar_obras'] },
     { id: 'unidades', label: 'Asignación de unidades', route: '/proyectos', icon: stock, context: 'estructura', all: ['Visualizar_obras', 'Modificar_obras'] },
