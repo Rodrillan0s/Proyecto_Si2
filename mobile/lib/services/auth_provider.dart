@@ -4,6 +4,7 @@ import 'token_storage.dart';
 
 /// Catálogo local de navegación; Reportes usa permisos actuales del backend.
 const List<String> permisosOficiales = [
+  'Visualizar_cronograma', 'Registrar_cronograma', 'Modificar_cronograma', 'Planificar_cronograma',
   'Visualizar_reportes', 'Exportar_reportes', 'Enviar_reportes', 'Programar_reportes', 'Administrar_programaciones_reportes',
   'Visualizar_usuarios', 'Registrar_usuarios', 'Modificar_usuarios', 'Eliminar_usuarios',
   'Visualizar_obras', 'Registrar_obras', 'Modificar_obras', 'Eliminar_obras',
@@ -17,6 +18,7 @@ const List<String> permisosOficiales = [
 const Map<String, List<String>> mapaPermisosPorRol = {
   'ADMINISTRADOR': permisosOficiales,
   'ADMINISTRADOR_EMPRESA': [
+    'Visualizar_cronograma', 'Registrar_cronograma', 'Modificar_cronograma', 'Planificar_cronograma',
     'Visualizar_reportes', 'Exportar_reportes', 'Enviar_reportes', 'Programar_reportes', 'Administrar_programaciones_reportes',
     'Visualizar_usuarios', 'Registrar_usuarios', 'Modificar_usuarios', 'Eliminar_usuarios',
     'Visualizar_obras', 'Registrar_obras', 'Modificar_obras', 'Eliminar_obras',
@@ -26,6 +28,7 @@ const Map<String, List<String>> mapaPermisosPorRol = {
     'Visualizar_proveedores', 'Registrar_proveedores', 'Modificar_proveedores',
   ],
   'JEFE_DE_OBRA': [
+    'Visualizar_cronograma', 'Registrar_cronograma', 'Modificar_cronograma', 'Planificar_cronograma',
     'Visualizar_reportes', 'Exportar_reportes', 'Enviar_reportes', 'Programar_reportes',
     'Visualizar_obras', 'Registrar_obras', 'Modificar_obras',
     'Visualizar_inventario', 'Modificar_inventario',
@@ -33,6 +36,7 @@ const Map<String, List<String>> mapaPermisosPorRol = {
     'Visualizar_proveedores',
   ],
   'SUPERVISOR_OBRA': [
+    'Visualizar_cronograma', 'Planificar_cronograma',
     'Visualizar_obras', 'Modificar_obras',
     'Visualizar_inventario',
     'Visualizar_materiales',
