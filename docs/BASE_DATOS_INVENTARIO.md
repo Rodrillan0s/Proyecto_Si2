@@ -1,5 +1,19 @@
 # Inventario verificado de PostgreSQL / esquema obras
 
+## Adición verificada 2026-10-25: CU39
+
+La inspección de catálogos actual confirmó inicialmente ausencia de tablas/permisos CU39 y Supervisor. Tras autorización del usuario se aplicó `20261025_cu39_cronogramas.sql` transaccionalmente en `obras`; una conexión independiente de solo lectura confirmó 3 tablas, 23 columnas, 20 restricciones y 14 asociaciones de los cuatro permisos CU39. El resto de este archivo conserva la fotografía histórica y no acredita el estado actual de otros objetos.
+
+| Tabla | Clave y pertenencia | Restricciones relevantes |
+| --- | --- | --- |
+| `t_cronograma` | PK `id_cronograma` serial, FK `id_obra` → `t_obra` CASCADE | nombre no vacío, fin ≥ inicio, versión positiva; timestamps de creación/actualización |
+| `t_cronograma_actividad` | PK `(id_cronograma,clave)`, FK a cabecera CASCADE | tipo ACTIVIDAD/HITO, fechas previstas coherentes, hito de un día y avance 0/100, avance 0–100, fin real requiere inicio real y avance 100 |
+| `t_cronograma_dependencia` | PK `(id_cronograma,actividad,predecesora)`; ambas FK compuestas → actividad CASCADE | impide autorreferencia y dependencias a otro cronograma |
+
+Columnas de cabecera: `id_cronograma`, `id_obra`, `nombre`, `descripcion`, `fecha_inicio`, `fecha_fin`, `version`, `creado_en`, `actualizado_en`. Actividad: `id_cronograma`, `clave`, `nombre`, `descripcion`, `tipo`, `fecha_inicio`, `fecha_fin`, `inicio_real`, `fin_real`, `avance`, `orden`. Dependencia: `id_cronograma`, `actividad`, `predecesora`. Índice adicional `idx_cronograma_obra(id_obra,fecha_inicio)`.
+
+`Visualizar_cronograma` y `Planificar_cronograma`: ADMINISTRADOR, ADMINISTRADOR_EMPRESA, JEFE DE OBRA, SUPERVISOR_OBRA. `Registrar_cronograma` y `Modificar_cronograma`: los tres primeros. Supervisor recibe también Visualizar_obras para acceder al detalle. El usuario configurado dispone de privilegios CRUD en las tablas nuevas. No se reasignaron usuarios ni se cambiaron funciones existentes. [Decisión y validación](decisiones/2026-10-25-implementacion-cu39.md).
+
 Inspecci?n de solo lectura: 2026-10-04. Base obras, PostgreSQL 17.11. Fotograf?a de cat?logos; no incluye filas de usuarios, empresas, clientes, obras ni contrase?as.
 
 An?lisis: [ARQUITECTURA_BASE_DATOS.md](ARQUITECTURA_BASE_DATOS.md). Rutinas: [BASE_DATOS_RUTINAS.md](BASE_DATOS_RUTINAS.md).
