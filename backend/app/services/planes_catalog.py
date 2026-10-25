@@ -15,6 +15,7 @@ def modulo_ruta(ruta):
     if partes and partes[0]=='api': partes=partes[1:]
     if not partes: return None
     raiz=partes[0]
+    if raiz=='obras': return 'obras'
     if raiz=='proyectos':
         sub=partes[2] if len(partes)>2 else None
         return {'presupuestos':'presupuestos','costos-ejecutados':'control_costos','avances':'avances'}.get(sub,'obras')
