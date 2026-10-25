@@ -10,6 +10,7 @@ from .authorization import context, authorize
 from .contracts import ReportRequest
 from .exporters import export
 from .scheduling import next_run
+from app.services import suscripcion_policy as subscription
 
 log = logging.getLogger(__name__)
 
@@ -46,6 +47,8 @@ def generate(item):
         with repo.transaction(snapshot=True) as db:
             ctx = context(db,item['id_usuario'],item['id_empresa'])
             if item['programacion']:
+                if ctx.rol!='ADMINISTRADOR':
+                    subscription.exigir_funcion(ctx.empresa,'automatizar',getattr(db, "cur", None))
                 ctx.require('Programar_reportes')
                 schedule = repo.get_schedule_enabled(db,(item['programacion'],))
                 if not schedule or not schedule['habilitada']:
@@ -72,6 +75,8 @@ def row_identity(row):
 
 def recipient_result(db, item, delivery):
     sender = context(db,item['id_usuario'],item['id_empresa'])
+    if sender.rol!='ADMINISTRADOR':
+        subscription.exigir_funcion(sender.empresa,'automatizar',getattr(db, "cur", None))
     sender.require('Enviar_reportes')
     if item['programacion']:
         sender.require('Programar_reportes')
@@ -107,6 +112,8 @@ def deliver(delivery):
             fresh = context(db,sender.usuario,sender.empresa)
             rec = reports.validate_recipient(db,fresh,recipient.usuario,ReportRequest.model_validate(item['solicitud']))
             fresh.require('Enviar_reportes')
+            if fresh.rol!='ADMINISTRADOR':
+                subscription.exigir_funcion(fresh.empresa,'automatizar',getattr(db, "cur", None))
             for permission in result.get('permisos_fuente',[]):
                 fresh.require(permission)
                 rec.require(permission)

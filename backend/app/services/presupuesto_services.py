@@ -1,3 +1,4 @@
+import math
 from app.classes.postgres import PostgreSQL
 from app.config import Config
 from app.repos import bitacora_repos, presupuesto_repos
@@ -29,8 +30,11 @@ def _validar_obra(id_obra: int, token: dict):
     es_admin = es_admin_sistema(token)
     token_empresa = token.get("id_empresa")
 
-    if not es_admin and token_empresa and obra["id_empresa"] != token_empresa:
-        raise PresupuestoError("No tiene autorización para gestionar presupuestos de esta obra.", status_code=403)
+    if not es_admin:
+        if not token_empresa:
+            raise PresupuestoError("Su usuario no tiene una empresa asignada.", status_code=403)
+        if obra["id_empresa"] != token_empresa:
+            raise PresupuestoError("No tiene autorización para gestionar presupuestos de esta obra.", status_code=403)
 
     return obra
 
@@ -47,8 +51,11 @@ def _validar_presupuesto(id_presupuesto: int, token: dict):
     es_admin = es_admin_sistema(token)
     token_empresa = token.get("id_empresa")
 
-    if not es_admin and token_empresa and presupuesto["id_empresa"] != token_empresa:
-        raise PresupuestoError("No tiene autorización para acceder a este presupuesto.", status_code=403)
+    if not es_admin:
+        if not token_empresa:
+            raise PresupuestoError("Su usuario no tiene una empresa asignada.", status_code=403)
+        if presupuesto["id_empresa"] != token_empresa:
+            raise PresupuestoError("No tiene autorización para acceder a este presupuesto.", status_code=403)
 
     return presupuesto
 
@@ -88,6 +95,51 @@ def _resolver_empresa_para_creacion(token: dict, id_empresa_solicitada=None):
 
 def _usuario_id(token: dict):
     return token.get("nro_usuario") or token.get("id_usuario") or 1
+
+
+def _normalizar_material_catalogo_apu(data: dict, id_empresa: int):
+    id_material = data.get("id_recurso")
+    if not id_material:
+        raise PresupuestoError("Seleccione un material del catálogo.")
+
+    try:
+        id_material = int(id_material)
+    except (TypeError, ValueError) as exc:
+        raise PresupuestoError("El material seleccionado no es válido.") from exc
+
+    cantidad = data.get("rendimiento")
+    if cantidad is None:
+        cantidad = data.get("cantidad")
+    if cantidad is None:
+        raise PresupuestoError("La cantidad consumida por unidad de APU es obligatoria.")
+    try:
+        cantidad = float(cantidad)
+    except (TypeError, ValueError) as exc:
+        raise PresupuestoError("La cantidad consumida debe ser numérica.") from exc
+    if not math.isfinite(cantidad) or cantidad <= 0:
+        raise PresupuestoError("La cantidad consumida por unidad de APU debe ser mayor a cero.")
+
+    material = presupuesto_repos.obtener_material_catalogo_apu(id_material)
+    if not material:
+        raise PresupuestoError("El material seleccionado no existe en el catálogo.", status_code=404)
+    if material["id_empresa"] != id_empresa:
+        raise PresupuestoError("El material pertenece a otra empresa.", status_code=403)
+    if material["estado"] != "ACTIVO":
+        raise PresupuestoError("El material seleccionado está inactivo.")
+    if material["precio"] is None:
+        raise PresupuestoError("El material no tiene un precio unitario definido en el catálogo.")
+    if not math.isfinite(material["precio"]) or material["precio"] < 0:
+        raise PresupuestoError("El material tiene un precio unitario inválido en el catálogo.")
+
+    return {
+        "tipo_recurso": "MATERIAL",
+        "id_recurso": id_material,
+        "descripcion_recurso": material["nombre_material"],
+        "id_unidad_medida": int(material["id_unidad_medida"]),
+        "cantidad": cantidad,
+        "rendimiento": cantidad,
+        "precio_unitario": material["precio"]
+    }
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -207,10 +259,18 @@ def eliminar_presupuesto(id_obra: int, id_presupuesto: int, token: dict, client_
     _validar_obra(id_obra, token)
     presupuesto = _validar_presupuesto(id_presupuesto, token)
 
+    if presupuesto["id_obra"] != id_obra:
+        raise PresupuestoError("El presupuesto no corresponde a la obra indicada.", status_code=400)
+
     if presupuesto["estado"] != "BORRADOR":
         raise PresupuestoError("Solo se pueden eliminar presupuestos en estado BORRADOR.", status_code=400)
 
-    presupuesto_repos.eliminar_presupuesto(id_presupuesto)
+    eliminado = presupuesto_repos.eliminar_presupuesto(id_presupuesto)
+    if not eliminado:
+        raise PresupuestoError(
+            "El presupuesto ya no existe o dejó de estar en estado BORRADOR.",
+            status_code=409
+        )
 
     bitacora_repos.registrar_bitacora(
         id_usuario=_usuario_id(token),
@@ -480,6 +540,45 @@ def crear_apu(data: dict, token: dict, client_ip: str):
     if id_obra:
         _validar_obra(id_obra, token)
 
+    componentes = data.get("componentes") or []
+    if not isinstance(componentes, list):
+        raise PresupuestoError("Los componentes del APU deben enviarse como una lista.")
+
+    componentes_preparados = []
+    for comp in componentes:
+        if not isinstance(comp, dict):
+            raise PresupuestoError("Cada componente del APU debe ser un objeto válido.")
+
+        tipo_recurso = (comp.get("tipo_recurso") or "MATERIAL").strip().upper()
+        if tipo_recurso == "MATERIAL":
+            componentes_preparados.append(_normalizar_material_catalogo_apu(comp, id_empresa))
+            continue
+        if tipo_recurso not in ("MANO_OBRA", "EQUIPO"):
+            raise PresupuestoError("El tipo de recurso debe ser MATERIAL, MANO_OBRA o EQUIPO.")
+
+        descripcion_recurso = (comp.get("descripcion_recurso") or "").strip()
+        try:
+            id_unidad_componente = int(comp.get("id_unidad_medida"))
+            cantidad_componente = float(comp.get("rendimiento") or comp.get("cantidad") or 1.0)
+            precio_componente = float(comp.get("precio_unitario") or 0.0)
+        except (TypeError, ValueError) as exc:
+            raise PresupuestoError("La unidad, cantidad y precio del componente deben ser válidos.") from exc
+        if not descripcion_recurso:
+            raise PresupuestoError("La descripción del recurso es obligatoria.")
+        if cantidad_componente <= 0:
+            raise PresupuestoError("El rendimiento del recurso debe ser mayor a cero.")
+        if precio_componente < 0:
+            raise PresupuestoError("El precio o costo unitario no puede ser negativo.")
+        componentes_preparados.append({
+            "tipo_recurso": tipo_recurso,
+            "id_recurso": comp.get("id_recurso"),
+            "descripcion_recurso": descripcion_recurso,
+            "id_unidad_medida": id_unidad_componente,
+            "cantidad": cantidad_componente,
+            "rendimiento": cantidad_componente,
+            "precio_unitario": precio_componente
+        })
+
     id_apu = presupuesto_repos.crear_apu(
         id_empresa=id_empresa,
         codigo=codigo,
@@ -494,22 +593,20 @@ def crear_apu(data: dict, token: dict, client_ip: str):
     if not id_apu:
         raise PresupuestoError("No se pudo registrar el APU. Verifique que el código no esté duplicado.", status_code=400)
 
-    componentes = data.get("componentes")
-    if isinstance(componentes, list) and componentes:
-        for comp in componentes:
-            try:
-                presupuesto_repos.agregar_componente_apu(
-                    id_apu=id_apu,
-                    tipo_recurso=comp.get("tipo_recurso", "MATERIAL"),
-                    descripcion_recurso=comp.get("descripcion_recurso", ""),
-                    id_unidad_medida=int(comp.get("id_unidad_medida")),
-                    cantidad=float(comp.get("rendimiento") or comp.get("cantidad") or 1.0),
-                    precio_unitario=float(comp.get("precio_unitario") or 0.0),
-                    id_recurso=comp.get("id_recurso"),
-                    rendimiento=float(comp.get("rendimiento") or comp.get("cantidad") or 1.0)
-                )
-            except Exception:
-                pass
+    if componentes_preparados:
+        for comp in componentes_preparados:
+            id_componente = presupuesto_repos.agregar_componente_apu(
+                id_apu=id_apu,
+                tipo_recurso=comp["tipo_recurso"],
+                descripcion_recurso=comp["descripcion_recurso"],
+                id_unidad_medida=comp["id_unidad_medida"],
+                cantidad=comp["cantidad"],
+                precio_unitario=comp["precio_unitario"],
+                id_recurso=comp["id_recurso"],
+                rendimiento=comp["rendimiento"]
+            )
+            if not id_componente:
+                raise PresupuestoError("No se pudo guardar uno de los componentes del APU.", status_code=500)
         presupuesto_repos.recalcular_costo_unitario_apu(id_apu)
 
     bitacora_repos.registrar_bitacora(
@@ -588,55 +685,46 @@ def agregar_componente_apu(id_apu: int, data: dict, token: dict, client_ip: str)
     if tipo_recurso not in ("MATERIAL", "MANO_OBRA", "EQUIPO"):
         raise PresupuestoError("El tipo de recurso debe ser MATERIAL, MANO_OBRA o EQUIPO.")
 
+    id_recurso = data.get("id_recurso")
     descripcion_recurso = (data.get("descripcion_recurso") or "").strip()
     id_unidad_medida = data.get("id_unidad_medida")
 
-    if not descripcion_recurso:
-        raise PresupuestoError("La descripción del recurso es obligatoria.")
-    if not id_unidad_medida:
-        raise PresupuestoError("La unidad de medida del componente es obligatoria.")
-
-    # Rendimiento unitario
-    rendimiento = float(data.get("rendimiento") if data.get("rendimiento") is not None else (data.get("cantidad") or 1.0))
-    if rendimiento <= 0:
-        raise PresupuestoError("El rendimiento del recurso debe ser mayor a cero.")
-
-    precio_unitario = float(data.get("precio_unitario") or 0.0)
-    if precio_unitario < 0:
-        raise PresupuestoError("El precio o costo unitario no puede ser negativo.")
-
-    id_recurso = data.get("id_recurso")
-
     # Validación de pertenencia al catálogo correspondiente
-    if tipo_recurso == "MATERIAL" and id_recurso:
+    if tipo_recurso == "MATERIAL":
+        material = _normalizar_material_catalogo_apu(data, apu["id_empresa"])
+        descripcion_recurso = material["descripcion_recurso"]
+        id_unidad_medida = material["id_unidad_medida"]
+        rendimiento = material["rendimiento"]
+        precio_unitario = material["precio_unitario"]
+        id_recurso = material["id_recurso"]
+    else:
+        if not descripcion_recurso:
+            raise PresupuestoError("La descripción del recurso es obligatoria.")
+        if not id_unidad_medida:
+            raise PresupuestoError("La unidad de medida del componente es obligatoria.")
+        try:
+            rendimiento = float(data.get("rendimiento") if data.get("rendimiento") is not None else (data.get("cantidad") or 1.0))
+            precio_unitario = float(data.get("precio_unitario") or 0.0)
+        except (TypeError, ValueError) as exc:
+            raise PresupuestoError("El rendimiento y costo unitario deben ser numéricos.") from exc
+        if rendimiento <= 0:
+            raise PresupuestoError("El rendimiento del recurso debe ser mayor a cero.")
+        if precio_unitario < 0:
+            raise PresupuestoError("El precio o costo unitario no puede ser negativo.")
+
+    if tipo_recurso == "MANO_OBRA" and id_recurso:
         db = PostgreSQL(); db.create_connection()
         try:
             mat = db.execute_query(
-                "SELECT id_material, precio, id_empresa FROM obras.t_material WHERE id_material = %s;",
-                (id_recurso,), fetchone=True
-            )
-            if not mat:
-                raise PresupuestoError("El material seleccionado no existe en el catálogo.")
-            if mat[2] != apu["id_empresa"] and not es_admin_sistema(token):
-                raise PresupuestoError("El material pertenece a otra empresa.", status_code=403)
-            if precio_unitario <= 0 and mat[1]:
-                precio_unitario = float(mat[1])
-        finally:
-            db.close_connection()
-
-    elif tipo_recurso == "MANO_OBRA" and id_recurso:
-        db = PostgreSQL(); db.create_connection()
-        try:
-            mo = db.execute_query(
                 "SELECT id_mano_obra, costo_unitario, id_empresa FROM obras.t_mano_obra WHERE id_mano_obra = %s;",
                 (id_recurso,), fetchone=True
             )
-            if not mo:
+            if not mat:
                 raise PresupuestoError("La cuadrilla/mano de obra seleccionada no existe.")
-            if mo[2] != apu["id_empresa"] and not es_admin_sistema(token):
+            if mat[2] != apu["id_empresa"] and not es_admin_sistema(token):
                 raise PresupuestoError("La mano de obra pertenece a otra empresa.", status_code=403)
-            if precio_unitario <= 0 and mo[1]:
-                precio_unitario = float(mo[1])
+            if precio_unitario <= 0 and mat[1]:
+                precio_unitario = float(mat[1])
         finally:
             db.close_connection()
 
@@ -673,6 +761,8 @@ def agregar_componente_apu(id_apu: int, data: dict, token: dict, client_ip: str)
         id_recurso=int(id_recurso) if id_recurso else None,
         rendimiento=rendimiento
     )
+    if not id_componente:
+        raise PresupuestoError("No se pudo guardar el componente del APU.", status_code=500)
 
     bitacora_repos.registrar_bitacora(
         id_usuario=_usuario_id(token),
@@ -693,29 +783,37 @@ def agregar_componente_apu(id_apu: int, data: dict, token: dict, client_ip: str)
 
 
 def actualizar_componente_apu(id_apu: int, id_componente: int, data: dict, token: dict, client_ip: str):
-    _validar_apu(id_apu, token)
+    apu = _validar_apu(id_apu, token)
 
     tipo_recurso = (data.get("tipo_recurso") or "").strip().upper()
     if tipo_recurso not in ("MATERIAL", "MANO_OBRA", "EQUIPO"):
         raise PresupuestoError("El tipo de recurso debe ser MATERIAL, MANO_OBRA o EQUIPO.")
 
+    id_recurso = data.get("id_recurso")
     descripcion_recurso = (data.get("descripcion_recurso") or "").strip()
     id_unidad_medida = data.get("id_unidad_medida")
 
-    if not descripcion_recurso:
-        raise PresupuestoError("La descripción del recurso es obligatoria.")
-    if not id_unidad_medida:
-        raise PresupuestoError("La unidad de medida del componente es obligatoria.")
-
-    rendimiento = float(data.get("rendimiento") if data.get("rendimiento") is not None else (data.get("cantidad") or 1.0))
-    if rendimiento <= 0:
-        raise PresupuestoError("El rendimiento del recurso debe ser mayor a cero.")
-
-    precio_unitario = float(data.get("precio_unitario") or 0.0)
-    if precio_unitario < 0:
-        raise PresupuestoError("El precio no puede ser negativo.")
-
-    id_recurso = data.get("id_recurso")
+    if tipo_recurso == "MATERIAL":
+        material = _normalizar_material_catalogo_apu(data, apu["id_empresa"])
+        descripcion_recurso = material["descripcion_recurso"]
+        id_unidad_medida = material["id_unidad_medida"]
+        rendimiento = material["rendimiento"]
+        precio_unitario = material["precio_unitario"]
+        id_recurso = material["id_recurso"]
+    else:
+        if not descripcion_recurso:
+            raise PresupuestoError("La descripción del recurso es obligatoria.")
+        if not id_unidad_medida:
+            raise PresupuestoError("La unidad de medida del componente es obligatoria.")
+        try:
+            rendimiento = float(data.get("rendimiento") if data.get("rendimiento") is not None else (data.get("cantidad") or 1.0))
+            precio_unitario = float(data.get("precio_unitario") or 0.0)
+        except (TypeError, ValueError) as exc:
+            raise PresupuestoError("El rendimiento y costo unitario deben ser numéricos.") from exc
+        if rendimiento <= 0:
+            raise PresupuestoError("El rendimiento del recurso debe ser mayor a cero.")
+        if precio_unitario < 0:
+            raise PresupuestoError("El precio no puede ser negativo.")
 
     # Si está en uso, versionar
     target_id_apu = id_apu
@@ -1015,4 +1113,3 @@ def obtener_comparativa(id_obra: int, id_presupuesto: int = None, token: dict = 
 
     comparativa = presupuesto_repos.obtener_comparativa_presupuesto_ejecutado(id_obra, id_presupuesto)
     return {"success": True, "data": comparativa}
-

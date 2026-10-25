@@ -480,6 +480,7 @@ export class ReportesComponent implements OnInit, OnDestroy {
     this.period = 'fijo';
   }
   interpret() {
+    if (!this.can('Generar_reportes')) { this.error = 'La suscripción permite consultar reportes existentes, pero no generar nuevas solicitudes.'; return; }
     if (!this.texto.trim()) return;
     void this.perform(async () => {
       const version = this.generation;
@@ -500,6 +501,7 @@ export class ReportesComponent implements OnInit, OnDestroy {
     }
   }
   generate() {
+    if (!this.can('Generar_reportes')) { this.error = 'La suscripción está en modo de solo lectura.'; return; }
     if (this.validation) {
       this.error = this.validation;
       return;

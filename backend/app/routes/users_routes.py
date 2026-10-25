@@ -1,18 +1,18 @@
 from fastapi import APIRouter, Body, HTTPException, Depends
 from app.services import users_services
-from app.utils.security import verificar_token
+from app.utils.security import verificar_token, exigir_permiso
 
 router = APIRouter(tags=["Usuarios"])
 
 @router.get('/')
-def get_users(id_empresa: int = None, token_data: dict = Depends(verificar_token)):
+def get_users(id_empresa: int = None, token_data: dict = Depends(exigir_permiso('Visualizar_usuarios'))):
     try:
         return users_services.listar_usuarios(token_data, id_empresa)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
 @router.post('/')
-def create_user(data: dict = Body(...), token_data: dict = Depends(verificar_token)):
+def create_user(data: dict = Body(...), token_data: dict = Depends(exigir_permiso('Registrar_usuarios'))):
     if not data:
         raise HTTPException(status_code=400, detail='El cuerpo de la petición está vacío.')
     
@@ -27,7 +27,7 @@ def create_user(data: dict = Body(...), token_data: dict = Depends(verificar_tok
         raise HTTPException(status_code=500, detail=f"Error interno en BD: {error_msg}")
 
 @router.put('/{nro_usuario}')
-def update_user(nro_usuario: int, data: dict = Body(...), token_data: dict = Depends(verificar_token)):
+def update_user(nro_usuario: int, data: dict = Body(...), token_data: dict = Depends(exigir_permiso('Modificar_usuarios'))):
     if not data:
         raise HTTPException(status_code=400, detail='El cuerpo de la petición está vacío.')
         
@@ -42,7 +42,7 @@ def update_user(nro_usuario: int, data: dict = Body(...), token_data: dict = Dep
         raise HTTPException(status_code=500, detail=f"Error interno en BD: {error_msg}")
 
 @router.delete('/{nro_usuario}')
-def delete_user(nro_usuario: int, token_data: dict = Depends(verificar_token)):
+def delete_user(nro_usuario: int, token_data: dict = Depends(exigir_permiso('Eliminar_usuarios'))):
     try:
         return users_services.borrar_usuario(nro_usuario, token_data)
     except ValueError as e:

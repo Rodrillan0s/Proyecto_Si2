@@ -47,6 +47,8 @@ def update_profile(token_data: dict = Depends(verificar_token), data: dict = Bod
         nro_usuario = token_data.get('nro_usuario')
 
         return profile_services.actualizar_perfil_usuario(nro_usuario, data)
+    except HTTPException:
+        raise
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as err:

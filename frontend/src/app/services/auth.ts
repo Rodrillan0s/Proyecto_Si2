@@ -38,6 +38,7 @@ export type PermisoNombre =
   | 'Registrar_estimaciones'
   | 'Modificar_estimaciones'
   | 'Eliminar_estimaciones'
+  | 'Modificar_presupuesto'
   | 'Visualizar_mano_obra'
   | 'Registrar_mano_obra'
   | 'Visualizar_control_costos'
@@ -61,6 +62,7 @@ export const PERMISOS_OFICIALES: PermisoNombre[] = [
   'Visualizar_materiales', 'Registrar_materiales', 'Modificar_materiales', 'Desactivar_materiales',
   'Visualizar_proveedores', 'Registrar_proveedores', 'Modificar_proveedores',
   'Visualizar_estimaciones', 'Registrar_estimaciones', 'Modificar_estimaciones', 'Eliminar_estimaciones', 'Visualizar_mano_obra', 'Registrar_mano_obra',
+  'Modificar_presupuesto',
   'Visualizar_control_costos', 'Registrar_costos_ejecutados', 'Anular_costos_ejecutados',
   'Registrar_ordenes_cambio', 'Modificar_ordenes_cambio', 'Aprobar_ordenes_cambio',
   'Visualizar_incidencias', 'Registrar_incidencias', 'Modificar_incidencias', 'Asignar_incidencias', 'Cerrar_incidencias'
@@ -77,6 +79,7 @@ export const MAPA_PERMISOS_POR_ROL: Record<string, PermisoNombre[]> = {
     'Visualizar_materiales', 'Registrar_materiales', 'Modificar_materiales', 'Desactivar_materiales',
     'Visualizar_proveedores', 'Registrar_proveedores', 'Modificar_proveedores',
     'Visualizar_estimaciones', 'Registrar_estimaciones', 'Modificar_estimaciones', 'Eliminar_estimaciones', 'Visualizar_mano_obra', 'Registrar_mano_obra',
+    'Modificar_presupuesto',
     'Visualizar_control_costos', 'Registrar_costos_ejecutados', 'Anular_costos_ejecutados',
     'Registrar_ordenes_cambio', 'Modificar_ordenes_cambio', 'Aprobar_ordenes_cambio',
     'Visualizar_incidencias', 'Registrar_incidencias', 'Modificar_incidencias', 'Asignar_incidencias', 'Cerrar_incidencias'

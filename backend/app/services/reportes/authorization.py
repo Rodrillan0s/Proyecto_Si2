@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from fastapi import HTTPException
 from app.repos import reportes_repos as repo
 from .catalog import REGISTRY, WORKERS
+from app.services import suscripcion_policy as subscription
 
 
 @dataclass(frozen=True)
@@ -48,8 +49,9 @@ def allowed(ctx, definition):
     return ctx.rol == "ADMINISTRADOR" or definition.permiso in ctx.permisos
 
 
-def authorize(db, ctx, request, action="Visualizar_reportes"):
+def authorize(db, ctx, request, action="Visualizar_reportes", lectura=False):
     ctx.require(action)
+    subscription.exigir_reporte(ctx, request.reporte, action, getattr(db, "cur", None), lectura)
     definition = REGISTRY.get(request.reporte)
     if not definition or not allowed(ctx, definition):
         raise HTTPException(403, "Este reporte no está disponible para su cuenta.")

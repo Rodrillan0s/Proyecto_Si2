@@ -374,7 +374,9 @@ export class ProyectoDetalleComponent implements OnInit, OnDestroy {
   irAEstructura() {
     this.seleccionarTab('estructura');
   }
-
+irAPresupuesto() {
+  this.seleccionarTab('presupuesto');
+}
   irAMateriales() {
     this.router.navigate(['/materiales']);
   }

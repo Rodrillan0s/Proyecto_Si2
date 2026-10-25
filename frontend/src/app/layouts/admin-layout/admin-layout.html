@@ -129,7 +129,7 @@
       </div>
     </div>
 
-    <div class="panel-header-center" *ngIf="hasAnyPermission(assistantPermissions)">
+    <div class="panel-header-center" *ngIf="suscripcion.iaPermitida && hasAnyPermission(assistantPermissions)">
       <div class="search-box">
         <input type="text" [(ngModel)]="consultaAsistente" (keyup.enter)="abrirConsultaAsistente()" maxlength="2000" placeholder="Pregunta al asistente…" aria-label="Consulta para el asistente">
         <button class="search-btn" (click)="abrirConsultaAsistente()" aria-label="Abrir consulta en el asistente">
@@ -254,8 +254,15 @@
     <!-- MAIN ROUTER OUTLET CONTAINER -->
     <main class="panel-content">
       <p class="module-context">{{ moduloActual }}</p>
+      <p *ngIf="suscripcion.acceso()?.solo_lectura" role="status" class="m-4 p-3 border border-amber-500 rounded text-sm">
+        Tu empresa está en modo de solo lectura. Puedes consultar sus datos y gestionar tu cuenta.
+        <a routerLink="/suscripciones" class="underline font-bold">Ver suscripción</a>
+      </p>
+      <p *ngIf="suscripcion.acceso()?.estado_efectivo === 'GRACIA'" role="status" class="m-4 p-3 border border-amber-500 rounded text-sm">
+        Tu suscripción venció. El período de gracia termina el {{ suscripcion.acceso()?.gracia_hasta }}.
+      </p>
       <router-outlet></router-outlet>
-      <app-asistente></app-asistente>
+      <app-asistente *ngIf="suscripcion.iaPermitida"></app-asistente>
     </main>
   </div>
 

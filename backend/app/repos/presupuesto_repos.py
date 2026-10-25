@@ -279,8 +279,12 @@ def eliminar_presupuesto(id_presupuesto: int):
     db = PostgreSQL()
     db.create_connection()
     try:
-        sql = "DELETE FROM obras.t_presupuesto WHERE id_presupuesto = %s AND estado = 'BORRADOR';"
-        return db.execute_query(sql, (id_presupuesto,), commit=True)
+        sql = """
+            DELETE FROM obras.t_presupuesto
+            WHERE id_presupuesto = %s AND estado = 'BORRADOR'
+            RETURNING id_presupuesto;
+        """
+        return db.execute_query(sql, (id_presupuesto,), fetchone=True, commit=True)
     finally:
         db.close_connection()
 
@@ -900,6 +904,36 @@ def eliminar_componente_apu(id_componente: int):
 # ─────────────────────────────────────────────────────────────────────────────
 # Catálogos de Recursos para APU (Materiales, Mano de Obra, Equipos)
 # ─────────────────────────────────────────────────────────────────────────────
+
+def obtener_material_catalogo_apu(id_material: int):
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        row = db.execute_query(
+            """
+            SELECT m.id_material, m.nombre_material, m.id_unidad_medida, m.precio,
+                   m.id_empresa, m.estado, um.abreviatura
+            FROM obras.t_material m
+            JOIN obras.t_unidad_medida um ON um.id_unidad_medida = m.id_unidad_medida
+            WHERE m.id_material = %s;
+            """,
+            (id_material,),
+            fetchone=True
+        )
+        if not row:
+            return None
+        return {
+            "id_material": row[0],
+            "nombre_material": row[1],
+            "id_unidad_medida": row[2],
+            "precio": float(row[3]) if row[3] is not None else None,
+            "id_empresa": row[4],
+            "estado": row[5],
+            "unidad_medida_abreviatura": row[6]
+        }
+    finally:
+        db.close_connection()
+
 
 def listar_equipos(id_empresa: int, q: str = None):
     db = PostgreSQL()

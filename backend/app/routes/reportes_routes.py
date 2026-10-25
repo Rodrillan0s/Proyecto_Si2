@@ -89,4 +89,6 @@ def voice(audio: UploadFile=File(...),token=Depends(verificar_token),id_empresa:
     if not content or len(content)>5*1024*1024:
         raise HTTPException(422,'La grabación debe tener entre 1 byte y 5 MiB.')
     from app.services.reportes.speech import transcribe
-    return transcribe(content)
+    from app.services.suscripcion_policy import consulta_ia
+    with consulta_ia(token,id_empresa):
+        return transcribe(content)

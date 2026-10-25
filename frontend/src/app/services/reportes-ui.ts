@@ -1,5 +1,7 @@
 export function reportError(error: unknown): string {
-  const response = error as { status?: number; error?: { detail?: unknown } };
+  const response = error as { status?: number; error?: { detail?: unknown; code?: string } };
+  if (typeof response.error?.detail === 'string' && (response.error.code?.startsWith('SUSCRIPCION_') || response.error.detail.includes('SUSCRIPCION_')))
+    return response.error.detail.replace(/^SUSCRIPCION_[A-Z_]+:\s*/, '');
   if (response.status === 0)
     return 'No hay conexión con el servidor. Revisa tu conexión y vuelve a intentar.';
   if (response.status === 401) return 'Tu sesión ha caducado. Inicia sesión nuevamente.';

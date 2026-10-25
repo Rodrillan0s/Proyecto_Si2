@@ -11,6 +11,7 @@ from app.services.reportes.contracts import ReportRequest, Schedule
 from app.services.reportes.interpreter import interpret
 from app.services.reportes.exporters import export
 from app.services.reportes.scheduling import next_run, period_request
+from app.services import suscripcion_policy as subscription
 
 
 def user(token):
@@ -21,13 +22,28 @@ def catalog(token, empresa=None):
     with repo.transaction(snapshot=True) as db:
         ctx = context(db,user(token),empresa)
         ctx.require('Visualizar_reportes')
+        plan = subscription.obtener(ctx.empresa,getattr(db, "cur", None))
         definitions = [dict(id=d.id,titulo=d.titulo,descripcion=d.descripcion,requiere_obra=d.obra,fechas=d.fecha,fecha_campo=d.fecha_campo,
                             campos=[dict(campo=k,titulo=k.replace('_',' ').capitalize()) for k in FIELDS.get(d.id,'').split()]) for d in REGISTRY.values()
-                       if allowed(ctx,d) and (d.id!='stock' or ctx.rol in {'ADMINISTRADOR','ADMINISTRADOR_EMPRESA'})]
-        return {'reportes':definitions,'obras':repo.works(db,ctx), 'acciones':list(ctx.permisos) if ctx.rol!='ADMINISTRADOR' else ['Visualizar_reportes','Exportar_reportes','Enviar_reportes','Programar_reportes','Administrar_programaciones_reportes'], 'id_empresa':ctx.empresa}
+                       if allowed(ctx,d) and (ctx.rol=='ADMINISTRADOR' or subscription.reporte_en_plan(plan,d.id))
+                       and (d.id!='stock' or ctx.rol in {'ADMINISTRADOR','ADMINISTRADOR_EMPRESA'})]
+        acciones = list(ctx.permisos) if ctx.rol!='ADMINISTRADOR' else ['Visualizar_reportes','Exportar_reportes','Enviar_reportes','Programar_reportes','Administrar_programaciones_reportes']
+        caps = subscription.capacidades(plan)
+        if ctx.rol!='ADMINISTRADOR':
+            if not caps['exportar_habilitado']:
+                acciones = [a for a in acciones if a!='Exportar_reportes']
+            if not caps['automatizar_habilitado']:
+                acciones = [a for a in acciones if a not in {'Enviar_reportes','Programar_reportes','Administrar_programaciones_reportes'}]
+        if ctx.rol=='ADMINISTRADOR' or caps['reportes_habilitado']:
+            acciones.append('Generar_reportes')
+        if ctx.rol=='ADMINISTRADOR' or caps['ia_habilitada']:
+            acciones.append('Usar_ia')
+        return {'reportes':definitions,'obras':repo.works(db,ctx), 'acciones':acciones, 'id_empresa':ctx.empresa, 'suscripcion':caps}
 
 
 def build(db, ctx, request, intersect=None, rows_allowed=None, source_allowlist=None):
+    if ctx.rol!='ADMINISTRADOR':
+        subscription.exigir_escritura(ctx.empresa,getattr(db, "cur", None))
     definition, scope = authorize(db,ctx,request)
     if intersect is not None and request.reporte!='stock':
         scope = sorted(set(scope)&set(intersect))
@@ -148,7 +164,7 @@ def owned(db, ident, token, action='Visualizar_reportes'):
     ctx = context(db,user(token),item['id_empresa'])
     if ctx.usuario != item['id_usuario']:
         raise HTTPException(403,'El reporte pertenece a otro actor.')
-    _,scope = authorize(db,ctx,ReportRequest.model_validate(item['solicitud']),action)
+    _,scope = authorize(db,ctx,ReportRequest.model_validate(item['solicitud']),action,lectura=True)
     for permission in (item.get('resultado') or {}).get('permisos_fuente',[]):
         ctx.require(permission)
     if ctx.policy()!=item['politica'] or not set(item['alcance']).issubset(scope):
@@ -200,11 +216,23 @@ def download(token, ident):
 
 
 def interpretation(token, data, empresa=None):
+    if data.usar_ia:
+        with subscription.consulta_ia(token, empresa):
+            return _interpretation(token,data,empresa)
+    return _interpretation(token,data,empresa)
+
+
+def _interpretation(token, data, empresa=None):
     with repo.transaction() as db:
         ctx = context(db,user(token),empresa)
         ctx.require('Visualizar_reportes')
+        if ctx.rol!='ADMINISTRADOR':
+            subscription.exigir_escritura(ctx.empresa,getattr(db, "cur", None))
         works = repo.works(db,ctx)
-        available = [d.id for d in REGISTRY.values() if allowed(ctx,d) and (d.id!='stock' or ctx.rol in {'ADMINISTRADOR','ADMINISTRADOR_EMPRESA'})]
+        plan = subscription.obtener(ctx.empresa,getattr(db, "cur", None))
+        available = [d.id for d in REGISTRY.values() if allowed(ctx,d)
+                     and (ctx.rol=='ADMINISTRADOR' or subscription.reporte_en_plan(plan,d.id))
+                     and (d.id!='stock' or ctx.rol in {'ADMINISTRADOR','ADMINISTRADOR_EMPRESA'})]
         conversation = None
         if data.conversacion:
             try:
@@ -250,6 +278,8 @@ def recipients(token, empresa=None):
     with repo.transaction(snapshot=True) as db:
         ctx = context(db,user(token),empresa)
         ctx.require('Enviar_reportes')
+        if ctx.rol!='ADMINISTRADOR':
+            subscription.exigir_funcion(ctx.empresa,'automatizar',getattr(db, "cur", None))
         # Trabajadores/clientes nunca reciben un directorio empresarial.
         if ctx.rol not in {'ADMINISTRADOR','ADMINISTRADOR_EMPRESA','JEFE DE OBRA'}:
             return [{'id_usuario':ctx.usuario,'nombre': 'Mi cuenta'}]
@@ -295,6 +325,8 @@ def create_schedule(token, config, empresa=None):
     with repo.transaction() as db:
         ctx = context(db,user(token),empresa)
         ctx.require('Programar_reportes')
+        if ctx.rol!='ADMINISTRADOR':
+            subscription.exigir_funcion(ctx.empresa,'automatizar',getattr(db, "cur", None))
         ctx.require('Enviar_reportes')
         authorize(db,ctx,ReportRequest.model_validate(period_request(value,due)))
         for receiver in set(config.destinatarios):
@@ -324,6 +356,8 @@ def change_schedule(token, ident, enabled=None, execute=False):
         if ctx.usuario!=item['id_usuario']:
             ctx.require('Administrar_programaciones_reportes')
         owner = context(db,item['id_usuario'],item['id_empresa'])
+        if owner.rol!='ADMINISTRADOR':
+            subscription.exigir_funcion(owner.empresa,'automatizar',getattr(db, "cur", None))
         owner.require('Programar_reportes')
         config = item['configuracion']
         authorize(db,owner,ReportRequest.model_validate(period_request(config,datetime.now(timezone.utc))))
@@ -337,6 +371,8 @@ def change_schedule(token, ident, enabled=None, execute=False):
 
 def queue_schedule(db, item, occurrence):
     ctx = context(db,item['id_usuario'],item['id_empresa'])
+    if ctx.rol!='ADMINISTRADOR':
+        subscription.exigir_funcion(ctx.empresa,'automatizar',getattr(db, "cur", None))
     ctx.require('Programar_reportes')
     ctx.require('Enviar_reportes')
     request = ReportRequest.model_validate(period_request(item['configuracion'],occurrence))
@@ -349,4 +385,5 @@ def queue_schedule(db, item, occurrence):
 
 def assistant(token, data, empresa=None):
     from app.services.ai.assistant_service import consult
-    return consult(token, data, empresa)
+    with subscription.consulta_ia(token,empresa):
+        return consult(token, data, empresa)

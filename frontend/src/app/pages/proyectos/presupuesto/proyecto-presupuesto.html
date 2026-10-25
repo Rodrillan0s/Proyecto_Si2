@@ -22,7 +22,7 @@
       <div class="flex items-center gap-2 flex-wrap">
         <div *ngIf="presupuestos.length > 0" class="flex items-center gap-1.5 bg-gray-50 dark:bg-slate-800/60 px-3 py-1.5 rounded-xl border border-gray-200 dark:border-slate-700 text-xs">
           <span class="text-gray-500 font-semibold">Versión:</span>
-          <select [ngModel]="presupuestoActivo?.id_presupuesto" (ngModelChange)="onCambiarPresupuesto($event)" class="bg-transparent font-bold text-orange-600 dark:text-orange-400 outline-none">
+          <select [ngModel]="presupuestoSeleccionado?.id_presupuesto" (ngModelChange)="onCambiarPresupuesto($event)" class="bg-transparent font-bold text-orange-600 dark:text-orange-400 outline-none">
             <option *ngFor="let p of presupuestos" [value]="p.id_presupuesto">
               v{{ p.version }} - {{ p.codigo }} ({{ p.estado }}) {{ p.es_vigente ? '★ Vigente' : '' }}
             </option>
@@ -35,6 +35,10 @@
 
         <button *ngIf="presupuestoActivo?.estado === 'APROBADO'" (click)="crearNuevaVersion()" [disabled]="guardando" class="btn-secondary text-xs">
           <span>＋</span> Nueva Versión
+        </button>
+
+        <button *ngIf="puedeVerAccionEliminarPresupuesto()" type="button" (click)="eliminarPresupuesto()" [disabled]="!puedeEliminarPresupuesto() || guardando" [title]="estadoAccionEliminarPresupuesto()" class="btn-secondary text-xs text-red-600 dark:text-red-400">
+          Eliminar borrador
         </button>
       </div>
     </div>
@@ -534,29 +538,42 @@
       <div class="grid grid-cols-1 sm:grid-cols-6 gap-2 items-end bg-gray-50 dark:bg-slate-800/40 p-3 rounded-xl border border-gray-100 dark:border-slate-800">
         <div>
           <label class="text-[10px] font-bold uppercase text-gray-500">Tipo Recurso</label>
-          <select [(ngModel)]="formComponenteApu.tipo_recurso" class="form-input text-xs">
+          <select [(ngModel)]="formComponenteApu.tipo_recurso" (ngModelChange)="onTipoRecursoComponenteChange()" class="form-input text-xs">
             <option value="MATERIAL">Material</option>
             <option value="MANO_OBRA">Mano de Obra</option>
             <option value="EQUIPO">Equipo</option>
           </select>
         </div>
-        <div class="sm:col-span-2">
+        <div *ngIf="formComponenteApu.tipo_recurso === 'MATERIAL'" class="sm:col-span-2">
+          <label class="text-[10px] font-bold uppercase text-gray-500">Material del catálogo</label>
+          <select [(ngModel)]="formComponenteApu.id_recurso" (ngModelChange)="onSeleccionarMaterialComponente($event)" class="form-input text-xs">
+            <option [ngValue]="null">-- Elegir material --</option>
+            <option *ngFor="let m of materiales" [ngValue]="m.id_material">
+              {{ m.nombre_material }} — {{ m.precio | number:'1.2-2' }} Bs./{{ m.unidad_medida.abreviatura }}
+            </option>
+          </select>
+        </div>
+        <div *ngIf="formComponenteApu.tipo_recurso !== 'MATERIAL'" class="sm:col-span-2">
           <label class="text-[10px] font-bold uppercase text-gray-500">Descripción Recurso *</label>
           <input type="text" [(ngModel)]="formComponenteApu.descripcion_recurso" placeholder="Ej: Fierro corrugado, Albañil..." class="form-input text-xs">
         </div>
         <div>
           <label class="text-[10px] font-bold uppercase text-gray-500">Unidad</label>
-          <select [(ngModel)]="formComponenteApu.id_unidad_medida" class="form-input text-xs">
+          <span *ngIf="formComponenteApu.tipo_recurso === 'MATERIAL'" class="form-input text-xs block">{{ formComponenteApu.unidad_medida_abrev || '—' }}</span>
+          <select *ngIf="formComponenteApu.tipo_recurso !== 'MATERIAL'" [(ngModel)]="formComponenteApu.id_unidad_medida" class="form-input text-xs">
             <option *ngFor="let u of unidades" [value]="u.id_unidad_medida">{{ u.abreviatura }}</option>
           </select>
         </div>
         <div>
-          <label class="text-[10px] font-bold uppercase text-orange-600">Rendimiento *</label>
+          <label class="text-[10px] font-bold uppercase text-orange-600">Cantidad por unidad de APU *</label>
           <input type="number" step="0.0001" min="0.0001" [(ngModel)]="formComponenteApu.rendimiento" class="form-input text-xs font-mono">
         </div>
         <div>
-          <label class="text-[10px] font-bold uppercase text-gray-500">Precio (Bs.)</label>
-          <input type="number" step="0.01" [(ngModel)]="formComponenteApu.precio_unitario" class="form-input text-xs font-mono">
+          <label class="text-[10px] font-bold uppercase text-gray-500">Precio por unidad</label>
+          <span *ngIf="formComponenteApu.tipo_recurso === 'MATERIAL'" class="form-input text-xs font-mono block">
+            {{ formComponenteApu.precio_unitario | number:'1.2-2' }} Bs./{{ formComponenteApu.unidad_medida_abrev || 'unidad' }}
+          </span>
+          <input *ngIf="formComponenteApu.tipo_recurso !== 'MATERIAL'" type="number" step="0.01" [(ngModel)]="formComponenteApu.precio_unitario" class="form-input text-xs font-mono">
         </div>
         <div class="sm:col-span-6 flex justify-end pt-1">
           <button (click)="agregarComponente()" [disabled]="guardando" class="btn-primary text-xs">
@@ -571,8 +588,8 @@
           <tr class="border-b border-gray-100 dark:border-slate-800 text-gray-400">
             <th class="p-2">Tipo</th>
             <th class="p-2">Recurso / Insumo</th>
-            <th class="p-2 text-right">Rendimiento</th>
-            <th class="p-2 text-right">Precio Unitario</th>
+            <th class="p-2 text-right">Cantidad por unidad de APU</th>
+            <th class="p-2 text-right">Precio por unidad</th>
             <th class="p-2 text-right">Subtotal</th>
             <th class="p-2 text-right">Acción</th>
           </tr>
@@ -586,7 +603,7 @@
             </td>
             <td class="p-2 font-semibold">{{ c.descripcion_recurso }}</td>
             <td class="p-2 text-right font-mono font-bold">{{ c.rendimiento || c.cantidad | number:'1.2-4' }}</td>
-            <td class="p-2 text-right font-mono">{{ c.precio_unitario | number:'1.2-2' }}</td>
+            <td class="p-2 text-right font-mono">{{ c.precio_unitario | number:'1.2-2' }} Bs./{{ c.unidad_medida_abrev || 'unidad' }}</td>
             <td class="p-2 text-right font-mono font-bold text-orange-600">{{ c.subtotal | number:'1.2-2' }}</td>
             <td class="p-2 text-right">
               <button (click)="eliminarComponente(c)" class="text-red-500 hover:text-red-700">✕</button>
@@ -623,7 +640,7 @@
             <select [(ngModel)]="formPartida.id_apu" (ngModelChange)="alSeleccionarApuEnPartida($event)" class="form-input text-xs font-semibold">
               <option [ngValue]="null">-- Seleccionar actividad de biblioteca APU --</option>
               <option *ngFor="let a of apus" [value]="a.id_apu">
-                {{ a.codigo }} - {{ a.nombre }} ({{ (a.costo_directo || a.costo_unitario_total) | number:'1.2-2' }} Bs./{{ a.unidad_medida_abrev }})
+                {{ a.codigo }} - {{ a.nombre }} ({{ (a.costo_directo || a.costo_unitario_total || 0) | number:'1.2-2' }} Bs./{{ a.unidad_medida_abrev || 'unidad' }})
               </option>
             </select>
           </div>
@@ -828,50 +845,42 @@
         <div class="bg-blue-50/60 dark:bg-slate-800/60 p-3 rounded-xl border border-blue-100 dark:border-slate-700 text-xs">
           <span class="font-bold text-blue-900 dark:text-blue-300">📦 Paso 2: Insumos y Materiales</span>
           <p class="text-gray-500 dark:text-gray-400 text-[11px] mt-0.5">
-            Seleccione materiales del catálogo o ingrese un material específico. Defina el <strong>rendimiento unitario</strong> (cantidad consumida por 1 unidad de esta actividad).
+            Seleccione un material del catálogo e indique únicamente cuánto consume por cada unidad de esta actividad. El precio y la unidad se toman del catálogo.
           </p>
         </div>
 
         <!-- FORMULARIO RÁPIDO PARA AGREGAR MATERIAL -->
         <div class="bg-gray-50 dark:bg-slate-800/40 p-3 rounded-xl border border-gray-200 dark:border-slate-700 space-y-3">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div>
-              <label class="text-[10px] font-bold uppercase text-gray-500">Seleccionar de Catálogo CU14</label>
-              <select [ngModel]="tempRecursoId" (ngModelChange)="onSeleccionarMaterialCatalogo($event)" class="form-input text-xs">
-                <option [ngValue]="null">-- Elegir de catálogo de materiales --</option>
-                <option *ngFor="let m of materiales" [value]="m.id_material">
-                  {{ m.codigo }} - {{ m.nombre_material }} ({{ m.precio | number:'1.2-2' }} Bs./{{ m.unidad_medida.abreviatura }})
-                </option>
-              </select>
-            </div>
-            <div>
-              <label class="text-[10px] font-bold uppercase text-gray-500">Descripción del Material *</label>
-              <input type="text" [(ngModel)]="tempDescripcion" placeholder="Ej: Cemento Portland IP-30" class="form-input text-xs">
-            </div>
+          <div>
+            <label class="text-[10px] font-bold uppercase text-gray-500">Material del catálogo</label>
+            <select [ngModel]="tempRecursoId" (ngModelChange)="onSeleccionarMaterialCatalogo($event)" class="form-input text-xs">
+              <option [ngValue]="null">-- Elegir material --</option>
+              <option *ngFor="let m of materiales" [value]="m.id_material">
+                {{ m.nombre_material }} — {{ m.precio | number:'1.2-2' }} Bs./{{ m.unidad_medida.abreviatura }}
+              </option>
+            </select>
           </div>
 
-          <div class="grid grid-cols-3 gap-2 items-end">
-            <div>
-              <label class="text-[10px] font-bold uppercase text-gray-500">Unidad</label>
-              <select [(ngModel)]="tempUnidadId" class="form-input text-xs">
-                <option *ngFor="let u of unidades" [value]="u.id_unidad_medida">{{ u.abreviatura }}</option>
-              </select>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
+            <div class="rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2">
+              <label class="text-[10px] font-bold uppercase text-gray-500 block">Unidad del catálogo</label>
+              <span class="text-xs font-semibold">{{ unidadTempAbreviatura() || '—' }}</span>
             </div>
             <div>
-              <label class="text-[10px] font-bold uppercase text-orange-600">Rendimiento Unitario *</label>
-              <input type="number" step="0.0001" min="0.0001" [(ngModel)]="tempRendimiento" placeholder="Ej: 1.05" class="form-input text-xs font-mono font-bold">
+              <label class="text-[10px] font-bold uppercase text-gray-500 block">Precio por unidad</label>
+              <span class="form-input text-xs font-mono font-semibold block">{{ tempPrecioUnitario | number:'1.2-2' }} Bs./{{ unidadTempAbreviatura() || 'unidad' }}</span>
             </div>
             <div>
-              <label class="text-[10px] font-bold uppercase text-gray-500">Precio Unitario (Bs.)</label>
-              <input type="number" step="0.01" [(ngModel)]="tempPrecioUnitario" placeholder="0.00" class="form-input text-xs font-mono">
+              <label class="text-[10px] font-bold uppercase text-orange-600">Cantidad consumida por unidad de APU *</label>
+              <input type="number" step="0.0001" min="0.0001" [(ngModel)]="tempRendimiento" placeholder="Ej: 0.2" class="form-input text-xs font-mono font-bold">
             </div>
           </div>
 
           <div class="flex justify-between items-center pt-2">
             <span class="text-xs text-gray-500">
-              Subtotal: <strong>{{ (tempRendimiento * tempPrecioUnitario) | number:'1.2-2' }} Bs.</strong>
+              Costo del material por unidad de APU: <strong>{{ tempRendimiento | number:'1.2-4' }} × {{ tempPrecioUnitario | number:'1.2-2' }} Bs./{{ unidadTempAbreviatura() || 'unidad' }} = {{ (tempRendimiento * tempPrecioUnitario) | number:'1.2-2' }} Bs.</strong>
             </span>
-            <button type="button" (click)="agregarComponenteWizard('MATERIAL')" class="btn-primary text-xs">
+            <button type="button" (click)="agregarComponenteWizard('MATERIAL')" [disabled]="!tempRecursoId" class="btn-primary text-xs">
               ＋ Agregar Material a la Receta
             </button>
           </div>
@@ -884,8 +893,8 @@
               <tr class="border-b border-gray-100 dark:border-slate-800 text-gray-500">
                 <th class="p-2">Material</th>
                 <th class="p-2 text-center">Unidad</th>
-                <th class="p-2 text-right">Rendimiento</th>
-                <th class="p-2 text-right">Precio (Bs.)</th>
+                <th class="p-2 text-right">Cantidad por unidad de APU</th>
+                <th class="p-2 text-right">Precio por unidad</th>
                 <th class="p-2 text-right">Subtotal (Bs.)</th>
                 <th class="p-2 text-right"></th>
               </tr>
@@ -898,7 +907,7 @@
                 <td class="p-2 font-semibold text-gray-800 dark:text-gray-200">{{ c.descripcion_recurso }}</td>
                 <td class="p-2 text-center text-gray-500 font-mono">{{ c.unidad_medida_abrev }}</td>
                 <td class="p-2 text-right font-mono font-bold">{{ c.rendimiento | number:'1.2-4' }}</td>
-                <td class="p-2 text-right font-mono text-gray-500">{{ c.precio_unitario | number:'1.2-2' }}</td>
+                <td class="p-2 text-right font-mono text-gray-500">{{ c.precio_unitario | number:'1.2-2' }} Bs./{{ c.unidad_medida_abrev || 'unidad' }}</td>
                 <td class="p-2 text-right font-mono font-bold text-orange-600">{{ c.subtotal | number:'1.2-2' }}</td>
                 <td class="p-2 text-right">
                   <button type="button" (click)="eliminarComponenteWizard(i)" class="text-red-500 hover:text-red-700">✕</button>
