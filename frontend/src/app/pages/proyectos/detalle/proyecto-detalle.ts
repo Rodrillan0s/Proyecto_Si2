@@ -83,10 +83,6 @@ export class ProyectoDetalleComponent implements OnInit, OnDestroy {
       const tab = qp.get('tab');
       if (tab === 'estructura') {
         this.tabActivo = 'estructura';
-      } else if (tab === 'presupuesto') {
-        this.tabActivo = 'presupuesto';
-      } else if (tab === 'avances') {
-        this.tabActivo = 'avances';
       }
     });
   }
@@ -367,14 +363,12 @@ export class ProyectoDetalleComponent implements OnInit, OnDestroy {
     this.seleccionarTab('avances');
   }
 
-  irAPresupuesto() {
-    this.seleccionarTab('presupuesto');
-  }
-
   irAEstructura() {
     this.seleccionarTab('estructura');
   }
-
+irAPresupuesto() {
+  this.seleccionarTab('presupuesto');
+}
   irAMateriales() {
     this.router.navigate(['/materiales']);
   }

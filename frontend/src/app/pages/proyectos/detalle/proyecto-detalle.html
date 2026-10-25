@@ -106,6 +106,7 @@
           <div class="text-[11px] text-gray-500 dark:text-gray-400">Suministros y contactos</div>
         </div>
       </button>
+
       <!-- 5. Presupuestos & APU (CU16) -->
       <button (click)="irAPresupuesto()" 
               type="button"
@@ -391,39 +392,9 @@
   </div>
 
 
-  <!-- CONTENIDO 3: PRESUPUESTO & APU (CU16) -->
-  <div *ngIf="!cargando && proyecto && tabActivo === 'presupuesto'">
-    <app-proyecto-presupuesto [idObra]="idObra" [nombreProyecto]="proyecto.nombre" [codigoProyecto]="proyecto.codigo"></app-proyecto-presupuesto>
-  </div>
-
   <!-- CONTENIDO 4: AVANCES DE OBRA (CU18) -->
   <div *ngIf="!cargando && proyecto && tabActivo === 'avances'">
     <app-proyecto-avances [idObra]="idObra"></app-proyecto-avances>
   </div>
 
-  <div *ngIf="mostrarModalPersonal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-       (click)="cerrarModalPersonal()" (keydown.escape)="cerrarModalPersonal()">
-    <div role="dialog" aria-modal="true" aria-labelledby="titulo-asignar-personal" tabindex="-1"
-         class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4"
-         (click)="$event.stopPropagation()">
-      <h3 id="titulo-asignar-personal" class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Asignar personal</h3>
-        <div *ngIf="esRolAutorizado()" class="space-y-3">
-          <label for="personal-obra" class="form-label">Trabajador</label>
-          <select id="personal-obra" [(ngModel)]="idPersonalSeleccionado" class="form-select w-full"
-                  [disabled]="cargandoCandidatosPersonal || procesandoAccion || candidatosPersonal.length === 0">
-            <option [ngValue]="undefined">{{ cargandoCandidatosPersonal ? 'Cargando trabajadores...' : 'Seleccionar trabajador...' }}</option>
-            <option *ngFor="let u of candidatosPersonal" [ngValue]="u.id_usuario">{{ u.nombre_completo }} — {{ u.nombre_rol }}</option>
-          </select>
-          <p *ngIf="errorCandidatosPersonal" class="text-xs text-red-600 dark:text-red-400" role="alert">{{ errorCandidatosPersonal }}</p>
-          <p *ngIf="!cargandoCandidatosPersonal && !errorCandidatosPersonal && candidatosPersonal.length === 0" class="text-xs text-gray-500 dark:text-gray-400">
-            No hay trabajadores activos pendientes de asignar en esta empresa.
-          </p>
-          <button (click)="asignarPersonal()" [disabled]="!idPersonalSeleccionado || procesandoAccion || cargandoCandidatosPersonal"
-                  class="btn-primary w-full">Confirmar asignación</button>
-        </div>
-
-      <p *ngIf="mensajeError" class="text-xs text-red-600 dark:text-red-400" role="alert">{{ mensajeError }}</p>
-      <button type="button" (click)="cerrarModalPersonal()" [disabled]="procesandoAccion" class="btn-outline w-full">Cancelar</button>
-    </div>
-  </div>
 </div>

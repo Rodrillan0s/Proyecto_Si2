@@ -1702,6 +1702,7 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
               );
             }
 
+<<<<<<< HEAD
             final todas = snapshot.data ?? [];
 
             final filtradas = todas.where((u) {
@@ -1762,13 +1763,49 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: borderColor),
                       ),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: () => _mostrarModalDetalleUnidad(u),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+=======
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: cardBg,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: borderColor),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF2E1C14) : const Color(0xFFFFF7ED),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.door_sliding_rounded, color: AppTheme.primary, size: 20),
+                        ),
+                        title: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                cod,
+                                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w800, color: titleColor),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            ConstructionStatusBadge(status: est, compact: true),
+                          ],
+                        ),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 4.0),
+                        child: Row(
+>>>>>>> 23ed517e922328483f60633df421d97f987059f4
                           children: [
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1866,13 +1903,24 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
                           ],
                         ),
                       ),
-                      ),
+<<<<<<< HEAD
                     );
                   }),
               ],
             );
           },
         ),
+=======
+                      trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8)),
+                      onTap: () => _mostrarModalDetalleUnidad(u),
+                    ),
+                  ),
+                );
+              }),
+            ],
+          );
+        },
+>>>>>>> 23ed517e922328483f60633df421d97f987059f4
       ),
     );
   }
