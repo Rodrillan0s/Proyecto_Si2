@@ -1,0 +1,137 @@
+<main class="pagos-page text-slate-900 dark:text-slate-100">
+  <header class="page-heading">
+    <div>
+      <p class="section-label">CU37</p>
+      <h1>{{ esGlobal ? 'Pagos SaaS y transacciones' : 'Pagos y suscripción' }}</h1>
+      <p>{{ esGlobal ? 'Consulte una transacción y solicite a Stripe su verificación.' : 'Administre el pago de su plan y consulte los comprobantes de su empresa.' }}</p>
+    </div>
+    <a *ngIf="!esGlobal" routerLink="/suscripciones" class="secondary-link">Ver detalle de suscripción</a>
+  </header>
+
+  <div *ngIf="error()" role="alert" class="notice notice-error">{{ error() }}</div>
+  <div *ngIf="mensaje()" role="status" class="notice notice-success">{{ mensaje() }}</div>
+
+  <ng-container *ngIf="!esGlobal">
+    <section *ngIf="cargando()" aria-label="Cargando pagos" class="loading-grid" role="status">
+      <span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span>
+      <span class="sr-only">Cargando planes e historial de pagos</span>
+    </section>
+
+    <ng-container *ngIf="!cargando()">
+      <section *ngIf="suscripcion() as actual" class="current-plan" aria-labelledby="plan-actual-title">
+        <div>
+          <span class="current-plan-label">Plan actual</span>
+          <h2 id="plan-actual-title">{{ actual.nombre_plan || actual.codigo_plan || 'Sin plan asignado' }}</h2>
+          <p>Estado: {{ actual.estado_efectivo }}. Vigencia hasta {{ actual.fecha_fin || 'sin fecha definida' }}.</p>
+        </div>
+        <app-status-badge [estado]="actual.estado_efectivo"></app-status-badge>
+      </section>
+
+      <section aria-labelledby="planes-title" class="section-block">
+        <div class="section-heading">
+          <h2 id="planes-title">Planes disponibles</h2>
+          <p>Los importes y la moneda se obtienen del servidor. Stripe procesa el pago en modo prueba.</p>
+        </div>
+        <div class="plans-grid">
+          <article *ngFor="let plan of planes()" class="plan-card" [class.plan-current]="esPlanActual(plan)">
+            <div class="plan-topline">
+              <div>
+                <h3>{{ plan.nombre }}</h3>
+                <span *ngIf="esPlanActual(plan)" class="current-badge">Plan actual</span>
+              </div>
+              <p class="plan-price">{{ dinero(plan.precio_menor, plan.moneda) }}<small>/ {{ plan.periodo_meses }} mes{{ plan.periodo_meses === 1 ? '' : 'es' }}</small></p>
+            </div>
+            <p class="plan-description">{{ plan.descripcion }}</p>
+            <dl class="plan-limits" *ngIf="plan.limite_usuarios || plan.limite_obras">
+              <div *ngIf="plan.limite_usuarios"><dt>Usuarios</dt><dd>{{ plan.limite_usuarios }}</dd></div>
+              <div *ngIf="plan.limite_obras"><dt>Obras</dt><dd>{{ plan.limite_obras }}</dd></div>
+              <div *ngIf="plan.consultas_ia_mes"><dt>IA mensual</dt><dd>{{ plan.consultas_ia_mes }}</dd></div>
+            </dl>
+            <ul *ngIf="plan.prestaciones.length" class="features-list">
+              <li *ngFor="let prestacion of plan.prestaciones">{{ prestacion }}</li>
+            </ul>
+            <button type="button" class="primary-button" (click)="iniciarPago(plan)"
+              [disabled]="procesandoPlan() !== null">
+              {{ procesandoPlan() === plan.codigo ? 'Preparando Checkout...' : etiquetaAccion(plan) }}
+            </button>
+          </article>
+        </div>
+      </section>
+
+      <section aria-labelledby="historial-title" class="section-block history-section">
+        <div class="section-heading history-heading">
+          <div><h2 id="historial-title">Historial de pagos</h2><p>Intentos y pagos registrados para su empresa.</p></div>
+          <button type="button" class="secondary-button" (click)="cargarEmpresa()">Actualizar</button>
+        </div>
+
+        <app-empty-state *ngIf="!historial().length" titulo="Aún no hay pagos"
+          descripcion="Cuando inicie un Checkout, el intento aparecerá en este historial."></app-empty-state>
+
+        <div *ngIf="historial().length" class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Plan</th><th>Importe</th><th>Estado</th><th>Fecha</th><th>Confirmación</th><th>Acción</th></tr></thead>
+            <tbody>
+              <tr *ngFor="let pago of historial()">
+                <td data-label="ID">#{{ pago.id_pago }}</td>
+                <td data-label="Plan"><strong>{{ pago.nombre_plan || pago.codigo_plan }}</strong></td>
+                <td data-label="Importe">{{ dinero(pago.monto_menor, pago.moneda) }}</td>
+                <td data-label="Estado"><app-status-badge [estado]="pago.estado"></app-status-badge></td>
+                <td data-label="Fecha">{{ fecha(pago.fecha) }}</td>
+                <td data-label="Confirmación">{{ fecha(pago.confirmado_en) }}</td>
+                <td data-label="Acción"><button type="button" class="table-action" (click)="verComprobante(pago.id_pago)">Ver comprobante</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </ng-container>
+  </ng-container>
+
+  <section *ngIf="esGlobal" class="admin-lookup" aria-labelledby="buscar-title">
+    <div class="section-heading">
+      <h2 id="buscar-title">Consultar transacción</h2>
+      <p>El backend actual permite consultar y verificar una transacción por su ID.</p>
+    </div>
+    <form (ngSubmit)="buscarPago()" class="lookup-form">
+      <label for="id-pago">ID de pago</label>
+      <div><input id="id-pago" name="idPago" type="number" min="1" step="1" required [(ngModel)]="idConsulta" placeholder="Ej. 4">
+      <button type="submit" class="primary-button" [disabled]="consultando()">{{ consultando() ? 'Consultando...' : 'Consultar' }}</button></div>
+    </form>
+
+    <article *ngIf="pagoConsultado() as pago" class="transaction-card">
+      <div class="transaction-header">
+        <div><span>Pago #{{ pago.id_pago }}</span><h3>{{ pago.codigo_plan }}</h3></div>
+        <app-status-badge [estado]="pago.estado"></app-status-badge>
+      </div>
+      <dl class="transaction-grid">
+        <div><dt>Empresa</dt><dd>{{ pago.id_empresa }}</dd></div>
+        <div><dt>Importe</dt><dd>{{ dinero(pago.monto_menor, pago.moneda) }}</dd></div>
+        <div><dt>Creado</dt><dd>{{ fecha(pago.creado_en) }}</dd></div>
+        <div><dt>Confirmado</dt><dd>{{ fecha(pago.confirmado_en) }}</dd></div>
+      </dl>
+      <div class="transaction-actions">
+        <button *ngIf="pago.estado === 'PENDIENTE'" type="button" class="primary-button" (click)="verificarPago()" [disabled]="verificando()">
+          {{ verificando() ? 'Verificando con Stripe...' : 'Verificar con Stripe' }}
+        </button>
+        <button type="button" class="secondary-button" (click)="verComprobante(pago.id_pago)">Ver comprobante</button>
+      </div>
+    </article>
+  </section>
+
+  <div *ngIf="comprobante() as item" class="modal-backdrop" (click)="cerrarComprobante()">
+    <section class="receipt-modal" role="dialog" aria-modal="true" aria-labelledby="comprobante-title" (click)="$event.stopPropagation()">
+      <header><div><span>Comprobante local</span><h2 id="comprobante-title">Pago #{{ item.id_pago }}</h2></div>
+        <button type="button" class="close-button" aria-label="Cerrar comprobante" (click)="cerrarComprobante()">×</button></header>
+      <app-status-badge [estado]="item.estado"></app-status-badge>
+      <dl class="receipt-details">
+        <div><dt>Plan</dt><dd>{{ item.nombre_plan || item.codigo_plan }}</dd></div>
+        <div><dt>Importe</dt><dd>{{ dinero(item.monto_menor, item.moneda) }}</dd></div>
+        <div><dt>Confirmado</dt><dd>{{ fecha(item.confirmado_en) }}</dd></div>
+        <div><dt>Checkout Session</dt><dd class="reference">{{ item.stripe_checkout_session_id || 'No disponible' }}</dd></div>
+        <div><dt>PaymentIntent</dt><dd class="reference">{{ item.stripe_payment_intent_id || 'No disponible' }}</dd></div>
+      </dl>
+      <p *ngIf="!item.stripe_receipt_url" class="receipt-note">Stripe aún no proporcionó una URL de recibo. Las referencias locales permanecen disponibles.</p>
+      <a *ngIf="item.stripe_receipt_url" class="primary-button receipt-link" [href]="item.stripe_receipt_url" target="_blank" rel="noopener noreferrer">Abrir comprobante</a>
+    </section>
+  </div>
+</main>

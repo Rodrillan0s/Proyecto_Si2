@@ -50,6 +50,7 @@ export class AdminLayoutComponent implements OnInit {
   get nombreEmpresa() { return this.authService.obtenerNombreEmpresaActiva(); }
   get sections() { return NAVIGATION.map(section => ({ ...section, items: section.items.filter(item =>
     (!item.global || this.esAdministradorGlobal()) && (!item.permissions || this.hasAnyPermission(item.permissions)) &&
+    (!item.roles || item.roles.includes(this.authService.obtenerRolNormalizado())) &&
     (!item.all || this.authService.hasAllPermissions(item.all)) &&
     (item.id !== 'asistente' || this.suscripcion.iaPermitida) &&
     (!item.family || this.reportIds === undefined || REPORT_FAMILIES[item.family].some(id => this.reportIds!.includes(id)))

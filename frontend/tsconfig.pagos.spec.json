@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.spec.json",
+  "files": [
+    "src/app/services/pagos.spec.ts",
+    "src/app/pages/pagos/pagos.spec.ts",
+    "src/app/pages/pagos/resultado/pago-resultado.spec.ts"
+  ],
+  "include": [],
+  "exclude": []
+}

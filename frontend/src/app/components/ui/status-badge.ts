@@ -27,6 +27,7 @@ export class StatusBadgeComponent {
       case 'EJECUCION':
       case 'DISPONIBLE':
       case 'EXITOSO':
+      case 'CONFIRMADO':
         return 'bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800';
 
       case 'PLANIFICACION':
@@ -67,6 +68,7 @@ export class StatusBadgeComponent {
       case 'CRITICO':
       case 'CRITICA':
       case 'AGOTADO':
+      case 'FALLIDO':
         return 'bg-rose-50 text-rose-800 border-rose-300 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800';
 
       default:
@@ -82,6 +84,7 @@ export class StatusBadgeComponent {
       case 'EJECUCION':
       case 'DISPONIBLE':
       case 'EXITOSO':
+      case 'CONFIRMADO':
         return 'bg-emerald-500 animate-pulse';
 
       case 'PLANIFICACION':
@@ -122,6 +125,7 @@ export class StatusBadgeComponent {
       case 'CRITICO':
       case 'CRITICA':
       case 'AGOTADO':
+      case 'FALLIDO':
         return 'bg-rose-500';
 
       default:

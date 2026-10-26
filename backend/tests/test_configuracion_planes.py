@@ -141,7 +141,7 @@ def test_operaciones_actuales_de_negocio_tienen_modulo_registrado(monkeypatch):
     from app import create_app
     monkeypatch.setenv('BACKUP_ENABLED','false')
     caminos=create_app().openapi()['paths']
-    excepciones=('/api/auth','/api/perfil','/api/suscripciones','/api/backup','/api/empresas','/api/ws')
+    excepciones=('/api/auth','/api/perfil','/api/suscripciones','/api/pagos','/api/backup','/api/empresas','/api/ws')
     for camino,operaciones in caminos.items():
         if set(operaciones)&{'post','put','patch','delete'} and not camino.startswith(excepciones):
             assert modulo_ruta(camino) in MODULOS, camino

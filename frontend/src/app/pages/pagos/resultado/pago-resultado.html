@@ -1,0 +1,45 @@
+<main class="result-page text-slate-900 dark:text-slate-100">
+  <section *ngIf="estadoRetorno() === 'success'" class="result-card" aria-labelledby="resultado-title">
+    <div class="result-icon success-icon" aria-hidden="true">✓</div>
+    <p class="result-label">Stripe Test</p>
+    <h1 id="resultado-title">Pago recibido, verificando...</h1>
+    <p>El backend confirmará el pago con Stripe y actualizará la suscripción cuando corresponda.</p>
+
+    <div *ngIf="cargando()" class="status-panel" role="status">Consultando el estado del pago...</div>
+    <div *ngIf="error()" class="notice-error" role="alert">{{ error() }}</div>
+
+    <div *ngIf="pago() as actual" class="status-panel payment-status">
+      <div><span>Pago #{{ actual.id_pago }}</span><strong>{{ actual.codigo_plan }}</strong></div>
+      <app-status-badge [estado]="actual.estado"></app-status-badge>
+      <p *ngIf="actual.estado === 'PENDIENTE'">Stripe aún no confirmó el pago. Puede actualizar el estado en unos momentos.</p>
+      <p *ngIf="actual.estado === 'CONFIRMADO'">Pago confirmado. La vigencia de la suscripción ya fue aplicada por el backend.</p>
+      <p *ngIf="actual.estado === 'FALLIDO'">Stripe informó que el pago falló. La suscripción no fue modificada.</p>
+      <p *ngIf="actual.estado === 'CANCELADO'">El Checkout fue cancelado o expiró. La suscripción no fue modificada.</p>
+    </div>
+
+    <div *ngIf="!idPago() && !cargando()" class="status-panel">
+      No se encontró el identificador local del pago. Revise el historial para consultar su estado.
+    </div>
+
+    <div class="result-actions">
+      <button *ngIf="idPago()" type="button" class="secondary-button" (click)="actualizarEstado()" [disabled]="cargando()">Actualizar estado</button>
+      <a routerLink="/pagos" class="primary-link">Volver a pagos</a>
+    </div>
+  </section>
+
+  <section *ngIf="estadoRetorno() === 'cancel'" class="result-card" aria-labelledby="cancel-title">
+    <div class="result-icon cancel-icon" aria-hidden="true">×</div>
+    <p class="result-label">Checkout cancelado</p>
+    <h1 id="cancel-title">El pago no se completó</h1>
+    <p>No se activó ni renovó ninguna suscripción. Puede regresar a los planes cuando esté listo.</p>
+    <a routerLink="/pagos" class="primary-link">Volver a planes</a>
+  </section>
+
+  <section *ngIf="estadoRetorno() === 'invalid'" class="result-card" aria-labelledby="invalid-title">
+    <div class="result-icon cancel-icon" aria-hidden="true">!</div>
+    <p class="result-label">Resultado no disponible</p>
+    <h1 id="invalid-title">No reconocemos este retorno</h1>
+    <p>Abra la sección de pagos para consultar sus transacciones.</p>
+    <a routerLink="/pagos" class="primary-link">Ir a pagos</a>
+  </section>
+</main>

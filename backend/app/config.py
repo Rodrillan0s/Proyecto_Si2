@@ -37,3 +37,10 @@ class Config:
     AI_TIMEOUT_SECONDS = int(os.getenv('AI_TIMEOUT_SECONDS', '30'))
     SPEECH_PROVIDER = os.getenv('SPEECH_PROVIDER', 'disabled')
     WHISPER_MODEL = os.getenv('WHISPER_MODEL', 'small')
+
+    # STRIPE (CU37: solo modo prueba)
+    STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
+    STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
+    STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET')
+    STRIPE_SUCCESS_URL = os.getenv('STRIPE_SUCCESS_URL')
+    STRIPE_CANCEL_URL = os.getenv('STRIPE_CANCEL_URL')

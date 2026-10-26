@@ -32,6 +32,8 @@ export const routes: Routes = [
         component: AdminLayoutComponent,
         canActivate: [authGuard],
         children: [
+            { path: 'pagos/resultado', loadComponent: () => import('./pages/pagos/resultado/pago-resultado').then(module => module.PagoResultadoComponent), canActivate: [roleGuard], data: { roles: ['ADMINISTRADOR_EMPRESA'] } },
+            { path: 'pagos', loadComponent: () => import('./pages/pagos/pagos').then(module => module.PagosComponent), canActivate: [roleGuard], data: { roles: ['ADMINISTRADOR', 'ADMINISTRADOR_EMPRESA'] } },
             { path: 'configuracion-planes', loadComponent: () => import('./pages/configuracion-planes/configuracion-planes').then(module => module.ConfiguracionPlanesComponent), canActivate: [roleGuard], data: { roles: ['ADMINISTRADOR'] } },
             { path: 'suscripciones', loadComponent: () => import('./pages/suscripciones/suscripciones').then(module => module.SuscripcionesComponent) },
             { path: 'reportes', loadComponent: () => import('./pages/reportes/reportes').then(module => module.ReportesComponent) },

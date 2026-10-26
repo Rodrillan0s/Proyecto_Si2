@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from app.config import Config
 from app.routes import reportes_routes
 from app.routes import suscripcion_routes
+from app.routes import pago_routes
 from app.utils.reportes_errors import ReportesSchemaMissing
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -63,6 +64,7 @@ def create_app() -> FastAPI:
     # REGISTRO DE RUTAS
     app.include_router(main_routes.router)
     app.include_router(suscripcion_routes.router)
+    app.include_router(pago_routes.router)
     app.include_router(auth_routes.router,prefix='/api/auth')
     app.include_router(password_recovery_routes.router,prefix='/api/auth')
     app.include_router(users_routes.router,prefix='/api/usuarios')
