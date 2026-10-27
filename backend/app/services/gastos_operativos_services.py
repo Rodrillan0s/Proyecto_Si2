@@ -34,8 +34,9 @@ def _transaccion():
 def _obra(id_obra, token, db, bloquear=False):
     if isinstance(id_obra, bool) or not isinstance(id_obra, int) or id_obra <= 0:
         raise costos.ControlCostosError("La obra debe ser valida.")
+    id_empresa = None if token.get("nombre_rol") == "ADMINISTRADOR" else costos._empresa(token)
     obra = control_costos_repos.obtener_obra(
-        costos._empresa(token), id_obra, db=db, bloquear=bloquear
+        id_empresa, id_obra, db=db, bloquear=bloquear
     )
     if not obra:
         raise costos.ControlCostosError("La obra no existe o no pertenece a su empresa.", 404)
@@ -47,12 +48,14 @@ def _resumen(obra, token, db):
         raise costos.ControlCostosError(
             "El resumen economico final requiere una obra FINALIZADO.", 409
         )
-    response = costos.obtener_resumen(obra["id_obra"], token, db=db)
+    empresa = obra["id_empresa"]
+    token_empresa = dict(token, id_empresa=empresa) if token.get("nombre_rol") == "ADMINISTRADOR" else token
+    response = costos.obtener_resumen(obra["id_obra"], token_empresa, db=db)
     data = response["data"]
     if data["linea_base"]["presupuesto_estado"] != "APROBADA":
         raise costos.ControlCostosError("El presupuesto de la linea base no esta APROBADA.", 409)
     registrados = control_costos_repos.listar_costos(
-        costos._empresa(token), id_obra=obra["id_obra"],
+        empresa, id_obra=obra["id_obra"],
         id_control_costo=data["linea_base"]["id_control_costo"],
         estado="REGISTRADO", db=db,
     )

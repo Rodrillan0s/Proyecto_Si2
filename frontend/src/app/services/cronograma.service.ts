@@ -21,10 +21,18 @@ export interface Respuesta<T> { success: boolean; data: T; obra?: { nombre: stri
 
 /** Nunca envía campos calculados de lectura al contrato de escritura. */
 export function actividadesPayload(items: ActividadPlan[]) {
-  return items.map(a => ({ clave: a.clave, nombre: a.nombre, descripcion: a.descripcion,
-    tipo: a.tipo, fecha_inicio: a.fecha_inicio, fecha_fin: a.fecha_fin,
-    inicio_real: a.inicio_real || null, fin_real: a.fin_real || null,
-    avance: Number(a.avance), dependencias: [...a.dependencias] }));
+  return items.map(a => ({
+    clave: a.clave,
+    nombre: a.nombre?.trim() || 'Actividad',
+    descripcion: a.descripcion || '',
+    tipo: a.tipo || 'ACTIVIDAD',
+    fecha_inicio: a.fecha_inicio,
+    fecha_fin: a.fecha_fin || a.fecha_inicio,
+    inicio_real: a.inicio_real || null,
+    fin_real: a.fin_real || null,
+    avance: Number(a.avance) || 0,
+    dependencias: [...(a.dependencias || [])]
+  }));
 }
 @Injectable({ providedIn: 'root' })
 export class CronogramaService {
@@ -37,7 +45,13 @@ export class CronogramaService {
   guardar(obra: number, id: number | null, plan: PlanDraft, soloPlanificacion = false) {
     const actividades = actividadesPayload(plan.actividades);
     if (id && soloPlanificacion) return this.http.put<Respuesta<Cronograma>>(`${this.url(obra)}/${id}/planificacion`, { version: plan.version, actividades });
-    const payload = { nombre: plan.nombre, descripcion: plan.descripcion, fecha_inicio: plan.fecha_inicio, fecha_fin: plan.fecha_fin, actividades };
+    const payload = {
+      nombre: plan.nombre?.trim() || 'Plan de obra',
+      descripcion: plan.descripcion || '',
+      fecha_inicio: plan.fecha_inicio,
+      fecha_fin: plan.fecha_fin || plan.fecha_inicio,
+      actividades
+    };
     return id ? this.http.put<Respuesta<Cronograma>>(`${this.url(obra)}/${id}`, { ...payload, version: plan.version })
       : this.http.post<Respuesta<Cronograma>>(`${this.url(obra)}/`, payload);
   }

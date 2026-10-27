@@ -48,8 +48,16 @@ def _read_many(sql, params=(), db=None):
 
 
 def obtener_obra(id_empresa, id_obra, db=None, bloquear=False):
-    """Identidad y estado para CU32, siempre limitados a la empresa."""
+    """Identidad y estado para CU32, siempre limitados a la empresa (o global si id_empresa es None)."""
     bloqueo = "FOR UPDATE" if bloquear else ""
+    if id_empresa is None:
+        return _read_one(
+            f"""SELECT id_obra, id_empresa, codigo, nombre, estado_obra, moneda
+                FROM {Config.SCHEMA}.t_obra
+                WHERE id_obra = %s {bloqueo}""",
+            (id_obra,),
+            db=db,
+        )
     return _read_one(
         f"""SELECT id_obra, id_empresa, codigo, nombre, estado_obra, moneda
             FROM {Config.SCHEMA}.t_obra

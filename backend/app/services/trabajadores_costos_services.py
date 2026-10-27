@@ -51,12 +51,18 @@ def _dias(value):
 
 @requiere_esquema_cu32
 def listar_mano_obra(id_obra, token):
-    empresa = costos._empresa(token)
     _id(id_obra, "La obra")
-    if not control_costos_repos.obtener_obra(empresa, id_obra):
-        raise costos.ControlCostosError(
-            "La obra no existe o no pertenece a su empresa.", 404
-        )
+    if token.get("nombre_rol") == "ADMINISTRADOR":
+        obra_data = control_costos_repos.obtener_obra(None, id_obra)
+        if not obra_data:
+            raise costos.ControlCostosError("La obra no existe o no pertenece a su empresa.", 404)
+        empresa = obra_data["id_empresa"]
+    else:
+        empresa = costos._empresa(token)
+        if not control_costos_repos.obtener_obra(empresa, id_obra):
+            raise costos.ControlCostosError(
+                "La obra no existe o no pertenece a su empresa.", 404
+            )
     obra = trabajadores_costos_repos.listar_trabajadores_obra(empresa, id_obra)
     jornadas = trabajadores_costos_repos.listar_jornadas_obra(empresa, id_obra)
     return {"success": True, "data": {"trabajadores": obra, "jornadas": jornadas}}
