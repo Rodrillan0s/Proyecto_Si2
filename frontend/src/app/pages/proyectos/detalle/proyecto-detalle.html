@@ -133,6 +133,20 @@
           <div class="text-[11px] text-gray-500 dark:text-gray-400">Seguimiento y progreso</div>
         </div>
       </button>
+
+      <!-- 7. Consultas Técnicas (CU23) -->
+      <button (click)="irAConsultasTecnicas()" 
+              type="button"
+              id="btn-hub-consultas-tecnicas"
+              class="flex items-center gap-3.5 p-4 rounded-xl bg-white dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700/80 hover:border-orange-500 dark:hover:border-orange-500 shadow-xs hover:shadow-md transition-all text-left group">
+        <div class="p-3 rounded-xl bg-sky-100 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 group-hover:scale-110 transition-transform">
+          <span class="text-xl">❓</span>
+        </div>
+        <div>
+          <div class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">Consultas Técnicas (RFI)</div>
+          <div class="text-[11px] text-gray-500 dark:text-gray-400">Dudas y aclaraciones</div>
+        </div>
+      </button>
     </div>
   </div>
 
@@ -391,6 +405,10 @@
     <app-proyecto-estructura [idObra]="idObra" [nombreProyecto]="proyecto.nombre" [codigoProyecto]="proyecto.codigo"></app-proyecto-estructura>
   </div>
 
+  <!-- CONTENIDO 3: PRESUPUESTO & APU (CU16) -->
+  <div *ngIf="!cargando && proyecto && tabActivo === 'presupuesto'">
+    <app-proyecto-presupuesto [idObra]="idObra" [nombreProyecto]="proyecto.nombre" [codigoProyecto]="proyecto.codigo"></app-proyecto-presupuesto>
+  </div>
 
   <!-- CONTENIDO 4: AVANCES DE OBRA (CU18) -->
   <div *ngIf="!cargando && proyecto && tabActivo === 'avances'">

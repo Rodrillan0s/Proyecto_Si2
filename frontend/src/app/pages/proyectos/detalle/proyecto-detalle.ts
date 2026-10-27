@@ -381,6 +381,10 @@ irAPresupuesto() {
     this.router.navigate(['/proveedores']);
   }
 
+  irAConsultasTecnicas() {
+    this.router.navigate(['/proyectos', this.idObra, 'consultas-tecnicas']);
+  }
+
   esRolAutorizado(): boolean {
     const rol = this.authService.obtenerUsuario()?.nombre_rol;
     return rol === 'ADMINISTRADOR' || rol === 'ADMINISTRADOR_EMPRESA';

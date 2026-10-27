@@ -1,4 +1,5 @@
 import { ChangeDetectorRef, Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { EmpresaService } from '../../services/empresa';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -22,6 +23,9 @@ import {
 export class BackupComponent implements OnInit, OnDestroy {
   private api = inject(BackupService);
   private cdr = inject(ChangeDetectorRef);
+  private empresaService = inject(EmpresaService);
+  empresas: any[] = [];
+  opcionAlcance: string = 'base_datos';
   private timer?: ReturnType<typeof setInterval>;
   private destroyed = false;
   private downloadExpiry?: ReturnType<typeof setTimeout>;
@@ -59,6 +63,15 @@ export class BackupComponent implements OnInit, OnDestroy {
   importado: BackupArchive | null = null;
 
   ngOnInit() {
+    this.empresaService.listarEmpresas().subscribe({
+      next: (res) => {
+        if (res && res.data) {
+          this.empresas = res.data;
+          this.paint();
+        }
+      },
+      error: () => {}
+    });
     void this.actualizar(true);
     this.timer = setInterval(() => {
       void this.actualizar();

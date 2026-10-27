@@ -8,7 +8,7 @@ from app.routes import pago_routes
 from app.utils.reportes_errors import ReportesSchemaMissing
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.routes import main_routes, auth_routes, users_routes, tenant_routes, roles_routes, backup_routes, profile_routes,estimacion_routes,control_costos_routes, notificaciones_routes, password_recovery_routes, bitacora_routes, obra_routes, estructura_routes, unidad_routes, material_routes, proveedor_routes, orden_Trabajo_routes, crm_routes, ai_routes, presupuesto_routes, compras_routes, inventario_routes , equipos_maquinaria_routes, incidencia_routes, avance_routes
+from app.routes import main_routes, auth_routes, users_routes, tenant_routes, roles_routes, backup_routes, profile_routes,estimacion_routes,control_costos_routes, notificaciones_routes, password_recovery_routes, bitacora_routes, obra_routes, estructura_routes, unidad_routes, material_routes, proveedor_routes, orden_Trabajo_routes, crm_routes, ai_routes, presupuesto_routes, compras_routes, inventario_routes , equipos_maquinaria_routes, incidencia_routes, avance_routes, consulta_tecnica_routes
 
 
 def create_app() -> FastAPI:
@@ -97,6 +97,8 @@ def create_app() -> FastAPI:
     app.include_router(reportes_routes.voice_router)
     # CU18 – Avances de Obra
     app.include_router(avance_routes.router)
+    # CU23 – Gestionar consultas técnicas de obra (RFI)
+    app.include_router(consulta_tecnica_routes.router, prefix='/api')
     return app
 
 

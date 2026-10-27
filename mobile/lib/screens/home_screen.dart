@@ -18,6 +18,7 @@ import 'crm_screen.dart';
 import 'incidencias_screen.dart';
 import 'incidencia_detalle_screen.dart';
 import 'reportes_screen.dart';
+import 'consultas_tecnicas_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -469,6 +470,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrdenesTrabajoScreen())),
               ),
               ..._buildIncidenciasToolRows(auth, isDark, dividerColor),
+              ..._buildConsultasTecnicasToolRows(auth, isDark, dividerColor),
               Divider(height: 1, color: dividerColor),
               _buildToolRow(
                 icon: Icons.contact_phone_outlined,
@@ -573,6 +575,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrdenesTrabajoScreen())),
               ),
               ..._buildIncidenciasToolRows(auth, isDark, dividerColor),
+              ..._buildConsultasTecnicasToolRows(auth, isDark, dividerColor),
               Divider(height: 1, color: dividerColor),
               _buildToolRow(
                 icon: Icons.account_tree_outlined,
@@ -1299,6 +1302,24 @@ class _HomeScreenState extends State<HomeScreen> {
         iconColor: AppTheme.error,
         iconBg: isDark ? const Color(0xFF3B1414) : AppTheme.errorBg,
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const IncidenciasScreen())),
+      ),
+    ];
+  }
+
+  /// CU23: consultas técnicas de obra (RFI).
+  List<Widget> _buildConsultasTecnicasToolRows(AuthProvider auth, bool isDark, Color dividerColor) {
+    if (!auth.hasPermission('Visualizar_consultas_tecnicas')) {
+      return const [];
+    }
+    return [
+      Divider(height: 1, color: dividerColor),
+      _buildToolRow(
+        icon: Icons.contact_support_outlined,
+        title: 'Consultas Técnicas (RFI)',
+        subtitle: 'Dudas y aclaraciones técnicas de obra',
+        iconColor: const Color(0xFF0D9488),
+        iconBg: isDark ? const Color(0xFF042F2C) : const Color(0xFFCCFBF1),
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ConsultasTecnicasScreen())),
       ),
     ];
   }

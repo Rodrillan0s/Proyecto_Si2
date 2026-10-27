@@ -252,7 +252,7 @@
     </aside>
 
     <!-- MAIN ROUTER OUTLET CONTAINER -->
-    <main class="panel-content">
+    <main class="panel-content" #panelContent>
       <p class="module-context">{{ moduloActual }}</p>
       <p *ngIf="suscripcion.acceso()?.solo_lectura" role="status" class="m-4 p-3 border border-amber-500 rounded text-sm">
         Tu empresa está en modo de solo lectura. Puedes consultar sus datos y gestionar tu cuenta.

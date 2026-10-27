@@ -1,7 +1,7 @@
 import { LecturasCompartidas } from './lecturas';
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export type EstadoMaterial = 'ACTIVO' | 'INACTIVO';
@@ -107,9 +107,13 @@ export class MaterialsService {
   registrar(payload: MaterialCreatePayload): Observable<MaterialMutationResponse> { return this.http.post<MaterialMutationResponse>(this.url, payload); }
   modificar(id: number, payload: MaterialUpdatePayload): Observable<MaterialMutationResponse> { return this.http.put<MaterialMutationResponse>(`${this.url}/${id}`, payload); }
   cambiarEstado(id: number, estado: EstadoMaterial): Observable<MaterialMutationResponse> { return this.http.patch<MaterialMutationResponse>(`${this.url}/${id}/estado`, { estado }); }
-  categorias(): Observable<ApiResponse<CategoriaMaterial[]>> { return this.shared.obtener('categorias', () => this.http.get<ApiResponse<CategoriaMaterial[]>>(`${this.url}/categorias`)); }
-  crearCategoria(payload: CategoriaCreatePayload): Observable<CategoriaMutationResponse> { return this.http.post<CategoriaMutationResponse>(`${this.url}/categorias`, payload); }
-  unidadesMedida(): Observable<ApiResponse<UnidadMedida[]>> { return this.shared.obtener('unidades', () => this.http.get<ApiResponse<UnidadMedida[]>>(`${this.url}/unidades-medida`)); }
+  categorias(): Observable<ApiResponse<CategoriaMaterial[]>> { return this.shared.obtener('categorias', () => this.http.get<ApiResponse<CategoriaMaterial[]>>(`${this.url}/categorias`), 300000); }
+  crearCategoria(payload: CategoriaCreatePayload): Observable<CategoriaMutationResponse> {
+    return this.http.post<CategoriaMutationResponse>(`${this.url}/categorias`, payload).pipe(
+      tap(() => this.shared.limpiar('categorias'))
+    );
+  }
+  unidadesMedida(): Observable<ApiResponse<UnidadMedida[]>> { return this.shared.obtener('unidades', () => this.http.get<ApiResponse<UnidadMedida[]>>(`${this.url}/unidades-medida`), 300000); }
 
   listarBase(filtros: { q?: string; id_categoria?: number; id_empresa?: number; page?: number; limit?: number }): Observable<MaterialBaseListResponse> {
     let params = new HttpParams();

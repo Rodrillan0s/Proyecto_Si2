@@ -11,7 +11,9 @@ import {
   HostListener,
   ChangeDetectorRef,
   NgZone,
-  DestroyRef
+  DestroyRef,
+  ViewChild,
+  ElementRef
 } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router, RouterOutlet, RouterModule, NavigationEnd } from '@angular/router';
@@ -33,6 +35,7 @@ import { SuscripcionService } from '../../services/suscripcion';
   styleUrl: './admin-layout.css'
 })
 export class AdminLayoutComponent implements OnInit {
+  @ViewChild('panelContent') panelContentRef?: ElementRef<HTMLElement>;
   readonly suscripcion = inject(SuscripcionService);
   readonly assistantPermissions = ASSISTANT_PERMISSIONS;
   readonly contexto = inject(ContextoOperativo);
@@ -48,13 +51,25 @@ export class AdminLayoutComponent implements OnInit {
   currentUrl = '';
   expanded = new Set(['principal', 'proyectos']);
   get nombreEmpresa() { return this.authService.obtenerNombreEmpresaActiva(); }
-  get sections() { return NAVIGATION.map(section => ({ ...section, items: section.items.filter(item =>
-    (!item.global || this.esAdministradorGlobal()) && (!item.permissions || this.hasAnyPermission(item.permissions)) &&
-    (!item.roles || item.roles.includes(this.authService.obtenerRolNormalizado())) &&
-    (!item.all || this.authService.hasAllPermissions(item.all)) &&
-    (item.id !== 'asistente' || this.suscripcion.iaPermitida) &&
-    (!item.family || this.reportIds === undefined || REPORT_FAMILIES[item.family].some(id => this.reportIds!.includes(id)))
-  ) })).filter(section => section.items.length); }
+  sections: NavSection[] = [];
+
+  recalcularSecciones() {
+    const rol = this.authService.obtenerRolNormalizado();
+    const esGlobal = this.esAdministradorGlobal();
+    const iaPermitida = this.suscripcion.iaPermitida;
+
+    this.sections = NAVIGATION.map(section => ({
+      ...section,
+      items: section.items.filter(item =>
+        (!item.global || esGlobal) &&
+        (!item.permissions || this.hasAnyPermission(item.permissions)) &&
+        (!item.roles || item.roles.includes(rol)) &&
+        (!item.all || this.authService.hasAllPermissions(item.all)) &&
+        (item.id !== 'asistente' || iaPermitida) &&
+        (!item.family || this.reportIds === undefined || REPORT_FAMILIES[item.family].some(id => this.reportIds!.includes(id)))
+      )
+    })).filter(section => section.items.length > 0);
+  }
   trackSection(_index: number, section: NavSection) { return section.id; }
   trackItem(_index: number, item: NavItem) { return item.id; }
   toggleSection(section: NavSection) { this.expanded.has(section.id) ? this.expanded.delete(section.id) : this.expanded.add(section.id); if (section.id === 'reportes' && this.expanded.has('reportes')) void this.cargarFamilias(); }
@@ -70,8 +85,14 @@ export class AdminLayoutComponent implements OnInit {
   }
   sectionActive(section: NavSection) { return section.items.some(item => this.itemActive(item)) || (section.id === 'reportes' && this.currentUrl.split('?')[0] === '/reportes'); }
   get moduloActual() { return this.sections.flatMap(section => section.items).find(item => this.itemActive(item))?.label || (this.currentUrl.startsWith('/proyectos/') ? 'Detalle de obra' : this.currentUrl.startsWith('/reportes') ? 'Reportes' : 'Panel'); }
-  private updateNavigation() { this.currentUrl = this.router.url; this.sections.filter(section => this.sectionActive(section)).forEach(section => this.expanded.add(section.id)); this.sidebarAbierto = false; if (this.currentUrl.startsWith('/reportes') && this.reportIds === undefined) void this.cargarFamilias(); }
-  toggleSelectorObras() { this.mostrarSelectorObras = !this.mostrarSelectorObras; if (this.mostrarSelectorObras) void this.cargarObrasSelector(); }
+  private updateNavigation() {
+    this.currentUrl = this.router.url;
+    if (this.sections.length === 0) this.recalcularSecciones();
+    this.sections.filter(section => this.sectionActive(section)).forEach(section => this.expanded.add(section.id));
+    this.sidebarAbierto = false;
+    if (this.currentUrl.startsWith('/reportes') && this.reportIds === undefined) void this.cargarFamilias();
+  }
+  toggleSelectorObras() { this.mostrarSelectorObras = !this.mostrarSelectorObras; if (this.mostrarSelectorObras && this.obras.length === 0) void this.cargarObrasSelector(); }
   async cargarObrasSelector() {
     const version = ++this.workVersion; this.cargandoObras = true; this.errorObras = '';
     try {
@@ -91,10 +112,19 @@ export class AdminLayoutComponent implements OnInit {
   }
   private async cargarFamilias() {
     if (!this.hasPermission('Visualizar_reportes')) return;
+    if (this.reportIds !== undefined) return;
     const company = this.authService.obtenerIdEmpresaActiva(); const version = ++this.reportVersion;
-    this.reportIds = undefined;
-    if (!company && this.esAdministradorGlobal()) return;
-    try { const catalog = await this.reportes.catalog(company); if (version === this.reportVersion) this.reportIds = catalog.reportes.map(report => report.id); }
+    if (!company && this.esAdministradorGlobal()) {
+      this.recalcularSecciones();
+      return;
+    }
+    try {
+      const catalog = await this.reportes.catalog(company);
+      if (version === this.reportVersion) {
+        this.reportIds = catalog.reportes.map(report => report.id);
+        this.recalcularSecciones();
+      }
+    }
     catch { /* Un error de catálogo no modifica los permisos ni bloquea navegación. */ }
     this.cdr.markForCheck();
   }
@@ -142,12 +172,20 @@ export class AdminLayoutComponent implements OnInit {
 
     this.authService.obtenerEmpresaSeleccionada();
     this.empresaSeleccionada = this.authService.obtenerEmpresaActiva();
+    this.recalcularSecciones();
     this.updateNavigation();
-    this.router.events.pipe(filter(event => event instanceof NavigationEnd), takeUntilDestroyed(this.destroyRef)).subscribe(() => { this.updateNavigation(); this.cdr.markForCheck(); });
+    this.router.events.pipe(filter(event => event instanceof NavigationEnd), takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.updateNavigation();
+      if (this.panelContentRef?.nativeElement) {
+        this.panelContentRef.nativeElement.scrollTop = 0;
+      }
+      this.cdr.markForCheck();
+    });
     let initialCompany = true;
     this.contexto.empresa$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.workVersion++; this.obras = []; this.cargandoObras = false; this.mostrarSelectorObras = false;
       this.reportVersion++; this.reportIds = undefined;
+      this.recalcularSecciones();
       if (this.expanded.has('reportes')) void this.cargarFamilias();
       if (!initialCompany && /^\/proyectos\/\d+/.test(this.router.url)) void this.router.navigate(['/proyectos']);
       initialCompany = false;

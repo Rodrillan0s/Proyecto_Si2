@@ -271,7 +271,7 @@ def add_message(db, params=()):
 
 
 def conversation_inputs(db, params=()):
-    return rows(db, "SELECT texto,respuesta->>'tema' AS tema,respuesta->'consultas' AS consultas FROM obras.t_asistente_mensaje WHERE conversacion=%s ORDER BY id DESC LIMIT 10", params)
+    return rows(db, "SELECT texto,respuesta->>'tema' AS tema,respuesta->'consultas' AS consultas,respuesta->>'texto_respuesta' AS texto_respuesta,respuesta->'entidades' AS entidades,respuesta->>'accion' AS accion,respuesta->'operacion_propuesta' AS operacion_propuesta,created_at FROM obras.t_asistente_mensaje WHERE conversacion=%s ORDER BY id DESC LIMIT 10", params)
 
 
 def list_recipients(db, params=()):

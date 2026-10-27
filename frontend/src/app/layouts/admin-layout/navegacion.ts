@@ -25,6 +25,7 @@ export const NAVIGATION: NavSection[] = [
     { id: 'jefes', label: 'Asignar jefes de obra', route: '/proyectos', icon: people, context: 'responsables', all: ['Visualizar_obras', 'Modificar_obras'] },
     { id: 'ordenes', label: 'Órdenes de trabajo', route: '/ordenes-trabajo', icon: settings, permissions: ['Visualizar_obras'] },
     { id: 'incidencias', label: 'Incidencias', route: '/incidencias', icon: alert, permissions: ['Visualizar_incidencias'] },
+    { id: 'consultas-tecnicas', label: 'Consultas Técnicas (RFI)', route: '/consultas-tecnicas', icon: chat, permissions: ['Visualizar_consultas_tecnicas'] },
   ] },
   { id: 'costos', label: 'PRESUPUESTOS Y COSTOS', icon: cost, items: [
     { id: 'apu', label: 'Presupuestos / APU', route: '/estimaciones', icon: cost, permissions: ['Visualizar_estimaciones'] },

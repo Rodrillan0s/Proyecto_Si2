@@ -58,6 +58,14 @@ def exigir_funcion(empresa, funcion, cur=None):
     return fila
 
 
+def exigir_modulo(empresa, modulo, cur=None):
+    """Escritura del dominio real, incluso cuando se solicita desde una ruta coordinadora."""
+    fila = exigir_escritura(empresa, cur)
+    if not modulo_habilitado(fila, modulo):
+        raise HTTPException(403, f'SUSCRIPCION_MODULO: {MODULOS[modulo]} está disponible solo para consulta en su plan.')
+    return fila
+
+
 def reporte_permitido(empresa, reporte, cur=None):
     return reporte_en_plan(obtener(empresa, cur), reporte)
 

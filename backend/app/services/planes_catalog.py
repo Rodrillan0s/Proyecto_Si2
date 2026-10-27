@@ -17,9 +17,9 @@ def modulo_ruta(ruta):
     raiz=partes[0]
     if raiz=='proyectos':
         sub=partes[2] if len(partes)>2 else None
-        return {'presupuestos':'presupuestos','costos-ejecutados':'control_costos','avances':'avances'}.get(sub,'obras')
+        return {'presupuestos':'presupuestos','costos-ejecutados':'control_costos','avances':'avances','consultas-tecnicas':'obras'}.get(sub,'obras')
     return {'estimaciones':'presupuestos','apus':'presupuestos','control-costos':'control_costos',
         'ordenes-trabajo':'ordenes_trabajo','incidencias':'incidencias','compras':'compras',
         'inventario':'inventario','materiales':'materiales','proveedores':'proveedores',
         'equipos-maquinaria':'equipos','crm':'crm','usuarios':'usuarios','roles':'usuarios',
-        'reportes':'reportes','ai':'ia','voz':'ia'}.get(raiz)
+        'reportes':'reportes','ai':'ia','voz':'ia','consultas-tecnicas':'obras'}.get(raiz)

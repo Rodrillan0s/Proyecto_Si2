@@ -11,6 +11,7 @@ import '../theme/app_theme.dart';
 import '../widgets/construction_widgets.dart';
 import '../widgets/ev_widgets.dart';
 import 'avances_obra_screen.dart';
+import 'consultas_tecnicas_screen.dart';
 
 class ProyectoDetalleScreen extends StatefulWidget {
   final int idObra;
@@ -1191,6 +1192,22 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
                           ),
                           Row(
                             children: [
+                              IconButton(
+                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                icon: const Icon(Icons.contact_support_outlined, color: Colors.white, size: 20),
+                                tooltip: 'Consultas Técnicas (RFI)',
+                                onPressed: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ConsultasTecnicasScreen(
+                                      idObraFiltro: widget.idObra,
+                                      nombreObraFiltro: widget.nombre,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                 decoration: BoxDecoration(
@@ -1702,7 +1719,6 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
               );
             }
 
-<<<<<<< HEAD
             final todas = snapshot.data ?? [];
 
             final filtradas = todas.where((u) {
@@ -1763,164 +1779,117 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: borderColor),
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-=======
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    decoration: BoxDecoration(
-                      color: cardBg,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: borderColor),
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                        leading: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF2E1C14) : const Color(0xFFFFF7ED),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(Icons.door_sliding_rounded, color: AppTheme.primary, size: 20),
-                        ),
-                        title: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                cod,
-                                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w800, color: titleColor),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            ConstructionStatusBadge(status: est, compact: true),
-                          ],
-                        ),
-                      subtitle: Padding(
-                        padding: const EdgeInsets.only(top: 4.0),
-                        child: Row(
->>>>>>> 23ed517e922328483f60633df421d97f987059f4
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: isDark ? const Color(0xFF2E1C14) : const Color(0xFFFFF7ED),
-                                        borderRadius: BorderRadius.circular(8),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => _mostrarModalDetalleUnidad(u),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: isDark ? const Color(0xFF2E1C14) : const Color(0xFFFFF7ED),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: const Icon(Icons.door_sliding_rounded, color: AppTheme.primary, size: 20),
                                       ),
-                                      child: const Icon(Icons.door_sliding_rounded, color: AppTheme.primary, size: 20),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(cod, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w800, color: titleColor)),
-                                        if (nombre.isNotEmpty && nombre != cod)
-                                          Text(nombre, style: GoogleFonts.inter(fontSize: 12, color: subColor)),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                Row(
-                                  children: [
-                                    ConstructionStatusBadge(status: est, compact: true),
-                                    if (_puedeModificarObra())
-                                      PopupMenuButton<String>(
-                                        icon: const Icon(Icons.more_vert_rounded, size: 18, color: Color(0xFF94A3B8)),
-                                        padding: EdgeInsets.zero,
-                                        onSelected: (action) {
-                                          if (action == 'edit') {
-                                            _mostrarModalUnidad(unidadExistente: u);
-                                          } else if (action == 'estado') {
-                                            _mostrarModalDetalleUnidad(u);
-                                          } else if (action == 'delete') {
-                                            _confirmarEliminarUnidad(u);
-                                          }
-                                        },
-                                        itemBuilder: (ctx) => [
-                                          const PopupMenuItem(
-                                            value: 'estado',
-                                            child: Row(
-                                              children: [
-                                                Icon(Icons.published_with_changes_rounded, size: 16, color: AppTheme.primary),
-                                                SizedBox(width: 8),
-                                                Text('Cambiar Estado', style: TextStyle(fontSize: 12.5)),
-                                              ],
-                                            ),
-                                          ),
-                                          const PopupMenuItem(
-                                            value: 'edit',
-                                            child: Row(
-                                              children: [
-                                                Icon(Icons.edit_outlined, size: 16, color: Color(0xFF64748B)),
-                                                SizedBox(width: 8),
-                                                Text('Editar Unidad', style: TextStyle(fontSize: 12.5)),
-                                              ],
-                                            ),
-                                          ),
-                                          const PopupMenuItem(
-                                            value: 'delete',
-                                            child: Row(
-                                              children: [
-                                                Icon(Icons.delete_outline_rounded, size: 16, color: AppTheme.error),
-                                                SizedBox(width: 8),
-                                                Text('Eliminar', style: TextStyle(fontSize: 12.5, color: AppTheme.error)),
-                                              ],
-                                            ),
-                                          ),
+                                      const SizedBox(width: 10),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(cod, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w800, color: titleColor)),
+                                          if (nombre.isNotEmpty && nombre != cod)
+                                            Text(nombre, style: GoogleFonts.inter(fontSize: 12, color: subColor)),
                                         ],
                                       ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Divider(height: 1, color: borderColor),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Text(tipo.replaceAll('_', ' '), style: GoogleFonts.inter(fontSize: 11.5, color: subColor, fontWeight: FontWeight.w600)),
-                                const SizedBox(width: 8),
-                                Text('·', style: TextStyle(color: subColor)),
-                                const SizedBox(width: 8),
-                                Text('$area m²', style: GoogleFonts.inter(fontSize: 11.5, color: subColor)),
-                                const SizedBox(width: 8),
-                                Text('·', style: TextStyle(color: subColor)),
-                                const SizedBox(width: 8),
-                                Text('$plantas ${plantas == '1' ? 'planta' : 'plantas'}', style: GoogleFonts.inter(fontSize: 11.5, color: subColor)),
-                              ],
-                            ),
-                          ],
+                                    ],
+                                  ),
+                                  Row(
+                                    children: [
+                                      ConstructionStatusBadge(status: est, compact: true),
+                                      if (_puedeModificarObra())
+                                        PopupMenuButton<String>(
+                                          icon: const Icon(Icons.more_vert_rounded, size: 18, color: Color(0xFF94A3B8)),
+                                          padding: EdgeInsets.zero,
+                                          onSelected: (action) {
+                                            if (action == 'edit') {
+                                              _mostrarModalUnidad(unidadExistente: u);
+                                            } else if (action == 'estado') {
+                                              _mostrarModalDetalleUnidad(u);
+                                            } else if (action == 'delete') {
+                                              _confirmarEliminarUnidad(u);
+                                            }
+                                          },
+                                          itemBuilder: (ctx) => [
+                                            const PopupMenuItem(
+                                              value: 'estado',
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.published_with_changes_rounded, size: 16, color: AppTheme.primary),
+                                                  SizedBox(width: 8),
+                                                  Text('Cambiar Estado', style: TextStyle(fontSize: 12.5)),
+                                                ],
+                                              ),
+                                            ),
+                                            const PopupMenuItem(
+                                              value: 'edit',
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.edit_outlined, size: 16, color: Color(0xFF64748B)),
+                                                  SizedBox(width: 8),
+                                                  Text('Editar Unidad', style: TextStyle(fontSize: 12.5)),
+                                                ],
+                                              ),
+                                            ),
+                                            const PopupMenuItem(
+                                              value: 'delete',
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.delete_outline_rounded, size: 16, color: AppTheme.error),
+                                                  SizedBox(width: 8),
+                                                  Text('Eliminar', style: TextStyle(fontSize: 12.5, color: AppTheme.error)),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Divider(height: 1, color: borderColor),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Text(tipo.replaceAll('_', ' '), style: GoogleFonts.inter(fontSize: 11.5, color: subColor, fontWeight: FontWeight.w600)),
+                                  const SizedBox(width: 8),
+                                  Text('·', style: TextStyle(color: subColor)),
+                                  const SizedBox(width: 8),
+                                  Text('$area m²', style: GoogleFonts.inter(fontSize: 11.5, color: subColor)),
+                                  const SizedBox(width: 8),
+                                  Text('·', style: TextStyle(color: subColor)),
+                                  const SizedBox(width: 8),
+                                  Text('$plantas ${plantas == '1' ? 'planta' : 'plantas'}', style: GoogleFonts.inter(fontSize: 11.5, color: subColor)),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-<<<<<<< HEAD
                     );
                   }),
               ],
             );
           },
         ),
-=======
-                      trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8)),
-                      onTap: () => _mostrarModalDetalleUnidad(u),
-                    ),
-                  ),
-                );
-              }),
-            ],
-          );
-        },
->>>>>>> 23ed517e922328483f60633df421d97f987059f4
       ),
     );
   }

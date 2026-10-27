@@ -52,6 +52,18 @@ export const routes: Routes = [
                 data: { permissions: ['Visualizar_obras'] }
             },
             {
+                path: 'proyectos/:id/consultas-tecnicas',
+                loadComponent: () => import('./pages/consultas-tecnicas/consultas-tecnicas').then(module => module.ConsultasTecnicasComponent),
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_consultas_tecnicas'] }
+            },
+            {
+                path: 'consultas-tecnicas',
+                loadComponent: () => import('./pages/consultas-tecnicas/consultas-tecnicas').then(module => module.ConsultasTecnicasComponent),
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_consultas_tecnicas'] }
+            },
+            {
                 path: 'materiales',
                 loadComponent: () => import('./pages/materiales/materiales').then(module => module.MaterialesComponent),
                 canActivate: [roleGuard],

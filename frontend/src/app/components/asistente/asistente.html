@@ -1,4 +1,4 @@
-﻿<ng-container *ngIf="available">
+<ng-container *ngIf="available">
   <section
     *ngIf="ui.opened()"
     class="assistant" [class.quick-mode]="ui.mode() === 'quick'" [class.module-mode]="ui.mode() === 'module'"
@@ -62,6 +62,58 @@
           message.author === 'user' ? 'Tú' : 'OBRATEC · ' + topicLabel(message.topic)
         }}</span>
         <p>{{ message.text }}</p>
+
+        <!-- Tarjeta de Operación Asistida con Vista Previa y Confirmación -->
+        <div *ngIf="message.operacion_propuesta" class="operation-card" [class.executed]="message.operacion_propuesta.ejecutado" [class.cancelled]="message.operacion_propuesta.cancelado">
+          <div class="operation-header">
+            <span class="badge-op">{{ message.operacion_propuesta.entidad }}</span>
+            <span *ngIf="message.operacion_propuesta.ejecutado" class="badge-status success">✓ Ejecutado</span>
+            <span *ngIf="message.operacion_propuesta.cancelado" class="badge-status cancelled">Cancelado</span>
+            <span *ngIf="!message.operacion_propuesta.ejecutado && !message.operacion_propuesta.cancelado" class="badge-status pending">Pendiente de confirmación</span>
+          </div>
+          <div class="operation-body">
+            <p class="operation-summary">{{ message.operacion_propuesta.resumen }}</p>
+            <div class="operation-params" *ngIf="message.operacion_propuesta.parametros">
+              <span class="param-tag" *ngFor="let item of (message.operacion_propuesta.parametros | keyvalue)">
+                <strong>{{ item.key }}:</strong> {{ item.value }}
+              </span>
+            </div>
+            <div class="operation-expiry" *ngIf="message.operacion_propuesta.expira_en">
+              <small>Expira: {{ message.operacion_propuesta.expira_en | date:'HH:mm' }}</small>
+            </div>
+          </div>
+          <div *ngIf="!message.operacion_propuesta.ejecutado && !message.operacion_propuesta.cancelado" class="operation-actions">
+            <button type="button" class="btn-confirm" (click)="confirmOperation(message)" [disabled]="busy">
+              Confirmar ejecución ✓
+            </button>
+            <button type="button" class="btn-cancel" (click)="cancelOperation(message)" [disabled]="busy">
+              Cancelar
+            </button>
+          </div>
+        </div>
+
+        <!-- Tarjeta de Análisis y Diagnóstico Operativo -->
+        <div *ngIf="message.resultado_analisis" class="analysis-card">
+          <div class="analysis-header">
+            <span class="badge-risk" [attr.data-risk]="message.resultado_analisis.nivel_riesgo">
+              Riesgo: {{ message.resultado_analisis.nivel_riesgo }}
+            </span>
+            <span class="analysis-date">{{ message.resultado_analisis.fecha_corte }}</span>
+          </div>
+          <div class="indicators-list" *ngIf="message.resultado_analisis.indicadores?.length">
+            <div *ngFor="let ind of message.resultado_analisis.indicadores" class="indicator-item" [class.alert]="ind.estado === 'CRITICO'">
+              <strong>{{ ind.titulo }}:</strong> {{ ind.valor }} <small>— {{ ind.detalle }}</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chips de Preguntas de Seguimiento Sugeridas -->
+        <div *ngIf="message.sugerencias?.length" class="suggestions-chips">
+          <button *ngFor="let sug of message.sugerencias" type="button" class="chip" (click)="send(sug)" [disabled]="busy">
+            {{ sug }}
+          </button>
+        </div>
+
         <div class="choices">
           <button *ngFor="let choice of message.choices" (click)="send(choice)" [disabled]="busy">
             {{ choice }}</button
