@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Body, HTTPException, Depends, Request
 from app.services import obra_services
+from app.services.control_costos_services import ControlCostosError
 from app.utils.security import exigir_permiso
 
 router = APIRouter(tags=["Proyectos"])
@@ -69,7 +70,12 @@ def update_proyecto_estado(id_obra: int, request: Request, data: dict = Body(...
         
     try:
         client_ip = request.client.host if request.client else "unknown"
-        return obra_services.actualizar_estado_obra(id_obra, nuevo_estado, token_data, client_ip)
+        result = obra_services.actualizar_estado_obra(id_obra, nuevo_estado, token_data, client_ip)
+        # Modificar_obras no concede acceso a los importes. La consulta
+        # financiera mantiene Visualizar_control_costos en su endpoint GET.
+        return {key: value for key, value in result.items() if key != 'resumen_economico_final'}
+    except ControlCostosError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:

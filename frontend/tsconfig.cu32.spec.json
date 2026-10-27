@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.spec.json",
+  "files": ["src/app/pages/gastos-operativos/gastos-operativos.spec.ts", "src/app/services/control-costos.service.spec.ts"],
+  "include": [],
+  "exclude": []
+}

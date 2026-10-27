@@ -1,6 +1,6 @@
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
-from app.repos import bitacora_repos, control_costos_repos
+from app.repos import bitacora_repos, control_costos_repos, trabajadores_costos_repos
 
 
 CATEGORIAS_COSTO = {"MATERIAL", "MANO_OBRA", "EQUIPO", "SUBCONTRATO", "OTRO"}
@@ -176,6 +176,13 @@ def registrar_costo(data, token, ip="unknown"):
         raise ControlCostosError(
             "La partida no pertenece exactamente a la estimacion base.", 400
         )
+    if clean["categoria"] == "MANO_OBRA" and trabajadores_costos_repos.tiene_mano_obra_calculada(
+        empresa, line["id_obra"]
+    ):
+        raise ControlCostosError(
+            "La obra ya tiene mano de obra calculada por trabajadores; no se puede agregar otra MANO_OBRA manual.",
+            409,
+        )
     result = control_costos_repos.crear_costo(clean, empresa, usuario)
     if not result:
         raise ControlCostosError("No se pudo registrar el costo ejecutado.", 400)
@@ -201,12 +208,13 @@ def anular_costo(id_costo, motivo, token, ip="unknown"):
     return {"success": True, "data": result}
 
 
-def _comparacion(id_obra, token):
+def _comparacion(id_obra, token, db=None):
     empresa = _empresa(token)
-    line = control_costos_repos.obtener_linea_base(empresa, id_obra)
+    transaction = {"db": db} if db is not None else {}
+    line = control_costos_repos.obtener_linea_base(empresa, id_obra, **transaction)
     if not line:
         raise ControlCostosError("La obra no tiene una linea base ACTIVA.", 404)
-    rows = control_costos_repos.comparacion_por_obra(empresa, id_obra)
+    rows = control_costos_repos.comparacion_por_obra(empresa, id_obra, **transaction)
     original = sum((Decimal(row["costo_presupuestado"] or 0) for row in rows), Decimal("0"))
     changes = sum((Decimal(row["impacto_ordenes_aprobadas"] or 0) for row in rows), Decimal("0"))
     revised = sum((Decimal(row["presupuesto_revisado"] or 0) for row in rows), Decimal("0"))
@@ -234,14 +242,15 @@ def obtener_comparacion(id_obra, token):
     }
 
 
-def obtener_resumen(id_obra, token):
-    line, rows, totals = _comparacion(id_obra, token)
+def obtener_resumen(id_obra, token, db=None):
+    transaction = {"db": db} if db is not None else {}
+    line, rows, totals = _comparacion(id_obra, token, **transaction)
     empresa = _empresa(token)
     costs = control_costos_repos.listar_costos(
-        empresa, id_obra=id_obra, id_control_costo=line["id_control_costo"]
+        empresa, id_obra=id_obra, id_control_costo=line["id_control_costo"], **transaction
     )
     orders = control_costos_repos.listar_ordenes(
-        empresa, id_obra=id_obra, id_control_costo=line["id_control_costo"]
+        empresa, id_obra=id_obra, id_control_costo=line["id_control_costo"], **transaction
     )
     totals.update(
         {

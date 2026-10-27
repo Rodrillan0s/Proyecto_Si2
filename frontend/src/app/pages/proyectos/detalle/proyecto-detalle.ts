@@ -98,6 +98,11 @@ export class ProyectoDetalleComponent implements OnInit, OnDestroy {
     this.destruirMapa();
   }
 
+  puedeVerCronogramas() { return this.authService.hasPermission('Visualizar_cronograma'); }
+  abrirCronogramas() { void this.router.navigate(['/proyectos', this.idObra, 'cronogramas']); }
+  puedeVerGastosFinales() { return this.authService.hasPermission('Visualizar_control_costos'); }
+  abrirGastosFinales() { void this.router.navigate(['/proyectos', this.idObra, 'gastos-finales']); }
+
   cargarProyecto() {
     this.cargando = true;
     this.mensajeError = '';

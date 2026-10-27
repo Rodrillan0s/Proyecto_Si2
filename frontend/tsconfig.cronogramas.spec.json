@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.spec.json",
+  "files": ["src/app/pages/cronogramas/cronogramas.spec.ts"],
+  "include": [],
+  "exclude": []
+}

@@ -134,6 +134,17 @@
         </div>
       </button>
 
+      <button *ngIf="puedeVerCronogramas()" (click)="abrirCronogramas()" type="button" id="btn-hub-cronogramas"
+              class="flex items-center gap-3.5 p-4 rounded-xl bg-white dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700/80 hover:border-orange-500 shadow-xs transition-all text-left">
+        <div class="p-3 rounded-xl bg-orange-100 dark:bg-orange-950/60 text-orange-600">CU39</div>
+        <div><div class="text-sm font-bold text-gray-900 dark:text-white">Cronogramas y planificación</div><div class="text-[11px] text-gray-500">Actividades, hitos y dependencias</div></div>
+      </button>
+      <button *ngIf="puedeVerGastosFinales()" (click)="abrirGastosFinales()" type="button" id="btn-hub-gastos-finales"
+              class="flex items-center gap-3.5 p-4 rounded-xl bg-white dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700/80 hover:border-orange-500 shadow-xs transition-all text-left">
+        <div class="p-3 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600">CU32</div>
+        <div><div class="text-sm font-bold text-gray-900 dark:text-white">Gastos operativos finales</div><div class="text-[11px] text-gray-500">Jornadas y resumen económico final</div></div>
+      </button>
+
       <!-- 7. Consultas Técnicas (CU23) -->
       <button (click)="irAConsultasTecnicas()" 
               type="button"

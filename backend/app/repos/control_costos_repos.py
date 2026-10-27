@@ -25,7 +25,9 @@ def _many(db, sql, params=()):
     return [dict(zip(columns, row)) for row in rows]
 
 
-def _read_one(sql, params=()):
+def _read_one(sql, params=(), db=None):
+    if db is not None:
+        return _one(db, sql, params)
     db = PostgreSQL()
     db.create_connection()
     try:
@@ -34,13 +36,27 @@ def _read_one(sql, params=()):
         db.close_connection()
 
 
-def _read_many(sql, params=()):
+def _read_many(sql, params=(), db=None):
+    if db is not None:
+        return _many(db, sql, params)
     db = PostgreSQL()
     db.create_connection()
     try:
         return _many(db, sql, params)
     finally:
         db.close_connection()
+
+
+def obtener_obra(id_empresa, id_obra, db=None, bloquear=False):
+    """Identidad y estado para CU32, siempre limitados a la empresa."""
+    bloqueo = "FOR UPDATE" if bloquear else ""
+    return _read_one(
+        f"""SELECT id_obra, id_empresa, codigo, nombre, estado_obra, moneda
+            FROM {Config.SCHEMA}.t_obra
+            WHERE id_empresa = %s AND id_obra = %s {bloqueo}""",
+        (id_empresa, id_obra),
+        db=db,
+    )
 
 
 def listar_presupuestos_aprobados(id_empresa, id_obra):
@@ -65,7 +81,7 @@ def listar_presupuestos_aprobados(id_empresa, id_obra):
     )
 
 
-def obtener_linea_base(id_empresa, id_obra, solo_activa=True):
+def obtener_linea_base(id_empresa, id_obra, solo_activa=True, db=None):
     estado_sql = "AND c.estado = 'ACTIVO'" if solo_activa else ""
     return _read_one(
         f"""
@@ -79,6 +95,7 @@ def obtener_linea_base(id_empresa, id_obra, solo_activa=True):
         LIMIT 1
         """,
         (id_empresa, id_obra),
+        db=db,
     )
 
 
@@ -188,7 +205,7 @@ def obtener_apu_para_cambio(id_apu, id_empresa, id_obra):
 
 
 def listar_costos(id_empresa, id_obra=None, id_control_costo=None,
-                  id_partida=None, estado=None):
+                  id_partida=None, estado=None, db=None):
     filters = ["c.id_empresa = %s"]
     params = [id_empresa]
     if id_obra is not None:
@@ -222,6 +239,7 @@ def listar_costos(id_empresa, id_obra=None, id_control_costo=None,
         ORDER BY c.fecha DESC, c.id_costo_ejecutado DESC
         """,
         tuple(params),
+        db=db,
     )
 
 
@@ -288,9 +306,7 @@ def anular_costo(id_costo, motivo, id_empresa, id_usuario):
 
 
 def comparacion_por_obra(id_empresa, id_obra, db=None):
-    # Los reportes comparten una transacción de corte consistente.
-    read = (lambda sql, params: _many(db, sql, params)) if db else _read_many
-    return read(
+    return _read_many(
         f"""
         WITH control AS (
             SELECT *
@@ -372,10 +388,11 @@ def comparacion_por_obra(id_empresa, id_obra, db=None):
         ORDER BY r.nueva_partida, r.item_codigo
         """,
         (id_empresa, id_obra),
+        db=db,
     )
 
 
-def listar_ordenes(id_empresa, id_obra=None, id_control_costo=None, estado=None):
+def listar_ordenes(id_empresa, id_obra=None, id_control_costo=None, estado=None, db=None):
     filters = ["oc.id_empresa = %s"]
     params = [id_empresa]
     if id_obra is not None:
@@ -402,6 +419,7 @@ def listar_ordenes(id_empresa, id_obra=None, id_control_costo=None, estado=None)
         ORDER BY oc.fecha DESC, oc.id_orden_cambio DESC
         """,
         tuple(params),
+        db=db,
     )
 
 
