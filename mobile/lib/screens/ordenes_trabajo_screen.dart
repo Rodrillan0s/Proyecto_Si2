@@ -196,7 +196,7 @@ class _OrdenesTrabajoScreenState extends State<OrdenesTrabajoScreen> {
                       child: Text(
                         auth.esVistaGlobal
                             ? 'Vista Global: Todas las Empresas'
-                            : 'Empresa Activa: ${auth.nombreEmpresaActiva ?? "Empresa"}',
+                            : 'Empresa: ${auth.empresaActivaNombre ?? auth.nombreEmpresa ?? "Constructora Obratec"}',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,

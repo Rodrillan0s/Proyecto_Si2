@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../services/auth_provider.dart';
 import '../services/profile_service.dart';
+import '../services/suscripcion_service.dart';
 import '../theme/app_theme.dart';
 import '../theme/theme_provider.dart';
 import '../widgets/ev_widgets.dart';
@@ -17,7 +18,8 @@ class PerfilScreen extends StatefulWidget {
 
 class _PerfilScreenState extends State<PerfilScreen> {
   Map<String, dynamic>? _perfil;
-  bool _cargando = true;
+  Map<String, dynamic>? _suscripcion;
+  bool _cargando = false;
 
   @override
   void initState() {
@@ -25,23 +27,37 @@ class _PerfilScreenState extends State<PerfilScreen> {
     _cargarPerfil();
   }
 
-  Future<void> _cargarPerfil() async {
-    setState(() => _cargando = true);
+  Future<void> _cargarPerfil({bool mostrarErrores = false}) async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    if (mounted) setState(() => _cargando = true);
 
     try {
-      final perfil = await ProfileService().obtenerPerfil();
+      final futures = <Future>[
+        ProfileService().obtenerPerfil(),
+      ];
+      if (auth.esAdminGlobal || auth.esAdminEmpresa) {
+        futures.add(
+          SuscripcionService().obtenerSuscripcionEmpresa(idEmpresa: auth.idEmpresaActiva),
+        );
+      }
+
+      final results = await Future.wait(futures);
 
       if (!mounted) return;
 
       setState(() {
-        _perfil = perfil;
+        _perfil = results[0] as Map<String, dynamic>?;
+        if (results.length > 1) {
+          _suscripcion = results[1] as Map<String, dynamic>?;
+        }
         _cargando = false;
       });
     } catch (e) {
       if (!mounted) return;
-
       setState(() => _cargando = false);
-      _mostrarError(e.toString().replaceAll('Exception: ', ''));
+      if (mostrarErrores) {
+        _mostrarError(e.toString().replaceAll('Exception: ', ''));
+      }
     }
   }
 
@@ -503,13 +519,22 @@ class _PerfilScreenState extends State<PerfilScreen> {
   Widget build(BuildContext context) {
     final themeProv = context.watch<ThemeProvider>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final auth = Provider.of<AuthProvider>(context);
 
+    final nombreCompleto = _perfil != null
+        ? _texto(_perfil!['nombre_completo'])
+        : (auth.usuarioCompleto ?? 'Usuario');
     final usernameVal = _perfil != null
         ? _texto(_perfil!['username'] ?? _perfil!['nombre_usuario']).toLowerCase()
         : '';
+    final ciVal = _perfil != null ? _texto(_perfil!['ci']) : (auth.ci ?? '');
+    final rolVal = _perfil != null ? _texto(_perfil!['nombre_rol']) : (auth.nombreRol ?? 'ADMINISTRADOR');
+    final empresaVal = _perfil != null
+        ? _texto(_perfil!['nombre_empresa'])
+        : (auth.empresaActivaNombre ?? auth.nombreEmpresa ?? 'Constructora Obratec');
 
     final telefonoVal = _perfil != null ? _texto(_perfil!['telefono']) : '';
-    final correoVal = _perfil != null ? _texto(_perfil!['correo']) : '';
+    final correoVal = _perfil != null ? _texto(_perfil!['correo']) : (auth.correo ?? '');
     final direccionVal = _perfil != null ? _texto(_perfil!['direccion']) : '';
 
     return Scaffold(
@@ -519,29 +544,40 @@ class _PerfilScreenState extends State<PerfilScreen> {
           IconButton(
             tooltip: 'Recargar perfil',
             icon: const Icon(Icons.refresh_rounded),
-            onPressed: _cargando ? null : _cargarPerfil,
+            onPressed: _cargando ? null : () => _cargarPerfil(mostrarErrores: true),
           ),
         ],
       ),
-      body: _cargando
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.primary, strokeWidth: 2.5))
-          : _perfil == null
-              ? _ErrorState(onRetry: _cargarPerfil)
-              : SafeArea(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Header del Perfil
-                        _PerfilExecutiveHeader(
-                          iniciales: _iniciales(_texto(_perfil!['nombre_completo'])),
-                          nombreCompleto: _texto(_perfil!['nombre_completo']),
-                          username: usernameVal,
-                          rol: _texto(_perfil!['nombre_rol']),
-                          empresa: _texto(_perfil!['nombre_empresa']),
-                        ),
-                        const SizedBox(height: 16),
+      body: SafeArea(
+        child: RefreshIndicator(
+          color: AppTheme.primary,
+          onRefresh: () => _cargarPerfil(mostrarErrores: true),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (_cargando)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: LinearProgressIndicator(
+                      color: AppTheme.primary,
+                      backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                      minHeight: 2.5,
+                    ),
+                  ),
+
+                // Header del Perfil
+                _PerfilExecutiveHeader(
+                  iniciales: _iniciales(nombreCompleto),
+                  nombreCompleto: nombreCompleto,
+                  username: usernameVal,
+                  rol: rolVal,
+                  empresa: empresaVal,
+                ),
+                const SizedBox(height: 16),
+
 
                         // Sección: Información de Cuenta
                         _FormalSectionGroup(
@@ -550,7 +586,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                           children: [
                             _FormalInfoRow(
                               label: 'Carnet (CI)',
-                              value: _texto(_perfil!['ci']),
+                              value: ciVal.isEmpty ? 'No registrado' : ciVal,
                             ),
                             Divider(height: 18, color: isDark ? const Color(0xFF22304C) : const Color(0xFFF1F5F9)),
                             _FormalInfoRow(
@@ -560,16 +596,12 @@ class _PerfilScreenState extends State<PerfilScreen> {
                             Divider(height: 18, color: isDark ? const Color(0xFF22304C) : const Color(0xFFF1F5F9)),
                             _FormalInfoRow(
                               label: 'Empresa',
-                              value: _texto(_perfil!['nombre_empresa']).isEmpty
-                                  ? 'Sin empresa asignada'
-                                  : _texto(_perfil!['nombre_empresa']),
+                              value: empresaVal.isEmpty ? 'Sin empresa asignada' : empresaVal,
                             ),
                             Divider(height: 18, color: isDark ? const Color(0xFF22304C) : const Color(0xFFF1F5F9)),
                             _FormalInfoRow(
                               label: 'Rol del Sistema',
-                              value: _texto(_perfil!['nombre_rol']).isEmpty
-                                  ? 'Usuario'
-                                  : _texto(_perfil!['nombre_rol']),
+                              value: rolVal.isEmpty ? 'Usuario' : rolVal,
                             ),
                           ],
                         ),
@@ -614,6 +646,12 @@ class _PerfilScreenState extends State<PerfilScreen> {
                           ],
                         ),
                         const SizedBox(height: 16),
+
+                        // Sección: Plan SaaS (Solo para Administradores, oculta estrictamente para Clientes)
+                        if (!auth.esCliente && (auth.esAdminGlobal || auth.esAdminEmpresa)) ...[
+                          _buildSeccionPlanSaaS(isDark, auth),
+                          const SizedBox(height: 16),
+                        ],
 
                         // Sección: Seguridad (Cambio de Contraseña)
                         _FormalSectionGroup(
@@ -721,6 +759,80 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     ),
                   ),
                 ),
+              ),
+    );
+  }
+
+  Widget _buildSeccionPlanSaaS(bool isDark, AuthProvider auth) {
+    final Map<String, dynamic> planData = _suscripcion ?? {};
+    final String codigoPlan = (planData['codigo_plan'] ?? planData['nombre_plan'] ?? 'EMPRESARIAL')
+        .toString()
+        .toUpperCase();
+    final String estado = (planData['estado'] ?? 'ACTIVA').toString().toUpperCase();
+    final String limiteObras = planData['limite_obras'] != null
+        ? planData['limite_obras'].toString()
+        : 'Ilimitadas';
+    final String limiteUsuarios = planData['limite_usuarios'] != null
+        ? planData['limite_usuarios'].toString()
+        : 'Ilimitados';
+    final String consultasIA = planData['consultas_ia_mes'] != null
+        ? '${planData['consultas_ia_mes']} consultas'
+        : 'Disponibles';
+    final String nivelReportes = (planData['nivel_reportes'] ?? 'Operativos y Ejecutivos').toString();
+    final String fechaFin = (planData['fecha_fin'] ?? 'Renovación continua').toString();
+
+    final bool esActiva = estado == 'ACTIVA';
+
+    return _FormalSectionGroup(
+      title: 'PLAN SAAS Y SUSCRIPCIÓN',
+      icon: Icons.workspace_premium_rounded,
+      action: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: (esActiva ? const Color(0xFF10B981) : const Color(0xFFF59E0B)).withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          estado,
+          style: GoogleFonts.inter(
+            fontSize: 10.5,
+            fontWeight: FontWeight.w800,
+            color: esActiva ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+          ),
+        ),
+      ),
+      children: [
+        _FormalInfoRow(
+          label: 'Plan Actual',
+          value: codigoPlan,
+          valueColor: AppTheme.primary,
+        ),
+        Divider(height: 18, color: isDark ? const Color(0xFF22304C) : const Color(0xFFF1F5F9)),
+        _FormalInfoRow(
+          label: 'Límite de Obras',
+          value: limiteObras,
+        ),
+        Divider(height: 18, color: isDark ? const Color(0xFF22304C) : const Color(0xFFF1F5F9)),
+        _FormalInfoRow(
+          label: 'Usuarios Activos',
+          value: limiteUsuarios,
+        ),
+        Divider(height: 18, color: isDark ? const Color(0xFF22304C) : const Color(0xFFF1F5F9)),
+        _FormalInfoRow(
+          label: 'Consultas IA',
+          value: consultasIA,
+        ),
+        Divider(height: 18, color: isDark ? const Color(0xFF22304C) : const Color(0xFFF1F5F9)),
+        _FormalInfoRow(
+          label: 'Nivel Reportes',
+          value: nivelReportes,
+        ),
+        Divider(height: 18, color: isDark ? const Color(0xFF22304C) : const Color(0xFFF1F5F9)),
+        _FormalInfoRow(
+          label: 'Vigencia',
+          value: fechaFin,
+        ),
+      ],
     );
   }
 }
@@ -884,22 +996,30 @@ class _FormalSectionGroup extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Icon(icon, size: 16, color: AppTheme.primary),
-                  const SizedBox(width: 8),
-                  Text(
-                    title,
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w900,
-                      color: AppTheme.primary,
-                      letterSpacing: 0.6,
+              Expanded(
+                child: Row(
+                  children: [
+                    Icon(icon, size: 16, color: AppTheme.primary),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        title,
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          color: AppTheme.primary,
+                          letterSpacing: 0.6,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              if (action != null) action!,
+              if (action != null) ...[
+                const SizedBox(width: 8),
+                action!,
+              ],
             ],
           ),
           const SizedBox(height: 14),
@@ -913,17 +1033,19 @@ class _FormalSectionGroup extends StatelessWidget {
 class _FormalInfoRow extends StatelessWidget {
   final String label;
   final String value;
+  final Color? valueColor;
 
   const _FormalInfoRow({
     required this.label,
     required this.value,
+    this.valueColor,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final labelColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-    final valueColor = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
+    final effectiveValueColor = valueColor ?? (isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A));
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -944,40 +1066,12 @@ class _FormalInfoRow extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: valueColor,
+              color: effectiveValueColor,
               height: 1.3,
             ),
           ),
         ),
       ],
-    );
-  }
-}
-
-class _ErrorState extends StatelessWidget {
-  final VoidCallback onRetry;
-  const _ErrorState({required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.error),
-            const SizedBox(height: 12),
-            Text('No se pudo cargar el perfil', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Reintentar'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

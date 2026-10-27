@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
 import '../services/auth_provider.dart';
@@ -12,6 +10,8 @@ import '../widgets/construction_widgets.dart';
 import '../widgets/ev_widgets.dart';
 import 'avances_obra_screen.dart';
 import 'consultas_tecnicas_screen.dart';
+import 'ordenes_trabajo_screen.dart';
+import 'incidencias_screen.dart';
 
 class ProyectoDetalleScreen extends StatefulWidget {
   final int idObra;
@@ -55,7 +55,7 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _estadoObraActual = widget.estado;
     _cargarDatos();
   }
@@ -265,6 +265,25 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                         color: titleColor,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _buildQuickTypeSelector('TORRE', 'Torre / Bloque', tipoSeleccionado == 'TORRE' || tipoSeleccionado == 'BLOQUE', () {
+                            setModalState(() => tipoSeleccionado = 'TORRE');
+                          }, isDark),
+                          const SizedBox(width: 8),
+                          _buildQuickTypeSelector('NIVEL', 'Nivel / Piso', tipoSeleccionado == 'NIVEL', () {
+                            setModalState(() => tipoSeleccionado = 'NIVEL');
+                          }, isDark),
+                          const SizedBox(width: 8),
+                          _buildQuickTypeSelector('SECTOR', 'Sector', tipoSeleccionado == 'SECTOR', () {
+                            setModalState(() => tipoSeleccionado = 'SECTOR');
+                          }, isDark),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -980,22 +999,10 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
     );
   }
 
-  void _mostrarModalAsignarJefeObra(List<dynamic> yaAsignados) async {
+  void _mostrarModalAsignarJefeObra(List<dynamic> yaAsignados) {
     bool cargando = true;
     List<Map<String, dynamic>> jefesDisponibles = [];
     int? idSeleccionado;
-
-    try {
-      final todos = await _obraService.listarJefesObraDisponibles();
-      final idsAsignados = yaAsignados.map((r) => int.tryParse(r['id_usuario']?.toString() ?? '')).toSet();
-      jefesDisponibles = todos.where((u) {
-        final id = int.tryParse(u['nro_usuario']?.toString() ?? '');
-        return id != null && !idsAsignados.contains(id);
-      }).toList();
-    } catch (_) {}
-    cargando = false;
-
-    if (!mounted) return;
     bool guardando = false;
 
     showModalBottomSheet(
@@ -1004,6 +1011,24 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setModalState) {
+            if (cargando) {
+              _obraService.listarJefesObraDisponibles().then((todos) {
+                if (ctx.mounted) {
+                  final idsAsignados = yaAsignados.map((r) => int.tryParse(r['id_usuario']?.toString() ?? '')).toSet();
+                  setModalState(() {
+                    jefesDisponibles = todos.where((u) {
+                      final id = int.tryParse(u['nro_usuario']?.toString() ?? '');
+                      return id != null && !idsAsignados.contains(id);
+                    }).toList();
+                    cargando = false;
+                  });
+                }
+              }).catchError((_) {
+                if (ctx.mounted) {
+                  setModalState(() => cargando = false);
+                }
+              });
+            }
             final isDark = Theme.of(context).brightness == Brightness.dark;
             final sheetBg = isDark ? const Color(0xFF131D31) : Colors.white;
             final titleColor = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
@@ -1133,6 +1158,87 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
     );
   }
 
+  void _mostrarMenuAcciones() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        final sheetBg = isDark ? const Color(0xFF131D31) : Colors.white;
+        final titleColor = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
+
+        return Container(
+          decoration: BoxDecoration(
+            color: sheetBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Acciones de Proyecto',
+                style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: titleColor),
+              ),
+              const SizedBox(height: 12),
+              if (_puedeModificarObra())
+                ListTile(
+                  leading: const Icon(Icons.published_with_changes_rounded, color: AppTheme.primary),
+                  title: const Text('Cambiar Estado de Obra'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _mostrarModalCambiarEstadoObra();
+                  },
+                ),
+              ListTile(
+                leading: const Icon(Icons.help_outline_rounded, color: Color(0xFF10B981)),
+                title: const Text('Consultas Técnicas'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ConsultasTecnicasScreen(
+                        idObraFiltro: widget.idObra,
+                        nombreObraFiltro: widget.nombre,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.timeline_rounded, color: Color(0xFF38BDF8)),
+                title: const Text('Ver Avances Físicos'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AvancesObraScreen(
+                        idObra: widget.idObra,
+                        nombreObra: widget.nombre,
+                        codigoObra: widget.codigo,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -1142,26 +1248,49 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
     final indicatorBg = isDark ? const Color(0xFFF97316) : const Color(0xFF0F172A);
 
     return Scaffold(
-      // CU18 – Avances de Obra
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => AvancesObraScreen(
-              idObra: widget.idObra,
-              nombreObra: widget.nombre,
-              codigoObra: widget.codigo,
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF0F172A) : Colors.white,
+          border: Border(top: BorderSide(color: tabBorder)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AvancesObraScreen(
+                      idObra: widget.idObra,
+                      nombreObra: widget.nombre,
+                      codigoObra: widget.codigo,
+                    ),
+                  ),
+                ),
+                icon: const Icon(Icons.show_chart_rounded, size: 18),
+                label: Text('Ver avances', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13)),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  side: BorderSide(color: tabBorder),
+                ),
+              ),
             ),
-          ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: _mostrarMenuAcciones,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: Text('Más acciones', style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 13)),
+              ),
+            ),
+          ],
         ),
-        backgroundColor: AppTheme.primary,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.trending_up_rounded, size: 20),
-        label: const Text(
-          'Avances',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
-        ),
-        tooltip: 'Avances de Obra (CU18)',
       ),
       body: SafeArea(
         child: NestedScrollView(
@@ -1196,7 +1325,7 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
                                 constraints: const BoxConstraints(),
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                                 icon: const Icon(Icons.contact_support_outlined, color: Colors.white, size: 20),
-                                tooltip: 'Consultas Técnicas (RFI)',
+                                tooltip: 'Consultas Técnicas',
                                 onPressed: () => Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -1284,7 +1413,7 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
                 ),
               ),
 
-              // SEGMENTED TAB SWITCHER (3 TABS)
+              // SEGMENTED TAB SWITCHER (4 TABS)
               SliverPersistentHeader(
                 pinned: true,
                 delegate: _SegmentedTabHeaderDelegate(
@@ -1312,48 +1441,10 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
                         labelPadding: const EdgeInsets.symmetric(horizontal: 4),
                         dividerColor: Colors.transparent,
                         tabs: const [
-                          Tab(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.account_tree_outlined, size: 14),
-                                  SizedBox(width: 4),
-                                  Text('Estructura'),
-                                ],
-                              ),
-                            ),
-                          ),
-                          Tab(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.meeting_room_outlined, size: 14),
-                                  SizedBox(width: 4),
-                                  Text('Unidades'),
-                                ],
-                              ),
-                            ),
-                          ),
-                          Tab(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.domain_verification_outlined, size: 14),
-                                  SizedBox(width: 4),
-                                  Text('Obra & Jefes'),
-                                ],
-                              ),
-                            ),
-                          ),
+                          Tab(text: 'Resumen'),
+                          Tab(text: 'Estructura'),
+                          Tab(text: 'Unidades'),
+                          Tab(text: 'Equipo'),
                         ],
                       ),
                     ),
@@ -1365,13 +1456,362 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
           body: TabBarView(
             controller: _tabController,
             children: [
+              _buildTabResumen(isDark),
               _buildTabEstructura(isDark),
               _buildTabUnidades(isDark),
-              _buildTabObraYJefes(isDark),
+              _buildTabEquipoYModulos(isDark),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // TAB 0: RESUMEN DEL PROYECTO (Prototipo Screens 4 y 10)
+  // ──────────────────────────────────────────────────────────────────────────
+  Widget _buildTabResumen(bool isDark) {
+    final cardBg = isDark ? const Color(0xFF131D31) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF22304C) : const Color(0xFFE2E8F0);
+    final titleColor = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
+    final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+    return FutureBuilder<List<dynamic>>(
+      future: Future.wait([_futureEstructura, _futureDetalle]),
+      builder: (context, snapshot) {
+        final List<Map<String, dynamic>> estructura = (snapshot.data != null && snapshot.data!.isNotEmpty)
+            ? List<Map<String, dynamic>>.from(snapshot.data![0] as List)
+            : [];
+        final Map<String, dynamic> detalle = (snapshot.data != null && snapshot.data!.length > 1)
+            ? Map<String, dynamic>.from(snapshot.data![1] as Map)
+            : {};
+
+        final totalTorres = _contarNodos(estructura, 'TORRE') + _contarNodos(estructura, 'BLOQUE');
+        final totalNiveles = _contarNodos(estructura, 'NIVEL');
+        final totalSectores = _contarNodos(estructura, 'SECTOR');
+
+        final fechaFin = detalle['fecha_fin']?.toString() ?? '-';
+        final empresaNombre = detalle['empresa_nombre']?.toString() ??
+            detalle['nombre_empresa']?.toString() ??
+            'Constructora Obratec';
+        final supervisor = detalle['supervisor_nombre']?.toString() ??
+            detalle['nombre_supervisor']?.toString() ??
+            'No asignado';
+        final cliente = detalle['cliente_nombre']?.toString() ?? '-';
+
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // Contadores (Torres/Bloques, Niveles, Sectores)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: borderColor),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildWbsMetricBadge('$totalTorres', 'Torres/Bloques', AppTheme.primary, titleColor),
+                  Container(height: 24, width: 1, color: borderColor),
+                  _buildWbsMetricBadge('$totalNiveles', 'Niveles', const Color(0xFF38BDF8), titleColor),
+                  Container(height: 24, width: 1, color: borderColor),
+                  _buildWbsMetricBadge('$totalSectores', 'Sectores', const Color(0xFF10B981), titleColor),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Información General
+            Text(
+              'Información general',
+              style: GoogleFonts.inter(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: titleColor,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: borderColor),
+              ),
+              child: Column(
+                children: [
+                  _buildInfoDetailRow('Código', widget.codigo, subColor, titleColor),
+                  Divider(height: 18, color: borderColor),
+                  _buildInfoDetailRow('Estado', _estadoObraActual.isNotEmpty ? _estadoObraActual : widget.estado, subColor, titleColor, isBadge: true),
+                  Divider(height: 18, color: borderColor),
+                  _buildInfoDetailRow('Tipo', widget.tipoNombre, subColor, titleColor),
+                  Divider(height: 18, color: borderColor),
+                  _buildInfoDetailRow('Fecha inicio', widget.fechaInicio.isEmpty ? '-' : widget.fechaInicio, subColor, titleColor),
+                  Divider(height: 18, color: borderColor),
+                  _buildInfoDetailRow('Fecha fin', fechaFin, subColor, titleColor),
+                  Divider(height: 18, color: borderColor),
+                  _buildInfoDetailRow('Empresa', empresaNombre, subColor, titleColor),
+                  if (supervisor != 'No asignado') ...[
+                    Divider(height: 18, color: borderColor),
+                    _buildInfoDetailRow('Supervisor', supervisor, subColor, titleColor),
+                  ],
+                  if (cliente != '-') ...[
+                    Divider(height: 18, color: borderColor),
+                    _buildInfoDetailRow('Cliente', cliente, subColor, titleColor),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildInfoDetailRow(String label, String val, Color subColor, Color titleColor, {bool isBadge = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.inter(fontSize: 12.5, color: subColor, fontWeight: FontWeight.w500),
+        ),
+        if (isBadge)
+          ConstructionStatusBadge(status: val, compact: true)
+        else
+          Text(
+            val,
+            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: titleColor),
+          ),
+      ],
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // TAB 3: MÓDULOS DEL PROYECTO Y EQUIPO (Prototipo Screen 11)
+  // ──────────────────────────────────────────────────────────────────────────
+  Widget _buildTabEquipoYModulos(bool isDark) {
+    final cardBg = isDark ? const Color(0xFF131D31) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF22304C) : const Color(0xFFE2E8F0);
+    final titleColor = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text(
+          'Módulos del Proyecto',
+          style: GoogleFonts.inter(
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+            color: titleColor,
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        _buildModuleCard(
+          icon: Icons.assignment_outlined,
+          iconColor: const Color(0xFF6366F1),
+          title: 'Órdenes de trabajo',
+          subtitle: 'Asignaciones y tareas',
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrdenesTrabajoScreen())),
+          isDark: isDark,
+          cardBg: cardBg,
+          borderColor: borderColor,
+          titleColor: titleColor,
+        ),
+        const SizedBox(height: 10),
+
+        _buildModuleCard(
+          icon: Icons.warning_amber_rounded,
+          iconColor: AppTheme.error,
+          title: 'Incidencias',
+          subtitle: 'Registro y seguimiento',
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const IncidenciasScreen())),
+          isDark: isDark,
+          cardBg: cardBg,
+          borderColor: borderColor,
+          titleColor: titleColor,
+        ),
+        const SizedBox(height: 10),
+
+        _buildModuleCard(
+          icon: Icons.help_outline_rounded,
+          iconColor: const Color(0xFF10B981),
+          title: 'Consultas técnicas',
+          subtitle: 'Preguntas y respuestas',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ConsultasTecnicasScreen(
+                idObraFiltro: widget.idObra,
+                nombreObraFiltro: widget.nombre,
+              ),
+            ),
+          ),
+          isDark: isDark,
+          cardBg: cardBg,
+          borderColor: borderColor,
+          titleColor: titleColor,
+        ),
+        const SizedBox(height: 10),
+
+        _buildModuleCard(
+          icon: Icons.timeline_rounded,
+          iconColor: const Color(0xFF38BDF8),
+          title: 'Avances',
+          subtitle: 'Seguimiento de obra',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AvancesObraScreen(
+                idObra: widget.idObra,
+                nombreObra: widget.nombre,
+                codigoObra: widget.codigo,
+              ),
+            ),
+          ),
+          isDark: isDark,
+          cardBg: cardBg,
+          borderColor: borderColor,
+          titleColor: titleColor,
+        ),
+        const SizedBox(height: 24),
+
+        // Personal Asignado
+        _buildPersonalSection(isDark, cardBg, borderColor, titleColor),
+      ],
+    );
+  }
+
+  Widget _buildModuleCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    required bool isDark,
+    required Color cardBg,
+    required Color borderColor,
+    required Color titleColor,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        leading: Container(
+          padding: const EdgeInsets.all(9),
+          decoration: BoxDecoration(
+            color: iconColor.withValues(alpha: isDark ? 0.18 : 0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: iconColor, size: 22),
+        ),
+        title: Text(
+          title,
+          style: GoogleFonts.inter(fontSize: 13.5, fontWeight: FontWeight.w700, color: titleColor),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: GoogleFonts.inter(fontSize: 11.5, color: const Color(0xFF94A3B8)),
+        ),
+        trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8), size: 20),
+        onTap: onTap,
+      ),
+    );
+  }
+
+  Widget _buildPersonalSection(bool isDark, Color cardBg, Color borderColor, Color titleColor) {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _futureDetalle,
+      builder: (context, snapshot) {
+        final data = snapshot.data ?? {};
+        final rawResponsables = data['responsables'];
+        final List<dynamic> responsables = (rawResponsables is List) ? rawResponsables : [];
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Personal y Responsables',
+                  style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w800, color: titleColor),
+                ),
+                if (_puedeModificarObra())
+                  TextButton.icon(
+                    onPressed: () => _mostrarModalAsignarJefeObra(responsables),
+                    icon: const Icon(Icons.person_add_outlined, size: 16),
+                    label: const Text('Asignar', style: TextStyle(fontSize: 12)),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (responsables.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: borderColor),
+                ),
+                child: const Center(
+                  child: Text('No hay personal asignado a esta obra.', style: TextStyle(fontSize: 12.5, color: Color(0xFF94A3B8))),
+                ),
+              )
+            else
+              ...responsables.map((r) {
+                final idUsuario = int.tryParse(r['id_usuario']?.toString() ?? '0') ?? 0;
+                final nombre = r['nombre_completo']?.toString() ?? r['username']?.toString() ?? 'Usuario';
+                final fechaAsig = r['fecha_asignacion']?.toString() ?? '';
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: cardBg,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 16,
+                        backgroundColor: AppTheme.primary.withValues(alpha: 0.15),
+                        child: Text(
+                          nombre.isNotEmpty ? nombre[0].toUpperCase() : 'U',
+                          style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.w800, fontSize: 13),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(nombre, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: titleColor)),
+                            if (fechaAsig.isNotEmpty)
+                              Text('Asignado: $fechaAsig', style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                          ],
+                        ),
+                      ),
+                      if (_puedeModificarObra())
+                        IconButton(
+                          icon: const Icon(Icons.remove_circle_outline_rounded, color: AppTheme.error, size: 18),
+                          onPressed: () => _retirarResponsable(idUsuario, nombre),
+                        ),
+                    ],
+                  ),
+                );
+              }),
+          ],
+        );
+      },
     );
   }
 
@@ -1472,20 +1912,72 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
               const SizedBox(height: 12),
 
               if (arbolFiltrado.isEmpty)
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Column(
-                      children: [
-                        const Icon(Icons.account_tree_outlined, size: 40, color: AppTheme.primary),
-                        const SizedBox(height: 10),
-                        Text('Sin elementos en la estructura',
-                            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: titleColor)),
-                        const SizedBox(height: 4),
-                        const Text('Presione el botón (+) para crear el primer nivel o torre.',
-                            textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8))),
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 24),
+                  padding: const EdgeInsets.all(28),
+                  decoration: BoxDecoration(
+                    color: cardBg,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 76,
+                        height: 76,
+                        decoration: BoxDecoration(
+                          color: AppTheme.primary.withValues(alpha: isDark ? 0.16 : 0.08),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.view_in_ar_rounded,
+                            size: 40,
+                            color: AppTheme.primary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Text(
+                        'Estructura no definida',
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: titleColor,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Comienza creando la primera torre, bloque o nivel de la obra para organizar unidades y avances.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          fontSize: 12.5,
+                          color: const Color(0xFF94A3B8),
+                          height: 1.4,
+                        ),
+                      ),
+                      if (_puedeModificarObra()) ...[
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            icon: const Icon(Icons.add_rounded, size: 18),
+                            label: Text(
+                              'Crear Elemento',
+                              style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13),
+                            ),
+                            onPressed: () => _mostrarModalElementoEstructura(),
+                          ),
+                        ),
                       ],
-                    ),
+                    ],
                   ),
                 )
               else
@@ -1918,286 +2410,28 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
     );
   }
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // TAB 3: GESTIÓN DE OBRA, JEFES DE OBRA Y FICHA TÉCNICA
-  // ──────────────────────────────────────────────────────────────────────────
-  Widget _buildTabObraYJefes(bool isDark) {
-    return FutureBuilder<Map<String, dynamic>>(
-      future: _futureDetalle,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: AppTheme.primary, strokeWidth: 2.5));
-        }
-
-        final data = snapshot.data ?? {};
-        final moneda = data['moneda']?.toString() ?? 'BOB';
-        final valor = data['valor_estimado']?.toString() ?? 'No especificado';
-        final descripcion = data['descripcion']?.toString() ?? 'Sin descripción registrada.';
-        final rawResponsables = data['responsables'];
-        final List<dynamic> responsables = (rawResponsables is List) ? rawResponsables : [];
-
-        final lat = double.tryParse(data['latitud']?.toString() ?? '') ?? -17.7833;
-        final lng = double.tryParse(data['longitud']?.toString() ?? '') ?? -63.1821;
-        final puntoObra = LatLng(lat, lng);
-
-        final cardBg = isDark ? const Color(0xFF131D31) : Colors.white;
-        final borderColor = isDark ? const Color(0xFF22304C) : const Color(0xFFE2E8F0);
-        final titleColor = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
-        final labelColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-        final dividerColor = isDark ? const Color(0xFF22304C) : const Color(0xFFF1F5F9);
-
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            // PANEL DE ACCIONES RÁPIDAS DE GESTIÓN
-            if (_puedeModificarObra()) ...[
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: cardBg,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        icon: const Icon(Icons.published_with_changes_rounded, size: 18),
-                        label: const Text('Estado de Obra'),
-                        onPressed: _mostrarModalCambiarEstadoObra,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
-                        label: const Text('Asignar Jefe'),
-                        onPressed: () => _mostrarModalAsignarJefeObra(responsables),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-            ],
-
-            // SECCIÓN: JEFES DE OBRA / RESPONSABLES ASIGNADOS
-            _buildSection(
-              title: 'JEFES DE OBRA / SUPERVISORES ASIGNADOS',
-              cardBg: cardBg,
-              borderColor: borderColor,
-              children: [
-                if (responsables.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8.0),
-                    child: Text('No hay jefes de obra asignados actualmente a este proyecto.',
-                        style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8))),
-                  )
-                else
-                  ...responsables.map((r) {
-                    final idUsuario = int.tryParse(r['id_usuario']?.toString() ?? '') ?? 0;
-                    final nombre = r['nombre_completo']?.toString() ?? 'Responsable';
-                    final rol = r['rol']?.toString() ?? 'JEFE DE OBRA';
-
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: borderColor),
-                      ),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 16,
-                            backgroundColor: AppTheme.primary.withValues(alpha: 0.15),
-                            child: const Icon(Icons.engineering_rounded, size: 18, color: AppTheme.primary),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(nombre, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: titleColor)),
-                                Text(rol, style: GoogleFonts.inter(fontSize: 11, color: labelColor)),
-                              ],
-                            ),
-                          ),
-                          if (_puedeModificarObra())
-                            IconButton(
-                              icon: const Icon(Icons.remove_circle_outline_rounded, size: 18, color: AppTheme.error),
-                              tooltip: 'Retirar asignación',
-                              onPressed: () => _retirarResponsable(idUsuario, nombre),
-                            ),
-                        ],
-                      ),
-                    );
-                  }),
-              ],
-            ),
-            const SizedBox(height: 14),
-
-            // MAPA INTERACTIVO OPENSTREETMAP
-            Container(
-              height: 180,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: borderColor),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Stack(
-                children: [
-                  FlutterMap(
-                    options: MapOptions(
-                      initialCenter: puntoObra,
-                      initialZoom: 15.0,
-                    ),
-                    children: [
-                      TileLayer(
-                        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        userAgentPackageName: 'com.obratec.app',
-                      ),
-                      MarkerLayer(
-                        markers: [
-                          Marker(
-                            point: puntoObra,
-                            width: 44,
-                            height: 44,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: AppTheme.primary,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppTheme.primary.withValues(alpha: 0.4),
-                                    blurRadius: 8,
-                                    spreadRadius: 2,
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(Icons.apartment_rounded, color: Colors.white, size: 24),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  Positioned(
-                    bottom: 8,
-                    left: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: (isDark ? const Color(0xFF0F172A) : Colors.white).withValues(alpha: 0.92),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: borderColor),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.location_on_rounded, size: 14, color: AppTheme.primary),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              widget.ubicacion.isNotEmpty ? widget.ubicacion : 'Santa Cruz, Bolivia',
-                              style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: titleColor),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-
-            // ESPECIFICACIONES TÉCNICAS Y ECONÓMICAS
-            _buildSection(
-              title: 'ESPECIFICACIONES DEL PROYECTO',
-              cardBg: cardBg,
-              borderColor: borderColor,
-              children: [
-                _buildInfoRow('Tipo de Obra', widget.tipoNombre, labelColor, titleColor),
-                _buildInfoRow('Estado Actual', _estadoObraActual.isNotEmpty ? _estadoObraActual : widget.estado, labelColor, titleColor),
-                _buildInfoRow('Moneda', moneda, labelColor, titleColor),
-                _buildInfoRow('Presupuesto Inicial', valor, labelColor, titleColor),
-                _buildInfoRow('Fecha de Inicio', widget.fechaInicio.isEmpty ? 'No definida' : widget.fechaInicio, labelColor, titleColor),
-                Divider(height: 20, color: dividerColor),
-                Text('DESCRIPCIÓN', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w800, color: labelColor)),
-                const SizedBox(height: 6),
-                Text(
-                  descripcion,
-                  style: GoogleFonts.inter(fontSize: 13, color: titleColor, height: 1.4),
-                ),
-              ],
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildSection({
-    required String title,
-    required Color cardBg,
-    required Color borderColor,
-    required List<Widget> children,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor),
-      ),
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
-              color: AppTheme.primary,
-              letterSpacing: 0.6,
-            ),
+  Widget _buildQuickTypeSelector(String valor, String label, bool sel, VoidCallback onTap, bool isDark) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: sel ? (isDark ? const Color(0xFFF97316) : const Color(0xFF0F172A)) : (isDark ? const Color(0xFF131D31) : const Color(0xFFF1F5F9)),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: sel ? Colors.transparent : (isDark ? const Color(0xFF22304C) : const Color(0xFFCBD5E1)),
           ),
-          const SizedBox(height: 14),
-          ...children,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value, Color labelColor, Color valueColor) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: GoogleFonts.inter(fontSize: 12, color: labelColor, fontWeight: FontWeight.w500)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              value,
-              textAlign: TextAlign.end,
-              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: valueColor),
-            ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+            color: sel ? Colors.white : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569)),
           ),
-        ],
+        ),
       ),
     );
   }

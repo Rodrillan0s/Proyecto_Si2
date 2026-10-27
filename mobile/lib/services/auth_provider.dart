@@ -148,6 +148,20 @@ class AuthProvider extends ChangeNotifier {
     return nombreEmpresa;
   }
 
+  String? get empresaActivaNombre => nombreEmpresaActiva;
+  String? get nombreRol => rol;
+
+  Future<void> cambiarEmpresaActiva(int? idEmpresa, String? nombreEmpresa) async {
+    if (idEmpresa != null) {
+      await seleccionarEmpresa({
+        'id_empresa': idEmpresa,
+        'nombre_empresa': nombreEmpresa ?? 'Empresa',
+      });
+    } else {
+      await seleccionarEmpresa(null);
+    }
+  }
+
   Future<void> seleccionarEmpresa(Map<String, dynamic>? empresa) async {
     _empresaActiva = empresa;
     if (empresa != null) {
