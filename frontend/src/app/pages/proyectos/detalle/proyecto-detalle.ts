@@ -266,7 +266,10 @@ export class ProyectoDetalleComponent implements OnInit, OnDestroy {
         this.ngZone.run(() => {
           this.procesandoAccion = false;
           if (res.success) {
-            this.mostrarExito('Estado actualizado correctamente.');
+            if (this.proyecto) this.proyecto.estado_obra = nuevoEstado;
+            this.mostrarExito(nuevoEstado === 'FINALIZADO'
+              ? 'Obra finalizada. El resumen económico final está disponible en Control de costos.'
+              : 'Estado actualizado correctamente.');
             this.cargarProyecto();
           } else {
             this.mostrarError(res.message || 'Error al cambiar de estado.');
@@ -280,6 +283,15 @@ export class ProyectoDetalleComponent implements OnInit, OnDestroy {
         });
       }
     });
+  }
+
+  puedeConsultarResumenFinal(): boolean {
+    return this.proyecto?.estado_obra === 'FINALIZADO' && this.authService.hasPermission('Visualizar_control_costos');
+  }
+
+  irAResumenFinal(): void {
+    if (!this.puedeConsultarResumenFinal()) return;
+    this.router.navigate(['/control-costos'], { queryParams: { id_obra: this.idObra, final: 'true' } });
   }
 
   asignarResponsable() {
