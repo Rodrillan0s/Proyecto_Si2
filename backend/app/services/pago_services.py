@@ -113,6 +113,22 @@ def listar_pagos_mi_empresa(token):
     return repo.listar_pagos_empresa(empresa)
 
 
+def listar_transacciones(token, fecha_desde=None, fecha_hasta=None, nombre_empresa=None, limite=50):
+    usuario = _usuario_actual(token)
+    if usuario['nombre_rol'] != 'ADMINISTRADOR':
+        raise HTTPException(403, 'Solo el administrador global puede consultar transacciones SaaS.')
+    if fecha_desde and fecha_hasta and fecha_hasta < fecha_desde:
+        raise HTTPException(422, 'La fecha hasta no puede ser anterior a la fecha desde.')
+    if not 1 <= limite <= 100:
+        raise HTTPException(422, 'El límite debe estar entre 1 y 100 transacciones.')
+    empresa = (nombre_empresa or '').strip()
+    if len(empresa) > 100:
+        raise HTTPException(422, 'El nombre de empresa no puede superar 100 caracteres.')
+    return repo.listar_transacciones(
+        fecha_desde, fecha_hasta, empresa or None, limite,
+    )
+
+
 def consultar_comprobante(token, id_pago):
     usuario = _usuario_actual(token)
     if usuario['nombre_rol'] not in ROLES_CONSULTA:
@@ -227,4 +243,3 @@ def verificar_pago(token, id_pago):
             or confirmacion.get('payment_intent_status') != 'succeeded'):
         raise HTTPException(409, 'Stripe todavía no confirma el pago como exitoso.')
     return _aplicar_confirmacion(pago, confirmacion, verificado_por=usuario['id_usuario'])
-

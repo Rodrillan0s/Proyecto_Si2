@@ -42,4 +42,16 @@ describe('PagosService', () => {
     expect(verificar.request.body).toEqual({});
     verificar.flush({ success: true, data: { id_pago: 8, estado: 'CONFIRMADO', aplicado: true } });
   });
+
+  it('consulta el dashboard con filtros opcionales por fecha y empresa', () => {
+    service.transacciones({
+      fecha_desde: '2026-10-01', fecha_hasta: '2026-10-31', nombre_empresa: 'La Roca',
+    }).subscribe();
+    const req = http.expectOne(request => request.method === 'GET'
+      && request.url.endsWith('/api/pagos/transacciones'));
+    expect(req.request.params.get('fecha_desde')).toBe('2026-10-01');
+    expect(req.request.params.get('fecha_hasta')).toBe('2026-10-31');
+    expect(req.request.params.get('nombre_empresa')).toBe('La Roca');
+    req.flush({ success: true, data: [] });
+  });
 });

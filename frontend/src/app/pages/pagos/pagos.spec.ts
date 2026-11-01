@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AuthService } from '../../services/auth';
-import { CheckoutFlowService, PagosService } from '../../services/pagos';
+import { CheckoutFlowService, PagosService, TransaccionSaaS } from '../../services/pagos';
 import { SuscripcionService } from '../../services/suscripcion';
 import { NAVIGATION } from '../../layouts/admin-layout/navegacion';
 import { PagosComponent } from './pagos';
@@ -22,6 +22,11 @@ const historial = [{
   stripe_checkout_session_id: 'cs_test_4', stripe_payment_intent_id: 'pi_4',
   stripe_checkout_url: null, stripe_receipt_url: 'https://pay.stripe.com/receipt/4',
 }];
+const movimientos: TransaccionSaaS[] = [{
+  tipo: 'COMPRA', id_pago: 4, id_historial: null, id_empresa: 3, nombre_empresa: 'La Roca',
+  codigo_plan: 'PROFESIONAL', nombre_plan: 'Profesional', monto_menor: 24900, moneda: 'BOB',
+  estado: 'CONFIRMADO', fecha: '2026-10-25T19:02:00Z', es_calculado: false,
+}];
 
 describe('PagosComponent', () => {
   afterEach(() => TestBed.resetTestingModule());
@@ -30,6 +35,7 @@ describe('PagosComponent', () => {
     const pagos = {
       planes: vi.fn(() => of({ success: true, data: [plan] })),
       miEmpresa: vi.fn(() => of({ success: true, data: historial })),
+      transacciones: vi.fn(() => of({ success: true, data: movimientos })),
       iniciarCheckout: vi.fn(() => of({ success: true, data: {
         id_pago: 5, estado: 'PENDIENTE', checkout_url: 'https://checkout.stripe.com/c/pay/test', checkout_expira_en: null,
       } })),
@@ -89,6 +95,8 @@ describe('PagosComponent', () => {
 
   it('permite al ADMINISTRADOR consultar y verificar un pendiente', () => {
     const { component, pagos } = crear('ADMINISTRADOR');
+    expect(pagos.transacciones).toHaveBeenCalledTimes(1);
+    expect(component.transacciones()).toEqual(movimientos);
     component.idConsulta = 9;
     component.buscarPago();
     component.verificarPago();
@@ -104,6 +112,33 @@ describe('PagosComponent', () => {
     });
     component.verificarPago();
     expect(pagos.verificar).not.toHaveBeenCalled();
+  });
+
+  it('filtra movimientos por empresa y fecha solo en la vista global', () => {
+    const { component, pagos } = crear('ADMINISTRADOR');
+    component.nombreEmpresa = ' La Roca ';
+    component.fechaDesde = '2026-10-01';
+    component.fechaHasta = '2026-10-31';
+    component.cargarTransacciones();
+    expect(pagos.transacciones).toHaveBeenLastCalledWith({
+      fecha_desde: '2026-10-01', fecha_hasta: '2026-10-31', nombre_empresa: 'La Roca',
+    });
+  });
+
+  it('oculta el dashboard global a ADMINISTRADOR_EMPRESA', () => {
+    const empresa = crear('ADMINISTRADOR_EMPRESA');
+    expect(empresa.pagos.transacciones).not.toHaveBeenCalled();
+    expect(empresa.fixture.nativeElement.querySelector('.admin-dashboard')).toBeNull();
+  });
+
+  it('rechaza un rango de fechas invertido sin consultar el servicio', () => {
+    const { component, pagos } = crear('ADMINISTRADOR');
+    const llamadasIniciales = pagos.transacciones.mock.calls.length;
+    component.fechaDesde = '2026-11-01';
+    component.fechaHasta = '2026-10-31';
+    component.cargarTransacciones();
+    expect(pagos.transacciones).toHaveBeenCalledTimes(llamadasIniciales);
+    expect(component.error()).toContain('anterior');
   });
 
   it('declara opciones de menú aisladas por rol', () => {

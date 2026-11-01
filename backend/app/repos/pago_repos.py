@@ -178,6 +178,72 @@ def listar_pagos_empresa(id_empresa):
         return [dict(row) for row in cur.fetchall()]
 
 
+def listar_transacciones(fecha_desde=None, fecha_hasta=None, nombre_empresa=None, limite=50):
+    with conexion() as cur:
+        cur.execute("""
+            WITH movimientos AS (
+                SELECT CASE pg.tipo_aplicacion
+                           WHEN 'RENOVACION' THEN 'RENOVACION'
+                           WHEN 'CAMBIO_PLAN' THEN 'CAMBIO_PLAN'
+                           ELSE 'COMPRA'
+                       END AS tipo,
+                       pg.id_pago, NULL::bigint AS id_historial,
+                       pg.id_empresa, e.nombre_empresa, pg.codigo_plan, pl.nombre AS nombre_plan,
+                       pg.monto_menor, pg.moneda, pg.estado, pg.aplicado_en AS fecha,
+                       false AS es_calculado
+                FROM obras.t_pago_suscripcion pg
+                JOIN obras.t_empresa e ON e.id_empresa=pg.id_empresa
+                JOIN obras.t_plan_suscripcion pl ON pl.codigo=pg.codigo_plan
+                WHERE pg.estado='CONFIRMADO' AND pg.aplicado_en IS NOT NULL
+
+                UNION ALL
+
+                SELECT 'CANCELACION'::text,
+                       NULL::bigint, h.id,
+                       h.id_empresa, e.nombre_empresa, h.codigo_plan, pl.nombre,
+                       NULL::bigint, NULL::varchar(3), h.estado, h.creado_en,
+                       false
+                FROM obras.t_suscripcion_historial h
+                JOIN obras.t_empresa e ON e.id_empresa=h.id_empresa
+                JOIN obras.t_plan_suscripcion pl ON pl.codigo=h.codigo_plan
+                WHERE h.estado='CANCELADA' AND h.origen <> 'PAGO_STRIPE'
+
+                UNION ALL
+
+                SELECT 'VENCIMIENTO_CALCULADO'::text,
+                       NULL::bigint, h.id,
+                       h.id_empresa, e.nombre_empresa, h.codigo_plan, pl.nombre,
+                       NULL::bigint, NULL::varchar(3), 'VENCIDA'::varchar(15),
+                       (h.fecha_fin + 1)::timestamp AT TIME ZONE 'America/La_Paz',
+                       true
+                FROM obras.t_suscripcion_historial h
+                JOIN obras.t_empresa e ON e.id_empresa=h.id_empresa
+                JOIN obras.t_plan_suscripcion pl ON pl.codigo=h.codigo_plan
+                WHERE h.estado='ACTIVA'
+                  AND h.fecha_fin < (CURRENT_TIMESTAMP AT TIME ZONE 'America/La_Paz')::date
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM obras.t_suscripcion_historial posterior
+                      WHERE posterior.id_empresa=h.id_empresa
+                        AND (posterior.creado_en, posterior.id) > (h.creado_en, h.id)
+                        AND posterior.fecha_inicio <= h.fecha_fin + 1
+                  )
+            )
+            SELECT tipo,id_pago,id_historial,id_empresa,nombre_empresa,codigo_plan,nombre_plan,
+                   monto_menor,moneda,estado,fecha,es_calculado
+            FROM movimientos
+            WHERE (%s::date IS NULL OR (fecha AT TIME ZONE 'America/La_Paz')::date >= %s::date)
+              AND (%s::date IS NULL OR (fecha AT TIME ZONE 'America/La_Paz')::date <= %s::date)
+              AND (%s::text IS NULL OR nombre_empresa ILIKE ('%%' || %s || '%%'))
+            ORDER BY fecha DESC,id_empresa,COALESCE(id_pago,id_historial) DESC
+            LIMIT %s
+        """, (
+            fecha_desde, fecha_desde, fecha_hasta, fecha_hasta,
+            nombre_empresa, nombre_empresa, limite,
+        ))
+        return [dict(row) for row in cur.fetchall()]
+
+
 def obtener_comprobante(id_pago):
     with conexion() as cur:
         cur.execute("""
@@ -318,4 +384,3 @@ def aplicar_pago_confirmado(id_pago, confirmacion, evento_id=None, verificado_po
               confirmacion.get('receipt_url'), confirmacion['payment_status'],
               verificado_por, historial_id, pago['id_pago']))
         return dict(cur.fetchone()), True
-

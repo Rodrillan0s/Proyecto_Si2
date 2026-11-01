@@ -1,5 +1,5 @@
 import { isPlatformBrowser } from '@angular/common';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { environment } from '../../environments/environment';
 
@@ -35,6 +35,27 @@ export interface PagoEmpresa {
   stripe_payment_intent_id: string | null;
   stripe_checkout_url: string | null;
   stripe_receipt_url: string | null;
+}
+
+export interface FiltrosTransacciones {
+  fecha_desde?: string;
+  fecha_hasta?: string;
+  nombre_empresa?: string;
+}
+
+export interface TransaccionSaaS {
+  tipo: 'COMPRA' | 'RENOVACION' | 'CAMBIO_PLAN' | 'CANCELACION' | 'VENCIMIENTO_CALCULADO';
+  id_pago: number | null;
+  id_historial: number | null;
+  id_empresa: number;
+  nombre_empresa: string;
+  codigo_plan: string;
+  nombre_plan: string;
+  monto_menor: number | null;
+  moneda: string | null;
+  estado: string;
+  fecha: string;
+  es_calculado: boolean;
 }
 
 export interface PagoDetalle {
@@ -100,6 +121,14 @@ export class PagosService {
 
   miEmpresa() {
     return this.http.get<RespuestaApi<PagoEmpresa[]>>(`${this.url}/mi-empresa`);
+  }
+
+  transacciones(filtros: FiltrosTransacciones = {}) {
+    let params = new HttpParams();
+    if (filtros.fecha_desde) params = params.set('fecha_desde', filtros.fecha_desde);
+    if (filtros.fecha_hasta) params = params.set('fecha_hasta', filtros.fecha_hasta);
+    if (filtros.nombre_empresa) params = params.set('nombre_empresa', filtros.nombre_empresa);
+    return this.http.get<RespuestaApi<TransaccionSaaS[]>>(`${this.url}/transacciones`, { params });
   }
 
   comprobante(idPago: number) {

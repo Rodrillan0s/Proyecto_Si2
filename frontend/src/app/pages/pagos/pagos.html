@@ -3,7 +3,7 @@
     <div>
       <p class="section-label">CU37</p>
       <h1>{{ esGlobal ? 'Pagos SaaS y transacciones' : 'Pagos y suscripción' }}</h1>
-      <p>{{ esGlobal ? 'Consulte una transacción y solicite a Stripe su verificación.' : 'Administre el pago de su plan y consulte los comprobantes de su empresa.' }}</p>
+      <p>{{ esGlobal ? 'Revise movimientos recientes por empresa y consulte pagos por identificador.' : 'Administre el pago de su plan y consulte los comprobantes de su empresa.' }}</p>
     </div>
     <a *ngIf="!esGlobal" routerLink="/suscripciones" class="secondary-link">Ver detalle de suscripción</a>
   </header>
@@ -87,10 +87,63 @@
     </ng-container>
   </ng-container>
 
+  <section *ngIf="esGlobal" class="admin-dashboard" aria-labelledby="dashboard-title">
+    <div class="section-heading">
+      <h2 id="dashboard-title">Actividad de suscripciones</h2>
+      <p>Compras, renovaciones, cambios de plan, cancelaciones y vencimientos por empresa. Los vencimientos calculados se identifican como tales.</p>
+    </div>
+    <form (ngSubmit)="cargarTransacciones()" class="transaction-filters">
+      <label for="empresa-transacciones">Empresa
+        <input id="empresa-transacciones" name="nombreEmpresa" type="search" maxlength="100"
+          [(ngModel)]="nombreEmpresa" placeholder="Nombre de empresa">
+      </label>
+      <label for="fecha-desde">Desde
+        <input id="fecha-desde" name="fechaDesde" type="date" [(ngModel)]="fechaDesde">
+      </label>
+      <label for="fecha-hasta">Hasta
+        <input id="fecha-hasta" name="fechaHasta" type="date" [(ngModel)]="fechaHasta">
+      </label>
+      <div class="transaction-filter-actions">
+        <button type="submit" class="primary-button" [disabled]="cargandoTransacciones()">
+          {{ cargandoTransacciones() ? 'Buscando...' : 'Buscar' }}
+        </button>
+        <button type="button" class="secondary-button" [disabled]="cargandoTransacciones()" (click)="restablecerFiltros()">Restablecer</button>
+      </div>
+    </form>
+
+    <p *ngIf="cargandoTransacciones()" class="results-count" role="status">Cargando movimientos...</p>
+    <p *ngIf="!cargandoTransacciones() && transacciones().length" class="results-count" role="status">
+      Mostrando {{ transacciones().length }} movimientos recientes (máximo 50).
+    </p>
+    <app-empty-state *ngIf="!cargandoTransacciones() && !transacciones().length" titulo="No hay movimientos"
+      descripcion="Pruebe otro rango de fechas o busque por nombre de empresa."></app-empty-state>
+
+    <div *ngIf="!cargandoTransacciones() && transacciones().length" class="table-wrap">
+      <table>
+        <thead><tr><th>Empresa</th><th>Movimiento</th><th>Plan</th><th>Importe</th><th>Fecha</th><th>Referencia</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let movimiento of transacciones()">
+            <td data-label="Empresa"><strong>{{ movimiento.nombre_empresa }}</strong></td>
+            <td data-label="Movimiento">
+              <span class="event-kind">{{ etiquetaMovimiento(movimiento) }}</span>
+              <small *ngIf="movimiento.es_calculado" class="event-note">Derivado de fecha fin; no es un evento auditado.</small>
+            </td>
+            <td data-label="Plan">{{ movimiento.nombre_plan }}</td>
+            <td data-label="Importe">
+              {{ movimiento.monto_menor !== null && movimiento.moneda ? dinero(movimiento.monto_menor, movimiento.moneda) : '—' }}
+            </td>
+            <td data-label="Fecha">{{ fechaMovimiento(movimiento) }}</td>
+            <td data-label="Referencia">{{ movimiento.id_pago ? 'Pago #' + movimiento.id_pago : 'Historial #' + movimiento.id_historial }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
   <section *ngIf="esGlobal" class="admin-lookup" aria-labelledby="buscar-title">
     <div class="section-heading">
-      <h2 id="buscar-title">Consultar transacción</h2>
-      <p>El backend actual permite consultar y verificar una transacción por su ID.</p>
+      <h2 id="buscar-title">Consultar pago por ID</h2>
+      <p>Consulte el detalle de un pago y solicite a Stripe su verificación cuando esté pendiente.</p>
     </div>
     <form (ngSubmit)="buscarPago()" class="lookup-form">
       <label for="id-pago">ID de pago</label>

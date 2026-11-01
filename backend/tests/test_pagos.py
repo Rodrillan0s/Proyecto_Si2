@@ -1,5 +1,6 @@
 """CU37 Fase 1: pruebas aisladas, sin PostgreSQL ni llamadas a Stripe."""
 from copy import deepcopy
+from contextlib import nullcontext
 from datetime import date, datetime, timezone
 import sys
 from types import SimpleNamespace
@@ -219,6 +220,85 @@ def test_rutas_hu126_exponen_historial_y_comprobante(memoria, monkeypatch):
     assert respuesta_comprobante.status_code == 200
     historial.assert_called_once_with(EMPRESA)
     comprobante.assert_called_once_with(EMPRESA, 20)
+
+
+def test_listado_transacciones_solo_admin_y_valida_filtros(memoria, monkeypatch):
+    listar = Mock(return_value=[{'tipo': 'COMPRA', 'nombre_empresa': 'La Roca'}])
+    monkeypatch.setattr(service.repo, 'listar_transacciones', listar)
+
+    resultado = service.listar_transacciones(
+        ADMIN, date(2026, 10, 1), date(2026, 10, 31), ' La Roca ', 25,
+    )
+    assert resultado == [{'tipo': 'COMPRA', 'nombre_empresa': 'La Roca'}]
+    listar.assert_called_once_with(date(2026, 10, 1), date(2026, 10, 31), 'La Roca', 25)
+
+    with pytest.raises(HTTPException) as error:
+        service.listar_transacciones(EMPRESA)
+    assert error.value.status_code == 403
+    listar.assert_called_once()
+
+    with pytest.raises(HTTPException) as error:
+        service.listar_transacciones(ADMIN, date(2026, 11, 1), date(2026, 10, 31))
+    assert error.value.status_code == 422
+
+
+def test_repo_transacciones_parametriza_filtros_y_deriva_vencimiento(monkeypatch):
+    consulta = {}
+    fila = {
+        'tipo': 'VENCIMIENTO_CALCULADO', 'id_pago': None, 'id_historial': 17,
+        'id_empresa': 3, 'nombre_empresa': 'La Roca', 'codigo_plan': 'PROFESIONAL',
+        'nombre_plan': 'Profesional', 'monto_menor': None, 'moneda': None,
+        'estado': 'VENCIDA', 'fecha': datetime(2026, 10, 25, 4, 0, tzinfo=timezone.utc),
+        'es_calculado': True,
+    }
+
+    class CursorPrueba:
+        def execute(self, query, parametros):
+            consulta['sql'] = query
+            consulta['parametros'] = parametros
+
+        def fetchall(self):
+            return [fila]
+
+    monkeypatch.setattr(pago_repos, 'conexion', lambda: nullcontext(CursorPrueba()))
+    resultado = pago_repos.listar_transacciones(
+        date(2026, 10, 1), date(2026, 10, 31), 'La Roca', 25,
+    )
+
+    assert resultado == [fila]
+    assert consulta['parametros'] == (
+        date(2026, 10, 1), date(2026, 10, 1),
+        date(2026, 10, 31), date(2026, 10, 31),
+        'La Roca', 'La Roca', 25,
+    )
+    assert 'pg.estado=\'CONFIRMADO\' AND pg.aplicado_en IS NOT NULL' in consulta['sql']
+    assert "h.estado='CANCELADA'" in consulta['sql']
+    assert "'VENCIMIENTO_CALCULADO'" in consulta['sql']
+    assert "AT TIME ZONE 'America/La_Paz'" in consulta['sql']
+
+
+def test_ruta_transacciones_restringe_rol_y_expone_filtros(monkeypatch):
+    app = FastAPI()
+    app.include_router(pago_routes.router)
+    token = [ADMIN]
+    app.dependency_overrides[verificar_token] = lambda: token[0]
+    listar = Mock(return_value=[{'tipo': 'COMPRA'}])
+    monkeypatch.setattr(service, 'listar_transacciones', listar)
+
+    with TestClient(app) as client:
+        respuesta = client.get('/api/pagos/transacciones', params={
+            'fecha_desde': '2026-10-01', 'fecha_hasta': '2026-10-31',
+            'nombre_empresa': 'La Roca', 'limite': 25,
+        })
+        token[0] = EMPRESA
+        respuesta_restringida = client.get('/api/pagos/transacciones')
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()['data'] == [{'tipo': 'COMPRA'}]
+    listar.assert_called_once_with(
+        ADMIN, date(2026, 10, 1), date(2026, 10, 31), 'La Roca', 25,
+    )
+    assert respuesta_restringida.status_code == 403
 
 
 def test_roles_y_body_no_permiten_alterar_datos_comerciales(memoria):
@@ -512,4 +592,3 @@ def test_ruta_verificacion_acepta_administrador_empresa(monkeypatch):
         respuesta = client.post('/api/pagos/10/verificar')
     assert respuesta.status_code == 200
     verificar.assert_called_once_with(EMPRESA, 10)
-
