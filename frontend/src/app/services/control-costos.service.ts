@@ -123,6 +123,55 @@ export interface ComparacionControl {
 
 export interface ResumenControl { linea_base: LineaBase; resumen: TotalesControl; }
 
+// Campos devueltos por CU32; no se derivan importes en el cliente.
+export interface ResumenFinalControl extends ResumenControl {
+  obra: {
+    id_obra: number;
+    id_empresa: number;
+    codigo: string;
+    nombre: string;
+    estado_obra: 'FINALIZADO';
+    moneda: string;
+  };
+  resumen: TotalesControl & {
+    costo_final_registrado: number;
+    costo_mano_obra_calculado?: number;
+    total_trabajadores_con_costo?: number;
+    total_jornadas_trabajadas?: number;
+  };
+  desglose_por_categoria?: Partial<Record<CategoriaCosto, number>>;
+  mano_obra_trabajadores?: JornadaCierreManoObra[];
+}
+
+export interface TrabajadorManoObra {
+  id_usuario: number;
+  nombre_completo: string;
+  nombre_rol: string;
+  id_salario?: number | null;
+  salario_diario?: number | null;
+  salario_vigente_desde?: string | null;
+}
+
+export interface JornadaManoObra {
+  id_jornada: number;
+  id_usuario: number;
+  nombre_completo: string;
+  fecha: string;
+  dias_trabajados: number;
+  salario_diario: number;
+  costo_calculado: number;
+}
+
+export interface JornadaCierreManoObra extends Omit<JornadaManoObra, 'id_jornada'> {
+  nombre_rol: string;
+  id_salario: number;
+}
+
+export interface ResumenManoObra {
+  trabajadores: TrabajadorManoObra[];
+  jornadas: JornadaManoObra[];
+}
+
 export interface OrdenCambioDetalle {
   id_orden_cambio_detalle: number;
   id_orden_cambio: number;
@@ -244,6 +293,35 @@ export class ControlCostosService {
 
   resumen(idObra: number): Observable<ApiResponse<ResumenControl>> {
     return this.http.get<ApiResponse<ResumenControl>>(`${this.api}/obras/${idObra}/resumen`);
+  }
+
+  resumenFinal(idObra: number): Observable<ApiResponse<ResumenFinalControl>> {
+    return this.http.get<ApiResponse<ResumenFinalControl>>(`${this.api}/obras/${idObra}/resumen`, {
+      params: new HttpParams().set('final', 'true')
+    });
+  }
+
+  manoObra(idObra: number): Observable<ApiResponse<ResumenManoObra>> {
+    return this.http.get<ApiResponse<ResumenManoObra>>(`${this.api}/obras/${idObra}/mano-obra`);
+  }
+
+  registrarSalario(
+    idObra: number,
+    idUsuario: number,
+    payload: { salario_diario: number; fecha_vigencia: string }
+  ): Observable<ApiResponse<{ id_salario: number; id_usuario: number; salario_diario: number; fecha_vigencia: string }>> {
+    return this.http.post<ApiResponse<{ id_salario: number; id_usuario: number; salario_diario: number; fecha_vigencia: string }>>(
+      `${this.api}/obras/${idObra}/trabajadores/${idUsuario}/salarios`, payload
+    );
+  }
+
+  registrarJornada(
+    idObra: number,
+    payload: { id_usuario: number; fecha: string; dias_trabajados: number }
+  ): Observable<ApiResponse<{ id_jornada: number; id_usuario: number; fecha: string; dias_trabajados: number; id_salario: number }>> {
+    return this.http.post<ApiResponse<{ id_jornada: number; id_usuario: number; fecha: string; dias_trabajados: number; id_salario: number }>>(
+      `${this.api}/obras/${idObra}/jornadas`, payload
+    );
   }
 
   comparacion(idObra: number): Observable<ApiResponse<ComparacionControl>> {

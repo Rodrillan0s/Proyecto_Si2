@@ -126,6 +126,32 @@ class ControlCostosServicesTests(unittest.TestCase):
         self.assertEqual(response["data"]["estado"], "ANULADO")
         annul.assert_called_once_with(80, "Documento duplicado", 7, 21)
 
+    def test_no_registra_mano_obra_manual_si_ya_hay_calculo_de_trabajadores(self):
+        payload = {
+            "id_control_costo": 3,
+            "id_partida_presupuestaria": 31,
+            "fecha": date(2026, 9, 30),
+            "concepto": "Salarios",
+            "categoria": "MANO_OBRA",
+            "cantidad": Decimal("1"),
+            "costo_unitario": Decimal("100"),
+            "monto": Decimal("100"),
+        }
+        with patch.object(
+            service.control_costos_repos, "obtener_linea_base_por_id", return_value=LINEA
+        ), patch.object(
+            service.control_costos_repos, "obtener_partida_base", return_value=PARTIDA
+        ), patch.object(
+            service.trabajadores_costos_repos, "tiene_mano_obra_calculada", return_value=True
+        ) as has_payroll, patch.object(
+            service.control_costos_repos, "crear_costo"
+        ) as create:
+            with self.assertRaises(service.ControlCostosError) as ctx:
+                service.registrar_costo(payload, TOKEN)
+        self.assertEqual(ctx.exception.status_code, 409)
+        has_payroll.assert_called_once_with(7, 9)
+        create.assert_not_called()
+
     def test_compara_costo_original_revisado_y_ejecutado(self):
         rows = [
             {

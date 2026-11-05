@@ -261,7 +261,13 @@ def actualizar_estado_obra(id_obra: int, nuevo_estado: str, token_data: dict, cl
     if not id_empresa:
         raise ValueError("El ID de la empresa es obligatorio.")
 
-    res = obra_repos.actualizar_estado_obra_sp(id_obra, id_empresa, nuevo_estado)
+    if nuevo_estado == 'FINALIZADO':
+        from app.services import gastos_operativos_services
+        # El administrador global ya resolvio la empresa real de esta obra.
+        token_costos = {**token_data, 'id_empresa': id_empresa}
+        res = gastos_operativos_services.finalizar_obra(id_obra, token_costos)
+    else:
+        res = obra_repos.actualizar_estado_obra_sp(id_obra, id_empresa, nuevo_estado)
     if not res.get('success'):
         raise ValueError(res.get('error', "No se pudo cambiar el estado del proyecto."))
 

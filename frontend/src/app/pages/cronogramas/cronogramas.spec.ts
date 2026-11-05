@@ -146,4 +146,14 @@ describe('CU39: integración de obra y contrato', () => {
     expect(c.borrador.actividades[0].fecha_inicio).toBe('2026-01-01');
     expect(c.borrador.actividades[0].fecha_fin).toBe('2026-01-20');
   });
+  it('descarta el resultado de una escritura anterior al cambiar la obra de ruta', () => {
+    const c = pantalla().componentInstance; c.editar(); c.guardar();
+    const anterior = requests.expectOne(`${base}/7`);
+    params.next(convertToParamMap({ id: '20' }));
+    requests.expectOne(`${environment.apiUrl}/api/obras/20/cronogramas/`).flush({ data: [], obra: { nombre: 'Nueva obra', id_empresa: 1 } });
+    anterior.flush({ success: true, data: plan });
+    expect(c.idObra).toBe(20); expect(c.actual()).toBeNull(); expect(c.mensaje()).toBe('');
+    expect(c.guardando()).toBe(false);
+    requests.expectNone(`${environment.apiUrl}/api/obras/20/cronogramas/7`);
+  });
 });

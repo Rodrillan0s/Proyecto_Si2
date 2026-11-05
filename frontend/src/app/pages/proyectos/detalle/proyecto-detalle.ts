@@ -94,12 +94,14 @@ export class ProyectoDetalleComponent implements OnInit, OnDestroy {
     }
   }
 
-  puedeVerCronogramas() { return this.authService.hasPermission('Visualizar_cronograma'); }
-  abrirCronogramas() { this.router.navigate(['/proyectos', this.idObra, 'cronogramas']); }
-
   ngOnDestroy() {
     this.destruirMapa();
   }
+
+  puedeVerCronogramas() { return this.authService.hasPermission('Visualizar_cronograma'); }
+  abrirCronogramas() { void this.router.navigate(['/proyectos', this.idObra, 'cronogramas']); }
+  puedeVerGastosFinales() { return this.authService.hasPermission('Visualizar_control_costos'); }
+  abrirGastosFinales() { void this.router.navigate(['/proyectos', this.idObra, 'gastos-finales']); }
 
   cargarProyecto() {
     this.cargando = true;
@@ -382,6 +384,10 @@ irAPresupuesto() {
 
   irAProveedores() {
     this.router.navigate(['/proveedores']);
+  }
+
+  irAConsultasTecnicas() {
+    this.router.navigate(['/proyectos', this.idObra, 'consultas-tecnicas']);
   }
 
   esRolAutorizado(): boolean {

@@ -5,7 +5,7 @@ export const REPORT_FAMILIES: Record<string, string[]> = {
   inventario: ['stock', 'consumo_materiales'], personal: ['asignacion_personal', 'utilizacion_personal'],
   obras: ['avance_ejecutivo', 'estado_unidades'], incidencias: ['incidencias', 'incidencias_criticas'],
 };
-export interface NavItem { id: string; label: string; route: string; icon: string; permissions?: string[]; all?: string[]; global?: boolean; query?: Record<string, string>; family?: string; context?: 'estructura' | 'responsables'; }
+export interface NavItem { id: string; label: string; route: string; icon: string; permissions?: string[]; all?: string[]; roles?: string[]; global?: boolean; query?: Record<string, string>; family?: string; context?: 'estructura' | 'responsables'; }
 export interface NavSection { id: string; label: string; icon: string; items: NavItem[]; }
 const home = 'M3 12l9-9 9 9M5 10v11h5v-6h4v6h5V10';
 const work = 'M3 21h18M5 21V3h14v18M9 7h1m4 0h1M9 11h1m4 0h1M10 21v-6h4v6';
@@ -26,10 +26,12 @@ export const NAVIGATION: NavSection[] = [
     { id: 'jefes', label: 'Asignar jefes de obra', route: '/proyectos', icon: people, context: 'responsables', all: ['Visualizar_obras', 'Modificar_obras'] },
     { id: 'ordenes', label: 'Órdenes de trabajo', route: '/ordenes-trabajo', icon: settings, permissions: ['Visualizar_obras'] },
     { id: 'incidencias', label: 'Incidencias', route: '/incidencias', icon: alert, permissions: ['Visualizar_incidencias'] },
+    { id: 'consultas-tecnicas', label: 'Consultas Técnicas (RFI)', route: '/consultas-tecnicas', icon: chat, permissions: ['Visualizar_consultas_tecnicas'] },
   ] },
   { id: 'costos', label: 'PRESUPUESTOS Y COSTOS', icon: cost, items: [
     { id: 'apu', label: 'Presupuestos / APU', route: '/estimaciones', icon: cost, permissions: ['Visualizar_estimaciones'] },
     { id: 'control', label: 'Control de costos', route: '/control-costos', icon: cost, permissions: ['Visualizar_control_costos'] },
+    { id: 'gastos-finales', label: 'Gastos operativos finales', route: '/gastos-finales', icon: cost, permissions: ['Visualizar_control_costos'] },
   ] },
   { id: 'comercial', label: 'COMERCIAL & CLIENTES', icon: people, items: [{ id: 'crm', label: 'CRM & Clientes', route: '/crm', icon: people, permissions: ['Visualizar_clientes'] }] },
   { id: 'inventario', label: 'INVENTARIO & LOGÍSTICA', icon: stock, items: [
@@ -46,6 +48,7 @@ export const NAVIGATION: NavSection[] = [
   { id: 'ia', label: 'INTELIGENCIA ARTIFICIAL', icon: chat, items: [{ id: 'asistente', label: 'Asistente Inteligente', route: '/asistente', icon: chat, permissions: ASSISTANT_PERMISSIONS }] },
   { id: 'admin', label: 'ADMINISTRACIÓN', icon: settings, items: [
     { id: 'configuracion-planes', label: 'Configuración de planes', route: '/configuracion-planes', icon: settings, global: true },
+    { id: 'pagos-saas', label: 'Pagos SaaS / Transacciones', route: '/pagos', icon: cost, roles: ['ADMINISTRADOR'] },
     { id: 'usuarios', label: 'Usuarios', route: '/usuarios', icon: people, permissions: ['Visualizar_usuarios'] },
     { id: 'roles', label: 'Roles y permisos', route: '/roles', icon: settings, permissions: ['Visualizar_usuarios'] },
     { id: 'empresas', label: 'Empresas', route: '/empresas', icon: work, permissions: ['Visualizar_empresa'] },
@@ -53,6 +56,7 @@ export const NAVIGATION: NavSection[] = [
     { id: 'backup', label: 'Copias de respaldo', route: '/backup', icon: stock, global: true },
   ] },
   { id: 'cuenta', label: 'CUENTA', icon: people, items: [
+    { id: 'pagos-empresa', label: 'Pagos / Suscripción', route: '/pagos', icon: cost, roles: ['ADMINISTRADOR_EMPRESA'] },
     { id: 'suscripciones', label: 'Suscripción', route: '/suscripciones', icon: work },
     { id: 'perfil', label: 'Mi perfil', route: '/perfil', icon: people },
     { id: 'seguridad', label: 'Seguridad y sesión', route: '/panel', query: { tab: 'seguridad' }, icon: settings },

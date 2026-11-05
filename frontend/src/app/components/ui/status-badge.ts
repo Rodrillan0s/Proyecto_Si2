@@ -27,6 +27,7 @@ export class StatusBadgeComponent {
       case 'EJECUCION':
       case 'DISPONIBLE':
       case 'EXITOSO':
+      case 'CONFIRMADO':
         return 'bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800';
 
       case 'PLANIFICACION':
@@ -39,7 +40,8 @@ export class StatusBadgeComponent {
         return 'bg-indigo-50 text-indigo-800 border-indigo-300 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800';
 
       case 'RESUELTA':
-        return 'bg-cyan-50 text-cyan-800 border-cyan-300 dark:bg-cyan-950/40 dark:text-cyan-300 dark:border-cyan-800';
+      case 'RESPONDIDA':
+        return 'bg-teal-50 text-teal-800 border-teal-300 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-800';
 
       case 'BAJA':
         return 'bg-sky-50 text-sky-800 border-sky-300 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800';
@@ -67,6 +69,7 @@ export class StatusBadgeComponent {
       case 'CRITICO':
       case 'CRITICA':
       case 'AGOTADO':
+      case 'FALLIDO':
         return 'bg-rose-50 text-rose-800 border-rose-300 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800';
 
       default:
@@ -82,6 +85,7 @@ export class StatusBadgeComponent {
       case 'EJECUCION':
       case 'DISPONIBLE':
       case 'EXITOSO':
+      case 'CONFIRMADO':
         return 'bg-emerald-500 animate-pulse';
 
       case 'PLANIFICACION':
@@ -94,7 +98,8 @@ export class StatusBadgeComponent {
         return 'bg-indigo-500';
 
       case 'RESUELTA':
-        return 'bg-cyan-500';
+      case 'RESPONDIDA':
+        return 'bg-teal-500';
 
       case 'BAJA':
         return 'bg-sky-500';
@@ -122,6 +127,7 @@ export class StatusBadgeComponent {
       case 'CRITICO':
       case 'CRITICA':
       case 'AGOTADO':
+      case 'FALLIDO':
         return 'bg-rose-500';
 
       default:

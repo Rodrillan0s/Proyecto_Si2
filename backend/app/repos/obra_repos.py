@@ -143,12 +143,14 @@ def listar_obras_sp(id_empresa: int):
     finally:
         db.close_connection()
 
-def actualizar_estado_obra_sp(id_obra: int, id_empresa: int, nuevo_estado: str):
-    db = PostgreSQL()
-    db.create_connection()
+def actualizar_estado_obra_sp(id_obra: int, id_empresa: int, nuevo_estado: str, db=None):
+    propia = db is None
+    if propia:
+        db = PostgreSQL()
+        db.create_connection()
     try:
         query = f"SELECT {Config.SCHEMA}.sp_actualizar_estado_obra(%s, %s, %s);"
-        resultado = db.execute_query(query, (id_obra, id_empresa, nuevo_estado), fetchone=True, commit=True)
+        resultado = db.execute_query(query, (id_obra, id_empresa, nuevo_estado), fetchone=True, commit=propia)
         if resultado and resultado[0]:
             res = resultado[0]
             if isinstance(res, str):
@@ -156,7 +158,8 @@ def actualizar_estado_obra_sp(id_obra: int, id_empresa: int, nuevo_estado: str):
             return res
         return {"success": False, "error": "Error de conexión con la base de datos."}
     finally:
-        db.close_connection()
+        if propia:
+            db.close_connection()
 
 def asignar_responsable_sp(id_obra: int, id_usuario: int, id_empresa: int):
     db = PostgreSQL()

@@ -35,7 +35,12 @@ interface InsumoFila {
 export class EstimacionesComponent implements OnInit {
   private auth = inject(AuthService);
   private materialCatalogStarted = false;
-  get contextoCompatible() { return this.auth.obtenerIdEmpresaActiva() === Number(this.auth.obtenerUsuario()?.id_empresa); }
+  get contextoCompatible() {
+    if (this.auth.obtenerRolNormalizado?.() === 'ADMINISTRADOR') {
+      return !!this.auth.obtenerIdEmpresaActiva();
+    }
+    return this.auth.obtenerIdEmpresaActiva() === Number(this.auth.obtenerUsuario()?.id_empresa);
+  }
   private asegurarMateriales() { if (!this.materialCatalogStarted) { this.materialCatalogStarted = true; this.cargarMateriales(); } }
 
   private contexto = inject(ContextoOperativo);

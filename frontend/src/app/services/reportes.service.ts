@@ -72,11 +72,25 @@ export interface Interpretation {
   opciones?: string[];
   obras?: Work[];
 }
+export interface ActionProposalUI {
+  id_propuesta: string;
+  tipo_operacion: string;
+  entidad: string;
+  resumen: string;
+  parametros: Record<string, any>;
+  requiere_confirmacion: boolean;
+  ejecutado?: boolean;
+  cancelado?: boolean;
+}
 export interface AssistantResponse extends Interpretation {
   respuesta?: string;
   ejecucion?: Execution;
   ejecuciones?: Execution[];
-  tema?: 'reportes' | 'crm' | 'finanzas';
+  tema?: 'reportes' | 'crm' | 'finanzas' | 'conocimiento' | 'analisis' | 'operacion';
+  operacion_propuesta?: ActionProposalUI;
+  sugerencias?: string[];
+  referencias?: string[];
+  resultado_analisis?: any;
 }
 export interface Recipient {
   id_usuario: number;
@@ -108,7 +122,7 @@ export class ReportesService {
   }
   catalog(company: number | null) {
     return firstValueFrom(
-      this.shared.obtener(`reportes-catalogo:${company ?? 'global'}`, () => this.http.get<ReportCatalog>(`${this.base}/catalogo`, { params: this.params(company) })),
+      this.shared.obtener(`reportes-catalogo:${company ?? 'global'}`, () => this.http.get<ReportCatalog>(`${this.base}/catalogo`, { params: this.params(company) }), 300000),
     );
   }
   interpret(texto: string, company: number | null, conversacion?: string, usar_ia = false) {
@@ -132,6 +146,26 @@ export class ReportesService {
         `${environment.apiUrl}/api/ai/consulta`,
           { texto, conversacion, ...(solicitud ? { solicitud } : {}), ...(idObraContexto ? { id_obra_contexto: idObraContexto } : {}) },
         { params: this.params(company) },
+      ),
+    );
+  }
+  confirmOperation(id_propuesta: string, company: number | null = null, idObraContexto?: number) {
+    const params = idObraContexto ? this.params(company).set('id_obra_contexto', idObraContexto) : this.params(company);
+    return firstValueFrom(
+      this.http.post<{ success: boolean; mensaje: string; tipo_operacion: string; entidad: string; resultado: any }>(
+        `${environment.apiUrl}/api/ai/operacion/confirmar`,
+        { id_propuesta },
+        { params },
+      ),
+    );
+  }
+  cancelOperation(id_propuesta: string, company: number | null = null, idObraContexto?: number) {
+    const params = idObraContexto ? this.params(company).set('id_obra_contexto', idObraContexto) : this.params(company);
+    return firstValueFrom(
+      this.http.post<{ success: boolean; mensaje: string; id_propuesta: string }>(
+        `${environment.apiUrl}/api/ai/operacion/cancelar`,
+        { id_propuesta },
+        { params },
       ),
     );
   }

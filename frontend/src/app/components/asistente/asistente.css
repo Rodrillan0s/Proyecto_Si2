@@ -1,4 +1,4 @@
-﻿:host {
+:host {
   --surface: #fff;
   --soft: #f8fafc;
   --ink: #172033;
@@ -297,3 +297,188 @@ textarea {
 .assistant.quick-mode { top: 84px; bottom: auto; height: min(520px, calc(100dvh - 100px)); }
 .assistant.module-mode { position: relative; inset: auto; width: 100%; max-width: none; height: min(740px, calc(100dvh - 260px)); min-height: 380px; margin: 0; }
 @media (max-width: 600px) { .assistant.quick-mode { top: 84px; right: 12px; left: 12px; width: auto; } .assistant.module-mode { min-height: 420px; } }
+
+/* Tarjetas de Operación Asistida */
+.operation-card {
+  margin-top: 10px;
+  padding: 12px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-left: 4px solid #f59e0b;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.operation-card.executed {
+  border-left-color: #10b981;
+}
+.operation-card.cancelled {
+  border-left-color: #94a3b8;
+  opacity: 0.7;
+}
+.operation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.badge-op {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #b45309;
+}
+.badge-status {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+.badge-status.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+.badge-status.success {
+  background: #d1fae5;
+  color: #065f46;
+}
+.badge-status.cancelled {
+  background: #f1f5f9;
+  color: #64748b;
+}
+.operation-summary {
+  font-size: 13px;
+  color: var(--ink);
+  margin: 0;
+  line-height: 1.4;
+}
+.operation-params {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.param-tag {
+  font-size: 11px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--muted);
+}
+.param-tag strong {
+  color: var(--ink);
+}
+.operation-expiry {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.operation-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.btn-confirm {
+  background: #10b981;
+  color: #fff;
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.btn-confirm:hover {
+  background: #059669;
+}
+.btn-cancel {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.btn-cancel:hover {
+  background: var(--line);
+}
+
+/* Tarjeta de Análisis y Diagnóstico */
+.analysis-card {
+  margin-top: 10px;
+  padding: 12px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-left: 4px solid #3b82f6;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.analysis-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.badge-risk {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #e0f2fe;
+  color: #0369a1;
+}
+.badge-risk[data-risk="ALTO"] {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.badge-risk[data-risk="MEDIO"] {
+  background: #fef3c7;
+  color: #b45309;
+}
+.badge-risk[data-risk="BAJO"] {
+  background: #d1fae5;
+  color: #065f46;
+}
+.analysis-date {
+  font-size: 11px;
+  color: var(--muted);
+}
+.indicators-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.indicator-item {
+  font-size: 12px;
+  color: var(--ink);
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: #ffffff50;
+}
+.indicator-item.alert {
+  border-left: 2px solid #ef4444;
+}
+
+/* Chips de Sugerencias */
+.suggestions-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.chip {
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: var(--ink);
+  transition: all 0.15s;
+}
+.chip:hover {
+  background: #fef3c7;
+  border-color: #f59e0b;
+  color: #b45309;
+}

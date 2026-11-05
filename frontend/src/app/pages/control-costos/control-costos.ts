@@ -1,10 +1,11 @@
-﻿import { DestroyRef } from '@angular/core';
+import { DestroyRef } from '@angular/core';
 import { LecturasVigentes } from '../../services/lecturas';
 import { ContextoOperativo } from '../../services/contexto-operativo';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { finalize, forkJoin } from 'rxjs';
 import { DashboardCardComponent } from '../../components/ui/dashboard-card';
 import { PageHeaderComponent } from '../../components/ui/page-header';
@@ -60,12 +61,17 @@ interface OrdenForm {
 @Component({
   selector: 'app-control-costos',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageHeaderComponent, DashboardCardComponent],
+  imports: [CommonModule, FormsModule, RouterLink, PageHeaderComponent, DashboardCardComponent],
   templateUrl: './control-costos.html',
   styleUrl: './control-costos.css'
 })
 export class ControlCostosComponent implements OnInit {
-  get contextoCompatible() { return this.auth.obtenerIdEmpresaActiva() === Number(this.auth.obtenerUsuario()?.id_empresa); }
+  get contextoCompatible() {
+    if (this.auth.obtenerRolNormalizado?.() === 'ADMINISTRADOR') {
+      return !!this.auth.obtenerIdEmpresaActiva();
+    }
+    return this.auth.obtenerIdEmpresaActiva() === Number(this.auth.obtenerUsuario()?.id_empresa);
+  }
   private contexto = inject(ContextoOperativo);
   private destroyRef = inject(DestroyRef);
   private reads = new LecturasVigentes(this.destroyRef);

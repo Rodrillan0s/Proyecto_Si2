@@ -1,7 +1,7 @@
 import { LecturasCompartidas } from './lecturas';
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth';
 
@@ -43,11 +43,18 @@ export class EmpresaService {
     };
   }
 
-  listarEmpresas(): Observable<RespuestaApiEmpresas> {
-    return this.shared.obtener('empresas', () => this.http.get<RespuestaApiEmpresas>(
-      `${this.apiUrl}/api/empresas/`,
-      { headers: this.getHeaders() }
-    ));
+  listarEmpresas(forceReload = false): Observable<RespuestaApiEmpresas> {
+    if (forceReload) {
+      this.shared.limpiar('empresas');
+    }
+    return this.shared.obtener(
+      'empresas',
+      () => this.http.get<RespuestaApiEmpresas>(
+        `${this.apiUrl}/api/empresas/`,
+        { headers: this.getHeaders() }
+      ),
+      60000
+    );
   }
 
   crearEmpresa(empresa: Empresa): Observable<RespuestaApiEmpresaAccion> {
@@ -55,6 +62,8 @@ export class EmpresaService {
       `${this.apiUrl}/api/empresas/`,
       empresa,
       { headers: this.getHeaders() }
+    ).pipe(
+      tap(() => this.shared.limpiar('empresas'))
     );
   }
 
@@ -63,6 +72,8 @@ export class EmpresaService {
       `${this.apiUrl}/api/empresas/${idEmpresa}`,
       empresa,
       { headers: this.getHeaders() }
+    ).pipe(
+      tap(() => this.shared.limpiar('empresas'))
     );
   }
 
@@ -70,6 +81,8 @@ export class EmpresaService {
     return this.http.delete<RespuestaApiEmpresaAccion>(
       `${this.apiUrl}/api/empresas/${idEmpresa}`,
       { headers: this.getHeaders() }
+    ).pipe(
+      tap(() => this.shared.limpiar('empresas'))
     );
   }
 }

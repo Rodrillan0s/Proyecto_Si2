@@ -32,9 +32,21 @@ export const routes: Routes = [
         component: AdminLayoutComponent,
         canActivate: [authGuard],
         children: [
+            { path: 'pagos/resultado', loadComponent: () => import('./pages/pagos/resultado/pago-resultado').then(module => module.PagoResultadoComponent), canActivate: [roleGuard], data: { roles: ['ADMINISTRADOR_EMPRESA'] } },
+            { path: 'pagos', loadComponent: () => import('./pages/pagos/pagos').then(module => module.PagosComponent), canActivate: [roleGuard], data: { roles: ['ADMINISTRADOR', 'ADMINISTRADOR_EMPRESA'] } },
             { path: 'configuracion-planes', loadComponent: () => import('./pages/configuracion-planes/configuracion-planes').then(module => module.ConfiguracionPlanesComponent), canActivate: [roleGuard], data: { roles: ['ADMINISTRADOR'] } },
             { path: 'suscripciones', loadComponent: () => import('./pages/suscripciones/suscripciones').then(module => module.SuscripcionesComponent) },
             { path: 'reportes', loadComponent: () => import('./pages/reportes/reportes').then(module => module.ReportesComponent) },
+            { path: 'gastos-finales', loadComponent: () => import('./pages/gastos-operativos/gastos-operativos').then(module => module.GastosOperativosComponent), canActivate: [roleGuard], data: { permissions: ['Visualizar_control_costos'] } },
+            { path: 'proyectos/:id/gastos-finales', loadComponent: () => import('./pages/gastos-operativos/gastos-operativos').then(module => module.GastosOperativosComponent), canActivate: [roleGuard], data: { permissions: ['Visualizar_control_costos'] } },
+            {
+                path: 'proyectos/:id/cronogramas',
+                loadComponent: () => import('./pages/cronogramas/cronogramas').then(module => module.CronogramasComponent),
+                canActivate: [roleGuard],
+                canDeactivate: [(component: import('./pages/cronogramas/cronogramas').CronogramasComponent) => component.salir()],
+                data: { permissions: ['Visualizar_cronograma'] }
+            },
+            { path: 'cronogramas', loadComponent: () => import('./pages/cronogramas/cronogramas').then(module => module.CronogramasComponent), canActivate: [roleGuard], canDeactivate: [(component: import('./pages/cronogramas/cronogramas').CronogramasComponent) => component.salir()], data: { permissions: ['Visualizar_cronograma'] } },
             { path: 'asistente', loadComponent: () => import('./pages/asistente/asistente-workspace').then(module => module.AsistenteWorkspace), canActivate: [roleGuard], data: { permissions: ASSISTANT_PERMISSIONS } },
             { path: 'panel', loadComponent: () => import('./pages/panel/panel').then(module => module.PanelComponent) },
             {
@@ -48,6 +60,18 @@ export const routes: Routes = [
                 loadComponent: () => import('./pages/proyectos/detalle/proyecto-detalle').then(module => module.ProyectoDetalleComponent),
                 canActivate: [roleGuard],
                 data: { permissions: ['Visualizar_obras'] }
+            },
+            {
+                path: 'proyectos/:id/consultas-tecnicas',
+                loadComponent: () => import('./pages/consultas-tecnicas/consultas-tecnicas').then(module => module.ConsultasTecnicasComponent),
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_consultas_tecnicas'] }
+            },
+            {
+                path: 'consultas-tecnicas',
+                loadComponent: () => import('./pages/consultas-tecnicas/consultas-tecnicas').then(module => module.ConsultasTecnicasComponent),
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_consultas_tecnicas'] }
             },
             {
                 path: 'materiales',
@@ -164,20 +188,7 @@ export const routes: Routes = [
                 path: 'proyectos/avances',
                 loadComponent: () => import('./pages/proyectos/avances/proyecto-avances').then(module => module.ProyectoAvancesComponent)
             },
-            {
-                path: 'proyectos/:id/cronogramas',
-                loadComponent: () => import('./pages/cronogramas/cronogramas').then(module => module.CronogramasComponent),
-                canActivate: [roleGuard],
-                canDeactivate: [(component: import('./pages/cronogramas/cronogramas').CronogramasComponent) => component.salir()],
-                data: { permissions: ['Visualizar_cronograma'] }
-            },
-            {
-                path: 'cronogramas',
-                loadComponent: () => import('./pages/cronogramas/cronogramas').then(module => module.CronogramasComponent),
-                canActivate: [roleGuard],
-                data: { permissions: ['Visualizar_cronograma'] }
-            }
-]
+        ]
     },
     { path: '**', redirectTo: 'login' }
 ];

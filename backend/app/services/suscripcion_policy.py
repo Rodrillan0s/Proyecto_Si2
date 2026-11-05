@@ -58,6 +58,14 @@ def exigir_funcion(empresa, funcion, cur=None):
     return fila
 
 
+def exigir_modulo(empresa, modulo, cur=None):
+    """Escritura del dominio real, incluso cuando se solicita desde una ruta coordinadora."""
+    fila = exigir_escritura(empresa, cur)
+    if not modulo_habilitado(fila, modulo):
+        raise HTTPException(403, f'SUSCRIPCION_MODULO: {MODULOS[modulo]} está disponible solo para consulta en su plan.')
+    return fila
+
+
 def reporte_permitido(empresa, reporte, cur=None):
     return reporte_en_plan(obtener(empresa, cur), reporte)
 
@@ -75,7 +83,7 @@ def proteger_http(token, metodo, ruta):
     # No se modifica la sesión ni se bloquea el cuidado de la cuenta.
     if token.get('nombre_rol') == 'ADMINISTRADOR' or metodo in ('GET', 'HEAD', 'OPTIONS'):
         return
-    if any(ruta == p or ruta.startswith(p + '/') for p in ('/api/auth', '/api/perfil', '/api/suscripciones')):
+    if any(ruta == p or ruta.startswith(p + '/') for p in ('/api/auth', '/api/perfil', '/api/suscripciones', '/api/pagos')):
         return
     fila=exigir_escritura(usuario['id_empresa'])
     modulo=modulo_ruta(ruta)

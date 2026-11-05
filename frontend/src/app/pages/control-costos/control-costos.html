@@ -5,6 +5,7 @@
     subtitulo="Seguimiento del presupuesto base, costos ejecutados y órdenes de cambio."
     [codigo]="lineaBase?.obra_codigo || obraSeleccionada()?.codigo">
     <div actions class="header-actions">
+      <a *ngIf="idObra && contextoCompatible && puede('Visualizar_control_costos')" class="btn-outline" [routerLink]="['/proyectos', idObra, 'gastos-finales']">Gastos finales y mano de obra</a>
       <button class="btn-outline" type="button" (click)="cargarDatosControl()" [disabled]="!lineaBase || cargando">Actualizar</button>
       <button class="btn-primary" type="button" (click)="abrirCosto()" *ngIf="lineaBase && puede('Registrar_costos_ejecutados')">Registrar costo</button>
     </div>

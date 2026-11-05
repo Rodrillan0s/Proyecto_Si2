@@ -1,0 +1,760 @@
+<div class="space-y-6">
+
+  <!-- ALERTAS Y TOASTS -->
+  <div *ngIf="exito" role="status" class="rounded-xl border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 dark:border-emerald-800 px-4 py-3 text-sm text-emerald-800 dark:text-emerald-300 flex items-center justify-between shadow-xs">
+    <div class="flex items-center gap-2">
+      <span class="text-base">✓</span>
+      <span>{{ exito }}</span>
+    </div>
+    <button (click)="exito = ''" class="text-emerald-600 hover:text-emerald-800 text-xs font-bold">✕</button>
+  </div>
+
+  <div *ngIf="error" role="alert" class="rounded-xl border border-rose-300 bg-rose-50 dark:bg-rose-950/40 dark:border-rose-800 px-4 py-3 text-sm text-rose-700 dark:text-rose-300 flex items-center justify-between shadow-xs">
+    <div class="flex items-center gap-2">
+      <span class="text-base">⚠</span>
+      <span>{{ error }}</span>
+    </div>
+    <button (click)="error = ''" class="text-rose-600 hover:text-rose-800 text-xs font-bold">✕</button>
+  </div>
+
+  <!-- ENCABEZADO -->
+  <app-page-header
+    [titulo]="esVistaObraEspecifica ? 'Consultas Técnicas (RFI) — ' + (obraActual?.nombre || 'Obra') : 'Consultas Técnicas de Obra (RFI)'"
+    [subtitulo]="esVistaObraEspecifica ? 'Aclaraciones, discrepancias de planos y consultas técnicas para este proyecto.' : 'Ciclo de vida de solicitudes de información técnica (RFI) en todas las obras de la empresa.'"
+    categoria="PROYECTOS Y OBRAS"
+  >
+    <div actions class="flex items-center gap-2.5">
+      <button
+        *ngIf="esVistaObraEspecifica"
+        type="button"
+        (click)="volverAProyecto()"
+        class="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 transition"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        Volver a Obra
+      </button>
+
+      <button
+        *ngIf="puedeRegistrar()"
+        type="button"
+        id="btn-nueva-consulta"
+        (click)="abrirModalCrear()"
+        class="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl bg-orange-600 hover:bg-orange-700 text-white transition shadow-sm hover:shadow"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Nueva Consulta Técnica
+      </button>
+    </div>
+  </app-page-header>
+
+  <!-- TARJETAS DE RESUMEN KPI -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+    <app-dashboard-card
+      titulo="Total RFI"
+      [valor]="resumen.total"
+      tipo="default"
+      [clickable]="true"
+      (click)="filtrarPorEstado('')"
+    >
+      <span icon class="text-xl">📋</span>
+    </app-dashboard-card>
+
+    <app-dashboard-card
+      titulo="Abiertas"
+      [valor]="resumen.abiertas"
+      tipo="amber"
+      [clickable]="true"
+      (click)="filtrarPorEstado('ABIERTA')"
+    >
+      <span icon class="text-xl">⏳</span>
+    </app-dashboard-card>
+
+    <app-dashboard-card
+      titulo="Asignadas"
+      [valor]="resumen.asignadas"
+      tipo="blue"
+      [clickable]="true"
+      (click)="filtrarPorEstado('ASIGNADA')"
+    >
+      <span icon class="text-xl">👤</span>
+    </app-dashboard-card>
+
+    <app-dashboard-card
+      titulo="Respondidas"
+      [valor]="resumen.respondidas"
+      tipo="emerald"
+      [clickable]="true"
+      (click)="filtrarPorEstado('RESPONDIDA')"
+    >
+      <span icon class="text-xl">💬</span>
+    </app-dashboard-card>
+
+    <app-dashboard-card
+      titulo="Cerradas"
+      [valor]="resumen.cerradas"
+      tipo="rose"
+      [clickable]="true"
+      (click)="filtrarPorEstado('CERRADA')"
+    >
+      <span icon class="text-xl">🔒</span>
+    </app-dashboard-card>
+  </div>
+
+  <!-- BARRA DE FILTROS Y BÚSQUEDA -->
+  <div class="p-4 bg-white dark:bg-slate-800/80 rounded-2xl border border-gray-200 dark:border-slate-700/80 shadow-xs space-y-3">
+    <div class="flex flex-col md:flex-row gap-3 items-center justify-between">
+      <!-- Búsqueda -->
+      <div class="relative w-full md:w-80">
+        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </span>
+        <input
+          type="text"
+          [(ngModel)]="busqueda"
+          (input)="onSearchChange()"
+          placeholder="Buscar por código, asunto, referencia..."
+          class="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/50 text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-orange-500/50"
+        />
+      </div>
+
+      <!-- Filtros Obra y Estado -->
+      <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+        <!-- Selector de Obra (si es vista global) -->
+        <div *ngIf="!esVistaObraEspecifica" class="w-full sm:w-56">
+          <select
+            [(ngModel)]="idObraFiltro"
+            (change)="onObraFiltroChange()"
+            class="w-full py-2 px-3 text-xs rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/50 text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-orange-500/50"
+          >
+            <option [ngValue]="undefined">Todas las obras</option>
+            <option *ngFor="let o of obrasDisponibles" [ngValue]="o.id_obra">
+              {{ o.codigo ? '[' + o.codigo + '] ' : '' }}{{ o.nombre }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Filtro Estado -->
+        <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-900/70 p-1 rounded-xl text-xs">
+          <button
+            type="button"
+            (click)="filtrarPorEstado('')"
+            [class.bg-white]="estadoSeleccionado === ''"
+            [class.dark:bg-slate-800]="estadoSeleccionado === ''"
+            [class.shadow-xs]="estadoSeleccionado === ''"
+            class="px-2.5 py-1 rounded-lg font-medium transition text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+          >
+            Todas
+          </button>
+          <button
+            type="button"
+            (click)="filtrarPorEstado('ABIERTA')"
+            [class.bg-white]="estadoSeleccionado === 'ABIERTA'"
+            [class.dark:bg-slate-800]="estadoSeleccionado === 'ABIERTA'"
+            [class.shadow-xs]="estadoSeleccionado === 'ABIERTA'"
+            class="px-2.5 py-1 rounded-lg font-medium transition text-amber-600 dark:text-amber-400"
+          >
+            Abiertas
+          </button>
+          <button
+            type="button"
+            (click)="filtrarPorEstado('ASIGNADA')"
+            [class.bg-white]="estadoSeleccionado === 'ASIGNADA'"
+            [class.dark:bg-slate-800]="estadoSeleccionado === 'ASIGNADA'"
+            [class.shadow-xs]="estadoSeleccionado === 'ASIGNADA'"
+            class="px-2.5 py-1 rounded-lg font-medium transition text-indigo-600 dark:text-indigo-400"
+          >
+            Asignadas
+          </button>
+          <button
+            type="button"
+            (click)="filtrarPorEstado('RESPONDIDA')"
+            [class.bg-white]="estadoSeleccionado === 'RESPONDIDA'"
+            [class.dark:bg-slate-800]="estadoSeleccionado === 'RESPONDIDA'"
+            [class.shadow-xs]="estadoSeleccionado === 'RESPONDIDA'"
+            class="px-2.5 py-1 rounded-lg font-medium transition text-teal-600 dark:text-teal-400"
+          >
+            Respondidas
+          </button>
+          <button
+            type="button"
+            (click)="filtrarPorEstado('CERRADA')"
+            [class.bg-white]="estadoSeleccionado === 'CERRADA'"
+            [class.dark:bg-slate-800]="estadoSeleccionado === 'CERRADA'"
+            [class.shadow-xs]="estadoSeleccionado === 'CERRADA'"
+            class="px-2.5 py-1 rounded-lg font-medium transition text-slate-500 dark:text-slate-400"
+          >
+            Cerradas
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA DE CONSULTAS TÉCNICAS -->
+  <div class="bg-white dark:bg-slate-800/80 rounded-2xl border border-gray-200 dark:border-slate-700/80 shadow-xs overflow-hidden">
+    <div *ngIf="cargando" class="flex justify-center items-center py-16">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+    </div>
+
+    <!-- Lista vacía -->
+    <div *ngIf="!cargando && consultas.length === 0" class="p-8">
+      <app-empty-state
+        titulo="No se encontraron consultas técnicas"
+        subtitulo="No existen registros de RFI con los filtros seleccionados. Puede registrar una nueva consulta con el botón superior."
+      ></app-empty-state>
+    </div>
+
+    <!-- Tabla -->
+    <div *ngIf="!cargando && consultas.length > 0" class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-50 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 border-b border-gray-200 dark:border-slate-700/80 font-bold uppercase tracking-wider">
+          <tr>
+            <th class="py-3 px-4">Código / Ref</th>
+            <th class="py-3 px-4">Asunto & Descripción</th>
+            <th *ngIf="!esVistaObraEspecifica" class="py-3 px-4">Obra</th>
+            <th class="py-3 px-4">Responsable</th>
+            <th class="py-3 px-4">Estado</th>
+            <th class="py-3 px-4 text-center">Respuestas</th>
+            <th class="py-3 px-4">Fecha</th>
+            <th class="py-3 px-4 text-right">Acción</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-slate-700/60">
+          <tr
+            *ngFor="let c of consultas"
+            (click)="abrirDetalle(c.id_consulta_tecnica)"
+            class="hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition-colors cursor-pointer group"
+          >
+            <!-- Código y Ref -->
+            <td class="py-3 px-4 whitespace-nowrap">
+              <div class="font-mono font-bold text-orange-600 dark:text-orange-400">{{ c.codigo }}</div>
+              <div *ngIf="c.referencia_tecnica" class="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[140px]" [title]="c.referencia_tecnica">
+                📍 {{ c.referencia_tecnica }}
+              </div>
+            </td>
+
+            <!-- Asunto y descripción -->
+            <td class="py-3 px-4">
+              <div class="font-semibold text-slate-900 dark:text-white group-hover:text-orange-600 transition-colors line-clamp-1">
+                {{ c.asunto }}
+              </div>
+              <div class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">
+                {{ c.descripcion }}
+              </div>
+            </td>
+
+            <!-- Obra -->
+            <td *ngIf="!esVistaObraEspecifica" class="py-3 px-4 whitespace-nowrap">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 font-medium">
+                🏗 {{ c.obra_nombre || c.obra_codigo }}
+              </span>
+            </td>
+
+            <!-- Responsable -->
+            <td class="py-3 px-4 whitespace-nowrap">
+              <div *ngIf="c.responsable_nombre" class="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200">
+                <span class="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[10px] font-bold">
+                  {{ c.responsable_nombre.charAt(0).toUpperCase() }}
+                </span>
+                <span>{{ c.responsable_nombre }}</span>
+              </div>
+              <div *ngIf="!c.responsable_nombre" class="text-slate-400 italic">
+                Sin asignar
+              </div>
+            </td>
+
+            <!-- Estado -->
+            <td class="py-3 px-4 whitespace-nowrap">
+              <app-status-badge [estado]="c.estado"></app-status-badge>
+            </td>
+
+            <!-- Respuestas -->
+            <td class="py-3 px-4 whitespace-nowrap text-center">
+              <span
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
+                [ngClass]="(c.total_respuestas || 0) > 0 ? 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800' : 'text-slate-400'"
+              >
+                💬 {{ c.total_respuestas || 0 }}
+              </span>
+            </td>
+
+            <!-- Fecha -->
+            <td class="py-3 px-4 whitespace-nowrap text-slate-500 dark:text-slate-400 text-[11px]">
+              {{ c.created_at ? (c.created_at | date:'dd/MM/yyyy HH:mm') : '-' }}
+            </td>
+
+            <!-- Acción -->
+            <td class="py-3 px-4 whitespace-nowrap text-right">
+              <button
+                type="button"
+                (click)="abrirDetalle(c.id_consulta_tecnica); $event.stopPropagation()"
+                class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:hover:bg-orange-900/50 dark:text-orange-300 transition"
+              >
+                Ver detalle →
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    <div *ngIf="pages > 1" class="px-4 py-3 bg-slate-50 dark:bg-slate-900/40 border-t border-gray-200 dark:border-slate-700/80 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
+      <div>Mostrando página {{ page }} de {{ pages }} ({{ total }} consultas)</div>
+      <div class="flex items-center gap-1">
+        <button
+          type="button"
+          (click)="cambiarPagina(page - 1)"
+          [disabled]="page <= 1"
+          class="px-2.5 py-1 rounded-lg border border-gray-300 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 disabled:opacity-40 transition"
+        >
+          ← Anterior
+        </button>
+        <button
+          type="button"
+          (click)="cambiarPagina(page + 1)"
+          [disabled]="page >= pages"
+          class="px-2.5 py-1 rounded-lg border border-gray-300 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 disabled:opacity-40 transition"
+        >
+          Siguiente →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: REGISTRAR NUEVA CONSULTA TÉCNICA (HU138) -->
+  <div *ngIf="mostrarModalCrear" class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-xl w-full border border-gray-200 dark:border-slate-700 shadow-2xl overflow-hidden animate-fadeIn">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/60 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="p-2 rounded-xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400">
+            <span class="text-lg">❓</span>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Nueva Consulta Técnica de Obra (RFI)</h3>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400">Registra una duda técnica, discrepancia o solicitud de aclaración.</p>
+          </div>
+        </div>
+        <button (click)="mostrarModalCrear = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-lg">✕</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 space-y-4 text-xs">
+        <!-- Obra (si no viene prefijada) -->
+        <div *ngIf="!esVistaObraEspecifica">
+          <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Obra / Proyecto *</label>
+          <select
+            [(ngModel)]="formCrear.id_obra"
+            (change)="onObraCrearChange()"
+            class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500/50"
+          >
+            <option [ngValue]="0" disabled>Seleccione una obra...</option>
+            <option *ngFor="let o of obrasDisponibles" [ngValue]="o.id_obra">
+              {{ o.codigo ? '[' + o.codigo + '] ' : '' }}{{ o.nombre }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Asunto -->
+        <div>
+          <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Asunto de la consulta *</label>
+          <input
+            type="text"
+            [(ngModel)]="formCrear.asunto"
+            maxlength="200"
+            placeholder="Ej. Discrepancia de armadura en vigas eje 4 entre plano E-02 y E-05"
+            class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500/50"
+          />
+        </div>
+
+        <!-- Referencia técnica -->
+        <div>
+          <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            Referencia técnica (Plano, Especificación, Eje o Detalle)
+          </label>
+          <input
+            type="text"
+            [(ngModel)]="formCrear.referencia_tecnica"
+            maxlength="100"
+            placeholder="Ej. Plano Estructural E-04 / Detalle D-2"
+            class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500/50"
+          />
+        </div>
+
+        <!-- Descripción técnica -->
+        <div>
+          <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Descripción técnica detallada *</label>
+          <textarea
+            [(ngModel)]="formCrear.descripcion"
+            rows="4"
+            placeholder="Detalle claramente el problema técnico, la inconsistencia encontrada y la aclaración o propuesta requerida..."
+            class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500/50"
+          ></textarea>
+        </div>
+
+        <!-- Asignación inicial (opcional) -->
+        <div>
+          <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            Asignar a responsable técnico (opcional)
+          </label>
+          <select
+            [(ngModel)]="formCrear.asignado_a"
+            [disabled]="cargandoUsuariosCrear"
+            class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500/50"
+          >
+            <option [ngValue]="undefined">Sin asignar (quedará ABIERTA para asignación posterior)</option>
+            <option *ngFor="let u of usuariosAsignablesParaCrear" [ngValue]="u.id_usuario">
+              {{ u.nombre_completo }} ({{ u.rol }})
+            </option>
+          </select>
+          <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+            * Se muestran jefes de obra, supervisores y administradores con acceso a este proyecto.
+          </p>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-3 bg-slate-50 dark:bg-slate-800/60 border-t border-gray-200 dark:border-slate-700 flex items-center justify-end gap-2.5">
+        <button
+          type="button"
+          (click)="mostrarModalCrear = false"
+          [disabled]="guardando"
+          class="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300 transition"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          (click)="guardarNuevaConsulta()"
+          [disabled]="guardando"
+          class="px-5 py-2 text-xs font-bold rounded-xl bg-orange-600 hover:bg-orange-700 text-white transition shadow-sm disabled:opacity-50 flex items-center gap-1.5"
+        >
+          <span *ngIf="guardando" class="animate-spin text-sm">⏳</span>
+          <span>Registrar Consulta Técnica</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL / DRAWER: DETALLE, RESPUESTAS E HISTORIAL (HU139, HU140) -->
+  <div *ngIf="mostrarModalDetalle" class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-3xl w-full border border-gray-200 dark:border-slate-700 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-fadeIn">
+      
+      <!-- Detalle Header -->
+      <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/60 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="font-mono text-base font-bold text-orange-600 dark:text-orange-400">
+            {{ consultaSeleccionada?.codigo || 'Consulta Técnica' }}
+          </div>
+          <app-status-badge *ngIf="consultaSeleccionada" [estado]="consultaSeleccionada.estado"></app-status-badge>
+        </div>
+        <button (click)="cerrarDetalle()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-lg">✕</button>
+      </div>
+
+      <!-- Detalle Body Scrollable -->
+      <div class="p-6 overflow-y-auto space-y-6 text-xs flex-1">
+        <div *ngIf="cargandoDetalle" class="flex justify-center items-center py-12">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+        </div>
+
+        <div *ngIf="!cargandoDetalle && consultaSeleccionada" class="space-y-6">
+          
+          <!-- Metadatos de la consulta -->
+          <div class="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-xl border border-gray-200 dark:border-slate-700/80 space-y-3">
+            <div>
+              <h2 class="text-base font-bold text-slate-900 dark:text-white">{{ consultaSeleccionada.asunto }}</h2>
+              <div class="flex flex-wrap items-center gap-3 mt-1.5 text-slate-500 dark:text-slate-400 text-[11px]">
+                <span>🏗 <strong>Obra:</strong> {{ consultaSeleccionada.obra_nombre }}</span>
+                <span>👤 <strong>Registrado por:</strong> {{ consultaSeleccionada.creador_nombre }}</span>
+                <span>📅 <strong>Fecha:</strong> {{ consultaSeleccionada.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+            </div>
+
+            <!-- Referencia Técnica -->
+            <div *ngIf="consultaSeleccionada.referencia_tecnica" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-orange-100/70 dark:bg-orange-950/40 text-orange-800 dark:text-orange-300 font-medium">
+              <span>📍 Referencia:</span>
+              <strong>{{ consultaSeleccionada.referencia_tecnica }}</strong>
+            </div>
+
+            <!-- Descripción -->
+            <div class="pt-2 border-t border-gray-200 dark:border-slate-700/60">
+              <span class="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-1">
+                Descripción del requerimiento:
+              </span>
+              <p class="text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed">
+                {{ consultaSeleccionada.descripcion }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Tarjeta de Responsable Asignado & Estado -->
+          <div class="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-base">
+                👤
+              </div>
+              <div>
+                <div class="text-[11px] text-slate-500 dark:text-slate-400">Responsable de atención:</div>
+                <div class="font-bold text-slate-900 dark:text-white">
+                  {{ consultaSeleccionada.responsable_nombre || 'Sin responsable asignado' }}
+                </div>
+                <div *ngIf="consultaSeleccionada.fecha_asignacion" class="text-[10px] text-slate-400">
+                  Asignado el {{ consultaSeleccionada.fecha_asignacion | date:'dd/MM/yyyy HH:mm' }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Botones de gestión (Asignar / Cerrar) -->
+            <div class="flex items-center gap-2">
+              <button
+                *ngIf="puedeAsignar() && consultaSeleccionada.estado !== 'CERRADA'"
+                type="button"
+                (click)="abrirModalAsignacion()"
+                class="px-3 py-1.5 rounded-lg border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 font-semibold transition"
+              >
+                {{ consultaSeleccionada.asignado_a ? 'Reasignar' : 'Asignar Responsable' }}
+              </button>
+
+              <button
+                *ngIf="puedeCerrar() && consultaSeleccionada.estado !== 'CERRADA'"
+                type="button"
+                (click)="abrirModalCierre()"
+                class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:hover:bg-rose-900/50 dark:text-rose-300 font-semibold transition"
+              >
+                Cerrar RFI
+              </button>
+
+              <button
+                *ngIf="puedeCerrar() && consultaSeleccionada.estado === 'CERRADA'"
+                type="button"
+                (click)="reabrirConsulta()"
+                class="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:hover:bg-amber-900/50 dark:text-amber-300 font-semibold transition"
+              >
+                Reabrir Consulta
+              </button>
+            </div>
+          </div>
+
+          <!-- Motivo de Cierre (si está cerrada) -->
+          <div *ngIf="consultaSeleccionada.estado === 'CERRADA'" class="p-3.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+            <div class="font-bold text-[11px] text-slate-900 dark:text-white flex items-center gap-1.5">
+              <span>🔒 Consulta Cerrada:</span>
+              <span class="font-normal">{{ consultaSeleccionada.fecha_cierre | date:'dd/MM/yyyy HH:mm' }} por {{ consultaSeleccionada.cerrador_nombre || 'Usuario' }}</span>
+            </div>
+            <p *ngIf="consultaSeleccionada.motivo_cierre" class="mt-1 text-slate-600 dark:text-slate-400">
+              <strong>Motivo:</strong> {{ consultaSeleccionada.motivo_cierre }}
+            </p>
+          </div>
+
+          <!-- HILO DE RESPUESTAS Y ACLARACIONES TÉCNICAS (HU139) -->
+          <div class="space-y-4">
+            <div class="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 pb-2">
+              <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <span>💬 Aclaraciones Técnicas</span>
+                <span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                  {{ consultaSeleccionada.respuestas.length }}
+                </span>
+              </h3>
+            </div>
+
+            <!-- Lista de respuestas -->
+            <div *ngIf="consultaSeleccionada.respuestas.length === 0" class="py-6 text-center text-slate-400 italic">
+              Aún no se han registrado respuestas o aclaraciones técnicas para esta consulta.
+            </div>
+
+            <div *ngIf="consultaSeleccionada.respuestas.length > 0" class="space-y-3">
+              <div
+                *ngFor="let r of consultaSeleccionada.respuestas"
+                class="p-4 rounded-xl border border-gray-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/60 space-y-2 shadow-2xs"
+                [class.border-l-4]="r.es_responsable_asignado"
+                [class.border-l-teal-500]="r.es_responsable_asignado"
+              >
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-slate-900 dark:text-white">{{ r.autor_nombre }}</span>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium">
+                      {{ r.autor_rol || 'Usuario' }}
+                    </span>
+                    <span *ngIf="r.es_responsable_asignado" class="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 dark:bg-teal-950/60 dark:text-teal-300 font-bold">
+                      ⭐ Responsable Asignado
+                    </span>
+                  </div>
+                  <span class="text-[10px] text-slate-400">
+                    {{ r.created_at | date:'dd/MM/yyyy HH:mm' }}
+                  </span>
+                </div>
+                <p class="text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed">
+                  {{ r.respuesta }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Formulario para agregar respuesta (HU139) -->
+            <div *ngIf="puedeResponder() && consultaSeleccionada.estado !== 'CERRADA'" class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 space-y-2.5">
+              <label class="block font-bold text-slate-800 dark:text-slate-200">
+                Registrar aclaración técnica o respuesta:
+              </label>
+              <textarea
+                [(ngModel)]="nuevaRespuestaTexto"
+                rows="3"
+                placeholder="Escriba la respuesta oficial, aclaración técnica o solución acordada..."
+                class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500/50"
+              ></textarea>
+              <div class="flex items-center justify-end">
+                <button
+                  type="button"
+                  (click)="enviarRespuesta()"
+                  [disabled]="enviandoRespuesta || !nuevaRespuestaTexto.trim()"
+                  class="px-4 py-2 text-xs font-bold rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition shadow-sm disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  <span *ngIf="enviandoRespuesta" class="animate-spin text-sm">⏳</span>
+                  <span>Publicar Aclaración Técnica</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- HISTORIAL Y SEGUIMIENTO (HU140) -->
+          <div class="space-y-3 pt-3 border-t border-gray-200 dark:border-slate-700">
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <span>🕒 Historial de Seguimiento</span>
+              <span class="text-[11px] text-slate-400 font-normal">({{ consultaSeleccionada.historial.length }} eventos)</span>
+            </h3>
+
+            <div class="space-y-2">
+              <div
+                *ngFor="let h of consultaSeleccionada.historial"
+                class="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-50/70 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 text-[11px]"
+              >
+                <span class="font-mono text-orange-500 mt-0.5">•</span>
+                <div class="flex-1 min-w-0">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="font-semibold text-slate-800 dark:text-slate-200">{{ h.tipo_accion }}</span>
+                    <span class="text-slate-400 text-[10px]">{{ h.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+                  </div>
+                  <p *ngIf="h.detalle" class="text-slate-600 dark:text-slate-400 mt-0.5">
+                    {{ h.detalle }}
+                  </p>
+                  <div class="text-[10px] text-slate-400 mt-0.5">
+                    Por: {{ h.usuario_accion_nombre || 'Usuario' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Detalle Footer -->
+      <div class="px-6 py-3 bg-slate-50 dark:bg-slate-800/60 border-t border-gray-200 dark:border-slate-700 flex items-center justify-end shrink-0">
+        <button
+          type="button"
+          (click)="cerrarDetalle()"
+          class="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300 transition"
+        >
+          Cerrar
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SUBMODAL ASIGNAR RESPONSABLE -->
+  <div *ngIf="mostrarModalAsignar" class="fixed inset-0 z-60 overflow-y-auto flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full border border-gray-200 dark:border-slate-700 shadow-2xl p-6 space-y-4 animate-fadeIn text-xs">
+      <div class="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 pb-3">
+        <h3 class="font-bold text-sm text-slate-900 dark:text-white">Asignar Responsable Técnico</h3>
+        <button (click)="mostrarModalAsignar = false" class="text-slate-400 hover:text-slate-600 text-base">✕</button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Seleccionar Responsable *</label>
+          <select
+            [(ngModel)]="nuevoResponsableId"
+            class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500/50"
+          >
+            <option [ngValue]="undefined" disabled>Seleccione un usuario...</option>
+            <option *ngFor="let u of usuariosAsignablesDetalle" [ngValue]="u.id_usuario">
+              {{ u.nombre_completo }} ({{ u.rol }})
+            </option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Motivo u observación de asignación</label>
+          <input
+            type="text"
+            [(ngModel)]="motivoAsignacion"
+            placeholder="Ej. Especialista estructural para cálculo de armadura"
+            class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500/50"
+          />
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-200 dark:border-slate-700">
+        <button
+          type="button"
+          (click)="mostrarModalAsignar = false"
+          class="px-3.5 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          (click)="guardarAsignacion()"
+          [disabled]="guardando || !nuevoResponsableId"
+          class="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold disabled:opacity-50"
+        >
+          Guardar Asignación
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUBMODAL CERRAR CONSULTA -->
+  <div *ngIf="mostrarModalCerrar" class="fixed inset-0 z-60 overflow-y-auto flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full border border-gray-200 dark:border-slate-700 shadow-2xl p-6 space-y-4 animate-fadeIn text-xs">
+      <div class="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 pb-3">
+        <h3 class="font-bold text-sm text-slate-900 dark:text-white">Cerrar Consulta Técnica</h3>
+        <button (click)="mostrarModalCerrar = false" class="text-slate-400 hover:text-slate-600 text-base">✕</button>
+      </div>
+
+      <p class="text-slate-600 dark:text-slate-400">
+        ¿Está seguro de que desea marcar esta consulta técnica como cerrada? La consulta quedará archivada como resuelta.
+      </p>
+
+      <div>
+        <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Motivo o conclusión de cierre</label>
+        <textarea
+          [(ngModel)]="motivoCierre"
+          rows="3"
+          placeholder="Ej. Aclaración aceptada en obra y reflejada en plano As-Built..."
+          class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500/50"
+        ></textarea>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-200 dark:border-slate-700">
+        <button
+          type="button"
+          (click)="mostrarModalCerrar = false"
+          class="px-3.5 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          (click)="confirmarCierre()"
+          [disabled]="guardando"
+          class="px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold disabled:opacity-50"
+        >
+          Confirmar Cierre
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

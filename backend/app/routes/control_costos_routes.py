@@ -5,7 +5,8 @@ from typing import List, Literal, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
-from app.services import control_costos_services as service
+from app.services import control_costos_services as service, gastos_operativos_services
+from app.services import trabajadores_costos_services
 from app.utils.security import exigir_permiso
 
 
@@ -84,6 +85,17 @@ class AprobarOrdenRequest(BaseModel):
 
 class RechazarOrdenRequest(BaseModel):
     motivo: str = Field(min_length=1)
+
+
+class SalarioTrabajadorRequest(BaseModel):
+    salario_diario: Decimal = Field(gt=0, max_digits=14, decimal_places=2)
+    fecha_vigencia: date
+
+
+class JornadaTrabajadorRequest(BaseModel):
+    id_usuario: int = Field(gt=0)
+    fecha: date
+    dias_trabajados: Decimal = Field(ge=0, le=1, max_digits=3, decimal_places=2)
 
 
 def _ip(request: Request) -> str:
@@ -173,9 +185,52 @@ def post_anular_costo(
 def get_resumen(
     id_obra: int,
     token=Depends(exigir_permiso("Visualizar_control_costos")),
+    final: bool = Query(default=False),
 ):
     try:
+        if final:
+            return gastos_operativos_services.obtener_resumen_final(id_obra, token)
         return service.obtener_resumen(id_obra, token)
+    except service.ControlCostosError as exc:
+        _raise(exc)
+
+
+@router.get("/obras/{id_obra}/mano-obra")
+def get_mano_obra(
+    id_obra: int,
+    token=Depends(exigir_permiso("Visualizar_control_costos")),
+):
+    try:
+        return trabajadores_costos_services.listar_mano_obra(id_obra, token)
+    except service.ControlCostosError as exc:
+        _raise(exc)
+
+
+@router.post("/obras/{id_obra}/trabajadores/{id_usuario}/salarios", status_code=201)
+def post_salario_trabajador(
+    id_obra: int,
+    id_usuario: int,
+    data: SalarioTrabajadorRequest,
+    token=Depends(exigir_permiso("Modificar_obras")),
+):
+    try:
+        return trabajadores_costos_services.registrar_salario(
+            id_obra, id_usuario, data.model_dump(), token
+        )
+    except service.ControlCostosError as exc:
+        _raise(exc)
+
+
+@router.post("/obras/{id_obra}/jornadas", status_code=201)
+def post_jornada_trabajador(
+    id_obra: int,
+    data: JornadaTrabajadorRequest,
+    token=Depends(exigir_permiso("Modificar_obras")),
+):
+    try:
+        return trabajadores_costos_services.registrar_jornada(
+            id_obra, data.model_dump(), token
+        )
     except service.ControlCostosError as exc:
         _raise(exc)
 

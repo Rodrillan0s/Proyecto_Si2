@@ -37,6 +37,10 @@ interface Message {
   request?: Interpretation['solicitud'];
   topic?: string;
   executions?: Execution[];
+  operacion_propuesta?: any;
+  sugerencias?: string[];
+  referencias?: string[];
+  resultado_analisis?: any;
 }
 interface Recognition {
   lang: string;
@@ -103,10 +107,12 @@ export class AsistenteComponent implements OnInit, OnDestroy {
   get suggestions() {
     const reports = this.catalog?.reportes ?? [];
     return [
+      'Analizar estado general y riesgos de la empresa',
+      '¿Qué módulos y rutas existen en OBRATEC?',
+      '¿Cuáles son los materiales con stock agotado?',
       ...(reports.some((r) => r.id === 'saldo_comercial')
         ? ['¿Cuáles son las obras que han generado ganancias?']
         : []),
-      ...reports.slice(0, 2).map((r) => r.titulo),
       ...(this.canCRM ? ['¿Cuántos prospectos están en negociación?'] : []),
     ];
   }
@@ -117,11 +123,14 @@ export class AsistenteComponent implements OnInit, OnDestroy {
       : this.messages.filter((m) => m.topic === this.historyFilter);
   }
   topicLabel(topic?: string) {
-    return topic === 'crm'
-      ? 'Clientes y ventas'
-      : topic === 'finanzas'
-        ? 'Finanzas'
-        : 'Reportes y proyectos';
+    switch (topic) {
+      case 'crm': return 'Clientes y ventas';
+      case 'finanzas': return 'Finanzas';
+      case 'conocimiento': return 'Conocimiento del sistema';
+      case 'analisis': return 'Diagnóstico operativo';
+      case 'operacion': return 'Asistencia operativa';
+      default: return 'Reportes y proyectos';
+    }
   }
   constructor() {
     effect(() => {
@@ -225,6 +234,10 @@ export class AsistenteComponent implements OnInit, OnDestroy {
         request: response.solicitud,
         topic: response.tema || 'reportes',
         executions: response.ejecuciones ?? (response.ejecucion ? [response.ejecucion] : []),
+        operacion_propuesta: response.operacion_propuesta,
+        sugerencias: response.sugerencias,
+        referencias: response.referencias,
+        resultado_analisis: response.resultado_analisis,
       });
     } catch (error) {
       if (version === this.version) {
@@ -233,6 +246,62 @@ export class AsistenteComponent implements OnInit, OnDestroy {
       }
     } finally {
       if (version === this.version) {
+        this.busy = false;
+        this.update();
+      }
+    }
+  }
+  async confirmOperation(message: Message) {
+    if (!message.operacion_propuesta || this.busy) return;
+    const prop = message.operacion_propuesta;
+    const version = this.version;
+    const currentCompany = this.company;
+    this.busy = true;
+    this.error = '';
+    try {
+      const res = await this.api.confirmOperation(prop.id_propuesta, this.company, this.contexto.obra?.id_obra);
+      if (version === this.version && currentCompany === this.company) {
+        prop.ejecutado = true;
+        this.messages.push({
+          author: 'assistant',
+          text: `✓ ${res.mensaje} La acción quedó debidamente registrada en la bitácora del sistema.`,
+          topic: 'operacion',
+        });
+      }
+    } catch (err) {
+      if (version === this.version && currentCompany === this.company) {
+        this.error = reportError(err);
+      }
+    } finally {
+      if (version === this.version && currentCompany === this.company) {
+        this.busy = false;
+        this.update();
+      }
+    }
+  }
+  async cancelOperation(message: Message) {
+    if (!message.operacion_propuesta || this.busy) return;
+    const prop = message.operacion_propuesta;
+    const version = this.version;
+    const currentCompany = this.company;
+    this.busy = true;
+    this.error = '';
+    try {
+      await this.api.cancelOperation(prop.id_propuesta, this.company, this.contexto.obra?.id_obra);
+      if (version === this.version && currentCompany === this.company) {
+        prop.cancelado = true;
+        this.messages.push({
+          author: 'assistant',
+          text: `La operación '${prop.entidad}' fue cancelada correctamente.`,
+          topic: 'operacion',
+        });
+      }
+    } catch (err) {
+      if (version === this.version && currentCompany === this.company) {
+        this.error = reportError(err);
+      }
+    } finally {
+      if (version === this.version && currentCompany === this.company) {
         this.busy = false;
         this.update();
       }

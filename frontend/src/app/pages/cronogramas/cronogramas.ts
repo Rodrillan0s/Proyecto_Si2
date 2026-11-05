@@ -20,6 +20,7 @@ export class CronogramasComponent implements OnInit {
   private destroy = inject(DestroyRef);
   private contexto = inject(ContextoOperativo);
   private reads = new LecturasVigentes(this.destroy);
+  private versionContexto = 0;
   auth = inject(AuthService);
   idObra = 0;
   obra = signal('');
@@ -42,11 +43,13 @@ export class CronogramasComponent implements OnInit {
     this.contexto.proteger(() => this.editor(), this.destroy);
     this.contexto.protegerEscritura(() => this.guardando(), this.destroy);
     this.auth.empresaActiva$.pipe(skip(1), takeUntilDestroyed(this.destroy)).subscribe(() => {
-      this.reads.cancelar(); this.editor.set(false); this.actual.set(null); this.planes.set([]);
+      this.versionContexto++;
+      this.reads.cancelar(); this.idObra = 0; this.obra.set(''); this.editor.set(false); this.actual.set(null); this.planes.set([]); this.mensaje.set(''); this.error.set('');
       this.router.navigate(['/cronogramas']);
       if (!this.idObra) this.cargarObras();
     });
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroy)).subscribe(params => {
+      this.versionContexto++;
       this.reads.cancelar(); this.idObra = Number(params.get('id') || 0);
       this.actual.set(null); this.planes.set([]); this.editor.set(false);
       if (this.idObra) this.cargar(); else this.cargarObras();
@@ -120,17 +123,21 @@ export class CronogramasComponent implements OnInit {
   }
   cancelar() { if (this.salir()) { this.editor.set(false); this.error.set(''); } }
   guardar() {
+    if (this.guardando() || !this.idObra || (!this.puedeCabecera && (!this.editId || !this.puedePlanificar))) return;
+    const version = this.versionContexto;
     this.guardando.set(true); this.error.set('');
     this.api.guardar(this.idObra, this.editId, this.borrador, !this.puedeCabecera).pipe(takeUntilDestroyed(this.destroy)).subscribe({
-      next: r => { this.guardando.set(false); this.editor.set(false); this.mensaje.set('Cronograma guardado.'); this.cargar(r.data.id_cronograma); },
-      error: e => this.fallo(e),
+      next: r => { this.guardando.set(false); if (version !== this.versionContexto) return; this.editor.set(false); this.mensaje.set('Cronograma guardado.'); this.cargar(r.data.id_cronograma); },
+      error: e => { this.guardando.set(false); if (version === this.versionContexto) this.fallo(e); },
     });
   }
   eliminar() {
+    if (this.guardando() || !this.auth.hasPermission('Modificar_cronograma')) return;
     const plan = this.actual(); if (!plan || !window.confirm(`¿Eliminar «${plan.nombre}» y todas sus actividades?`)) return;
+    const version = this.versionContexto;
     this.guardando.set(true); this.error.set('');
     this.api.eliminar(this.idObra, plan).pipe(takeUntilDestroyed(this.destroy)).subscribe({
-      next: () => { this.guardando.set(false); this.actual.set(null); this.mensaje.set('Cronograma eliminado.'); this.cargar(); }, error: e => this.fallo(e),
+      next: () => { this.guardando.set(false); if (version !== this.versionContexto) return; this.actual.set(null); this.mensaje.set('Cronograma eliminado.'); this.cargar(); }, error: e => { this.guardando.set(false); if (version === this.versionContexto) this.fallo(e); },
     });
   }
   nombreDependencias(a: ActividadPlan) {

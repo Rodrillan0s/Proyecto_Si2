@@ -35,8 +35,13 @@
     <section class="panel">
       <div class="section-title"><span class="number">01</span><h2>Crear una copia</h2></div>
       <p>La solicitud se encuentra pendiente, verifique su estado en el historial.</p>
-      <label>Contenido<select [(ngModel)]="alcance" [disabled]="!!ocupada">
-        <option value="base_datos">Base de datos</option>
+      <label>Contenido<select [(ngModel)]="opcionAlcance" [disabled]="!!ocupada">
+        <option value="base_datos">🌐 Base de datos completa (Todas las empresas)</option>
+        <optgroup *ngIf="empresas.length > 0" label="Respaldar por Empresa">
+          <option *ngFor="let emp of empresas" [value]="'empresa_' + emp.id_empresa">
+            🏢 {{ emp.nombre_empresa }} {{ emp.nit ? '(NIT: ' + emp.nit + ')' : '' }}
+          </option>
+        </optgroup>
       </select></label>
       <p class="hint">Formato PostgreSQL custom (dump).</p>
       <button class="primary" (click)="crear()" [disabled]="!estado?.configurado || estado?.mantenimiento || !!ocupada">

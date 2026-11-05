@@ -61,6 +61,12 @@ MODULES = {
     'crm_clientes': ('Visualizar_clientes', 't_crm_cliente', 'id_cliente nombre_completo tipo_cliente estado origen presupuesto_estimado id_usuario_asignado created_at', False),
     'usuarios': ('Visualizar_usuarios', 't_usuario', 'id_usuario username nombre_completo id_rol estado', False),
     'mano_de_obra': ('Visualizar_mano_obra', 't_mano_obra', 'id_mano_obra nombre id_unidad_medida costo_unitario activo', False),
+    'incidencias': ('Visualizar_incidencias', 't_incidencia', 'id_incidencia id_obra id_unidad id_responsable titulo prioridad estado created_at', True),
+    'consultas_tecnicas': ('Visualizar_consultas_tecnicas', 't_consulta_tecnica', 'id_consulta_tecnica id_obra codigo asunto estado creado_por asignado_a created_at', True),
+    'personal_obra': ('Visualizar_usuarios', 't_obra_usuario', 'id_obra id_usuario fecha_asignacion', True),
+    'suscripcion': ('Visualizar_empresa', 't_suscripcion_empresa', 'id_empresa codigo_plan estado fecha_inicio fecha_fin', False),
+    'planes': ('Visualizar_empresa', 't_plan_suscripcion', 'codigo nombre descripcion orden', False),
+    'empresas': ('Administrar_sistema', 't_empresa', 'id_empresa nombre_empresa nit descripcion', False),
 }
 
 MONEY = {'precio','precio_unitario','precio_unitario_final','monto','monto_total','subtotal','total',
@@ -105,7 +111,7 @@ def catalog(ctx):
 def validate(query):
     valid = fields(query.fuente)
     prefixes = set()
-    relation_keys = {'id_obra','id_material','id_proveedor','id_usuario','id_orden_compra','id_equipo_maquinaria'}
+    relation_keys = {'id_obra','id_material','id_proveedor','id_usuario','id_orden_compra','id_equipo_maquinaria','id_incidencia','id_consulta_tecnica'}
     for lookup in query.cruces:
         if lookup.prefijo in prefixes or lookup.campo not in valid or lookup.clave not in fields(lookup.fuente) or lookup.clave not in relation_keys:
             raise HTTPException(422, 'Cruce fuera de las relaciones registradas.')

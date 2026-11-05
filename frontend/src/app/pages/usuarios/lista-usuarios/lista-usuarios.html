@@ -1,150 +1,230 @@
-<div class="min-h-screen bg-gray-100 dark:bg-slate-950 p-4 sm:p-6 lg:p-8 font-sans transition-colors duration-300">
-  <div class="max-w-7xl mx-auto">
+<div class="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 sm:p-6 lg:p-8 font-sans transition-colors duration-300">
+  <div class="max-w-7xl mx-auto space-y-6">
     
-    <div class="flex justify-between items-center mb-6">
+    <!-- CABECERA PRINCIPAL -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div>
-        <button routerLink="/home" class="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-slate-400 hover:text-blue-900 dark:hover:text-blue-400 transition-colors mb-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-          Volver al Panel Principal
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/60 px-2 py-0.5 rounded-xs border border-amber-300/60 dark:border-amber-700/60">
+            Administración & Seguridad
+          </span>
+          <span *ngIf="empresaActiva" class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+            • {{ empresaActiva.nombre_empresa }}
+          </span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Gestión de Usuarios</h1>
+        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Control centralizado de accesos, roles, asignación de empresas y altas de personal.</p>
+      </div>
+
+      <!-- BOTONES DE ACCION SUPERIORES -->
+      <div class="flex items-center gap-2.5 flex-wrap">
+        <!-- BOTON: CREAR GRUPO DE USUARIOS -->
+        <button 
+          *ngIf="hasPermission('Registrar_usuarios')" 
+          (click)="abrirModalGrupo()" 
+          type="button"
+          class="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white text-xs sm:text-sm font-bold rounded-md shadow-sm hover:shadow transition-all duration-200">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+          </svg>
+          <span>Crear Grupo de Usuarios</span>
         </button>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Gestión de Usuarios</h1>
-        <p class="text-sm text-gray-500 dark:text-slate-400">Administra los accesos, roles y asignación de empresas.</p>
+
+        <!-- BOTON: NUEVO USUARIO INDIVIDUAL -->
+        <button 
+          *ngIf="hasPermission('Registrar_usuarios')" 
+          (click)="abrirModalNuevo()" 
+          type="button"
+          class="flex items-center gap-2 px-3.5 py-2 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs sm:text-sm font-semibold rounded-md shadow-xs transition-all">
+          <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+          </svg>
+          <span>Nuevo Usuario</span>
+        </button>
       </div>
-      <button *ngIf="hasPermission('Registrar_usuarios')" (click)="abrirModalNuevo()" class="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors shadow-xs">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-        Nuevo Usuario
-      </button>
     </div>
 
-    <div *ngIf="mensajeError" class="mb-6 p-4 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-400 border border-red-200 dark:border-red-800/50 rounded-sm text-sm font-medium">
-      {{ mensajeError }}
+    <!-- AVISO DE ERROR -->
+    <div *ngIf="mensajeError" class="p-3.5 bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-400 border border-red-200 dark:border-red-800/60 rounded-md text-xs font-semibold flex items-center justify-between">
+      <span>{{ mensajeError }}</span>
+      <button (click)="mensajeError = ''" class="text-red-500 hover:text-red-700 font-bold ml-2">✕</button>
     </div>
 
-    <!-- BADGE CONTEXTO EMPRESA ACTIVA -->
-    <div *ngIf="empresaActiva" class="mb-4 flex items-center justify-between px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs">
-      <div class="flex items-center gap-2">
-        <span class="font-bold text-amber-800 dark:text-amber-400">🏢 Personal de:</span>
-        <span class="font-bold text-slate-900 dark:text-white">{{ empresaActiva.nombre_empresa }}</span>
-        <span class="text-slate-500 dark:text-slate-400 font-mono">(ID: {{ empresaActiva.id_empresa }})</span>
-      </div>
-      <span class="font-bold text-amber-700 dark:text-amber-300">{{ totalUsuarios }} usuario(s) filtrado(s)</span>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-      <div class="bg-white dark:bg-slate-900 p-4 border border-gray-200 dark:border-slate-800 rounded-sm shadow-sm flex items-center justify-between">
+    <!-- TARJETAS DE KPIS TIPO BENTO -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="bg-white dark:bg-slate-900 p-4 border border-slate-200 dark:border-slate-800 rounded-lg shadow-xs flex items-center justify-between">
         <div>
-          <p class="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Total Mostrados</p>
-          <p class="text-2xl font-bold text-blue-900 dark:text-blue-400 mt-1">{{ totalUsuarios }}</p>
+          <p class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total de Usuarios</p>
+          <div class="flex items-baseline gap-2 mt-1">
+            <p class="text-2xl font-black text-slate-900 dark:text-white">{{ totalUsuarios }}</p>
+            <span class="text-[10px] text-slate-400 dark:text-slate-500 font-medium">mostrados</span>
+          </div>
         </div>
-        <div class="p-3 bg-blue-50 dark:bg-slate-800 rounded-sm text-blue-900 dark:text-blue-400">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-        </div>
-      </div>
-      <div class="bg-white dark:bg-slate-900 p-4 border border-gray-200 dark:border-slate-800 rounded-sm shadow-sm flex items-center justify-between">
-        <div>
-          <p class="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Activos</p>
-          <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{{ usuariosActivos }}</p>
-        </div>
-        <div class="p-3 bg-green-50 dark:bg-green-900/20 rounded-sm text-green-600 dark:text-green-400">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <div class="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold border border-blue-100 dark:border-blue-900/50">
+          👥
         </div>
       </div>
-      <div class="bg-white dark:bg-slate-900 p-4 border border-gray-200 dark:border-slate-800 rounded-sm shadow-sm flex items-center justify-between">
+
+      <div class="bg-white dark:bg-slate-900 p-4 border border-slate-200 dark:border-slate-800 rounded-lg shadow-xs flex items-center justify-between">
         <div>
-          <p class="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Inactivos</p>
-          <p class="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">{{ usuariosInactivos }}</p>
+          <p class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cuentas Activas</p>
+          <div class="flex items-baseline gap-2 mt-1">
+            <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400">{{ usuariosActivos }}</p>
+            <span class="text-[10px] text-emerald-700 dark:text-emerald-500 font-semibold">con acceso</span>
+          </div>
         </div>
-        <div class="p-3 bg-red-50 dark:bg-red-900/20 rounded-sm text-red-600 dark:text-red-400">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <div class="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold border border-emerald-100 dark:border-emerald-900/50">
+          ✓
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-slate-900 p-4 border border-slate-200 dark:border-slate-800 rounded-lg shadow-xs flex items-center justify-between">
+        <div>
+          <p class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Inactivas / Suspendidas</p>
+          <div class="flex items-baseline gap-2 mt-1">
+            <p class="text-2xl font-black text-rose-600 dark:text-rose-400">{{ usuariosInactivos }}</p>
+            <span class="text-[10px] text-rose-700 dark:text-rose-500 font-semibold">sin acceso</span>
+          </div>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold border border-rose-100 dark:border-rose-900/50">
+          ⏸
         </div>
       </div>
     </div>
 
-    <div class="bg-white dark:bg-slate-900 p-4 border border-gray-200 dark:border-slate-800 rounded-sm shadow-sm flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
-      <div class="flex items-center gap-3 w-full sm:w-auto">
-        <div class="p-2 bg-blue-50 dark:bg-slate-800 rounded-sm">
-          <svg class="w-5 h-5 text-blue-900 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
-        </div>
-        <label class="text-sm font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider hidden sm:block">Vista Tenant:</label>
-        <select [(ngModel)]="filtroEmpresa" (change)="aplicarFiltros()"
-                class="flex-grow sm:w-64 bg-gray-50 dark:bg-slate-950 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white text-sm font-medium rounded-sm focus:ring-blue-900 focus:border-blue-900 block p-2.5 transition-colors">
-          <option value="">-- Todas las Empresas --</option>
+    <!-- BARRA DE HERRAMIENTAS: BUSQUEDA EN VIVO + FILTRO DE EMPRESA -->
+    <div class="bg-white dark:bg-slate-900 p-3.5 border border-slate-200 dark:border-slate-800 rounded-lg shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
+      <!-- Buscador en tiempo real -->
+      <div class="relative w-full md:w-96">
+        <input 
+          type="text" 
+          [(ngModel)]="busquedaTexto" 
+          (input)="aplicarFiltro()"
+          placeholder="Buscar por nombre, CI, usuario, correo o rol..." 
+          class="w-full text-xs pl-8 pr-7 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-md text-slate-800 dark:text-slate-200 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
+        />
+        <svg class="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <button *ngIf="busquedaTexto" (click)="busquedaTexto = ''; aplicarFiltro()" class="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 text-xs">✕</button>
+      </div>
+
+      <!-- Filtro de empresa para Administradores Globales -->
+      <div class="flex items-center gap-2.5 w-full md:w-auto justify-end">
+        <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider hidden sm:block whitespace-nowrap">
+          Empresa:
+        </label>
+        <select 
+          [(ngModel)]="filtroEmpresa" 
+          (change)="aplicarFiltro()"
+          class="w-full md:w-64 text-xs py-2 px-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-md text-slate-800 dark:text-slate-200 focus:outline-none focus:border-amber-500 font-medium transition-colors">
+          <option value="">🏢 Todas las Empresas</option>
           <option *ngFor="let emp of empresas" [value]="emp.id_empresa">{{ emp.nombre_empresa }}</option>
         </select>
       </div>
     </div>
 
-    <div *ngIf="cargando && !mostrarModal" class="flex flex-col items-center justify-center p-16 w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-sm shadow-sm">
-      <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-900 dark:border-blue-500 border-l-4 border-r-4 border-l-transparent border-r-transparent"></div>
-      <p class="mt-4 text-sm font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Cargando Usuarios...</p>
+    <!-- SPINNER DE CARGA -->
+    <div *ngIf="cargando && !mostrarModal && !mostrarModalGrupo" class="flex flex-col items-center justify-center py-16 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-xs">
+      <div class="animate-spin rounded-full h-10 w-10 border-2 border-amber-600 border-t-transparent"></div>
+      <p class="mt-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cargando directorio de usuarios...</p>
     </div>
 
-    <div *ngIf="!cargando || mostrarModal" class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-sm shadow-sm overflow-hidden">
+    <!-- TABLA PRINCIPAL DE USUARIOS -->
+    <div *ngIf="!cargando || mostrarModal || mostrarModalGrupo" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-xs overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
           <thead>
-            <tr class="bg-gray-50 dark:bg-slate-800/50 border-b border-gray-200 dark:border-slate-800 text-xs uppercase tracking-wider text-gray-500 dark:text-slate-400">
-              <th class="p-4 font-bold">Usuario</th>
-              <th class="p-4 font-bold">Contacto</th>
-              <th class="p-4 font-bold">Rol y Empresa</th>
-              <th class="p-4 font-bold text-center">Estado</th>
-              <th class="p-4 font-bold text-center">Acciones</th>
+            <tr class="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold">
+              <th class="p-3.5">Personal / Cuenta</th>
+              <th class="p-3.5">Contacto</th>
+              <th class="p-3.5">Rol y Asignación</th>
+              <th class="p-3.5 text-center">Estado</th>
+              <th class="p-3.5 text-center">Acciones</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-200 dark:divide-slate-800">
-            <tr *ngFor="let u of usuariosFiltrados" class="hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors">
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
+            <tr *ngFor="let u of usuariosFiltrados" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-colors text-xs">
               
-              <td class="p-4">
+              <!-- Personal / Cuenta -->
+              <td class="p-3.5">
                 <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-sm bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 flex items-center justify-center font-bold text-sm border border-blue-200 dark:border-blue-800/50">
+                  <div class="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center font-bold text-xs border border-slate-200 dark:border-slate-700 shrink-0 shadow-2xs">
                     {{ obtenerIniciales(u.nombre_completo) }}
                   </div>
-                  <div>
-                    <p class="text-sm font-bold text-gray-900 dark:text-white">
-                      {{ u.nombre_completo }}
-                    </p>
-                    <p class="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
-                      <span class="font-bold text-blue-600 dark:text-blue-400">ID: {{ u.nro_usuario }}</span> | CI: {{ u.ci }} | Login: {{ u.nombre_usuario }}
-                    </p>
+                  <div class="min-w-0">
+                    <p class="font-bold text-slate-900 dark:text-white truncate">{{ u.nombre_completo }}</p>
+                    <div class="flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      <span class="font-mono font-semibold text-amber-700 dark:text-amber-400">@{{ u.nombre_usuario }}</span>
+                      <span>•</span>
+                      <span>CI: {{ u.ci }}</span>
+                      <span>•</span>
+                      <span class="text-slate-400">ID: {{ u.nro_usuario }}</span>
+                    </div>
                   </div>
                 </div>
               </td>
 
-              <td class="p-4">
-                <p class="text-sm text-gray-900 dark:text-white">{{ u.correo || 'Sin correo' }}</p>
-                <p class="text-xs text-gray-500 dark:text-slate-400">{{ u.telefono || 'Sin teléfono' }}</p>
+              <!-- Contacto -->
+              <td class="p-3.5">
+                <p class="font-medium text-slate-800 dark:text-slate-200 truncate">{{ u.correo || '—' }}</p>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{{ u.telefono || 'Sin teléfono' }}</p>
               </td>
 
-              <td class="p-4">
-                <span class="inline-block px-2 py-1 bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-300 text-xs font-semibold rounded-sm border border-gray-200 dark:border-slate-700">
+              <!-- Rol y Empresa -->
+              <td class="p-3.5">
+                <span class="inline-block px-2 py-0.5 text-[10px] font-bold rounded-xs" [ngClass]="getRolBadgeClass(u.nombre_rol)">
                   {{ u.nombre_rol }}
                 </span>
-                <p class="text-xs text-blue-700 dark:text-blue-400 font-medium mt-1">{{ u.nombre_empresa || 'Sin Empresa' }}</p>
+                <p class="text-[11px] text-slate-600 dark:text-slate-400 font-medium mt-1 truncate">
+                  🏢 {{ u.nombre_empresa || 'Sin Empresa' }}
+                </p>
               </td>
 
-              <td class="p-4 text-center">
-                <span [ngClass]="u.estado === 'ACTIVO' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 border-green-200 dark:border-green-800/50' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400 border-red-200 dark:border-red-800/50'"
-                      class="px-2 py-1 rounded-sm text-xs font-bold border inline-block">
-                  {{ u.estado }}
+              <!-- Estado -->
+              <td class="p-3.5 text-center">
+                <span 
+                  [ngClass]="u.estado === 'ACTIVO' 
+                    ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/60' 
+                    : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/60'"
+                  class="px-2 py-0.5 rounded-full text-[10px] font-bold border inline-block">
+                  ● {{ u.estado }}
                 </span>
               </td>
 
-              <td class="p-4">
-                <div class="flex items-center justify-center gap-2">
-                  <button *ngIf="hasPermission('Modificar_usuarios')" (click)="abrirModalEditar(u)" class="p-1.5 text-gray-500 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-slate-800 rounded-sm transition-colors" title="Editar">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+              <!-- Acciones -->
+              <td class="p-3.5 text-center">
+                <div class="flex items-center justify-center gap-1.5">
+                  <button 
+                    *ngIf="hasPermission('Modificar_usuarios')" 
+                    (click)="abrirModalEditar(u)" 
+                    class="p-1.5 text-slate-500 hover:text-amber-600 dark:text-slate-400 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors" 
+                    title="Editar usuario">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                    </svg>
                   </button>
-                  <button *ngIf="hasPermission('Eliminar_usuarios')" (click)="eliminarUsuario(u.nro_usuario)" class="p-1.5 text-gray-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-sm transition-colors" title="Eliminar">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                  <button 
+                    *ngIf="hasPermission('Eliminar_usuarios')" 
+                    (click)="eliminarUsuario(u.nro_usuario)" 
+                    class="p-1.5 text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-md transition-colors" 
+                    title="Eliminar usuario">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
                   </button>
                 </div>
               </td>
             </tr>
+
+            <!-- Estado Vacío -->
             <tr *ngIf="usuariosFiltrados.length === 0">
-              <td colspan="5" class="p-12 text-center">
-                <svg class="w-12 h-12 text-gray-300 dark:text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                <p class="text-gray-500 dark:text-slate-400 font-medium text-lg">No se encontraron usuarios</p>
-                <p class="text-gray-400 dark:text-slate-500 text-sm mt-1">Intente cambiar el filtro de empresa.</p>
+              <td colspan="5" class="py-12 text-center">
+                <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto text-slate-400 mb-2">
+                  👥
+                </div>
+                <p class="text-sm font-bold text-slate-700 dark:text-slate-300">No se encontraron usuarios</p>
+                <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Pruebe ajustando el buscador o el filtro de empresa.</p>
               </td>
             </tr>
           </tbody>
@@ -154,83 +234,395 @@
   </div>
 </div>
 
-<div *ngIf="mostrarModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 dark:bg-black/70 backdrop-blur-sm transition-opacity">
-  <div class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-sm shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-fade-in-up">
+<!-- ========================================================================= -->
+<!-- MODAL: CREAR GRUPO DE USUARIOS (ALTA MASIVA DE PERSONAL PARA EMPRESA)    -->
+<!-- ========================================================================= -->
+<div *ngIf="mostrarModalGrupo" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/70 backdrop-blur-xs overflow-y-auto">
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-2xl w-full max-w-5xl my-6 flex flex-col overflow-hidden max-h-[92vh]">
     
-    <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50">
-      <h3 class="text-xl font-bold text-gray-900 dark:text-white">
-        <span *ngIf="modoEdicion">Editar Usuario <span class="text-blue-600 dark:text-blue-400 ml-1">#{{ usuarioForm.nro_usuario }}</span></span>
-        <span *ngIf="!modoEdicion">Registrar Nuevo Usuario</span>
-      </h3>
-      <button (click)="cerrarModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+    <!-- Encabezado del Modal -->
+    <div class="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between shrink-0">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 flex items-center justify-center font-bold">
+          👥
+        </div>
+        <div>
+          <h3 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white">Crear Grupo de Usuarios</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Registro masivo y seguro de personal para asignar a una empresa</p>
+        </div>
+      </div>
+      <button (click)="cerrarModalGrupo()" [disabled]="grupoProcesando" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-lg font-bold p-1">
+        ✕
       </button>
     </div>
 
+    <!-- CUERPO ESTADO 1: FORMULARIO Y TABLA DE CARGA DE FILAS -->
+    <div *ngIf="!grupoCompletado" class="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4">
+      
+      <!-- SELECCION O ASIGNACION DE EMPRESA DESTINO -->
+      <div class="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-md">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <span class="text-base">🏢</span>
+            <div>
+              <p class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Empresa Destino para el Lote</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400">Todos los usuarios del grupo quedarán asignados a esta entidad.</p>
+            </div>
+          </div>
+
+          <!-- Caso A: Administrador Global (Puede elegir empresa) -->
+          <div *ngIf="esAdministradorSistema()" class="w-full sm:w-72">
+            <select 
+              [(ngModel)]="idEmpresaGrupo"
+              class="w-full text-xs py-1.5 px-2 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold focus:outline-none focus:border-amber-500">
+              <option [ngValue]="null" disabled>-- Seleccione Empresa --</option>
+              <option *ngFor="let emp of empresas" [value]="emp.id_empresa">{{ emp.nombre_empresa }}</option>
+            </select>
+          </div>
+
+          <!-- Caso B: Administrador de Empresa (Empresa obligatoria y fija) -->
+          <div *ngIf="!esAdministradorSistema()" class="px-3 py-1 bg-white dark:bg-slate-900 border border-amber-500/40 rounded text-xs font-bold text-amber-800 dark:text-amber-400">
+            {{ obtenerNombreEmpresaGrupo() }}
+          </div>
+        </div>
+      </div>
+
+      <!-- ALERTA DE ERROR DE VALIDACION -->
+      <div *ngIf="errorValidacionGrupo" class="p-3 bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-800 text-red-800 dark:text-red-300 rounded text-xs font-semibold flex items-center justify-between">
+        <span>⚠ {{ errorValidacionGrupo }}</span>
+        <button (click)="errorValidacionGrupo = ''" class="text-red-600 font-bold ml-2">✕</button>
+      </div>
+
+      <!-- TABLA DINAMICA DE FILAS -->
+      <div class="border border-slate-200 dark:border-slate-800 rounded-md overflow-hidden shadow-2xs">
+        <div class="overflow-x-auto max-h-[46vh]">
+          <table class="w-full text-left border-collapse min-w-[760px]">
+            <thead class="bg-slate-100 dark:bg-slate-800/80 sticky top-0 z-10 text-[11px] uppercase tracking-wider text-slate-600 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-700">
+              <tr>
+                <th class="p-2.5 w-10 text-center">#</th>
+                <th class="p-2.5 w-32">Carnet (CI) *</th>
+                <th class="p-2.5">Nombre Completo *</th>
+                <th class="p-2.5 w-36">Usuario *</th>
+                <th class="p-2.5 w-44">Rol en Empresa *</th>
+                <th class="p-2.5 w-36">Clave Temporal</th>
+                <th class="p-2.5 w-40">Contacto</th>
+                <th class="p-2.5 w-20 text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+              <tr *ngFor="let fila of filasGrupo; let i = index" class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                
+                <!-- Indice -->
+                <td class="p-2.5 text-center font-bold text-slate-400">
+                  {{ i + 1 }}
+                </td>
+
+                <!-- CI -->
+                <td class="p-2">
+                  <input 
+                    type="text" 
+                    [(ngModel)]="fila.ci"
+                    placeholder="Ej. 8452136"
+                    class="w-full p-1.5 text-xs bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded focus:border-amber-500 font-mono text-slate-900 dark:text-white"
+                  />
+                </td>
+
+                <!-- Nombre Completo -->
+                <td class="p-2">
+                  <input 
+                    type="text" 
+                    [(ngModel)]="fila.nombre_completo"
+                    (blur)="sugerirUsername(fila)"
+                    placeholder="Ej. Juan Carlos Pérez"
+                    class="w-full p-1.5 text-xs bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded focus:border-amber-500 text-slate-900 dark:text-white"
+                  />
+                </td>
+
+                <!-- Usuario (Login) -->
+                <td class="p-2">
+                  <input 
+                    type="text" 
+                    [(ngModel)]="fila.nombre_usuario"
+                    placeholder="juan.perez"
+                    class="w-full p-1.5 text-xs bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded focus:border-amber-500 font-mono text-slate-900 dark:text-white"
+                  />
+                </td>
+
+                <!-- Rol -->
+                <td class="p-2">
+                  <select 
+                    [(ngModel)]="fila.nro_rol"
+                    class="w-full p-1.5 text-xs bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded focus:border-amber-500 font-semibold text-slate-800 dark:text-slate-200">
+                    <option *ngFor="let rol of rolesGrupo()" [value]="rol.id">{{ rol.nombre }}</option>
+                  </select>
+                </td>
+
+                <!-- Contraseña temporal segura autogenerada -->
+                <td class="p-2">
+                  <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-700">
+                    <span class="font-mono text-[10px] text-slate-700 dark:text-slate-300 truncate select-all" [title]="fila.password_temporal">
+                      {{ fila.password_temporal }}
+                    </span>
+                    <button 
+                      type="button" 
+                      (click)="regenerarPasswordFila(fila)" 
+                      title="Generar nueva clave individual" 
+                      class="text-slate-400 hover:text-amber-500 p-0.5 ml-auto">
+                      ↻
+                    </button>
+                  </div>
+                </td>
+
+                <!-- Contacto (Correo y Teléfono) -->
+                <td class="p-2 space-y-1">
+                  <input 
+                    type="email" 
+                    [(ngModel)]="fila.correo"
+                    placeholder="correo@ejemplo.com"
+                    class="w-full p-1 text-[11px] bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300"
+                  />
+                  <input 
+                    type="text" 
+                    [(ngModel)]="fila.telefono"
+                    placeholder="Teléfono"
+                    class="w-full p-1 text-[11px] bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300"
+                  />
+                </td>
+
+                <!-- Acciones de fila -->
+                <td class="p-2 text-center">
+                  <div class="flex items-center justify-center gap-1">
+                    <button 
+                      type="button" 
+                      (click)="duplicarFilaGrupo(i)" 
+                      title="Duplicar usuario"
+                      class="p-1 text-slate-400 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded">
+                      📋
+                    </button>
+                    <button 
+                      type="button" 
+                      (click)="eliminarFilaGrupo(i)" 
+                      [disabled]="filasGrupo.length <= 1"
+                      title="Eliminar fila"
+                      class="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded disabled:opacity-30">
+                      🗑
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Barra inferior de la tabla: Añadir fila -->
+        <div class="p-2.5 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <button 
+            type="button" 
+            (click)="agregarFilaGrupo()" 
+            class="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-xs font-bold text-slate-700 dark:text-slate-200 transition-colors shadow-2xs">
+            <span class="text-amber-500 font-black">+</span> Añadir Otro Usuario a la Lista
+          </button>
+          <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            {{ filasGrupo.length }} usuario(s) en el grupo
+          </span>
+        </div>
+      </div>
+
+      <!-- BARRA DE PROGRESO DURANTE PROCESAMIENTO -->
+      <div *ngIf="grupoProcesando" class="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-md">
+        <div class="flex items-center justify-between text-xs font-bold text-blue-900 dark:text-blue-300 mb-1.5">
+          <span>Registrando usuarios en el sistema...</span>
+          <span>{{ grupoIndiceActual }} de {{ filasGrupo.length }}</span>
+        </div>
+        <div class="w-full bg-blue-200 dark:bg-blue-900 h-2 rounded-full overflow-hidden">
+          <div class="bg-amber-500 h-2 transition-all duration-300" [style.width.%]="(grupoIndiceActual / filasGrupo.length) * 100"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- CUERPO ESTADO 2: RESUMEN FINAL DE REGISTRO Y CREDENCIALES -->
+    <div *ngIf="grupoCompletado" class="p-5 overflow-y-auto flex-1 space-y-4">
+      
+      <!-- Cartel de Éxito -->
+      <div class="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 rounded-lg flex items-start gap-3">
+        <span class="text-2xl">🎉</span>
+        <div class="flex-1">
+          <h4 class="text-sm font-bold text-emerald-900 dark:text-emerald-300">
+            Proceso de alta grupal finalizado
+          </h4>
+          <p class="text-xs text-emerald-800 dark:text-emerald-400 mt-0.5">
+            Se registraron exitosamente <strong>{{ grupoResumenExitosos.length }}</strong> usuario(s) en la empresa <strong>{{ obtenerNombreEmpresaGrupo() }}</strong>.
+          </p>
+        </div>
+        <!-- Botones de descarga y copia rápida -->
+        <div class="flex items-center gap-2">
+          <button 
+            type="button" 
+            (click)="copiarCredencialesTexto()"
+            class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors">
+            <span>{{ copiadoExitoso ? '✓ ¡Copiado!' : '📋 Copiar Credenciales' }}</span>
+          </button>
+          <button 
+            type="button" 
+            (click)="descargarCredenciales()"
+            class="px-3 py-1.5 bg-white dark:bg-slate-900 border border-emerald-400 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 rounded text-xs font-bold transition-colors">
+            💾 Descargar TXT
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla de usuarios creados con sus credenciales -->
+      <div class="border border-slate-200 dark:border-slate-800 rounded-md overflow-hidden">
+        <div class="p-2.5 bg-slate-100 dark:bg-slate-800 font-bold text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+          Credenciales individuales generadas
+        </div>
+        <div class="max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+          <div *ngFor="let u of grupoResumenExitosos" class="p-3 flex items-center justify-between text-xs hover:bg-slate-50 dark:hover:bg-slate-800/40">
+            <div>
+              <p class="font-bold text-slate-900 dark:text-white">{{ u.nombre_completo }}</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400">CI: {{ u.ci }} • Rol: {{ obtenerNombreRol(u.nro_rol) }}</p>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] font-bold text-slate-400 uppercase">Login:</span>
+              <span class="font-mono font-bold text-slate-800 dark:text-slate-200 ml-1">{{ u.nombre_usuario }}</span>
+              <div class="mt-0.5">
+                <span class="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase">Clave temporal:</span>
+                <span class="font-mono font-bold bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-300 dark:border-amber-700 text-slate-900 dark:text-white ml-1 select-all">
+                  {{ u.password_temporal }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Errores (si los hubo) -->
+      <div *ngIf="grupoResumenErrores.length > 0" class="p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 rounded-md">
+        <h5 class="text-xs font-bold text-rose-800 dark:text-rose-400">
+          Hubo {{ grupoResumenErrores.length }} usuario(s) que no se pudieron registrar:
+        </h5>
+        <ul class="text-[11px] text-rose-700 dark:text-rose-300 mt-1 list-disc list-inside space-y-0.5">
+          <li *ngFor="let err of grupoResumenErrores">
+            <strong>{{ err.nombre_completo }}</strong> (CI: {{ err.ci }}): {{ err.error_detalle }}
+          </li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- Pie del Modal -->
+    <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between shrink-0">
+      <button 
+        type="button" 
+        (click)="cerrarModalGrupo()" 
+        [disabled]="grupoProcesando"
+        class="px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 rounded transition-colors">
+        {{ grupoCompletado ? 'Cerrar' : 'Cancelar' }}
+      </button>
+
+      <div class="flex items-center gap-2">
+        <button 
+          *ngIf="!grupoCompletado" 
+          type="button" 
+          (click)="procesarRegistroGrupo()" 
+          [disabled]="grupoProcesando"
+          class="px-5 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded shadow-xs transition-colors flex items-center gap-2 disabled:opacity-50">
+          <span *ngIf="grupoProcesando" class="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-r-transparent"></span>
+          <span>{{ grupoProcesando ? 'Registrando grupo...' : 'Registrar Grupo de Usuarios' }}</span>
+        </button>
+
+        <button 
+          *ngIf="grupoCompletado" 
+          type="button" 
+          (click)="cerrarModalGrupo()" 
+          class="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-xs transition-colors">
+          Finalizar y Ver Listado
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL INDIVIDUAL: REGISTRAR / EDITAR USUARIO (PRESERVADO)                 -->
+<!-- ========================================================================= -->
+<div *ngIf="mostrarModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs transition-opacity">
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+    
+    <div class="flex justify-between items-center p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+      <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+        <span *ngIf="modoEdicion">Editar Usuario <span class="text-amber-600 dark:text-amber-400 font-mono ml-1">#{{ usuarioForm.nro_usuario }}</span></span>
+        <span *ngIf="!modoEdicion">Registrar Nuevo Usuario</span>
+      </h3>
+      <button (click)="cerrarModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">✕</button>
+    </div>
+
     <div class="p-6 overflow-y-auto flex-grow">
-      <form (ngSubmit)="guardarUsuario()" #form="ngForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <form (ngSubmit)="guardarUsuario()" #form="ngForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
         
         <div>
-          <label class="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Carnet (CI) *</label>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Carnet (CI) *</label>
           <input type="text" name="ci" [(ngModel)]="usuarioForm.ci" required
-                 class="w-full bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 rounded-sm p-2.5 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-500 transition-colors">
+                 class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded p-2 text-xs text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none">
         </div>
         <div>
-          <label class="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Nombre Completo *</label>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Nombre Completo *</label>
           <input type="text" name="nombre_completo" [(ngModel)]="usuarioForm.nombre_completo" required
-                 class="w-full bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 rounded-sm p-2.5 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-500 transition-colors">
+                 class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded p-2 text-xs text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none">
         </div>
 
         <div>
-          <label class="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Usuario (Login) *</label>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Usuario (Login) *</label>
           <input type="text" name="nombre_usuario" [(ngModel)]="usuarioForm.nombre_usuario" required
-                 class="w-full bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 rounded-sm p-2.5 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-500 transition-colors">
+                 class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded p-2 text-xs font-mono text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none">
         </div>
         <div>
-          <label class="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Correo Electrónico</label>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Correo Electrónico</label>
           <input type="email" name="correo" [(ngModel)]="usuarioForm.correo"
-                 class="w-full bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 rounded-sm p-2.5 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-500 transition-colors">
+                 class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded p-2 text-xs text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none">
         </div>
 
         <div>
-          <label class="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Teléfono</label>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Teléfono</label>
           <input type="text" name="telefono" [(ngModel)]="usuarioForm.telefono"
-                 class="w-full bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 rounded-sm p-2.5 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-500 transition-colors">
+                 class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded p-2 text-xs text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none">
         </div>
         <div>
-          <label class="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Dirección Físico</label>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Dirección</label>
           <input type="text" name="direccion" [(ngModel)]="usuarioForm.direccion"
-                 class="w-full bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 rounded-sm p-2.5 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-500 transition-colors">
+                 class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded p-2 text-xs text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none">
         </div>
 
         <div>
-          <label class="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Rol en el Sistema *</label>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Rol en el Sistema *</label>
           <select name="nro_rol" [(ngModel)]="usuarioForm.nro_rol" required
-                  class="w-full bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 rounded-sm p-2.5 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-500 transition-colors">
+                  class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded p-2 text-xs font-semibold text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none">
             <option *ngFor="let rol of rolesVisibles()" [value]="rol.id">{{ rol.nombre }}</option>
           </select>
         </div>
 
         <div *ngIf="esAdministradorSistema()">
-          <label class="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Empresa / Tenant *</label>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Empresa / Tenant *</label>
           <select name="id_empresa" [(ngModel)]="usuarioForm.id_empresa" required
-                  class="w-full bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 rounded-sm p-2.5 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-500 transition-colors">
-            <option [ngValue]="null" disabled>-- Seleccione una Empresa --</option>
+                  class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded p-2 text-xs font-semibold text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none">
+            <option [ngValue]="null" disabled>-- Seleccione Empresa --</option>
             <option *ngFor="let emp of empresas" [value]="emp.id_empresa">{{ emp.nombre_empresa }}</option>
           </select>
         </div>
 
         <div>
-          <label class="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">
-            Contraseña <span *ngIf="!modoEdicion">*</span> <span *ngIf="modoEdicion" class="text-xs font-normal text-gray-400">(Opcional)</span>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+            Contraseña <span *ngIf="!modoEdicion">*</span> <span *ngIf="modoEdicion" class="text-[10px] font-normal text-slate-400">(Opcional)</span>
           </label>
           <input type="password" name="password" [(ngModel)]="usuarioForm.password" [required]="!modoEdicion"
-                 class="w-full bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 rounded-sm p-2.5 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-500 transition-colors">
+                 class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded p-2 text-xs text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none">
         </div>
         <div>
-          <label class="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Estado de la Cuenta</label>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Estado</label>
           <select name="estado" [(ngModel)]="usuarioForm.estado"
-                  class="w-full bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 rounded-sm p-2.5 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-500 transition-colors">
+                  class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded p-2 text-xs font-semibold text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none">
             <option value="ACTIVO">ACTIVO</option>
             <option value="INACTIVO">INACTIVO</option>
           </select>
@@ -239,14 +631,14 @@
       </form>
     </div>
 
-    <div class="p-6 border-t border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50 flex justify-end gap-3">
+    <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-2.5">
       <button type="button" (click)="cerrarModal()" 
-              class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-sm transition-colors">
+              class="px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 rounded transition-colors">
         Cancelar
       </button>
       <button type="button" (click)="guardarUsuario()" [disabled]="form.invalid || cargando"
-              class="px-6 py-2 text-sm font-medium text-white bg-blue-900 dark:bg-blue-600 hover:bg-blue-800 dark:hover:bg-blue-500 rounded-sm transition-colors disabled:opacity-50 flex items-center gap-2">
-        <span *ngIf="cargando" class="animate-spin rounded-full h-4 w-4 border-2 border-white border-r-transparent"></span>
+              class="px-5 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded shadow-xs transition-colors disabled:opacity-50 flex items-center gap-2">
+        <span *ngIf="cargando" class="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-r-transparent"></span>
         {{ modoEdicion ? 'Actualizar Usuario' : 'Crear Usuario' }}
       </button>
     </div>
