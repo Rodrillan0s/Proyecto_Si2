@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 
 import 'api_client.dart';
 import 'auth_provider.dart';
+import 'notificacion_service.dart';
 import 'token_storage.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────────
@@ -68,8 +69,8 @@ class IncidenciaService {
     required String descripcion,
     required String prioridad,
     String? ubicacion,
-  }) {
-    return _send('POST', '$_basePath/', data: {
+  }) async {
+    final res = await _send('POST', '$_basePath/', data: {
       'id_obra': idObra,
       'id_unidad': idUnidad,
       'titulo': titulo.trim(),
@@ -77,6 +78,12 @@ class IncidenciaService {
       'prioridad': prioridad,
       'ubicacion': _nulaSiVacia(ubicacion),
     });
+    NotificacionService.instance.emitLocalPush(
+      titulo: 'Incidencia Registrada ($prioridad)',
+      cuerpo: '${titulo.trim()} en proyecto #$idObra.',
+      tipo: 'INCIDENCIA',
+    );
+    return res;
   }
 
   /// PUT /api/incidencias/{id} (obra y unidad no se pueden cambiar).
@@ -103,17 +110,29 @@ class IncidenciaService {
   }
 
   /// PATCH /{id}/responsable → {success, message, estado}
-  Future<Map<String, dynamic>> asignarResponsable(int id, int idResponsable) {
-    return _send('PATCH', '$_basePath/$id/responsable', data: {'id_responsable': idResponsable});
+  Future<Map<String, dynamic>> asignarResponsable(int id, int idResponsable) async {
+    final res = await _send('PATCH', '$_basePath/$id/responsable', data: {'id_responsable': idResponsable});
+    NotificacionService.instance.emitLocalPush(
+      titulo: 'Incidencia #$id Asignada',
+      cuerpo: 'Se asignó el responsable #$idResponsable para su atención.',
+      tipo: 'INCIDENCIA',
+    );
+    return res;
   }
 
   // ── HU72 / HU74: estado ────────────────────────────────────────────────────
   /// PATCH /{id}/estado → {success, message, estado_anterior, estado_nuevo}
-  Future<Map<String, dynamic>> cambiarEstado(int id, String estado, {String? observacion}) {
+  Future<Map<String, dynamic>> cambiarEstado(int id, String estado, {String? observacion}) async {
     final body = <String, dynamic>{'estado': estado};
     final obs = _nulaSiVacia(observacion);
     if (obs != null) body['observacion'] = obs;
-    return _send('PATCH', '$_basePath/$id/estado', data: body);
+    final res = await _send('PATCH', '$_basePath/$id/estado', data: body);
+    NotificacionService.instance.emitLocalPush(
+      titulo: 'Incidencia #$id: $estado',
+      cuerpo: obs ?? 'El estado de la incidencia #$id cambió a $estado.',
+      tipo: 'INCIDENCIA',
+    );
+    return res;
   }
 
   // ── Seguimiento ────────────────────────────────────────────────────────────
@@ -139,7 +158,7 @@ class IncidenciaService {
     required Uint8List bytes,
     required String nombreArchivo,
     void Function(int enviados, int total)? onProgreso,
-  }) {
+  }) async {
     final formData = FormData.fromMap({
       'archivo': MultipartFile.fromBytes(
         bytes,
@@ -147,13 +166,19 @@ class IncidenciaService {
         contentType: DioMediaType.parse(tipoMimeImagen(nombreArchivo)),
       ),
     });
-    return _send(
+    final res = await _send(
       'POST',
       '$_basePath/$id/evidencias',
       data: formData,
       onSendProgress: onProgreso,
       timeout: const Duration(seconds: 120),
     );
+    NotificacionService.instance.emitLocalPush(
+      titulo: 'Evidencia Fotográfica Adjuntada',
+      cuerpo: 'Fotografía $nombreArchivo registrada en la incidencia #$id.',
+      tipo: 'INCIDENCIA',
+    );
+    return res;
   }
 
   /// GET /{id}/evidencias/{id_evidencia}/archivo — endpoint autenticado; nunca
@@ -320,13 +345,6 @@ class IncidenciaException implements Exception {
 
 /// ─────────────────────────────────────────────────────────────────────────────
 /// Permisos CU19 por rol.
-///
-/// El backend no expone los permisos del rol al cliente; igual que el resto de
-/// la app (ver [mapaPermisosPorRol]) y la web (MAPA_PERMISOS_POR_ROL en
-/// frontend/src/app/services/auth.ts), se usa un mapa estático que replica las
-/// filas reales de obras.t_rol_permiso (migration_cu19_incidencias.sql). Solo
-/// sirve para mostrar/ocultar acciones: el backend (exigir_permiso + reglas de
-/// responsable) es siempre la autoridad final.
 /// ─────────────────────────────────────────────────────────────────────────────
 class PermisosIncidencia {
   static bool puedeRegistrar(AuthProvider auth) =>

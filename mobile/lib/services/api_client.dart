@@ -17,14 +17,7 @@ class ApiClient {
       InterceptorsWrapper(
         onRequest: (options, handler) async {
           final customUrl = await TokenStorage.getValue('custom_api_url');
-          if (customUrl != null &&
-              customUrl.trim().isNotEmpty &&
-              !customUrl.contains('127.0.0.1') &&
-              !customUrl.contains('localhost')) {
-            options.baseUrl = customUrl.trim();
-          } else {
-            options.baseUrl = AppConfig.apiBaseUrl;
-          }
+          options.baseUrl = AppConfig.resolveBaseUrl(customUrl);
 
           final token = await TokenStorage.getToken();
           if (token != null && token.isNotEmpty) {

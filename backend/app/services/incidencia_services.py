@@ -202,6 +202,16 @@ def registrar(data, token, ip="unknown"):
         id_incidencia, id_usuario, None, "ABIERTA", "Incidencia registrada."
     )
     _log(token, "REGISTRAR_INCIDENCIA", f"Incidencia {id_incidencia} registrada en obra {id_obra}.", ip)
+    try:
+        from app.services import notificaciones_services
+        notificaciones_services.emitir_notificacion_push_empresa(
+            id_empresa=id_empresa,
+            titulo=f"Nueva Incidencia ({prioridad}): {titulo}",
+            cuerpo=f"Obra #{id_obra} — {descripcion[:140]}",
+            tipo="ALERTA" if prioridad in ("ALTA", "CRITICA") else "SISTEMA",
+        )
+    except Exception:
+        pass
     return {
         "success": True,
         "id_incidencia": id_incidencia,
@@ -342,6 +352,17 @@ def asignar_responsable(id_incidencia, data, token, ip="unknown"):
         id_incidencia, token.get("nro_usuario"), estado_actual, nuevo_estado, observacion
     )
     _log(token, "ASIGNAR_RESPONSABLE", f"Incidencia {id_incidencia}: responsable {id_responsable} asignado.", ip)
+    try:
+        from app.services import notificaciones_services
+        notificaciones_services.emitir_notificacion_push_empresa(
+            id_empresa=id_empresa_real,
+            titulo=f"Incidencia #{id_incidencia} Asignada",
+            cuerpo=f"Se asignó responsable a la incidencia #{id_incidencia} (Estado: {nuevo_estado}).",
+            tipo="SISTEMA",
+            usuarios_especificos=[int(id_responsable)],
+        )
+    except Exception:
+        pass
     return {"success": True, "message": "Responsable asignado exitosamente.", "estado": nuevo_estado}
 
 
@@ -411,6 +432,17 @@ def cambiar_estado(id_incidencia, data, token, ip="unknown"):
 
     accion = "CERRAR_INCIDENCIA" if estado_nuevo == "CERRADA" else "CAMBIAR_ESTADO_INCIDENCIA"
     _log(token, accion, f"Incidencia {id_incidencia}: {estado_actual} -> {estado_nuevo}.", ip)
+    try:
+        from app.services import notificaciones_services
+        id_emp_inc = id_empresa or incidencia_repos.obtener_empresa_incidencia(id_incidencia)
+        notificaciones_services.emitir_notificacion_push_empresa(
+            id_empresa=id_emp_inc,
+            titulo=f"Incidencia #{id_incidencia}: {estado_nuevo}",
+            cuerpo=f"La incidencia #{id_incidencia} cambió de {estado_actual} a {estado_nuevo}.",
+            tipo="EXITO" if estado_nuevo == "CERRADA" else "SISTEMA",
+        )
+    except Exception:
+        pass
     return {
         "success": True,
         "message": "Estado actualizado exitosamente.",
@@ -581,6 +613,17 @@ def adjuntar_evidencia(id_incidencia, token, filename, content_type, contenido, 
         os.path.basename(filename or nombre_disco), tipo, len(contenido)
     )
     _log(token, "ADJUNTAR_EVIDENCIA", f"Evidencia {id_evidencia} adjuntada a incidencia {id_incidencia}.", ip)
+    try:
+        from app.services import notificaciones_services
+        id_emp_inc = id_empresa or incidencia_repos.obtener_empresa_incidencia(id_incidencia)
+        notificaciones_services.emitir_notificacion_push_empresa(
+            id_empresa=id_emp_inc,
+            titulo=f"Nueva Evidencia en Incidencia #{id_incidencia}",
+            cuerpo=f"Se adjuntó evidencia fotográfica ({os.path.basename(filename or nombre_disco)}) a la incidencia #{id_incidencia}.",
+            tipo="SISTEMA",
+        )
+    except Exception:
+        pass
     return {"success": True, "id_evidencia": id_evidencia, "message": "Evidencia adjuntada exitosamente."}
 
 

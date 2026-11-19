@@ -88,7 +88,11 @@ export class ProyectosComponent implements OnInit, OnDestroy {
   hasPermission(permiso: string): boolean {
     return this.authService.hasPermission(permiso);
   }
-
+verDocumentosTecnicos(id?: number): void {
+  if (id) {
+    this.router.navigate([`/proyectos/${id}/documentos-tecnicos`]);
+  }
+}
   esRolAutorizado(): boolean {
     return this.hasPermission('Registrar_obras');
   }

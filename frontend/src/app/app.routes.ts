@@ -22,6 +22,16 @@ export const routes: Routes = [
     { path: 'login', component: LoginComponent, canActivate: [publicGuard] },
     { path: 'registro', component: RegistroComponent, canActivate: [publicGuard] },
 
+    // Portal y Asistente Comercial para Clientes Potenciales
+    {
+        path: 'comercial',
+        component: HomeComponent
+    },
+    {
+        path: 'comercial/:empresa',
+        component: HomeComponent
+    },
+
     // Redireccion de home
     { path: 'home', redirectTo: 'panel', pathMatch: 'full' },
     { path: 'main_cliente', redirectTo: 'panel', pathMatch: 'full' },
@@ -48,6 +58,7 @@ export const routes: Routes = [
             },
             { path: 'cronogramas', loadComponent: () => import('./pages/cronogramas/cronogramas').then(module => module.CronogramasComponent), canActivate: [roleGuard], canDeactivate: [(component: import('./pages/cronogramas/cronogramas').CronogramasComponent) => component.salir()], data: { permissions: ['Visualizar_cronograma'] } },
             { path: 'asistente', loadComponent: () => import('./pages/asistente/asistente-workspace').then(module => module.AsistenteWorkspace), canActivate: [roleGuard], data: { permissions: ASSISTANT_PERMISSIONS } },
+            { path: 'asistente-comercial', loadComponent: () => import('./pages/asistente-comercial/asistente-comercial').then(module => module.AsistenteComercialComponent) },
             { path: 'panel', loadComponent: () => import('./pages/panel/panel').then(module => module.PanelComponent) },
             {
                 path: 'proyectos',
@@ -187,7 +198,15 @@ export const routes: Routes = [
             {
                 path: 'proyectos/avances',
                 loadComponent: () => import('./pages/proyectos/avances/proyecto-avances').then(module => module.ProyectoAvancesComponent)
-            }
+            },
+            {
+  path: 'proyectos/:id/documentos-tecnicos',
+  loadComponent: () => import('./pages/documentos-tecnicos/documentos-tecnicos')
+    .then(module => module.DocumentosTecnicosComponent),
+  canActivate: [roleGuard],
+  data: { permissions: ['Visualizar_documentos_tecnicos'] }
+},
+            
 ]
     },
     { path: '**', redirectTo: 'login' }

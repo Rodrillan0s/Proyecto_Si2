@@ -27,13 +27,16 @@ class Config:
 
     RECOVERY_CODE_SECRET = os.getenv("RECOVERY_CODE_SECRET")
 
-    # CREDENCIALES GEMINI IA
+    # CREDENCIALES IA (DeepSeek por defecto)
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
     GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-flash-latest")
-    AI_PROVIDER = os.getenv('AI_PROVIDER', 'deepseek' if os.getenv('DEEPSEEK_API_KEY') else 'gemini')
+    AI_PROVIDER = os.getenv('AI_PROVIDER', 'deepseek')
     DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY')
     DEEPSEEK_BASE_URL = os.getenv('DEEPSEEK_BASE_URL', 'https://api.deepseek.com')
     DEEPSEEK_MODEL = os.getenv('DEEPSEEK_MODEL', 'deepseek-chat')
+    DEEPSEEK_CHAT_MODEL = os.getenv('DEEPSEEK_CHAT_MODEL', DEEPSEEK_MODEL)
+    DEEPSEEK_VISION_MODEL = os.getenv('DEEPSEEK_VISION_MODEL', 'deepseek-flash')
+    DEEPSEEK_REASONER_MODEL = os.getenv('DEEPSEEK_REASONER_MODEL', 'deepseek-reasoner')
     AI_TIMEOUT_SECONDS = int(os.getenv('AI_TIMEOUT_SECONDS', '30'))
     SPEECH_PROVIDER = os.getenv('SPEECH_PROVIDER', 'disabled')
     WHISPER_MODEL = os.getenv('WHISPER_MODEL', 'small')

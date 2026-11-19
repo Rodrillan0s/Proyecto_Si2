@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_provider.dart';
 import 'services/auth_provider.dart';
+import 'services/notificacion_service.dart';
 import 'screens/auth_screens.dart';
 import 'screens/home_screen.dart';
 
@@ -21,6 +22,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: authProvider),
+        ChangeNotifierProvider.value(value: NotificacionService.instance),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
       child: const ConstructorApp(),

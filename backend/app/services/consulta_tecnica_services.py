@@ -90,6 +90,19 @@ def registrar_consulta(id_obra: int, data: dict, token) -> dict:
     if not id_ct:
         raise ConsultaTecnicaError("No se pudo registrar la consulta técnica en base de datos.", 500)
 
+    try:
+        from app.services import notificaciones_services
+        notificaciones_services.emitir_notificacion_push_empresa(
+            titulo=f"Nueva consulta técnica ({codigo})",
+            cuerpo=asunto,
+            tipo_referencia="CONSULTA_TECNICA",
+            id_empresa=id_emp,
+            nro_referencia=id_ct,
+            usuarios_especificos=[asignado_a] if asignado_a else None,
+        )
+    except Exception:
+        pass
+
     return {
         "success": True,
         "id_consulta_tecnica": id_ct,
@@ -134,6 +147,20 @@ def asignar_responsable(id_consulta_tecnica: int, data: dict, token) -> dict:
     if not ok:
         raise ConsultaTecnicaError("Error al procesar la asignación en base de datos.", 500)
 
+    try:
+        from app.services import notificaciones_services
+        notificaciones_services.emitir_notificacion_push_empresa(
+            titulo=f"Consulta técnica asignada ({consulta.get('codigo', '')})",
+            cuerpo=f"Se te asignó la consulta técnica: {consulta.get('asunto', '')}",
+            tipo_referencia="ASIGNACION_RFI",
+            id_empresa=consulta.get("id_empresa"),
+            nro_referencia=id_consulta_tecnica,
+            usuarios_especificos=[asignado_a],
+            roles_destino=[],
+        )
+    except Exception:
+        pass
+
     return {
         "success": True,
         "message": "Responsable asignado exitosamente."
@@ -157,6 +184,19 @@ def registrar_respuesta(id_consulta_tecnica: int, data: dict, token) -> dict:
     id_resp = repo.registrar_respuesta(id_consulta_tecnica, autor_id, contenido)
     if not id_resp:
         raise ConsultaTecnicaError("No se pudo registrar la respuesta técnica.", 500)
+
+    try:
+        from app.services import notificaciones_services
+        notificaciones_services.emitir_notificacion_push_empresa(
+            titulo=f"Respuesta en consulta técnica ({consulta.get('codigo', '')})",
+            cuerpo=contenido[:140],
+            tipo_referencia="CONSULTA_TECNICA",
+            id_empresa=consulta.get("id_empresa"),
+            nro_referencia=id_consulta_tecnica,
+            usuarios_especificos=[consulta.get("creado_por"), consulta.get("asignado_a")],
+        )
+    except Exception:
+        pass
 
     return {
         "success": True,

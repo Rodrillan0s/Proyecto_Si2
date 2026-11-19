@@ -33,7 +33,10 @@ export const NAVIGATION: NavSection[] = [
     { id: 'control', label: 'Control de costos', route: '/control-costos', icon: cost, permissions: ['Visualizar_control_costos'] },
     { id: 'gastos-finales', label: 'Gastos operativos finales', route: '/gastos-finales', icon: cost, permissions: ['Visualizar_control_costos'] },
   ] },
-  { id: 'comercial', label: 'COMERCIAL & CLIENTES', icon: people, items: [{ id: 'crm', label: 'CRM & Clientes', route: '/crm', icon: people, permissions: ['Visualizar_clientes'] }] },
+  { id: 'comercial', label: 'COMERCIAL & CLIENTES', icon: people, items: [
+    { id: 'crm', label: 'CRM & Clientes', route: '/crm', icon: people, permissions: ['Visualizar_clientes'] },
+    { id: 'asistente-comercial', label: 'Asistente Comercial', route: '/asistente-comercial', icon: chat },
+  ] },
   { id: 'inventario', label: 'INVENTARIO & LOGÍSTICA', icon: stock, items: [
     { id: 'stock', label: 'Inventario / Stock', route: '/inventario', icon: stock, permissions: ['Visualizar_inventario', 'Visualizar_materiales'] },
     { id: 'materiales', label: 'Materiales', route: '/materiales', icon: stock, permissions: ['Visualizar_materiales'] },

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, HostListener, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -42,24 +42,109 @@ export class PagosComponent implements OnInit {
   planes = signal<PlanVista[]>([]);
   suscripcion = signal<SuscripcionEmpresa | null>(null);
   historial = signal<PagoEmpresa[]>([]);
+  transaccionesGlobales = signal<PagoEmpresa[]>([]);
   comprobante = signal<ComprobantePago | null>(null);
   pagoConsultado = signal<PagoDetalle | null>(null);
+
+  filtroBusqueda = signal('');
+  filtroEstado = signal<string>('TODOS');
+
   cargando = signal(true);
   cargandoComprobante = signal(false);
   procesandoPlan = signal<string | null>(null);
   verificando = signal(false);
+  verificandoId = signal<number | null>(null);
   consultando = signal(false);
   error = signal('');
   mensaje = signal('');
   idConsulta: number | null = null;
   private checkoutKeys = new Map<string, string>();
 
+  readonly transaccionesFiltradas = computed(() => {
+    const lista = this.transaccionesGlobales();
+    const estado = this.filtroEstado();
+    const q = this.filtroBusqueda().trim().toLowerCase();
+
+    return lista.filter(item => {
+      if (estado !== 'TODOS') {
+        if (estado === 'FALLIDO_CANCELADO') {
+          if (item.estado !== 'FALLIDO' && item.estado !== 'CANCELADO') return false;
+        } else if (item.estado !== estado) {
+          return false;
+        }
+      }
+      if (!q) return true;
+      const texto = [
+        `#${item.id_pago}`,
+        String(item.id_pago),
+        item.nombre_empresa || '',
+        item.nombre_plan || '',
+        item.codigo_plan || '',
+        item.estado || '',
+        item.stripe_checkout_session_id || '',
+        item.stripe_payment_intent_id || '',
+      ].join(' ').toLowerCase();
+      return texto.includes(q);
+    });
+  });
+
+  readonly metricasGlobales = computed(() => {
+    const lista = this.transaccionesGlobales();
+    let confirmados = 0;
+    let pendientes = 0;
+    let fallidos = 0;
+    let sumaConfirmadaBob = 0;
+    let sumaPendienteBob = 0;
+
+    for (const item of lista) {
+      if (item.estado === 'CONFIRMADO') {
+        confirmados++;
+        sumaConfirmadaBob += Number(item.monto_menor || 0);
+      } else if (item.estado === 'PENDIENTE') {
+        pendientes++;
+        sumaPendienteBob += Number(item.monto_menor || 0);
+      } else {
+        fallidos++;
+      }
+    }
+
+    return {
+      totalTransacciones: lista.length,
+      confirmados,
+      pendientes,
+      fallidos,
+      recaudadoBob: this.dinero(sumaConfirmadaBob, 'BOB'),
+      pendienteBob: this.dinero(sumaPendienteBob, 'BOB'),
+    };
+  });
+
   ngOnInit(): void {
     if (this.esGlobal) {
-      this.cargando.set(false);
+      this.cargarGlobal();
       return;
     }
     this.cargarEmpresa();
+  }
+
+  cargarGlobal(): void {
+    if (typeof this.pagosApi.pagosGlobales !== 'function') {
+      this.cargando.set(false);
+      return;
+    }
+    this.cargando.set(true);
+    this.error.set('');
+    this.pagosApi.pagosGlobales()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: respuesta => {
+          this.transaccionesGlobales.set(respuesta.data || []);
+          this.cargando.set(false);
+        },
+        error: error => {
+          this.error.set(this.errorTexto(error, 'No se pudo cargar el registro global de transacciones.'));
+          this.cargando.set(false);
+        },
+      });
   }
 
   cargarEmpresa(): void {
@@ -132,6 +217,19 @@ export class PagosComponent implements OnInit {
     return this.suscripcion()?.codigo_plan === plan.codigo;
   }
 
+  cambiarFiltroEstado(estado: string): void {
+    this.filtroEstado.set(estado);
+  }
+
+  limpiarFiltros(): void {
+    this.filtroBusqueda.set('');
+    this.filtroEstado.set('TODOS');
+  }
+
+  cerrarDetalleConsultado(): void {
+    this.pagoConsultado.set(null);
+  }
+
   buscarPago(preservarMensaje = false): void {
     const id = Number(this.idConsulta);
     if (!Number.isInteger(id) || id <= 0 || this.consultando()) {
@@ -168,10 +266,34 @@ export class PagosComponent implements OnInit {
           ? 'Stripe confirmó el pago. La suscripción fue actualizada por el backend.'
           : `Stripe mantiene el pago en estado ${respuesta.data.estado}.`);
         this.buscarPago(true);
+        this.cargarGlobal();
       },
       error: error => {
         this.verificando.set(false);
         this.error.set(this.errorTexto(error, 'Stripe todavía no confirma este pago.'));
+      },
+    });
+  }
+
+  verificarPagoEnTabla(pago: PagoEmpresa): void {
+    if (!this.esGlobal || pago.estado !== 'PENDIENTE' || this.verificando() || this.verificandoId() !== null) return;
+    this.verificandoId.set(pago.id_pago);
+    this.error.set('');
+    this.mensaje.set('');
+    this.pagosApi.verificar(pago.id_pago).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: respuesta => {
+        this.verificandoId.set(null);
+        this.mensaje.set(respuesta.data.estado === 'CONFIRMADO'
+          ? `Pago #${pago.id_pago} confirmado con Stripe. Suscripción actualizada.`
+          : `El pago #${pago.id_pago} permanece en estado ${respuesta.data.estado}.`);
+        this.cargarGlobal();
+        if (this.pagoConsultado()?.id_pago === pago.id_pago) {
+          this.buscarPago(true);
+        }
+      },
+      error: error => {
+        this.verificandoId.set(null);
+        this.error.set(this.errorTexto(error, `No se pudo verificar el pago #${pago.id_pago} con Stripe.`));
       },
     });
   }
@@ -203,12 +325,12 @@ export class PagosComponent implements OnInit {
 
   dinero(montoMenor: number, moneda: string): string {
     return new Intl.NumberFormat('es-BO', {
-      style: 'currency', currency: moneda, minimumFractionDigits: 2,
-    }).format(montoMenor / 100);
+      style: 'currency', currency: moneda || 'BOB', minimumFractionDigits: 2,
+    }).format((montoMenor || 0) / 100);
   }
 
   fecha(valor: string | null | undefined): string {
-    if (!valor) return 'No disponible';
+    if (!valor) return 'Pendiente';
     return new Intl.DateTimeFormat('es-BO', {
       dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/La_Paz',
     }).format(new Date(valor));

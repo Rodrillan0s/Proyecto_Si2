@@ -43,6 +43,13 @@ def pagos_mi_empresa(
     return {'success': True, 'data': service.listar_pagos_mi_empresa(token)}
 
 
+@router.get('/global')
+def pagos_globales(
+    token: dict = Depends(exigir_rol('ADMINISTRADOR')),
+):
+    return {'success': True, 'data': service.listar_pagos_globales(token)}
+
+
 @router.get('/{id_pago}/comprobante')
 def comprobante_pago(
     id_pago: int,

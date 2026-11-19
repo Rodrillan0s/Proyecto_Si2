@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'api_client.dart';
+import 'notificacion_service.dart';
 
 class CrmService {
   static const String _basePath = '/crm';
@@ -109,10 +110,14 @@ class CrmService {
         data: datos,
       );
       final data = response.data;
-      if (data is Map) {
-        return Map<String, dynamic>.from(data);
-      }
-      return {'success': true};
+      final res = data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{'success': true};
+      final nombre = datos['nombre_completo'] ?? datos['nombres'] ?? 'Prospecto';
+      NotificacionService.instance.emitLocalPush(
+        titulo: 'Nuevo Cliente Registrado en CRM',
+        cuerpo: 'Se registró a $nombre en el embudo comercial.',
+        tipo: 'CRM_PROSPECTO',
+      );
+      return res;
     } on DioException catch (e) {
       throw Exception(_parsearError(e));
     }
@@ -155,10 +160,13 @@ class CrmService {
         data: payload,
       );
       final data = response.data;
-      if (data is Map) {
-        return Map<String, dynamic>.from(data);
-      }
-      return {'success': true};
+      final res = data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{'success': true};
+      NotificacionService.instance.emitLocalPush(
+        titulo: 'Etapa CRM Actualizada: $nuevoEstado',
+        cuerpo: 'El cliente #$idCliente avanzó a la etapa comercial $nuevoEstado.',
+        tipo: 'CRM_PROSPECTO',
+      );
+      return res;
     } on DioException catch (e) {
       throw Exception(_parsearError(e));
     }
@@ -185,10 +193,13 @@ class CrmService {
         data: payload,
       );
       final data = response.data;
-      if (data is Map) {
-        return Map<String, dynamic>.from(data);
-      }
-      return {'success': true};
+      final res = data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{'success': true};
+      NotificacionService.instance.emitLocalPush(
+        titulo: 'Interacción Comercial ($tipoInteraccion)',
+        cuerpo: observaciones,
+        tipo: 'CRM_PROSPECTO',
+      );
+      return res;
     } on DioException catch (e) {
       throw Exception(_parsearError(e));
     }
@@ -237,10 +248,13 @@ class CrmService {
         data: payload,
       );
       final data = response.data;
-      if (data is Map) {
-        return Map<String, dynamic>.from(data);
-      }
-      return {'success': true};
+      final res = data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{'success': true};
+      NotificacionService.instance.emitLocalPush(
+        titulo: 'Unidad #$idUnidad Vinculada ($estadoAsociacion)',
+        cuerpo: 'Se vinculó la unidad #$idUnidad al cliente #$idCliente en estado $estadoAsociacion.',
+        tipo: 'CRM_PROSPECTO',
+      );
+      return res;
     } on DioException catch (e) {
       throw Exception(_parsearError(e));
     }

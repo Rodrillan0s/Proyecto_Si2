@@ -26,6 +26,7 @@ import {
   Work,
 } from '../../services/reportes.service';
 import { reportError, saveReportFile } from '../../services/reportes-ui';
+import { AsistenteComercialComponent } from '../../pages/asistente-comercial/asistente-comercial';
 
 interface Message {
   author: 'user' | 'assistant';
@@ -55,7 +56,7 @@ interface Recognition {
 @Component({
   selector: 'app-asistente',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AsistenteComercialComponent],
   templateUrl: './asistente.html',
   styleUrl: './asistente.css',
 })
@@ -89,8 +90,14 @@ export class AsistenteComponent implements OnInit, OnDestroy {
   private recorder?: MediaRecorder;
   private stream?: MediaStream;
   private timer?: ReturnType<typeof setTimeout>;
-  get available() {
+  get adminAvailable() {
     return this.suscripcion.iaPermitida && ASSISTANT_PERMISSIONS.some(permission => this.auth.hasPermission(permission));
+  }
+  get available() {
+    return true;
+  }
+  get isComercialMode() {
+    return !this.adminAvailable || this.ui.assistantType() === 'comercial';
   }
   get canReports() {
     return this.auth.hasPermission('Visualizar_reportes');
@@ -147,12 +154,25 @@ export class AsistenteComponent implements OnInit, OnDestroy {
         this.ui.draft.set(null);
       }
       if (opened) {
-        if (!this.loaded && this.canReports && !this.needsCompany) void this.loadCatalog();
+        if (!this.loaded && this.canReports && !this.needsCompany && !this.isComercialMode) void this.loadCatalog();
         setTimeout(() => this.input?.nativeElement.focus());
       } else this.cancelVoice();
     });
   }
   ngOnInit() {
+    this.auth.usuario$.pipe(takeUntilDestroyed(this.destroy)).subscribe(() => {
+      this.version++;
+      this.messages = [];
+      this.text = '';
+      this.error = '';
+      this.busy = false;
+      this.conversation = undefined;
+      this.cancelVoice();
+      this.ui.draft.set(null);
+      this.historyFilter = 'todos';
+      this.cdr.markForCheck();
+    });
+
     this.contexto.operativo$.pipe(takeUntilDestroyed(this.destroy)).subscribe(() => {
       this.version++;
       this.company = this.auth.obtenerIdEmpresaActiva();
@@ -166,7 +186,7 @@ export class AsistenteComponent implements OnInit, OnDestroy {
       this.cancelVoice();
       this.ui.draft.set(null);
       this.historyFilter = 'todos';
-      if (this.ui.opened() && this.canReports && !this.needsCompany) void this.loadCatalog();
+      if (this.ui.opened() && this.canReports && !this.needsCompany && !this.isComercialMode) void this.loadCatalog();
       this.cdr.markForCheck();
     });
   }

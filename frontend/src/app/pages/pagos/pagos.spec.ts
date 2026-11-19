@@ -17,8 +17,9 @@ const suscripcion = {
   estado: 'ACTIVA', estado_efectivo: 'ACTIVA', fecha_inicio: '2026-10-25', fecha_fin: '2026-11-24', usuarios: 2,
 };
 const historial = [{
-  id_pago: 4, codigo_plan: 'PROFESIONAL', nombre_plan: 'Profesional', monto_menor: 24900,
-  moneda: 'BOB', estado: 'CONFIRMADO', fecha: '2026-10-25T19:00:00Z', confirmado_en: '2026-10-25T19:02:00Z',
+  id_pago: 4, id_empresa: 3, nombre_empresa: 'CONSTRUCTORA LA ROCA',
+  codigo_plan: 'PROFESIONAL', nombre_plan: 'Profesional', monto_menor: 24900,
+  moneda: 'BOB', estado: 'CONFIRMADO' as const, fecha: '2026-10-25T19:00:00Z', confirmado_en: '2026-10-25T19:02:00Z',
   stripe_checkout_session_id: 'cs_test_4', stripe_payment_intent_id: 'pi_4',
   stripe_checkout_url: null, stripe_receipt_url: 'https://pay.stripe.com/receipt/4',
 }];
@@ -30,6 +31,7 @@ describe('PagosComponent', () => {
     const pagos = {
       planes: vi.fn(() => of({ success: true, data: [plan] })),
       miEmpresa: vi.fn(() => of({ success: true, data: historial })),
+      pagosGlobales: vi.fn(() => of({ success: true, data: historial })),
       iniciarCheckout: vi.fn(() => of({ success: true, data: {
         id_pago: 5, estado: 'PENDIENTE', checkout_url: 'https://checkout.stripe.com/c/pay/test', checkout_expira_en: null,
       } })),
@@ -71,6 +73,13 @@ describe('PagosComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Gestión de obras');
     expect(fixture.nativeElement.textContent).toContain('Historial de pagos');
     expect(fixture.nativeElement.textContent).toContain('#4');
+  });
+
+  it('carga el ledger global de transacciones para ADMINISTRADOR', () => {
+    const { fixture, pagos } = crear('ADMINISTRADOR');
+    expect(pagos.pagosGlobales).toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain('CONSTRUCTORA LA ROCA');
+    expect(fixture.nativeElement.textContent).toContain('Recaudación Confirmada');
   });
 
   it('inicia Checkout y delega la redirección a la URL recibida', () => {

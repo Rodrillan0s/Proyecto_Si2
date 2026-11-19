@@ -5,19 +5,34 @@ export const ASSISTANT_PERMISSIONS = ['Visualizar_reportes', 'Visualizar_cliente
   'Visualizar_equipos_maquinaria', 'Visualizar_ordenes_trabajo', 'Visualizar_estimaciones',
   'Visualizar_usuarios', 'Visualizar_mano_obra'];
 
-/** Estado de presentación del asistente compartido por el shell autenticado. */
+/** Estado de presentación del asistente compartido por el shell autenticado y vistas públicas. */
 @Injectable({ providedIn: 'root' })
 export class AsistenteService {
   readonly opened = signal(false);
   readonly draft = signal<string | null>(null);
   readonly mode = signal<'quick' | 'chat' | 'module'>('chat');
+  readonly assistantType = signal<'admin' | 'comercial'>('admin');
   readonly submissions = signal(0);
-  open(text?: string, mode: 'quick' | 'chat' | 'module' = 'chat') {
+
+  open(text?: string, mode: 'quick' | 'chat' | 'module' = 'chat', type?: 'admin' | 'comercial') {
+    this.mode.set(mode);
+    if (type) this.assistantType.set(type);
+    if (text !== undefined) this.draft.set(text);
+    this.opened.set(true);
+  }
+
+  openComercial(text?: string, mode: 'quick' | 'chat' | 'module' = 'chat') {
+    this.assistantType.set('comercial');
     this.mode.set(mode);
     if (text !== undefined) this.draft.set(text);
     this.opened.set(true);
   }
-  quick(text: string) { this.open(text, 'quick'); if (text.trim()) this.submissions.update(value => value + 1); }
+
+  quick(text: string) {
+    this.open(text, 'quick');
+    if (text.trim()) this.submissions.update(value => value + 1);
+  }
+
   close() {
     this.opened.set(false);
   }

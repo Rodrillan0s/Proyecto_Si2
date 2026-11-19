@@ -56,12 +56,18 @@ def _plan(text, available, works, previous, topic, can_crm, sources=None, previo
           recent=None, user_role="ADMINISTRADOR", id_obra_contexto=None, permisos=None, modulos=None):
     from app.services.reportes.interpreter import interpret, similarity
     normalized = normalize(text)
-    finance = any(similarity(normalized, word) >= .91 for word in REGISTRY['saldo_comercial'].aliases)
+    finance = any(similarity(normalized, word) >= .88 for word in REGISTRY['saldo_comercial'].aliases) or bool(
+        re.search(r'\b(deficit|d[eé]ficits?|perdidas?|p[eé]rdidas?|ganancias?|rentabilidad|utilidades?|saldo comercial|saldo negativo)\b', normalized)
+    )
     commercial = any(similarity(normalized, word) >= .85 for word in ('prospectos', 'negociaciones', 'ventas', 'clientes', 'reservadas', 'embudo comercial'))
     if finance:
         if 'saldo_comercial' not in available:
             return {'estado': 'needs_clarification', 'mensaje': 'La consulta de saldo comercial necesita acceso a Reportes, costos y clientes. Puedes consultar las capacidades habilitadas para tu cuenta.', 'tema': 'finanzas'}
         response = interpret(text, ['saldo_comercial'], works, previous)
+        if response.get('estado') == 'ready' and re.search(r'\b(deficit|d[eé]ficits?|perdidas?|p[eé]rdidas?|negativos?)\b', normalized):
+            solicitud = response.get('solicitud') or {}
+            solicitud.setdefault('filtros', {})['estado'] = 'SALDO_NEGATIVO'
+            response['solicitud'] = solicitud
         return dict(response, tema='finanzas')
 
     # 2. Regla de análisis operativo integral
@@ -217,11 +223,87 @@ def _plan(text, available, works, previous, topic, can_crm, sources=None, previo
 
         return plan
     except ProviderError:
+        fallback_plan = _inferir_plan_semantico(normalized, available, sources, works, can_crm)
+        if fallback_plan is not None:
+            return fallback_plan
         if local['estado'] == 'unsupported':
             return {'estado': 'needs_clarification', 'mensaje': 'El proveedor de IA no está disponible para preparar esta consulta nueva. Las consultas conocidas siguen disponibles; puedes reintentar o seleccionar un reporte.', 'opciones': [REGISTRY[k].titulo for k in available]}
         return local
     except (ValueError, IndexError, HTTPException):
         return local
+
+
+def _inferir_plan_semantico(normalized: str, available: list[str], sources: list[dict] | None, works: list[dict], can_crm: bool = False):
+    from app.services.reportes.interpreter import interpret
+    # 1. Finanzas / Saldo comercial / Déficit / Pérdidas / Ganancias
+    if any(k in normalized for k in ('deficit', 'déficit', 'perdida', 'pérdida', 'perdidas', 'pérdidas', 'ganancia', 'ganancias', 'rentabilidad', 'saldo comercial', 'saldo negativo', 'utilidad')):
+        if 'saldo_comercial' in available:
+            res = interpret(normalized, ['saldo_comercial'], works)
+            if res.get('estado') in ('ready', 'needs_clarification'):
+                if res.get('estado') == 'ready' and re.search(r'\b(deficit|d[eé]ficits?|perdidas?|p[eé]rdidas?|negativos?)\b', normalized):
+                    sol = res.get('solicitud') or {}
+                    sol.setdefault('filtros', {})['estado'] = 'SALDO_NEGATIVO'
+                    res['solicitud'] = sol
+                return dict(res, tema='finanzas')
+
+    # 2. Desvíos de costos vs presupuesto
+    if any(k in normalized for k in ('sobrecosto', 'sobrecostos', 'desvio', 'desvío', 'desvios', 'desvíos', 'desviacion', 'desviaciones')):
+        if 'comparativo_costos' in available:
+            res = interpret(normalized, ['comparativo_costos'], works)
+            if res.get('estado') in ('ready', 'needs_clarification'):
+                return dict(res, tema='reportes')
+
+    # 3. Stock / inventario / materiales agotados
+    if any(k in normalized for k in ('stock', 'material', 'materiales', 'insumo', 'insumos', 'existencias', 'inventario', 'agotado', 'agotados', 'agotada', 'agotadas', 'quiebre')):
+        if 'stock' in available:
+            res = interpret(normalized, ['stock'], works)
+            if res.get('estado') in ('ready', 'needs_clarification'):
+                return dict(res, tema='reportes')
+
+    # 4. Presupuestos y estimaciones
+    if any(k in normalized for k in ('presupuesto', 'presupuestos', 'estimacion', 'estimaciones')):
+        if 'presupuestario' in available:
+            res = interpret(normalized, ['presupuestario'], works)
+            if res.get('estado') in ('ready', 'needs_clarification'):
+                return dict(res, tema='reportes')
+
+    # 5. Avances y unidades
+    if any(k in normalized for k in ('avance', 'avances', 'progreso', 'porcentaje', 'unidades', 'viviendas')):
+        rep = 'avance_ejecutivo' if 'avance_ejecutivo' in available else ('estado_unidades' if 'estado_unidades' in available else None)
+        if rep:
+            res = interpret(normalized, [rep], works)
+            if res.get('estado') in ('ready', 'needs_clarification'):
+                return dict(res, tema='reportes')
+
+    # 6. Incidencias
+    if any(k in normalized for k in ('incidencia', 'incidencias', 'problema', 'problemas', 'falla', 'fallas')):
+        rep = 'incidencias_criticas' if ('critica' in normalized or 'urgente' in normalized) and 'incidencias_criticas' in available else ('incidencias' if 'incidencias' in available else None)
+        if rep:
+            res = interpret(normalized, [rep], works)
+            if res.get('estado') in ('ready', 'needs_clarification'):
+                return dict(res, tema='reportes')
+
+    # 7. Diagnóstico / Análisis operativo
+    if any(k in normalized for k in ('analisis', 'diagnostico', 'riesgo', 'riesgos', 'salud', 'estado general', 'alertas')):
+        return ReadPlan(accion='analisis', tema='analisis', mensaje='Iniciando análisis operativo determinista.')
+
+    # 8. Procedimientos y Módulos
+    if any(k in normalized for k in ('modulo', 'modulos', 'ruta', 'rutas', 'como', 'donde', 'ayuda', 'procedimiento', 'sistema', 'funciona')):
+        return ReadPlan(accion='conocimiento', tema='conocimiento', mensaje='Consulta de procedimientos y módulos OBRATEC.')
+
+    # 9. Fuentes dinámicas de módulos disponibles
+    if sources:
+        permitted = {s['fuente'] for s in sources}
+        for f in permitted:
+            if f in normalized or f[:-1] in normalized:
+                try:
+                    q = query_engine.Query(fuente=f)
+                    query_engine.validate(q)
+                    return ReadPlan(accion='consulta', tema='reportes', consultas=[q], mensaje=f'Consultando datos del módulo {f}.')
+                except Exception:
+                    pass
+
+    return None
 
 
 def _consult_dynamic(ctx, plan, question):
@@ -433,11 +515,13 @@ def consult(token, data, empresa=None):
             response.update(solicitud=result['solicitud'], ejecucion=executions[0], ejecuciones=executions)
             if result['reporte'] == 'saldo_comercial':
                 from decimal import Decimal
-                losses = bool(re.search(r'\b(perdidas?|negativos?)\b', normalize(question))) or result['solicitud']['filtros'].get('estado') == 'SALDO_NEGATIVO'
+                losses = bool(re.search(r'\b(perdidas?|p[eé]rdidas?|negativos?|deficits?|d[eé]ficits?|quiebras?|desv[ií]os?)\b', normalize(question))) or result['solicitud']['filtros'].get('estado') == 'SALDO_NEGATIVO'
                 state = 'SALDO_NEGATIVO' if losses else 'SALDO_POSITIVO'
-                label = 'negativo' if losses else 'positivo'
-                matching = sorted([r for r in result['filas'] if r['estado'] == state],
-                                  key=lambda r: (r['moneda'], -Decimal(str(r['saldo_estimado']))))
+                label = 'en déficit / negativo' if losses else 'positivo'
+                matching = sorted(
+                    [r for r in result['filas'] if r['estado'] == state],
+                    key=lambda r: (r['moneda'], Decimal(str(r['saldo_estimado'])) if losses else -Decimal(str(r['saldo_estimado'])))
+                )
                 answer = 'No puedo confirmar ganancias reales: el sistema registra montos pactados de ventas, pero no cobros. '
                 if matching:
                     answer += f'{len(matching)} obras con saldo comercial estimado {label}: ' + '; '.join(

@@ -1,0 +1,512 @@
+
+<div class="documentos-container container mx-auto p-4 md:p-6 space-y-6">
+
+  <!-- ENCABEZADO -->
+  <div class="flex flex-col md:flex-row justify-between md:items-center gap-4">
+    <div>
+      <button
+        (click)="volver()"
+        class="text-sm text-orange-600 dark:text-orange-400 font-bold mb-3 hover:underline">
+        ← Volver a proyectos
+      </button>
+
+      <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white">
+        Documentación Técnica
+      </h1>
+
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        Gestión de planos, documentos técnicos y control de versiones de la obra.
+      </p>
+
+      <span class="inline-block mt-3 text-xs font-bold px-3 py-1.5 rounded-lg bg-orange-50 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400">
+        OBRA #{{ idObra }}
+      </span>
+    </div>
+
+    <button
+      *ngIf="tienePermiso('Registrar_documentos_tecnicos')"
+      (click)="abrirNuevo()"
+      class="btn-primary flex items-center justify-center gap-2">
+      <span class="text-lg">+</span>
+      Registrar documento
+    </button>
+  </div>
+
+  <!-- MENSAJES -->
+  <div
+    *ngIf="mensajeError"
+    class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl text-sm dark:bg-red-950/20 dark:border-red-900/30 dark:text-red-400">
+    {{ mensajeError }}
+  </div>
+
+  <div
+    *ngIf="mensajeExito"
+    class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl text-sm dark:bg-green-950/20 dark:border-green-900/30 dark:text-green-400">
+    {{ mensajeExito }}
+  </div>
+
+  <!-- ESTADÍSTICAS -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div class="stat-card">
+      <span class="stat-label">Documentos registrados</span>
+      <strong>{{ documentos.length }}</strong>
+    </div>
+
+    <div class="stat-card">
+      <span class="stat-label">Documentos activos</span>
+      <strong>{{ documentosActivos }}</strong>
+    </div>
+
+    <div class="stat-card">
+      <span class="stat-label">Versiones registradas</span>
+      <strong>{{ totalVersiones }}</strong>
+    </div>
+  </div>
+
+  <!-- CARGANDO -->
+  <div *ngIf="cargando" class="flex justify-center py-16">
+    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-600"></div>
+  </div>
+
+  <!-- LISTADO -->
+  <div
+    *ngIf="!cargando"
+    class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+
+    <div class="p-5 border-b border-gray-100 dark:border-slate-800">
+      <h2 class="font-extrabold text-gray-900 dark:text-white">
+        Documentos de la obra
+      </h2>
+
+      <p class="text-xs text-gray-500 mt-1">
+        Consulta los planos, versiones e historial documental.
+      </p>
+    </div>
+
+    <div *ngIf="documentos.length > 0" class="overflow-x-auto">
+      <table class="w-full text-left">
+        <thead>
+          <tr class="bg-gray-50 dark:bg-slate-800/50 text-xs uppercase text-gray-500 dark:text-gray-400">
+            <th class="p-4">Documento</th>
+            <th class="p-4">Tipo</th>
+            <th class="p-4 text-center">Versión</th>
+            <th class="p-4">Estado</th>
+            <th class="p-4">Última actualización</th>
+            <th class="p-4 text-right">Acciones</th>
+          </tr>
+        </thead>
+
+        <tbody class="divide-y divide-gray-100 dark:divide-slate-800">
+          <tr
+            *ngFor="let d of documentos"
+            class="hover:bg-gray-50 dark:hover:bg-slate-800/30">
+
+            <td class="p-4">
+              <div class="font-bold text-sm text-gray-900 dark:text-white">
+                {{ d.nombre }}
+              </div>
+
+              <div class="text-xs text-gray-500 mt-1">
+                {{ d.descripcion || 'Sin descripción' }}
+              </div>
+            </td>
+
+            <td class="p-4">
+              <span class="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                {{ d.tipo_documento.replaceAll('_', ' ') }}
+              </span>
+            </td>
+
+            <td class="p-4 text-center">
+              <span class="px-3 py-1 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400 text-xs font-extrabold">
+                V{{ d.version_actual }}
+              </span>
+            </td>
+
+            <td class="p-4">
+              <span
+                class="px-2.5 py-1 rounded-full text-xs font-bold"
+                [ngClass]="d.estado === 'ACTIVO'
+                  ? 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400'
+                  : 'bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-400'">
+                {{ d.estado }}
+              </span>
+            </td>
+
+            <td class="p-4 text-xs text-gray-500 dark:text-gray-400">
+              {{ d.updated_at || d.created_at | date:'dd/MM/yyyy HH:mm' }}
+            </td>
+
+            <!-- ACCIONES -->
+            <td class="p-4">
+              <div class="flex justify-end items-center gap-1">
+
+                <!-- DESCARGAR VERSIÓN ACTUAL -->
+                <button
+                  (click)="descargarDocumento(d)"
+                  title="Descargar versión vigente"
+                  class="action-button text-green-600 hover:bg-green-50 dark:hover:bg-green-950/30">
+                  <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/>
+                  </svg>
+                </button>
+
+                <!-- HISTORIAL -->
+                <button
+                  (click)="abrirHistorial(d)"
+                  title="Ver historial"
+                  class="action-button text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30">
+                  <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </button>
+
+                <!-- NUEVA VERSIÓN -->
+                <button
+                  *ngIf="tienePermiso('Modificar_documentos_tecnicos') && d.estado === 'ACTIVO'"
+                  (click)="abrirNuevaVersion(d)"
+                  title="Nueva versión"
+                  class="action-button text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/30">
+                  <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 4v16m8-8H4"/>
+                  </svg>
+                </button>
+
+                <!-- CAMBIAR ESTADO -->
+                <button
+                  *ngIf="tienePermiso('Modificar_documentos_tecnicos')"
+                  (click)="cambiarEstado(d)"
+                  [title]="d.estado === 'ACTIVO' ? 'Desactivar documento' : 'Activar documento'"
+                  class="action-button text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800">
+                  <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M18.364 5.636l-12.728 12.728m0-12.728l12.728 12.728"/>
+                  </svg>
+                </button>
+
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- VACÍO -->
+    <div
+      *ngIf="documentos.length === 0"
+      class="py-16 px-6 text-center">
+
+      <div class="text-5xl mb-4">📐</div>
+
+      <h3 class="font-extrabold text-gray-900 dark:text-white">
+        Todavía no hay documentos técnicos
+      </h3>
+
+      <p class="text-sm text-gray-500 mt-2">
+        Registra el primer plano o documento técnico de esta obra.
+      </p>
+
+      <button
+        *ngIf="tienePermiso('Registrar_documentos_tecnicos')"
+        (click)="abrirNuevo()"
+        class="btn-primary mt-5">
+        Registrar primer documento
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODALES -->
+<div
+  *ngIf="modal"
+  class="modal-backdrop"
+  (click)="cerrarModal()">
+
+  <div
+    class="modal-card bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden"
+    (click)="$event.stopPropagation()">
+
+    <!-- MODAL REGISTRO / NUEVA VERSIÓN -->
+    <ng-container *ngIf="modal === 'nuevo' || modal === 'version'">
+
+      <div class="p-5 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
+        <div>
+          <h2 class="text-xl font-extrabold text-gray-900 dark:text-white">
+            {{ modal === 'nuevo' ? 'REGISTRAR DOCUMENTO' : 'NUEVA VERSIÓN' }}
+          </h2>
+
+          <p class="text-xs text-gray-500 mt-1">
+            {{ modal === 'nuevo'
+              ? 'Registra un plano o documento técnico para la obra.'
+              : 'Se conservarán las versiones anteriores del documento.' }}
+          </p>
+        </div>
+
+        <button
+          (click)="cerrarModal()"
+          class="text-gray-400 hover:text-gray-700 dark:hover:text-white text-2xl">
+          &times;
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto space-y-4">
+
+        <div
+          *ngIf="modal === 'version'"
+          class="p-3 rounded-xl bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/40">
+
+          <span class="text-xs font-bold text-orange-700 dark:text-orange-400">
+            DOCUMENTO: {{ documentoSeleccionado?.nombre }}
+          </span>
+
+          <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+            Versión actual: V{{ documentoSeleccionado?.version_actual }}.
+            Se registrará una nueva versión sin sobrescribir la anterior.
+          </p>
+        </div>
+
+        <div *ngIf="modal === 'nuevo'">
+          <label class="form-label">Nombre del documento *</label>
+
+          <input
+            [(ngModel)]="form.nombre"
+            class="form-input w-full"
+            maxlength="150"
+            placeholder="Ej. Plano estructural - Bloque A">
+        </div>
+
+        <div *ngIf="modal === 'nuevo'">
+          <label class="form-label">Tipo de documento *</label>
+
+          <select
+            [(ngModel)]="form.tipo_documento"
+            class="form-select w-full">
+
+            <option *ngFor="let tipo of tiposDocumento" [value]="tipo">
+              {{ tipo.replaceAll('_', ' ') }}
+            </option>
+          </select>
+        </div>
+
+        <div *ngIf="modal === 'nuevo'">
+          <label class="form-label">Descripción</label>
+
+          <textarea
+            [(ngModel)]="form.descripcion"
+            rows="2"
+            class="form-input w-full"
+            placeholder="Descripción del documento técnico..."></textarea>
+        </div>
+
+        <div>
+          <label class="form-label">Contenido del documento *</label>
+
+          <textarea
+            [(ngModel)]="form.contenido_documento"
+            rows="9"
+            class="form-input w-full"
+            placeholder="Escribe aquí el contenido técnico del documento..."></textarea>
+
+          <p class="text-[11px] text-gray-400 mt-1">
+            Este contenido se almacenará en la base de datos y se utilizará para generar el PDF cuando no adjuntes uno.
+          </p>
+        </div>
+
+        <div>
+          <label class="form-label">
+            Archivo PDF (opcional)
+          </label>
+
+          <input
+            type="file"
+            accept=".pdf,application/pdf"
+            (change)="seleccionarArchivo($event)"
+            class="form-input w-full">
+
+          <p class="text-[11px] text-gray-400 mt-1">
+            Máximo 15 MB. Si no adjuntas un archivo, OBRATEC generará automáticamente el PDF con el contenido ingresado.
+          </p>
+
+          <p
+            *ngIf="archivoSeleccionado"
+            class="text-xs font-semibold text-green-600 mt-2">
+            Archivo seleccionado: {{ archivoSeleccionado.name }}
+          </p>
+        </div>
+
+        <div>
+          <label class="form-label">Observaciones</label>
+
+          <textarea
+            [(ngModel)]="form.observaciones"
+            rows="2"
+            class="form-input w-full"
+            placeholder="Observaciones de esta versión..."></textarea>
+        </div>
+
+      </div>
+
+      <div class="p-4 border-t border-gray-100 dark:border-slate-800 flex justify-end gap-2">
+        <button
+          (click)="cerrarModal()"
+          class="btn-outline"
+          [disabled]="guardando">
+          Cancelar
+        </button>
+
+        <button
+          *ngIf="modal === 'nuevo'"
+          (click)="guardarDocumento()"
+          class="btn-primary"
+          [disabled]="guardando">
+          {{ guardando ? 'Registrando...' : 'Registrar documento' }}
+        </button>
+
+        <button
+          *ngIf="modal === 'version'"
+          (click)="guardarVersion()"
+          class="btn-primary"
+          [disabled]="guardando">
+          {{ guardando ? 'Guardando...' : 'Guardar nueva versión' }}
+        </button>
+      </div>
+
+    </ng-container>
+
+    <!-- MODAL HISTORIAL -->
+    <ng-container *ngIf="modal === 'historial'">
+
+      <div class="p-5 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
+        <div>
+          <h2 class="text-xl font-extrabold text-gray-900 dark:text-white">
+            HISTORIAL DE VERSIONES
+          </h2>
+
+          <p class="text-xs text-gray-500 mt-1">
+            {{ documentoSeleccionado?.nombre }}
+          </p>
+        </div>
+
+        <button
+          (click)="cerrarModal()"
+          class="text-gray-400 hover:text-gray-700 dark:hover:text-white text-2xl">
+          &times;
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto">
+
+        <div
+          *ngIf="cargandoHistorial"
+          class="flex justify-center py-10">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+        </div>
+
+        <div
+          *ngIf="!cargandoHistorial && historialVersiones.length > 0"
+          class="space-y-4">
+
+          <div
+            *ngFor="let v of historialVersiones"
+            class="border border-gray-200 dark:border-slate-700 rounded-xl p-4">
+
+            <div class="flex flex-col sm:flex-row justify-between gap-3">
+
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="font-extrabold text-orange-600 dark:text-orange-400">
+                    V{{ v.numero_version }}
+                  </span>
+
+                  <span
+                    *ngIf="v.numero_version === documentoSeleccionado?.version_actual"
+                    class="text-[10px] font-bold px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400">
+                    VIGENTE
+                  </span>
+                </div>
+
+                <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-2">
+                  {{ v.nombre_archivo }}
+                </p>
+
+                <p class="text-xs text-gray-500 mt-1">
+                  {{ v.created_at | date:'dd/MM/yyyy HH:mm' }}
+
+                  <span *ngIf="v.username">
+                    · {{ v.username }}
+                  </span>
+                </p>
+
+                <p class="text-xs text-gray-500 mt-1">
+                  Tamaño: {{ tamanoArchivo(v.tamano_bytes) }}
+                </p>
+
+                <p
+                  *ngIf="v.observaciones"
+                  class="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                  {{ v.observaciones }}
+                </p>
+              </div>
+
+              <div class="flex items-center">
+                <button
+                  (click)="descargar(v)"
+                  class="btn-outline text-xs">
+                  Descargar PDF
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <div
+          *ngIf="!cargandoHistorial && historialVersiones.length === 0"
+          class="text-center py-10 text-sm text-gray-500">
+          No existen versiones registradas.
+        </div>
+
+      </div>
+
+      <div class="p-4 border-t border-gray-100 dark:border-slate-800 flex justify-end">
+        <button
+          (click)="cerrarModal()"
+          class="btn-outline">
+          Cerrar
+        </button>
+      </div>
+
+    </ng-container>
+  </div>
+</div>

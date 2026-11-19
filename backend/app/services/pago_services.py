@@ -113,6 +113,13 @@ def listar_pagos_mi_empresa(token):
     return repo.listar_pagos_empresa(empresa)
 
 
+def listar_pagos_globales(token):
+    usuario = _usuario_actual(token)
+    if usuario['nombre_rol'] != 'ADMINISTRADOR':
+        raise HTTPException(403, 'Solo el superadministrador puede listar los pagos globales.')
+    return repo.listar_todos_los_pagos()
+
+
 def consultar_comprobante(token, id_pago):
     usuario = _usuario_actual(token)
     if usuario['nombre_rol'] not in ROLES_CONSULTA:

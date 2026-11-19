@@ -24,6 +24,8 @@ export interface InicioCheckout {
 
 export interface PagoEmpresa {
   id_pago: number;
+  id_empresa?: number;
+  nombre_empresa?: string;
   codigo_plan: string;
   nombre_plan: string;
   monto_menor: number;
@@ -100,6 +102,10 @@ export class PagosService {
 
   miEmpresa() {
     return this.http.get<RespuestaApi<PagoEmpresa[]>>(`${this.url}/mi-empresa`);
+  }
+
+  pagosGlobales() {
+    return this.http.get<RespuestaApi<PagoEmpresa[]>>(`${this.url}/global`);
   }
 
   comprobante(idPago: number) {

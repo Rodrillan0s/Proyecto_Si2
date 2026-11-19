@@ -9,200 +9,239 @@
     <header>
       <div class="brand-mark" aria-hidden="true">O</div>
       <div>
-        <h2 id="assistant-title">Asistente OBRATEC</h2>
+        <h2 id="assistant-title">
+          {{ isComercialMode ? 'Asistente Comercial OBRATEC' : 'Asistente OBRATEC' }}
+        </h2>
         <p>{{ companyName }} · {{ contexto.obra?.nombre || 'Todas las obras' }}</p>
       </div>
       <button *ngIf="ui.mode() === 'quick'" class="icon-button" (click)="ui.open()" aria-label="Abrir conversación completa">↗</button>
       <button class="icon-button" (click)="close()" aria-label="Cerrar asistente">×</button>
     </header>
-    <div class="modes" *ngIf="messages.length && ui.mode() !== 'quick'">
-      <label for="assistant-history">Historial</label>
-      <select
-        id="assistant-history"
-        [(ngModel)]="historyFilter"
-        aria-label="Filtrar historial por tema"
-      >
-        <option value="todos">Toda la conversación</option>
-        <option value="reportes">Reportes y proyectos</option>
-        <option value="crm">Clientes y ventas</option>
-        <option value="finanzas">Finanzas</option>
-      </select>
-    </div>
-    <div
-      #log
-      class="conversation"
-      role="log"
-      aria-live="polite"
-      aria-relevant="additions text"
-      [attr.aria-busy]="busy"
-    >
-      <div *ngIf="!messages.length" class="welcome">
-        <span class="eyebrow">¿QUÉ NECESITAS CONSULTAR?</span>
-        <h3>Los datos de tu empresa,<br />en una conversación.</h3>
-        <p>
-          Consulta proyectos, costos, materiales, personal, incidencias, clientes y ventas según tus
-          permisos. Escribe o dicta; el asistente elige las consultas disponibles.
-        </p>
-        <div class="suggestions">
-          <button
-            *ngFor="let suggestion of suggestions"
-            (click)="send(suggestion)"
-            [disabled]="busy || needsCompany"
-          >
-            {{ suggestion }} <span aria-hidden="true">↗</span>
-          </button>
-        </div>
-      </div>
-      <article
-        *ngFor="let message of visibleMessages"
-        class="message"
-        [class.user]="message.author === 'user'"
-      >
-        <span class="sender">{{
-          message.author === 'user' ? 'Tú' : 'OBRATEC · ' + topicLabel(message.topic)
-        }}</span>
-        <p>{{ message.text }}</p>
 
-        <!-- Tarjeta de Operación Asistida con Vista Previa y Confirmación -->
-        <div *ngIf="message.operacion_propuesta" class="operation-card" [class.executed]="message.operacion_propuesta.ejecutado" [class.cancelled]="message.operacion_propuesta.cancelado">
-          <div class="operation-header">
-            <span class="badge-op">{{ message.operacion_propuesta.entidad }}</span>
-            <span *ngIf="message.operacion_propuesta.ejecutado" class="badge-status success">✓ Ejecutado</span>
-            <span *ngIf="message.operacion_propuesta.cancelado" class="badge-status cancelled">Cancelado</span>
-            <span *ngIf="!message.operacion_propuesta.ejecutado && !message.operacion_propuesta.cancelado" class="badge-status pending">Pendiente de confirmación</span>
+    <!-- Selector unificado de modo dentro de la misma burbuja -->
+    <div *ngIf="adminAvailable" class="flex items-center gap-1.5 px-3 py-1.5 border-b border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/50 text-xs">
+      <button
+        type="button"
+        (click)="ui.assistantType.set('admin')"
+        [ngClass]="
+          !isComercialMode
+            ? 'flex-1 py-1 px-2 rounded-md font-bold bg-amber-500 text-[#172033] border-0'
+            : 'flex-1 py-1 px-2 rounded-md font-medium text-slate-600 dark:text-slate-300 bg-transparent border-0'
+        "
+      >
+        Gestión / Admin
+      </button>
+      <button
+        type="button"
+        (click)="ui.assistantType.set('comercial')"
+        [ngClass]="
+          isComercialMode
+            ? 'flex-1 py-1 px-2 rounded-md font-bold bg-amber-500 text-[#172033] border-0'
+            : 'flex-1 py-1 px-2 rounded-md font-medium text-slate-600 dark:text-slate-300 bg-transparent border-0'
+        "
+      >
+        Comercial &amp; Planos
+      </button>
+    </div>
+
+    <!-- MODO 1: ASISTENTE COMERCIAL Y TASADOR DE PLANOS EMBEBIDO EN LA BURBUJA -->
+    <app-asistente-comercial
+      [embedded]="true"
+      [hidden]="!isComercialMode"
+      [ngClass]="isComercialMode ? 'flex flex-col flex-1 min-h-0' : 'hidden'"
+    ></app-asistente-comercial>
+
+    <!-- MODO 2: ASISTENTE ADMINISTRATIVO INTERNO -->
+    <ng-container *ngIf="!isComercialMode">
+      <div class="modes" *ngIf="messages.length && ui.mode() !== 'quick'">
+        <label for="assistant-history">Historial</label>
+        <select
+          id="assistant-history"
+          [(ngModel)]="historyFilter"
+          aria-label="Filtrar historial por tema"
+        >
+          <option value="todos">Toda la conversación</option>
+          <option value="reportes">Reportes y proyectos</option>
+          <option value="crm">Clientes y ventas</option>
+          <option value="finanzas">Finanzas</option>
+        </select>
+      </div>
+      <div
+        #log
+        class="conversation"
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions text"
+        [attr.aria-busy]="busy"
+      >
+        <div *ngIf="!messages.length" class="welcome">
+          <span class="eyebrow">¿QUÉ NECESITAS CONSULTAR?</span>
+          <h3>Los datos de tu empresa,<br />en una conversación.</h3>
+          <p>
+            Consulta proyectos, costos, materiales, personal, incidencias, clientes y ventas según tus
+            permisos. Escribe o dicta; el asistente elige las consultas disponibles.
+          </p>
+          <div class="suggestions">
+            <button
+              *ngFor="let suggestion of suggestions"
+              (click)="send(suggestion)"
+              [disabled]="busy || needsCompany"
+            >
+              {{ suggestion }} <span aria-hidden="true">↗</span>
+            </button>
           </div>
-          <div class="operation-body">
-            <p class="operation-summary">{{ message.operacion_propuesta.resumen }}</p>
-            <div class="operation-params" *ngIf="message.operacion_propuesta.parametros">
-              <span class="param-tag" *ngFor="let item of (message.operacion_propuesta.parametros | keyvalue)">
-                <strong>{{ item.key }}:</strong> {{ item.value }}
+        </div>
+        <article
+          *ngFor="let message of visibleMessages"
+          class="message"
+          [class.user]="message.author === 'user'"
+        >
+          <span class="sender">{{
+            message.author === 'user' ? 'Tú' : 'OBRATEC · ' + topicLabel(message.topic)
+          }}</span>
+          <p>{{ message.text }}</p>
+
+          <!-- Tarjeta de Operación Asistida con Vista Previa y Confirmación -->
+          <div *ngIf="message.operacion_propuesta" class="operation-card" [class.executed]="message.operacion_propuesta.ejecutado" [class.cancelled]="message.operacion_propuesta.cancelado">
+            <div class="operation-header">
+              <span class="badge-op">{{ message.operacion_propuesta.entidad }}</span>
+              <span *ngIf="message.operacion_propuesta.ejecutado" class="badge-status success">✓ Ejecutado</span>
+              <span *ngIf="message.operacion_propuesta.cancelado" class="badge-status cancelled">Cancelado</span>
+              <span *ngIf="!message.operacion_propuesta.ejecutado && !message.operacion_propuesta.cancelado" class="badge-status pending">Pendiente de confirmación</span>
+            </div>
+            <div class="operation-body">
+              <p class="operation-summary">{{ message.operacion_propuesta.resumen }}</p>
+              <div class="operation-params" *ngIf="message.operacion_propuesta.parametros">
+                <span class="param-tag" *ngFor="let item of (message.operacion_propuesta.parametros | keyvalue)">
+                  <strong>{{ item.key }}:</strong> {{ item.value }}
+                </span>
+              </div>
+              <div class="operation-expiry" *ngIf="message.operacion_propuesta.expira_en">
+                <small>Expira: {{ message.operacion_propuesta.expira_en | date:'HH:mm' }}</small>
+              </div>
+            </div>
+            <div *ngIf="!message.operacion_propuesta.ejecutado && !message.operacion_propuesta.cancelado" class="operation-actions">
+              <button type="button" class="btn-confirm" (click)="confirmOperation(message)" [disabled]="busy">
+                Confirmar ejecución ✓
+              </button>
+              <button type="button" class="btn-cancel" (click)="cancelOperation(message)" [disabled]="busy">
+                Cancelar
+              </button>
+            </div>
+          </div>
+
+          <!-- Tarjeta de Análisis y Diagnóstico Operativo -->
+          <div *ngIf="message.resultado_analisis" class="analysis-card">
+            <div class="analysis-header">
+              <span class="badge-risk" [attr.data-risk]="message.resultado_analisis.nivel_riesgo">
+                Riesgo: {{ message.resultado_analisis.nivel_riesgo }}
               </span>
+              <span class="analysis-date">{{ message.resultado_analisis.fecha_corte }}</span>
             </div>
-            <div class="operation-expiry" *ngIf="message.operacion_propuesta.expira_en">
-              <small>Expira: {{ message.operacion_propuesta.expira_en | date:'HH:mm' }}</small>
+            <div class="indicators-list" *ngIf="message.resultado_analisis.indicadores?.length">
+              <div *ngFor="let ind of message.resultado_analisis.indicadores" class="indicator-item" [class.alert]="ind.estado === 'CRITICO'">
+                <strong>{{ ind.titulo }}:</strong> {{ ind.valor }} <small>— {{ ind.detalle }}</small>
+              </div>
             </div>
           </div>
-          <div *ngIf="!message.operacion_propuesta.ejecutado && !message.operacion_propuesta.cancelado" class="operation-actions">
-            <button type="button" class="btn-confirm" (click)="confirmOperation(message)" [disabled]="busy">
-              Confirmar ejecución ✓
+
+          <!-- Chips de Preguntas de Seguimiento Sugeridas -->
+          <div *ngIf="message.sugerencias?.length" class="suggestions-chips">
+            <button *ngFor="let sug of message.sugerencias" type="button" class="chip" (click)="send(sug)" [disabled]="busy">
+              {{ sug }}
             </button>
-            <button type="button" class="btn-cancel" (click)="cancelOperation(message)" [disabled]="busy">
-              Cancelar
+          </div>
+
+          <div class="choices">
+            <button *ngFor="let choice of message.choices" (click)="send(choice)" [disabled]="busy">
+              {{ choice }}</button
+            ><button
+              *ngFor="let work of message.works"
+              (click)="selectWork(message, work)"
+              [disabled]="busy"
+            >
+              {{ work.nombre }}
             </button>
           </div>
-        </div>
-
-        <!-- Tarjeta de Análisis y Diagnóstico Operativo -->
-        <div *ngIf="message.resultado_analisis" class="analysis-card">
-          <div class="analysis-header">
-            <span class="badge-risk" [attr.data-risk]="message.resultado_analisis.nivel_riesgo">
-              Riesgo: {{ message.resultado_analisis.nivel_riesgo }}
-            </span>
-            <span class="analysis-date">{{ message.resultado_analisis.fecha_corte }}</span>
+          <div
+            *ngFor="
+              let execution of message.executions || (message.execution ? [message.execution] : [])
+            "
+            class="report-actions"
+          >
+            <button (click)="view(execution)" [disabled]="busy">Ver reporte completo ↗</button
+            ><ng-container *ngIf="catalog?.acciones?.includes('Exportar_reportes')"
+              ><button (click)="download(execution, 'pdf')" [disabled]="busy">PDF</button
+              ><button (click)="download(execution, 'xlsx')" [disabled]="busy">
+                Excel
+              </button></ng-container
+            >
           </div>
-          <div class="indicators-list" *ngIf="message.resultado_analisis.indicadores?.length">
-            <div *ngFor="let ind of message.resultado_analisis.indicadores" class="indicator-item" [class.alert]="ind.estado === 'CRITICO'">
-              <strong>{{ ind.titulo }}:</strong> {{ ind.valor }} <small>— {{ ind.detalle }}</small>
-            </div>
-          </div>
-        </div>
-
-        <!-- Chips de Preguntas de Seguimiento Sugeridas -->
-        <div *ngIf="message.sugerencias?.length" class="suggestions-chips">
-          <button *ngFor="let sug of message.sugerencias" type="button" class="chip" (click)="send(sug)" [disabled]="busy">
-            {{ sug }}
-          </button>
-        </div>
-
-        <div class="choices">
-          <button *ngFor="let choice of message.choices" (click)="send(choice)" [disabled]="busy">
-            {{ choice }}</button
-          ><button
-            *ngFor="let work of message.works"
-            (click)="selectWork(message, work)"
-            [disabled]="busy"
-          >
-            {{ work.nombre }}
-          </button>
-        </div>
-        <div
-          *ngFor="
-            let execution of message.executions || (message.execution ? [message.execution] : [])
-          "
-          class="report-actions"
-        >
-          <button (click)="view(execution)" [disabled]="busy">Ver reporte completo ↗</button
-          ><ng-container *ngIf="catalog?.acciones?.includes('Exportar_reportes')"
-            ><button (click)="download(execution, 'pdf')" [disabled]="busy">PDF</button
-            ><button (click)="download(execution, 'xlsx')" [disabled]="busy">
-              Excel
-            </button></ng-container
-          >
-        </div>
-      </article>
-      <p *ngIf="messages.length && !visibleMessages.length" class="working">
-        No hay consultas de este tema. Puedes escribir cualquier consulta abajo.
-      </p>
-      <p *ngIf="busy" class="working" role="status">
-        <span class="dot"></span>Consultando tus datos…
-      </p>
-    </div>
-    <p *ngIf="needsCompany" class="feedback" role="status">
-      Selecciona una empresa en el panel para consultar sus datos.
-    </p>
-    <p *ngIf="error" class="feedback error" role="alert">{{ error }}</p>
-    <form (ngSubmit)="send()" class="composer">
-      <label class="sr-only" for="assistant-input">Tu consulta</label
-      ><textarea
-        #input
-        id="assistant-input"
-        name="consulta"
-        [(ngModel)]="text"
-        rows="2"
-        maxlength="2000"
-        placeholder="Escribe tu consulta…"
-        [disabled]="busy || needsCompany"
-        (keydown.enter)="onEnter($event)"
-      ></textarea>
-      <div class="composer-actions">
-        <button
-          type="button"
-          class="voice"
-          (click)="voice()"
-          [class.recording]="listening"
-          [attr.aria-pressed]="listening"
-          [disabled]="busy || voicePending || needsCompany"
-          [attr.aria-label]="listening ? 'Detener dictado' : 'Dictar consulta'"
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            aria-hidden="true"
-          >
-            <rect x="9" y="2" width="6" height="12" rx="3" />
-            <path d="M5 10v2a7 7 0 0014 0v-2M12 19v3M8 22h8" /></svg
-          >{{ listening ? 'Detener' : 'Dictar' }}</button
-        ><small role="status">{{
-          listening
-            ? 'Escuchando…'
-            : voicePending
-              ? 'Procesando voz…'
-              : 'Enter para enviar · Shift + Enter para nueva línea'
-        }}</small
-        ><button
-          type="submit"
-          class="send"
-          [disabled]="busy || listening || voicePending || needsCompany || !text.trim()"
-          aria-label="Enviar consulta"
-        >
-          ↑
-        </button>
+        </article>
+        <p *ngIf="messages.length && !visibleMessages.length" class="working">
+          No hay consultas de este tema. Puedes escribir cualquier consulta abajo.
+        </p>
+        <p *ngIf="busy" class="working" role="status">
+          <span class="dot"></span>Consultando tus datos…
+        </p>
       </div>
-    </form>
+      <p *ngIf="needsCompany" class="feedback" role="status">
+        Selecciona una empresa en el panel para consultar sus datos.
+      </p>
+      <p *ngIf="error" class="feedback error" role="alert">{{ error }}</p>
+      <form (ngSubmit)="send()" class="composer">
+        <label class="sr-only" for="assistant-input">Tu consulta</label
+        ><textarea
+          #input
+          id="assistant-input"
+          name="consulta"
+          [(ngModel)]="text"
+          rows="2"
+          maxlength="2000"
+          placeholder="Escribe tu consulta…"
+          [disabled]="busy || needsCompany"
+          (keydown.enter)="onEnter($event)"
+        ></textarea>
+        <div class="composer-actions">
+          <button
+            type="button"
+            class="voice"
+            (click)="voice()"
+            [class.recording]="listening"
+            [attr.aria-pressed]="listening"
+            [disabled]="busy || voicePending || needsCompany"
+            [attr.aria-label]="listening ? 'Detener dictado' : 'Dictar consulta'"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              aria-hidden="true"
+            >
+              <rect x="9" y="2" width="6" height="12" rx="3" />
+              <path d="M5 10v2a7 7 0 0014 0v-2M12 19v3M8 22h8" /></svg
+            >{{ listening ? 'Detener' : 'Dictar' }}</button
+          ><small role="status">{{
+            listening
+              ? 'Escuchando…'
+              : voicePending
+                ? 'Procesando voz…'
+                : 'Enter para enviar · Shift + Enter para nueva línea'
+          }}</small
+          ><button
+            type="submit"
+            class="send"
+            [disabled]="busy || listening || voicePending || needsCompany || !text.trim()"
+            aria-label="Enviar consulta"
+          >
+            ↑
+          </button>
+        </div>
+      </form>
+    </ng-container>
   </section>
   <button
     #launcher

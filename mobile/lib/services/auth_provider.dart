@@ -1,66 +1,151 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'ai_assistant_service.dart';
+import 'notificacion_service.dart';
 import 'token_storage.dart';
 
 /// Catálogo local de navegación; Reportes usa permisos actuales del backend.
 const List<String> permisosOficiales = [
-  'Visualizar_reportes', 'Exportar_reportes', 'Enviar_reportes', 'Programar_reportes', 'Administrar_programaciones_reportes',
-  'Visualizar_usuarios', 'Registrar_usuarios', 'Modificar_usuarios', 'Eliminar_usuarios',
-  'Visualizar_obras', 'Registrar_obras', 'Modificar_obras', 'Eliminar_obras',
-  'Visualizar_empresa', 'Registrar_empresa', 'Modificar_empresa', 'Eliminar_empresa',
-  'Visualizar_inventario', 'Registrar_inventario', 'Modificar_inventario', 'Eliminar_inventario',
-  'Visualizar_materiales', 'Registrar_materiales', 'Modificar_materiales', 'Desactivar_materiales',
-  'Visualizar_proveedores', 'Registrar_proveedores', 'Modificar_proveedores',
+  'Visualizar_reportes',
+  'Exportar_reportes',
+  'Enviar_reportes',
+  'Programar_reportes',
+  'Administrar_programaciones_reportes',
+  'Visualizar_usuarios',
+  'Registrar_usuarios',
+  'Modificar_usuarios',
+  'Eliminar_usuarios',
+  'Visualizar_obras',
+  'Registrar_obras',
+  'Modificar_obras',
+  'Eliminar_obras',
+  'Visualizar_empresa',
+  'Registrar_empresa',
+  'Modificar_empresa',
+  'Eliminar_empresa',
+  'Visualizar_inventario',
+  'Registrar_inventario',
+  'Modificar_inventario',
+  'Eliminar_inventario',
+  'Visualizar_materiales',
+  'Registrar_materiales',
+  'Modificar_materiales',
+  'Desactivar_materiales',
+  'Visualizar_proveedores',
+  'Registrar_proveedores',
+  'Modificar_proveedores',
+  'Visualizar_clientes',
+  'Visualizar_ordenes_compra',
+  'Visualizar_equipos_maquinaria',
+  'Visualizar_ordenes_trabajo',
+  'Visualizar_estimaciones',
+  'Visualizar_mano_obra',
+];
+
+const List<String> assistantPermissions = [
+  'Visualizar_reportes',
+  'Visualizar_clientes',
+  'Visualizar_obras',
+  'Visualizar_materiales',
+  'Visualizar_proveedores',
+  'Visualizar_ordenes_compra',
+  'Visualizar_equipos_maquinaria',
+  'Visualizar_ordenes_trabajo',
+  'Visualizar_estimaciones',
+  'Visualizar_usuarios',
+  'Visualizar_mano_obra',
 ];
 
 /// Mapa de permisos por rol oficial
 const Map<String, List<String>> mapaPermisosPorRol = {
   'ADMINISTRADOR': permisosOficiales,
   'ADMINISTRADOR_EMPRESA': [
-    'Visualizar_reportes', 'Exportar_reportes', 'Enviar_reportes', 'Programar_reportes', 'Administrar_programaciones_reportes',
-    'Visualizar_usuarios', 'Registrar_usuarios', 'Modificar_usuarios', 'Eliminar_usuarios',
-    'Visualizar_obras', 'Registrar_obras', 'Modificar_obras', 'Eliminar_obras',
-    'Visualizar_empresa', 'Registrar_empresa', 'Modificar_empresa',
-    'Visualizar_inventario', 'Registrar_inventario', 'Modificar_inventario', 'Eliminar_inventario',
-    'Visualizar_materiales', 'Registrar_materiales', 'Modificar_materiales', 'Desactivar_materiales',
-    'Visualizar_proveedores', 'Registrar_proveedores', 'Modificar_proveedores',
+    'Visualizar_reportes',
+    'Exportar_reportes',
+    'Enviar_reportes',
+    'Programar_reportes',
+    'Administrar_programaciones_reportes',
+    'Visualizar_usuarios',
+    'Registrar_usuarios',
+    'Modificar_usuarios',
+    'Eliminar_usuarios',
+    'Visualizar_obras',
+    'Registrar_obras',
+    'Modificar_obras',
+    'Eliminar_obras',
+    'Visualizar_empresa',
+    'Registrar_empresa',
+    'Modificar_empresa',
+    'Visualizar_inventario',
+    'Registrar_inventario',
+    'Modificar_inventario',
+    'Eliminar_inventario',
+    'Visualizar_materiales',
+    'Registrar_materiales',
+    'Modificar_materiales',
+    'Desactivar_materiales',
+    'Visualizar_proveedores',
+    'Registrar_proveedores',
+    'Modificar_proveedores',
+    'Visualizar_clientes',
+    'Visualizar_ordenes_compra',
+    'Visualizar_equipos_maquinaria',
+    'Visualizar_ordenes_trabajo',
+    'Visualizar_estimaciones',
+    'Visualizar_mano_obra',
   ],
   'JEFE_DE_OBRA': [
-    'Visualizar_reportes', 'Exportar_reportes', 'Enviar_reportes', 'Programar_reportes',
-    'Visualizar_obras', 'Registrar_obras', 'Modificar_obras',
-    'Visualizar_inventario', 'Modificar_inventario',
+    'Visualizar_reportes',
+    'Exportar_reportes',
+    'Enviar_reportes',
+    'Programar_reportes',
+    'Visualizar_obras',
+    'Registrar_obras',
+    'Modificar_obras',
+    'Visualizar_inventario',
+    'Modificar_inventario',
     'Visualizar_materiales',
     'Visualizar_proveedores',
+    'Visualizar_ordenes_trabajo',
+    'Visualizar_equipos_maquinaria',
+    'Visualizar_mano_obra',
   ],
   'SUPERVISOR_OBRA': [
-    'Visualizar_obras', 'Modificar_obras',
+    'Visualizar_obras',
+    'Modificar_obras',
     'Visualizar_inventario',
     'Visualizar_materiales',
+    'Visualizar_ordenes_trabajo',
   ],
   'CLIENTE': [
-    'Visualizar_reportes', 'Exportar_reportes',
+    'Visualizar_reportes',
+    'Exportar_reportes',
     'Visualizar_obras',
   ],
   'ELECTRICO': [
-    'Visualizar_reportes', 'Exportar_reportes',
+    'Visualizar_reportes',
+    'Exportar_reportes',
     'Visualizar_obras',
     'Visualizar_inventario',
     'Visualizar_materiales',
   ],
   'PLOMERO': [
-    'Visualizar_reportes', 'Exportar_reportes',
+    'Visualizar_reportes',
+    'Exportar_reportes',
     'Visualizar_obras',
     'Visualizar_inventario',
     'Visualizar_materiales',
   ],
   'MAESTRO_ALBANIL': [
-    'Visualizar_reportes', 'Exportar_reportes',
+    'Visualizar_reportes',
+    'Exportar_reportes',
     'Visualizar_obras',
     'Visualizar_inventario',
     'Visualizar_materiales',
   ],
   'ALBANIL': [
-    'Visualizar_reportes', 'Exportar_reportes',
+    'Visualizar_reportes',
+    'Exportar_reportes',
     'Visualizar_obras',
     'Visualizar_inventario',
     'Visualizar_materiales',
@@ -82,6 +167,18 @@ class AuthProvider extends ChangeNotifier {
   String? get ci => _datosUsuario?['ci'];
   String? get idEmpresa => _datosUsuario?['id_empresa'];
   String? get nombreEmpresa => _datosUsuario?['nombre_empresa'];
+
+  /// Clave estable de identidad del usuario actual para aislar el historial del asistente
+  String get userIdentityKey {
+    if (!_estaAutenticado || _datosUsuario == null) return 'anon';
+    final email = (correo ?? '').trim().toLowerCase();
+    if (email.isNotEmpty) return 'u:$email';
+    final doc = (ci ?? '').trim().toLowerCase();
+    if (doc.isNotEmpty) return 'ci:$doc';
+    final name = (usuarioCompleto ?? '').trim().toLowerCase();
+    if (name.isNotEmpty) return 'n:$name';
+    return 'auth_user';
+  }
 
   // ── NORMALIZACIÓN DE ROL ──────────────────────────────────────────────────
   String get rolNormalizado {
@@ -116,6 +213,12 @@ class AuthProvider extends ChangeNotifier {
         'ALBANIL',
       ].contains(rolNormalizado);
   bool get esTrabajadorCampo => esOperarioCampo;
+
+  /// Determina si el usuario puede usar el modo Administrativo / Gestión del Asistente
+  bool get puedeUsarAsistenteAdmin {
+    if (!_estaAutenticado || esCliente) return false;
+    return esAdminGlobal || esAdminEmpresa || hasAnyPermission(assistantPermissions);
+  }
 
   // ── PERMISOS ─────────────────────────────────────────────────────────────
   List<String> get permisos => mapaPermisosPorRol[rolNormalizado] ?? [];
@@ -202,23 +305,29 @@ class AuthProvider extends ChangeNotifier {
         }
       }
 
+      AiAssistantService.syncUserIdentity(userIdentityKey);
       notifyListeners();
     }
   }
 
   void loginExitoso(Map<String, String> datos) {
+    AiAssistantService.clearAllSessions();
     _estaAutenticado = true;
     _datosUsuario = datos;
     _empresaActiva = null;
+    AiAssistantService.syncUserIdentity(userIdentityKey);
     notifyListeners();
   }
 
   Future<void> cerrarSesion() async {
+    AiAssistantService.clearAllSessions();
+    NotificacionService.instance.disconnect();
     _estaAutenticado = false;
     _datosUsuario = null;
     _empresaActiva = null;
     await TokenStorage.clearToken();
     await TokenStorage.saveEmpresaActiva(null);
+    AiAssistantService.syncUserIdentity('anon');
     notifyListeners();
   }
 
