@@ -66,7 +66,15 @@ class TokenStorage {
         return _storage.read(key: 'custom_api_url');
     }
 
+    static Future<void> saveValue(String key, String value) async {
+        await _storage.write(key: key, value: value);
+    }
+
     static Future<String?> getValue(String key) async {
-       return _storage.read(key: key);
+        return _storage.read(key: key);
+    }
+
+    static Future<void> removeValue(String key) async {
+        await _storage.delete(key: key);
     }
 }

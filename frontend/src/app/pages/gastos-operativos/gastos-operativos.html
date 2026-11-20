@@ -1,0 +1,75 @@
+<div class="control-page">
+  <app-page-header categoria="GESTIÓN DE OBRAS" titulo="Gastos operativos finales"
+    subtitulo="Consolidación de costos registrados y mano de obra al finalizar una obra." [codigo]="obra()?.codigo">
+    <div actions class="header-actions">
+      <a class="btn-outline" routerLink="/control-costos">Control de costos</a>
+      <button type="button" class="btn-outline" (click)="cargar()" [disabled]="!idObra || cargando || guardando">Actualizar</button>
+    </div>
+  </app-page-header>
+  <p *ngIf="!contextoCompatible" class="toast toast-error" role="status">Selecciona la empresa de tu sesión para consultar los gastos finales.</p>
+  <p *ngIf="error" class="toast toast-error" role="alert">{{ error }}</p>
+  <p *ngIf="exito" class="toast toast-success" role="status">{{ exito }}</p>
+  <section class="selector-card">
+    <div class="field project-field">
+      <label for="obra-final">Obra</label>
+      <select id="obra-final" [ngModel]="idObra" (ngModelChange)="cambiarObra($event)" [disabled]="guardando || !contextoCompatible">
+        <option [ngValue]="0">Selecciona una obra</option>
+        <option *ngFor="let p of proyectos" [ngValue]="p.id_obra">{{ p.codigo }} · {{ p.nombre }}</option>
+      </select>
+    </div>
+    <span *ngIf="obra()" class="status-pill">{{ obra()?.estado_obra }}</span>
+  </section>
+  <nav class="tabs" *ngIf="idObra" aria-label="Información económica de obra">
+    <button type="button" [class.active]="tab === 'final'" (click)="cambiarTab('final')" [disabled]="guardando">Resumen final</button>
+    <button type="button" [class.active]="tab === 'mano-obra'" (click)="cambiarTab('mano-obra')" [disabled]="guardando">Mano de obra</button>
+  </nav>
+  <p *ngIf="aviso" class="empty-inline" role="status">{{ aviso }}</p>
+  <p *ngIf="cargando" class="loading-inline" role="status">Consultando datos…</p>
+  <section *ngIf="resumen as final">
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
+      <app-dashboard-card titulo="Presupuesto original" [valor]="dinero(final.resumen.costo_presupuestado_original)" />
+      <app-dashboard-card titulo="Presupuesto revisado" [valor]="dinero(final.resumen.presupuesto_revisado)" />
+      <app-dashboard-card titulo="Costo final registrado" [valor]="dinero(final.resumen.costo_final_registrado)" />
+      <app-dashboard-card titulo="Variación revisada" [valor]="dinero(final.resumen.variacion_revisada)" />
+    </div>
+    <p>Presupuesto {{ final.linea_base.presupuesto_nombre }} · versión {{ final.linea_base.version_presupuesto }}. Incluye costos registrados y salarios de jornadas cerradas; no acredita pagos.</p>
+    <div class="table-wrap"><table><thead><tr><th>Categoría</th><th>Importe</th></tr></thead><tbody>
+      <tr *ngFor="let categoria of categorias"><td>{{ categoria }}</td><td>{{ dinero(final.desglose_por_categoria?.[categoria]) }}</td></tr>
+    </tbody></table></div>
+    <h3>Mano de obra cerrada</h3>
+    <div class="table-wrap"><table><thead><tr><th>Trabajador</th><th>Fecha</th><th>Jornada</th><th>Salario diario</th><th>Costo</th></tr></thead><tbody>
+      <tr *ngFor="let j of final.mano_obra_trabajadores"><td>{{ j.nombre_completo }}</td><td>{{ j.fecha }}</td><td>{{ j.dias_trabajados }}</td><td>{{ dinero(j.salario_diario) }}</td><td>{{ dinero(j.costo_calculado) }}</td></tr>
+      <tr *ngIf="!final.mano_obra_trabajadores?.length"><td colspan="5">Sin jornadas cerradas.</td></tr>
+    </tbody></table></div>
+  </section>
+  <section *ngIf="idObra && tab === 'mano-obra'">
+    <h3>Personal asignado</h3>
+    <div class="table-wrap"><table><thead><tr><th>Trabajador</th><th>Rol</th><th>Salario diario vigente</th><th>Desde</th></tr></thead><tbody>
+      <tr *ngFor="let t of manoObra.trabajadores"><td>{{ t.nombre_completo }}</td><td>{{ t.nombre_rol }}</td><td>{{ t.salario_diario == null ? 'Sin salario' : dinero(t.salario_diario) }}</td><td>{{ t.salario_vigente_desde || '—' }}</td></tr>
+      <tr *ngIf="!manoObra.trabajadores.length"><td colspan="4">No hay personal asignado a esta obra.</td></tr>
+    </tbody></table></div>
+    <div class="form-grid" *ngIf="puede('Modificar_obras') && manoObra.trabajadores.length">
+      <form (ngSubmit)="guardarSalario()">
+        <h3>Registrar salario</h3>
+        <p>El salario pertenece al trabajador y se aplica a sus jornadas desde la fecha de vigencia.</p>
+        <div class="field"><label for="salario-trabajador">Trabajador</label><select id="salario-trabajador" name="salario-trabajador" [(ngModel)]="salario.id_usuario" required><option [ngValue]="0">Selecciona</option><option *ngFor="let t of manoObra.trabajadores" [ngValue]="t.id_usuario">{{ t.nombre_completo }}</option></select></div>
+        <div class="field"><label for="salario-diario">Salario diario</label><input id="salario-diario" name="salario-diario" type="number" min="0.01" step="0.01" [(ngModel)]="salario.salario_diario" required></div>
+        <div class="field"><label for="salario-fecha">Vigencia</label><input id="salario-fecha" name="salario-fecha" type="date" [(ngModel)]="salario.fecha_vigencia" required></div>
+        <button class="btn-primary" type="submit" [disabled]="guardando || cargando">Guardar salario</button>
+      </form>
+      <form (ngSubmit)="guardarJornada()" *ngIf="obra()?.estado_obra !== 'FINALIZADO'">
+        <h3>Registrar jornada</h3>
+        <p>Una jornada existente para el mismo trabajador y fecha se actualiza. El servidor calcula su costo.</p>
+        <div class="field"><label for="jornada-trabajador">Trabajador</label><select id="jornada-trabajador" name="jornada-trabajador" [(ngModel)]="jornada.id_usuario" required><option [ngValue]="0">Selecciona</option><option *ngFor="let t of manoObra.trabajadores" [ngValue]="t.id_usuario">{{ t.nombre_completo }}</option></select></div>
+        <div class="field"><label for="jornada-fecha">Fecha</label><input id="jornada-fecha" name="jornada-fecha" type="date" [(ngModel)]="jornada.fecha" required></div>
+        <div class="field"><label for="jornada-dias">Fracción de jornada</label><input id="jornada-dias" name="jornada-dias" type="number" min="0" max="1" step="0.01" [(ngModel)]="jornada.dias_trabajados" required></div>
+        <button class="btn-primary" type="submit" [disabled]="guardando || cargando">Guardar jornada</button>
+      </form>
+    </div>
+    <h3>Jornadas registradas</h3>
+    <div class="table-wrap"><table><thead><tr><th>Trabajador</th><th>Fecha</th><th>Jornada</th><th>Salario diario</th><th>Costo calculado</th></tr></thead><tbody>
+      <tr *ngFor="let j of manoObra.jornadas"><td>{{ j.nombre_completo }}</td><td>{{ j.fecha }}</td><td>{{ j.dias_trabajados }}</td><td>{{ dinero(j.salario_diario) }}</td><td>{{ dinero(j.costo_calculado) }}</td></tr>
+      <tr *ngIf="!manoObra.jornadas.length"><td colspan="5">Sin jornadas registradas.</td></tr>
+    </tbody></table></div>
+  </section>
+</div>

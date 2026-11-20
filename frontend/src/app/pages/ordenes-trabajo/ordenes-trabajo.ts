@@ -1,3 +1,5 @@
+import { LecturasVigentes } from '../../services/lecturas';
+import { ContextoOperativo } from '../../services/contexto-operativo';
 import {
   Component,
   OnInit,
@@ -37,6 +39,7 @@ import { OrdenTrabajoResponsablesComponent } from './responsables/orden-trabajo-
   styleUrl: './ordenes-trabajo.css'
 })
 export class OrdenesTrabajoComponent implements OnInit, OnDestroy {
+  private contexto = inject(ContextoOperativo);
 
   private ordenesTrabajoService = inject(OrdenesTrabajoService);
   private authService = inject(AuthService);
@@ -45,6 +48,7 @@ export class OrdenesTrabajoComponent implements OnInit, OnDestroy {
   private ngZone = inject(NgZone);
   private platformId = inject(PLATFORM_ID);
   private destroyRef = inject(DestroyRef);
+  private reads = new LecturasVigentes(this.destroyRef);
 
   ordenes: OrdenTrabajo[] = [];
   ordenesFiltradas: OrdenTrabajo[] = [];
@@ -77,10 +81,17 @@ export class OrdenesTrabajoComponent implements OnInit, OnDestroy {
   private timeoutMensajes: any;
 
   ngOnInit(): void {
-    this.authService.empresaActiva$
+    this.contexto.proteger(() => this.mostrarModal || this.mostrarResponsables, this.destroyRef);
+    this.contexto.protegerEscritura(() => this.guardando, this.destroyRef);
+    this.contexto.operativo$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((empresa) => {
-        this.empresaActiva = empresa;
+        this.ordenes = [];
+        this.ordenesFiltradas = [];
+        this.mostrarModal = false;
+        this.mostrarResponsables = false;
+        this.ordenSeleccionada = null;
+        this.empresaActiva = this.authService.obtenerEmpresaActiva();
         this.cargarDatos();
       });
   }
@@ -100,7 +111,7 @@ export class OrdenesTrabajoComponent implements OnInit, OnDestroy {
     this.mensajeError = '';
     const idEmpresa = this.authService.obtenerIdEmpresaActiva() || undefined;
 
-    this.ordenesTrabajoService.listarOrdenesTrabajo(idEmpresa).subscribe({
+    this.ordenesTrabajoService.listarOrdenesTrabajo(idEmpresa, this.contexto.obra?.id_obra).pipe(this.reads.reemplazar('ordenes')).subscribe({
       next: (respuesta) => {
         this.ngZone.run(() => {
           this.ordenes = respuesta.data || [];

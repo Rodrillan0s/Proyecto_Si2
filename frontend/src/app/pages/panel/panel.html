@@ -1,10 +1,11 @@
 <div class="view-panel space-y-6">
+  <p *ngIf="errorCarga" role="alert" class="text-red-600 dark:text-red-400 text-sm">{{ errorCarga }}</p>
 
   <!-- ========================================================================= -->
   <!-- CABECERA DEL PANEL (PAGE HEADER)                                         -->
   <!-- ========================================================================= -->
   <app-page-header
-    [titulo]="'Panel de Control — ' + (usuarioActual?.nombre_empresa || 'OBRATEC')"
+    [titulo]="'Panel de Control — ' + nombreEmpresaActual"
     [subtitulo]="'Vista consolidada de operaciones para ' + usuarioActual?.nombre_completo"
     [categoria]="rolUsuario"
     [codigo]="usuarioActual?.ci ? 'CI: ' + usuarioActual?.ci : undefined"
@@ -20,7 +21,7 @@
       <!-- Botón de acción contextual según permisos -->
       <button
         *ngIf="hasPermission('Registrar_obras')"
-        (click)="navegarA('/proyectos', { action: 'nuevo' })"
+        (click)="navegarA('/proyectos', { tab: 'nuevo' })"
         class="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition shadow-xs"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>

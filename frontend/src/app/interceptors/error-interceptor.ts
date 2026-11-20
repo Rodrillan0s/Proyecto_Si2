@@ -12,7 +12,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(
     catchError((error) => {
       // SOLO si el error es 401
-      if (error.status === 401) {
+      if (error.status === 401 && error.error?.code !== 'BACKUP_REAUTH_FAILED') {
         const token = authService.obtenerToken();
         
         // ¡CAMBIO CLAVE! 

@@ -197,6 +197,12 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
             </svg>
           </button>
+          <button
+  (click)="verDocumentosTecnicos(p.id_obra)"
+  class="btn-outline flex items-center justify-center gap-2 py-2 text-xs font-bold"
+  title="Documentación técnica">
+  <span>Planos y documentos</span>
+</button>
 
           <div class="flex items-center gap-1">
             <button (click)="verEstructura(p.id_obra, $event)" 

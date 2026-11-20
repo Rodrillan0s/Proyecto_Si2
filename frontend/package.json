@@ -7,7 +7,13 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:frontend": "node dist/frontend/server/server.mjs"
+    "test:cronogramas": "ng test --watch=false --ts-config=tsconfig.cronogramas.spec.json --include=src/app/pages/cronogramas/cronogramas.spec.ts",
+    "test:gastos-finales": "ng test --watch=false --ts-config=tsconfig.cu32.spec.json --include=src/app/pages/gastos-operativos/gastos-operativos.spec.ts --include=src/app/services/control-costos.service.spec.ts",
+    "test:reportes": "ng test --watch=false --ts-config=tsconfig.reportes.spec.json --include=src/app/**/reportes*.spec.ts",
+    "test:backups": "ng test --watch=false --ts-config=tsconfig.backups.spec.json --include=src/app/**/backup.spec.ts",
+    "serve:ssr:frontend": "node dist/frontend/server/server.mjs",
+    "test:navigation": "ng test --watch=false --ts-config=tsconfig.navigation.spec.json --include=src/app/**/lecturas.spec.ts --include=src/app/**/rendimiento.spec.ts --include=src/app/**/admin-layout.spec.ts",
+    "test:pagos": "ng test --watch=false --ts-config=tsconfig.pagos.spec.json --include=src/app/services/pagos.spec.ts --include=src/app/pages/pagos/**/*.spec.ts"
   },
   "private": true,
   "packageManager": "npm@10.9.2",
@@ -21,6 +27,7 @@
     "@angular/router": "^21.2.0",
     "@angular/ssr": "^21.2.14",
     "express": "^5.1.0",
+    "jspdf": "^4.2.1",
     "leaflet": "^1.9.4",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",

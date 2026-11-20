@@ -1,6 +1,7 @@
+import { LecturasCompartidas } from './lecturas';
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export type EstadoMaterial = 'ACTIVO' | 'INACTIVO';
@@ -23,10 +24,46 @@ export interface Material {
   estado: EstadoMaterial;
   id_empresa?: number;
   nombre_empresa?: string;
+  id_material_base?: number | null;
+  es_propio?: boolean;
   caracteristicas?: MaterialCaracteristica[];
   fecha_ingreso?: string;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface MaterialBase {
+  id_material_base: number;
+  codigo: string;
+  nombre_material: string;
+  descripcion?: string | null;
+  categoria?: CategoriaMaterial;
+  categoria_nombre?: string;
+  unidad_medida?: UnidadMedida;
+  unidad_nombre?: string;
+  unidad_abreviatura?: string;
+  precio_referencial?: number | null;
+  estado: EstadoMaterial;
+  created_at?: string;
+  adoptado: boolean;
+  id_material_empresa?: number | null;
+  precio_empresa?: number | null;
+  codigo_empresa?: string | null;
+}
+
+export interface MaterialAdoptarPayload {
+  id_material_base: number;
+  precio?: number | null;
+  codigo_interno?: string | null;
+  id_proveedor?: number | null;
+  stock_minimo?: number;
+  id_empresa?: number;
+}
+
+export interface MaterialBaseListResponse {
+  success: boolean;
+  data: MaterialBase[];
+  pagination: MaterialPagination;
 }
 
 export interface MaterialCreatePayload {
@@ -54,6 +91,7 @@ export interface CategoriaMutationResponse { success: boolean; data: CategoriaMa
 
 @Injectable({ providedIn: 'root' })
 export class MaterialsService {
+  private shared = inject(LecturasCompartidas);
   private http = inject(HttpClient);
   private readonly url = `${environment.apiUrl}/api/materiales`;
 
@@ -69,7 +107,31 @@ export class MaterialsService {
   registrar(payload: MaterialCreatePayload): Observable<MaterialMutationResponse> { return this.http.post<MaterialMutationResponse>(this.url, payload); }
   modificar(id: number, payload: MaterialUpdatePayload): Observable<MaterialMutationResponse> { return this.http.put<MaterialMutationResponse>(`${this.url}/${id}`, payload); }
   cambiarEstado(id: number, estado: EstadoMaterial): Observable<MaterialMutationResponse> { return this.http.patch<MaterialMutationResponse>(`${this.url}/${id}/estado`, { estado }); }
-  categorias(): Observable<ApiResponse<CategoriaMaterial[]>> { return this.http.get<ApiResponse<CategoriaMaterial[]>>(`${this.url}/categorias`); }
-  crearCategoria(payload: CategoriaCreatePayload): Observable<CategoriaMutationResponse> { return this.http.post<CategoriaMutationResponse>(`${this.url}/categorias`, payload); }
-  unidadesMedida(): Observable<ApiResponse<UnidadMedida[]>> { return this.http.get<ApiResponse<UnidadMedida[]>>(`${this.url}/unidades-medida`); }
+  categorias(): Observable<ApiResponse<CategoriaMaterial[]>> { return this.shared.obtener('categorias', () => this.http.get<ApiResponse<CategoriaMaterial[]>>(`${this.url}/categorias`), 300000); }
+  crearCategoria(payload: CategoriaCreatePayload): Observable<CategoriaMutationResponse> {
+    return this.http.post<CategoriaMutationResponse>(`${this.url}/categorias`, payload).pipe(
+      tap(() => this.shared.limpiar('categorias'))
+    );
+  }
+  unidadesMedida(): Observable<ApiResponse<UnidadMedida[]>> { return this.shared.obtener('unidades', () => this.http.get<ApiResponse<UnidadMedida[]>>(`${this.url}/unidades-medida`), 300000); }
+
+  listarBase(filtros: { q?: string; id_categoria?: number; id_empresa?: number; page?: number; limit?: number }): Observable<MaterialBaseListResponse> {
+    let params = new HttpParams();
+    Object.entries(filtros).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') params = params.set(key, String(value));
+    });
+    return this.http.get<MaterialBaseListResponse>(`${this.url}/base`, { params });
+  }
+
+  obtenerDetalleBase(id_material_base: number): Observable<ApiResponse<MaterialBase>> {
+    return this.http.get<ApiResponse<MaterialBase>>(`${this.url}/base/${id_material_base}`);
+  }
+
+  adoptar(payload: MaterialAdoptarPayload): Observable<MaterialMutationResponse> {
+    return this.http.post<MaterialMutationResponse>(`${this.url}/adoptar`, payload);
+  }
+
+  copiarCatalogoBase(id_empresa?: number | null): Observable<ApiResponse<{ materiales_copiados: number }>> {
+    return this.http.post<ApiResponse<{ materiales_copiados: number }>>(`${this.url}/copiar-catalogo-base`, { id_empresa: id_empresa || undefined });
+  }
 }

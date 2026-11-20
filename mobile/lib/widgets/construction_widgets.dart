@@ -100,8 +100,8 @@ class ConstructionStatusBadge extends StatelessWidget {
 
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 8 : 10,
-        vertical: compact ? 3 : 4,
+        horizontal: compact ? 7 : 10,
+        vertical: compact ? 2.5 : 4,
       ),
       decoration: BoxDecoration(
         color: bgColor,
@@ -112,21 +112,25 @@ class ConstructionStatusBadge extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 5.5,
-            height: 5.5,
+            width: 5,
+            height: 5,
             decoration: BoxDecoration(
               color: textColor,
               shape: BoxShape.circle,
             ),
           ),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: compact ? 10 : 11,
-              fontWeight: FontWeight.w700,
-              color: textColor,
-              letterSpacing: 0.1,
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: compact ? 9.5 : 11,
+                fontWeight: FontWeight.w700,
+                color: textColor,
+                letterSpacing: 0.1,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -248,7 +252,7 @@ class CleanProjectCard extends StatelessWidget {
             children: [
               // 1. Bloque Visual Izquierdo (Estilo Skyscanner Thumbnail)
               Container(
-                width: 82,
+                width: 74,
                 height: 96,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -273,7 +277,7 @@ class CleanProjectCard extends StatelessWidget {
               // 2. Bloque Central y Derecho de Contenido
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -282,22 +286,29 @@ class CleanProjectCard extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: codeTagBg,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              codigo,
-                              style: GoogleFonts.jetBrainsMono(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w700,
-                                color: codeTagText,
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: codeTagBg,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                codigo,
+                                style: GoogleFonts.jetBrainsMono(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: codeTagText,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ),
-                          ConstructionStatusBadge(status: estado, compact: true),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: ConstructionStatusBadge(status: estado, compact: true),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 6),
@@ -320,12 +331,16 @@ class CleanProjectCard extends StatelessWidget {
                       // Subtítulo: Tipo y Ubicación
                       Row(
                         children: [
-                          Text(
-                            tipoNombre,
-                            style: GoogleFonts.inter(
-                              fontSize: 11.5,
-                              color: isDark ? const Color(0xFFFB923C) : AppTheme.primary,
-                              fontWeight: FontWeight.w600,
+                          Flexible(
+                            child: Text(
+                              tipoNombre,
+                              style: GoogleFonts.inter(
+                                fontSize: 11.5,
+                                color: isDark ? const Color(0xFFFB923C) : AppTheme.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           if (ubicacion.isNotEmpty) ...[

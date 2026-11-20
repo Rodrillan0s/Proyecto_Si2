@@ -13,6 +13,14 @@ def listar_usuarios(token_data: dict, id_empresa_solicitada: int = None):
     }
 
 def registrar_usuario(data: dict, token_data: dict):
+    data = dict(data)
+    try:
+        data['nro_rol'] = int(data.get('nro_rol'))
+    except (TypeError, ValueError):
+        raise ValueError('Rol de usuario inválido.')
+    estado = data.get('estado', 'ACTIVO')
+    if estado not in ('ACTIVO','INACTIVO'):
+        raise ValueError('Estado de usuario inválido.')
     campos_requeridos = ['ci', 'nombre_completo', 'nombre_usuario', 'password', 'nro_rol']
     for campo in campos_requeridos:
         if not data.get(campo):
@@ -44,7 +52,7 @@ def registrar_usuario(data: dict, token_data: dict):
         id_empresa
     )
 
-    nuevo_id = users_repos.crear_usuario_db(datos_persona, datos_usuario)
+    nuevo_id = users_repos.crear_usuario_db(datos_persona, datos_usuario, estado=estado)
 
     return {
         "success": True,
@@ -53,6 +61,14 @@ def registrar_usuario(data: dict, token_data: dict):
     }
 
 def actualizar_usuario(nro_usuario: int, data: dict, token_data: dict):
+    data = dict(data)
+    try:
+        data['nro_rol'] = int(data.get('nro_rol'))
+    except (TypeError, ValueError):
+        raise ValueError('Rol de usuario inválido.')
+    estado = data.get('estado','ACTIVO')
+    if estado not in ('ACTIVO','INACTIVO'):
+        raise ValueError('Estado de usuario inválido.')
     if nro_usuario <= 0:
         raise ValueError("ID de usuario no válido.")
         
@@ -94,7 +110,8 @@ def actualizar_usuario(nro_usuario: int, data: dict, token_data: dict):
             id_empresa
         )
 
-    users_repos.actualizar_usuario_db(nro_usuario, ci, datos_persona, datos_usuario, cambiar_password)
+    users_repos.actualizar_usuario_db(nro_usuario, ci, datos_persona, datos_usuario, cambiar_password,
+        estado=estado,empresa_autorizada=None if es_admin_sistema else id_empresa)
 
     return {
         "success": True,

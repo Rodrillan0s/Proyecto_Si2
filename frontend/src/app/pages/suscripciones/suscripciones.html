@@ -1,0 +1,82 @@
+<main class="max-w-7xl mx-auto p-4 sm:p-8 text-slate-900 dark:text-slate-100">
+  <h1 class="text-2xl font-bold">Suscripciones</h1>
+  <a *ngIf="esGlobal" routerLink="/configuracion-planes" class="inline-block mt-3 text-sm font-bold underline">Configuración de planes</a>
+  <p class="mt-2 mb-6 text-sm text-slate-500 dark:text-slate-400">Un plan compartido por todos los usuarios de cada empresa. Asignación manual, sin cobros ni renovación automática.</p>
+  <p *ngIf="cargando()" role="status" class="py-8">Cargando suscripciones…</p>
+  <p *ngIf="error()" role="alert" class="mb-4 p-4 bg-red-50 text-red-800 rounded">{{ error() }}</p>
+  <p *ngIf="mensaje()" role="status" class="mb-4 p-4 bg-green-50 text-green-800 rounded">{{ mensaje() }}</p>
+
+  <section *ngIf="propia() as s" class="mb-6 border border-amber-500 bg-white dark:bg-slate-900 p-6 rounded">
+    <h2 class="font-bold">{{ s.nombre_empresa }}</h2>
+    <p class="text-2xl font-bold mt-3" data-testid="plan-propio">{{ etiquetaPlan(s) }}: {{ nombrePlan(s) }}</p>
+    <p class="text-sm mt-2">Estado de la suscripción: {{ s.estado_efectivo }}</p>
+    <p class="text-sm mt-2">{{ s.usuarios }} usuarios · Desde {{ s.fecha_inicio || '—' }} · Hasta {{ s.fecha_fin || 'Sin fecha de fin' }}</p>
+    <p class="text-sm mt-2">Usuarios activos: {{ s.usuarios_activos || 0 }}/{{ s.limite_usuarios || '—' }} · Obras activas: {{ s.obras_activas || 0 }}/{{ s.limite_obras || '—' }}</p>
+    <p class="text-sm mt-2">Consultas de IA este mes: {{ s.consultas_ia_usadas || 0 }}/{{ s.consultas_ia_mes || 0 }}</p>
+    <p *ngIf="s.modulos_solo_lectura?.length" class="text-sm mt-2">Módulos no habilitados: <span *ngFor="let modulo of s.modulos_solo_lectura; let ultimo = last">{{ modulo.nombre }}{{ ultimo ? '.' : ', ' }}</span> Los datos existentes se conservan para consulta.</p>
+    <p *ngIf="s.solo_lectura" class="mt-2 font-bold">Solo lectura: activa o renueva la suscripción para modificar datos.</p>
+    <p *ngIf="s.estado_efectivo === 'GRACIA'" class="mt-2 font-bold">Período de gracia hasta {{ s.gracia_hasta }}.</p>
+    <p class="text-sm mt-2 text-slate-500">Contacta al administrador de la plataforma para cambiar tu plan.</p>
+  </section>
+
+  <section *ngIf="esGlobal && empresas().length" aria-label="Planes asignados por empresa" class="mb-6 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 rounded">
+    <h2 class="text-lg font-bold mb-3">Planes asignados por empresa</h2>
+    <ul class="divide-y divide-slate-200 dark:divide-slate-700">
+      <li *ngFor="let s of empresas()" class="py-3 flex flex-wrap justify-between gap-2">
+        <span>{{ s.nombre_empresa }}</span>
+        <strong>{{ etiquetaPlan(s) }}: {{ nombrePlan(s) }}</strong>
+      </li>
+    </ul>
+  </section>
+
+  <section aria-label="Planes disponibles" class="grid gap-4 md:grid-cols-3 mb-6">
+    <article *ngFor="let plan of planes()" class="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 rounded">
+      <h2 class="text-lg font-bold">{{ plan.nombre }}</h2>
+      <p *ngIf="propia()?.codigo_plan === plan.codigo" class="inline-block mt-2 px-2 py-1 text-sm font-bold bg-amber-100 text-amber-900 rounded">{{ etiquetaPlan(propia()) }}</p>
+      <p class="text-sm my-3 text-slate-500 dark:text-slate-400">{{ plan.descripcion }}</p>
+      <p class="font-bold text-sm mb-3">{{ plan.limite_usuarios }} usuarios activos · {{ plan.limite_obras }} obras activas</p>
+      <ul class="space-y-2 text-sm"><li *ngFor="let item of plan.prestaciones">✓ {{ item }}</li></ul>
+      <p class="text-sm mt-4">Reportes: {{ plan.nivel_reportes === 'NINGUNO' ? 'sin generación' : plan.nivel_reportes === 'OPERATIVOS' ? 'operativos básicos' : 'operativos y financieros' }}.</p>
+      <p class="text-sm mt-2">Exportación: {{ plan.exportar_reportes ? 'PDF y Excel' : 'No incluida' }} · Envíos y programación: {{ plan.automatizar_reportes ? 'Incluidos' : 'No incluidos' }}</p>
+      <p class="text-sm mt-2">Asistente IA: {{ plan.consultas_ia_mes ? plan.consultas_ia_mes + ' consultas al mes por empresa' : 'No incluido' }}</p>
+    </article>
+  </section>
+  <p *ngIf="planes().length" class="text-sm text-slate-500 dark:text-slate-400 mb-6">Los permisos de cada usuario siguen vigentes. Los cupos se comparten por empresa. Al alcanzar un cupo, se conservan los datos y se bloquean nuevas altas o reactivaciones. Al vencer hay 7 días de gracia y después solo lectura. Los usuarios inactivos y obras finalizadas o canceladas no consumen cupo.</p>
+
+  <form *ngIf="esGlobal && seleccionada" (ngSubmit)="guardar()" #asignacion="ngForm" class="mb-6 border border-amber-500 p-6 bg-white dark:bg-slate-900 rounded">
+    <h2 class="font-bold mb-4">Suscripción de {{ seleccionada.nombre_empresa }}</h2>
+    <fieldset [disabled]="guardando()" class="grid gap-4 sm:grid-cols-2">
+      <label class="text-sm">Plan
+        <select name="plan" [(ngModel)]="form.codigo_plan" required class="block w-full mt-1 p-2 border rounded bg-white dark:bg-slate-800">
+          <option *ngFor="let plan of planes()" [value]="plan.codigo">{{ plan.nombre }}</option>
+        </select>
+      </label>
+      <label class="text-sm">Estado
+        <select name="estado" [(ngModel)]="form.estado" required class="block w-full mt-1 p-2 border rounded bg-white dark:bg-slate-800">
+          <option value="ACTIVA">Activa</option><option value="SUSPENDIDA">Suspendida</option><option value="CANCELADA">Cancelada</option>
+        </select>
+      </label>
+      <label class="text-sm">Fecha de inicio
+        <input type="date" name="inicio" [(ngModel)]="form.fecha_inicio" required class="block w-full mt-1 p-2 border rounded bg-white dark:bg-slate-800">
+      </label>
+      <label class="text-sm">Fecha de fin (opcional)
+        <input type="date" name="fin" [(ngModel)]="form.fecha_fin" [min]="form.fecha_inicio" class="block w-full mt-1 p-2 border rounded bg-white dark:bg-slate-800">
+      </label>
+      <div class="flex gap-3 sm:col-span-2">
+        <button type="submit" [disabled]="asignacion.invalid || guardando()" class="px-4 py-2 bg-amber-600 text-white rounded disabled:opacity-50">{{ guardando() ? 'Guardando…' : 'Guardar suscripción' }}</button>
+        <button type="button" (click)="seleccionada = null" class="px-4 py-2 border rounded">Cancelar</button>
+      </div>
+    </fieldset>
+  </form>
+
+  <section *ngIf="esGlobal && !cargando()" aria-label="Suscripciones por empresa" class="overflow-x-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-slate-100 dark:bg-slate-800"><tr><th class="p-4">Empresa</th><th class="p-4">Plan</th><th class="p-4">Estado</th><th class="p-4">Vigencia</th><th class="p-4">Usuarios</th><th class="p-4">Acción</th></tr></thead>
+      <tbody><tr *ngFor="let s of empresas()" class="border-t border-slate-200 dark:border-slate-700">
+        <td class="p-4 font-medium">{{ s.nombre_empresa }}</td><td class="p-4 font-bold">{{ nombrePlan(s) }}</td><td class="p-4">{{ s.estado_efectivo }}</td>
+        <td class="p-4">{{ s.fecha_inicio || '—' }} / {{ s.fecha_fin || 'Sin fecha de fin' }}</td><td class="p-4">{{ s.usuarios_activos || 0 }}/{{ s.limite_usuarios || '—' }} usuarios · {{ s.obras_activas || 0 }}/{{ s.limite_obras || '—' }} obras · IA {{ s.consultas_ia_usadas || 0 }}/{{ s.consultas_ia_mes || 0 }}</td>
+        <td class="p-4"><button type="button" (click)="editar(s)" [disabled]="guardando()" class="text-amber-700 dark:text-amber-400 font-bold underline disabled:opacity-50">Gestionar</button></td>
+      </tr></tbody>
+    </table>
+  </section>
+</main>

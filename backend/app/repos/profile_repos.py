@@ -44,9 +44,9 @@ def update_profile(data:dict):
         query=f"""
             UPDATE {Config.SCHEMA}.t_persona
             SET telefono=%s, direccion=%s
-            WHERE ci=%s
+            WHERE id_persona=(SELECT id_persona FROM {Config.SCHEMA}.t_usuario WHERE id_usuario=%s)
         """
-        params=(data['telefono'], data['direccion'], data['ci'])
+        params=(data['telefono'], data['direccion'], data['nro_usuario'])
 
         db.execute_query(query, params)
 
@@ -66,16 +66,8 @@ def update_profile(data:dict):
             param_user=(data['password_hash'],data['nro_usuario'])
             db.execute_query(query_user,param_user)
 
-        empresa_id = data.get('id_empresa')
-        if empresa_id is None:
-            query_empresa_id = f"""
-                SELECT id_empresa
-                FROM {Config.SCHEMA}.t_usuario
-                WHERE id_usuario = %s
-            """
-            res_empresa = db.execute_query(query_empresa_id, (data['nro_usuario'],), fetchone=True)
-            if res_empresa:
-                empresa_id = res_empresa[0]
+        res_empresa = db.execute_query(f'SELECT id_empresa FROM {Config.SCHEMA}.t_usuario WHERE id_usuario=%s', (data['nro_usuario'],), fetchone=True)
+        empresa_id = res_empresa[0] if res_empresa else None
 
         if empresa_id is not None and 'descripcion_empresa' in data:
             query_empresa = f"""
@@ -95,6 +87,9 @@ def update_profile(data:dict):
         
     except Exception as e:
         raise ValueError(f'ERROR: {str(e)}')
+
+    finally:
+        db.close_connection()
 
 def get_password_hash(id_usuario):
     db=PostgreSQL()

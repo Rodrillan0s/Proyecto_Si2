@@ -2,11 +2,12 @@ import { Component, OnInit, inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth';
+import { AsistenteComercialComponent } from '../asistente-comercial/asistente-comercial';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, AsistenteComercialComponent],
   templateUrl: './home.html',
   styleUrl: './home.css'
 })
@@ -18,6 +19,7 @@ export class HomeComponent implements OnInit {
 
   usuarioActual: any = null;
   modoOscuro: boolean = false;
+  esRutaComercial: boolean = false;
 
   esAdministrador(): boolean {
     return ['ADMINISTRADOR', 'ADMINISTRADOR_EMPRESA'].includes(this.usuarioActual?.nombre_rol);
@@ -25,6 +27,7 @@ export class HomeComponent implements OnInit {
 
   // METODO AL INICIAR LA PAGINA
   ngOnInit() {
+    this.esRutaComercial = (this.router.url || '').startsWith('/comercial');
     if (isPlatformBrowser(this.platformId)) {
       this.usuarioActual = this.authService.obtenerUsuario();
       
@@ -34,8 +37,8 @@ export class HomeComponent implements OnInit {
         this.usuarioActual = null;
       }
 
-      // Redirección si ya está autenticado con sesión válida
-      if (this.usuarioActual) {
+      // Redirección si ya está autenticado con sesión válida (salvo acceso explícito a /comercial)
+      if (this.usuarioActual && !this.esRutaComercial) {
         const destino = this.usuarioActual.nombre_rol === 'CLIENTE' ? '/main_cliente' : '/panel';
         this.router.navigate([destino]);
         return;

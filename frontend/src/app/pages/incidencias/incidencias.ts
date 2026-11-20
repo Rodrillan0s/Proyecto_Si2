@@ -1,3 +1,5 @@
+import { LecturasVigentes } from '../../services/lecturas';
+import { ContextoOperativo } from '../../services/contexto-operativo';
 import { Component, ChangeDetectorRef, DestroyRef, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -48,6 +50,7 @@ const LIMITE_MAXIMO = 100;
   styleUrl: './incidencias.css',
 })
 export class IncidenciasComponent implements OnInit {
+  private contexto = inject(ContextoOperativo);
   private incidenciasService = inject(IncidenciasService);
   private proyectosService = inject(ProyectosService);
   private unidadesService = inject(UnidadesService);
@@ -56,6 +59,7 @@ export class IncidenciasComponent implements OnInit {
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
   private destroyRef = inject(DestroyRef);
+  private reads = new LecturasVigentes(this.destroyRef);
   private busqueda$ = new Subject<string>();
 
   readonly prioridades: PrioridadIncidencia[] = ['BAJA', 'MEDIA', 'ALTA', 'CRITICA'];
@@ -96,16 +100,24 @@ export class IncidenciasComponent implements OnInit {
       .pipe(debounceTime(400), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.cargarIncidencias());
 
-    this.authService.empresaActiva$
+    this.contexto.empresa$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((empresa) => {
-        this.empresaActiva = empresa;
+        this.reads.cancelar();
+        this.unidadesFiltro = [];
+        this.filtroUnidad = null;
+        this.mostrarFormulario = false;
+        this.empresaActiva = this.authService.obtenerEmpresaActiva();
         this.cargarIncidencias();
       });
 
+    this.contexto.obra$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(obra => {
+      const id = obra?.id_obra || null;
+      if (id !== this.filtroObra) { this.filtroObra = id; this.onCambiarFiltroObra(); }
+    });
     this.cargarProyectos();
     this.cargarUsuarios();
-    this.cargarIncidencias();
+
   }
 
   esVistaGlobal(): boolean {
@@ -124,7 +136,7 @@ export class IncidenciasComponent implements OnInit {
   // CARGA DE CATALOGOS
   // ─────────────────────────────────────────────────────────────────────
   private cargarProyectos(): void {
-    this.proyectosService.listarProyectos().subscribe({
+    this.proyectosService.listarProyectos().pipe(this.reads.reemplazar('proyectos')).subscribe({
       next: (res) => { this.proyectos = res?.data || []; this.cdr.detectChanges(); },
       error: () => {},
     });
@@ -144,7 +156,7 @@ export class IncidenciasComponent implements OnInit {
     this.filtroUnidad = null;
     this.unidadesFiltro = [];
     if (this.filtroObra) {
-      this.unidadesService.listar(this.filtroObra).subscribe({
+      this.unidadesService.listar(this.filtroObra).pipe(this.reads.reemplazar('unidades')).subscribe({
         next: (res) => { this.unidadesFiltro = res?.data || []; this.cdr.detectChanges(); },
         error: () => {},
       });
@@ -175,7 +187,7 @@ export class IncidenciasComponent implements OnInit {
         page: 1,
         limit: LIMITE_MAXIMO,
       })
-      .subscribe({
+      .pipe(this.reads.reemplazar('incidencias')).subscribe({
         next: (res) => {
           this.cargando = false;
           this.todasLasIncidencias = res.data || [];

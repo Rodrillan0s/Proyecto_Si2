@@ -12,6 +12,7 @@
 
       <div class="nav-links">
         <a class="nav-link" [class.nav-link-dark]="modoOscuro" (click)="navegarA('/')">Inicio</a>
+        <a class="nav-link" [class.nav-link-dark]="modoOscuro" (click)="burbujaComercial.abrirBurbuja()">Asistente Comercial IA</a>
         <a class="nav-link" [class.nav-link-dark]="modoOscuro" *ngIf="esAdministrador()"
           (click)="navegarA('/usuarios')">Usuarios</a>
         <a class="nav-link" [class.nav-link-dark]="modoOscuro" *ngIf="esAdministrador()"
@@ -79,8 +80,8 @@
           </button>
 
           <ng-container *ngIf="!usuarioActual">
-            <button (click)="navegarA('/login')" class="btn-outline" [class.btn-outline-dark]="modoOscuro">
-              Solicitar Demo &rarr;
+            <button (click)="burbujaComercial.abrirBurbuja()" class="btn-outline" [class.btn-outline-dark]="modoOscuro">
+              Explorar Unidades y Cotizar Planos con IA &rarr;
             </button>
           </ng-container>
         </div>
@@ -205,5 +206,8 @@
     <p class="footer-text">Plataforma de Gestión Integral para Obras Civiles e Ingeniería</p>
     <p class="footer-text">&copy; 2026 OBRATEC. Todos los derechos reservados.</p>
   </footer>
+
+  <!-- BURBUJA FLOTANTE DEL ASISTENTE COMERCIAL -->
+  <app-asistente-comercial #burbujaComercial [autoOpen]="esRutaComercial"></app-asistente-comercial>
 
 </div>

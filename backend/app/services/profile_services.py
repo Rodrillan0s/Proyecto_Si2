@@ -19,6 +19,21 @@ def obtener_perfil_usuario(nro_usuario):
     }
 
 def actualizar_perfil_usuario(nro_usuario: int, datos_perfil: dict):
+    perfil = profile_repos.get_profile(nro_usuario)
+    if not perfil:
+        raise ValueError('Usuario no encontrado')
+    datos_perfil = dict(datos_perfil)
+    # Perfil está disponible en solo lectura comercial, pero no concede edición de otra empresa.
+    datos_perfil['id_empresa'] = perfil['id_empresa']
+    datos_perfil['ci'] = perfil['ci']
+    if ('descripcion_empresa' in datos_perfil
+            and datos_perfil['descripcion_empresa'] != perfil.get('descripcion_empresa')):
+        from fastapi import HTTPException
+        if perfil['nombre_rol'] not in ('ADMINISTRADOR', 'ADMINISTRADOR_EMPRESA'):
+            raise HTTPException(403,'Solo un administrador puede modificar la descripción de la empresa.')
+        if perfil['nombre_rol'] != 'ADMINISTRADOR':
+            from app.services.suscripcion_policy import exigir_escritura
+            exigir_escritura(perfil['id_empresa'])
     datos_perfil['nro_usuario'] = nro_usuario
     
    

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'api_client.dart';
+import 'notificacion_service.dart';
 
 class OrdenTrabajoService {
   static const String _basePath = '/api/ordenes-trabajo';
@@ -67,7 +68,13 @@ class OrdenTrabajoService {
       if (data is! Map) {
         throw Exception('Respuesta inesperada al crear orden de trabajo.');
       }
-      return Map<String, dynamic>.from(data);
+      final res = Map<String, dynamic>.from(data);
+      NotificacionService.instance.emitLocalPush(
+        titulo: 'Nueva Orden de Trabajo Registrada',
+        cuerpo: 'Tipo: ${datos['tipo_trab'] ?? 'Trabajo'} en proyecto #${datos['id_obra'] ?? ''}.',
+        tipo: 'ORDEN_TRABAJO',
+      );
+      return res;
     } on DioException catch (e) {
       throw Exception(_parsearError(e));
     }
@@ -88,7 +95,13 @@ class OrdenTrabajoService {
       if (data is! Map) {
         throw Exception('Respuesta inesperada al actualizar orden de trabajo.');
       }
-      return Map<String, dynamic>.from(data);
+      final res = Map<String, dynamic>.from(data);
+      NotificacionService.instance.emitLocalPush(
+        titulo: 'Orden de Trabajo #$ordenNro Actualizada',
+        cuerpo: 'Se actualizaron los datos de la orden (${datos['tipo_trab'] ?? ''}).',
+        tipo: 'ORDEN_TRABAJO',
+      );
+      return res;
     } on DioException catch (e) {
       throw Exception(_parsearError(e));
     }
@@ -109,7 +122,13 @@ class OrdenTrabajoService {
       if (data is! Map) {
         throw Exception('Respuesta inesperada al actualizar estado.');
       }
-      return Map<String, dynamic>.from(data);
+      final res = Map<String, dynamic>.from(data);
+      NotificacionService.instance.emitLocalPush(
+        titulo: 'Estado de Orden #$ordenNro: $nuevoEstado',
+        cuerpo: 'La orden de trabajo #$ordenNro pasó al estado $nuevoEstado.',
+        tipo: 'ORDEN_TRABAJO',
+      );
+      return res;
     } on DioException catch (e) {
       throw Exception(_parsearError(e));
     }
@@ -147,7 +166,13 @@ class OrdenTrabajoService {
         '$_basePath/$ordenNro/responsables',
         data: {'id_usuario': idUsuario},
       );
-      return Map<String, dynamic>.from(response.data as Map);
+      final res = Map<String, dynamic>.from(response.data as Map);
+      NotificacionService.instance.emitLocalPush(
+        titulo: 'Responsable Asignado en OT #$ordenNro',
+        cuerpo: 'El usuario #$idUsuario fue asignado a la orden de trabajo #$ordenNro.',
+        tipo: 'ORDEN_TRABAJO',
+      );
+      return res;
     } on DioException catch (e) {
       throw Exception(_parsearError(e));
     }

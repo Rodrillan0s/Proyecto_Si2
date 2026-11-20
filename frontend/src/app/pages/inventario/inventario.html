@@ -1,0 +1,503 @@
+<section class="inventario-page">
+  <!-- TOASTS -->
+  <div class="toast toast-success" *ngIf="mensajeAlerta?.tipo === 'success'" role="status">
+    {{ mensajeAlerta?.texto }}
+  </div>
+  <div class="toast toast-error" *ngIf="mensajeAlerta?.tipo === 'error'" role="alert">
+    {{ mensajeAlerta?.texto }}
+  </div>
+
+  <!-- HEADER -->
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">LOGÍSTICA & ALMACÉN</p>
+      <h1>Inventario y Existencias</h1>
+      <p>Control físico, valuación de stock, kardex de movimientos y aprovisionamiento de materiales.</p>
+    </div>
+    <div class="header-actions">
+      <button 
+        *ngIf="tabActiva === 'stock' && stockItems.length > 0"
+        type="button" 
+        class="btn-primary" 
+        (click)="abrirModalAjuste(stockItems[0])">
+        ⚙ Registrar Ajuste / Stock Mínimo
+      </button>
+    </div>
+  </header>
+
+  <!-- BADGE EMPRESA ACTIVA -->
+  <div *ngIf="empresaActual" class="company-badge">
+    <div class="badge-left">
+      <span class="badge-label">Empresa:</span>
+      <span class="badge-name">{{ empresaActual.nombre_empresa }}</span>
+    </div>
+    <span class="badge-total">{{ kpis.total_con_stock }} material(es) con existencias disponibles</span>
+  </div>
+
+  <div *ngIf="!empresaActual && esAdminGlobal" class="company-badge global">
+    <div class="badge-left">
+      <span class="badge-label">🌐 Vista Global:</span>
+      <span class="badge-name">Mostrando inventario de la empresa principal</span>
+    </div>
+    <span class="badge-total">Utiliza el selector superior para cambiar de empresa</span>
+  </div>
+
+  <!-- NAVEGACIÓN POR PESTAÑAS -->
+  <div class="catalog-tabs-container">
+    <div class="catalog-tabs">
+      <button 
+        type="button" 
+        class="tab-btn" 
+        [class.active]="tabActiva === 'stock'"
+        (click)="cambiarTab('stock')">
+        <span class="tab-icon">📦</span>
+        <span>Stock de Almacén</span>
+        <span class="tab-badge">{{ kpis.total_materiales }}</span>
+      </button>
+
+      <button 
+        type="button" 
+        class="tab-btn" 
+        [class.active]="tabActiva === 'movimientos'"
+        (click)="cambiarTab('movimientos')">
+        <span class="tab-icon">🔄</span>
+        <span>Kardex / Movimientos</span>
+        <span class="tab-badge secondary">{{ kpis.total_movimientos_mes }}</span>
+      </button>
+
+      <button 
+        type="button" 
+        class="tab-btn" 
+        [class.active]="tabActiva === 'compras'"
+        (click)="cambiarTab('compras')">
+        <span class="tab-icon">🛒</span>
+        <span>Órdenes de Compra</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- PESTAÑA 1: STOCK DE ALMACÉN -->
+  <div *ngIf="tabActiva === 'stock'" class="tab-content">
+    <!-- KPI CARDS -->
+    <div class="kpi-grid">
+      <div class="kpi-card kpi-valor">
+        <div class="kpi-icon-wrap">💰</div>
+        <div class="kpi-body">
+          <div class="kpi-label">Valor Total Inventario</div>
+          <div class="kpi-value text-amber-500">Bs. {{ kpis.valor_total_inventario | number:'1.2-2' }}</div>
+          <div class="kpi-sub">Valorizado al costo unitario actual</div>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-success">
+        <div class="kpi-icon-wrap">✅</div>
+        <div class="kpi-body">
+          <div class="kpi-label">Materiales con Existencias</div>
+          <div class="kpi-value">{{ kpis.total_con_stock }}</div>
+          <div class="kpi-sub">De {{ kpis.total_materiales }} materiales registrados</div>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-warning">
+        <div class="kpi-icon-wrap">⚠️</div>
+        <div class="kpi-body">
+          <div class="kpi-label">Stock Bajo / Mínimo</div>
+          <div class="kpi-value text-yellow-500">{{ kpis.total_stock_bajo }}</div>
+          <div class="kpi-sub">Requieren reposición urgente</div>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-danger">
+        <div class="kpi-icon-wrap">🚫</div>
+        <div class="kpi-body">
+          <div class="kpi-label">Agotados / Sin Stock</div>
+          <div class="kpi-value text-red-500">{{ kpis.total_sin_stock }}</div>
+          <div class="kpi-sub">Existencia en 0 unidades</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="filters-card">
+      <div class="search-field">
+        <label for="buscar-stock">Buscar por nombre o código de material</label>
+        <div class="search-wrap">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          <input
+            id="buscar-stock"
+            type="text"
+            placeholder="Ej: Fierro, Cemento, Arena, MAT-ACE-001..."
+            [value]="filtroTexto"
+            (input)="onBuscarInput($event)"
+          />
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <div class="select-field">
+          <label for="filtro-estado-stock">Estado de Existencia</label>
+          <select 
+            id="filtro-estado-stock" 
+            [(ngModel)]="filtroEstadoStock" 
+            (change)="cambiarFiltroEstado(filtroEstadoStock)">
+            <option value="">Todos los estados</option>
+            <option value="EN_STOCK">En Stock</option>
+            <option value="STOCK_BAJO">Stock Bajo</option>
+            <option value="SIN_STOCK">Sin Stock (0)</option>
+          </select>
+        </div>
+
+        <button 
+          *ngIf="filtroTexto || filtroEstadoStock" 
+          type="button" 
+          class="btn-secondary btn-clear"
+          (click)="filtroTexto = ''; filtroEstadoStock = ''; paginaStock = 1; cargarStock()">
+          Limpiar
+        </button>
+      </div>
+    </div>
+
+    <!-- TABLA DE EXISTENCIAS -->
+    <div class="table-container" [class.loading]="cargandoStock">
+      <div class="table-loader" *ngIf="cargandoStock">
+        <div class="spinner"></div>
+        <span>Cargando existencias...</span>
+      </div>
+
+      <table class="data-table" *ngIf="!cargandoStock && stockItems.length > 0">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Material</th>
+            <th>Categoría</th>
+            <th>Unidad</th>
+            <th class="text-right">Precio Ref.</th>
+            <th class="text-right">Stock Mínimo</th>
+            <th class="text-right">Stock Físico</th>
+            <th class="text-right">Valor Total</th>
+            <th class="text-center">Estado</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of stockItems" [class.row-alert]="item.estado_stock === 'STOCK_BAJO'" [class.row-empty]="item.estado_stock === 'SIN_STOCK'">
+            <td class="font-mono font-bold text-xs text-amber-600 dark:text-amber-400">
+              {{ item.codigo }}
+            </td>
+            <td>
+              <div class="font-semibold text-slate-900 dark:text-white">{{ item.nombre_material }}</div>
+              <div *ngIf="item.descripcion" class="text-xs text-slate-500 dark:text-slate-400 truncate max-w-xs">
+                {{ item.descripcion }}
+              </div>
+            </td>
+            <td>
+              <span class="category-pill">{{ item.categoria_nombre || 'General' }}</span>
+            </td>
+            <td>
+              <span class="text-xs font-medium text-slate-600 dark:text-slate-300">
+                {{ item.unidad_abreviatura || item.unidad_nombre || 'u' }}
+              </span>
+            </td>
+            <td class="text-right font-mono text-xs">
+              Bs. {{ item.precio | number:'1.2-2' }}
+            </td>
+            <td class="text-right font-mono text-xs text-slate-500">
+              {{ item.stock_minimo | number:'1.2-2' }}
+            </td>
+            <td class="text-right">
+              <span class="font-bold font-mono text-sm" [class.text-red-500]="item.stock_actual <= 0" [class.text-emerald-500]="item.stock_actual > item.stock_minimo" [class.text-yellow-500]="item.stock_actual > 0 && item.stock_actual <= item.stock_minimo">
+                {{ item.stock_actual | number:'1.2-2' }}
+              </span>
+            </td>
+            <td class="text-right font-bold font-mono text-sm text-slate-900 dark:text-slate-100">
+              Bs. {{ item.valor_total | number:'1.2-2' }}
+            </td>
+            <td class="text-center">
+              <span class="badge-status" [ngClass]="badgeClase(item.estado_stock)">
+                {{ formatoBadge(item.estado_stock) }}
+              </span>
+            </td>
+            <td class="text-center">
+              <button 
+                type="button" 
+                class="btn-action-ajuste"
+                title="Ajustar existencias o stock mínimo"
+                (click)="abrirModalAjuste(item)">
+                ⚙ Ajustar
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- EMPTY STATE -->
+      <div class="empty-state" *ngIf="!cargandoStock && stockItems.length === 0">
+        <div class="empty-icon">📦</div>
+        <h3>No se encontraron materiales en inventario</h3>
+        <p>Intenta ajustar los filtros de búsqueda o registra nuevos materiales en el catálogo.</p>
+        <a routerLink="/materiales" class="btn-secondary" style="margin-top: 1rem;">
+          Ir a Catálogo de Materiales →
+        </a>
+      </div>
+    </div>
+
+    <!-- PAGINACIÓN STOCK -->
+    <div class="pagination-card" *ngIf="totalStock > limiteStock">
+      <span class="pagination-info">
+        Mostrando {{ (paginaStock - 1) * limiteStock + 1 }} - 
+        {{ paginaStock * limiteStock > totalStock ? totalStock : paginaStock * limiteStock }} 
+        de {{ totalStock }} registros
+      </span>
+      <div class="pagination-actions">
+        <button 
+          type="button" 
+          class="btn-page" 
+          [disabled]="paginaStock <= 1"
+          (click)="cambiarPaginaStock(paginaStock - 1)">
+          ‹ Anterior
+        </button>
+        <span class="page-current">{{ paginaStock }} / {{ totalPaginasStock }}</span>
+        <button 
+          type="button" 
+          class="btn-page" 
+          [disabled]="paginaStock >= totalPaginasStock"
+          (click)="cambiarPaginaStock(paginaStock + 1)">
+          Siguiente ›
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PESTAÑA 2: KARDEX / MOVIMIENTOS -->
+  <div *ngIf="tabActiva === 'movimientos'" class="tab-content">
+    <div class="filters-card">
+      <div class="filter-group">
+        <div class="select-field">
+          <label for="filtro-tipo-mov">Tipo de Movimiento</label>
+          <select 
+            id="filtro-tipo-mov" 
+            [(ngModel)]="filtroTipoMovimiento" 
+            (change)="cambiarFiltroTipoMov(filtroTipoMovimiento)">
+            <option value="">Todos los movimientos</option>
+            <option value="ENTRADA">Entrada por Compra</option>
+            <option value="ENTRADA_AJUSTE">Ajuste de Entrada</option>
+            <option value="SALIDA">Salida de Almacén</option>
+            <option value="SALIDA_AJUSTE">Ajuste de Salida</option>
+            <option value="AJUSTE_INVENTARIO">Conteo Físico</option>
+          </select>
+        </div>
+
+        <button 
+          *ngIf="filtroTipoMovimiento" 
+          type="button" 
+          class="btn-secondary btn-clear"
+          (click)="filtroTipoMovimiento = ''; paginaMovimientos = 1; cargarMovimientos()">
+          Limpiar
+        </button>
+      </div>
+    </div>
+
+    <!-- TABLA KARDEX -->
+    <div class="table-container" [class.loading]="cargandoMovimientos">
+      <div class="table-loader" *ngIf="cargandoMovimientos">
+        <div class="spinner"></div>
+        <span>Cargando movimientos...</span>
+      </div>
+
+      <table class="data-table" *ngIf="!cargandoMovimientos && movimientos.length > 0">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Material</th>
+            <th class="text-right">Cantidad</th>
+            <th>Doc. Referencia</th>
+            <th>Responsable</th>
+            <th>Observaciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let m of movimientos">
+            <td class="text-xs font-mono text-slate-500 whitespace-nowrap">
+              {{ m.fecha_movimiento }}
+            </td>
+            <td>
+              <span class="badge-status" [ngClass]="tipoMovBadge(m.tipo_movimiento).clase">
+                {{ tipoMovBadge(m.tipo_movimiento).label }}
+              </span>
+            </td>
+            <td>
+              <div class="font-bold text-xs text-slate-900 dark:text-white">{{ m.material_nombre }}</div>
+              <div class="text-[11px] font-mono text-amber-600 dark:text-amber-400">{{ m.material_codigo }}</div>
+            </td>
+            <td class="text-right">
+              <span class="font-bold font-mono text-sm" [class.text-emerald-500]="m.tipo_movimiento.startsWith('ENTRADA')" [class.text-red-500]="m.tipo_movimiento.startsWith('SALIDA')">
+                {{ m.tipo_movimiento.startsWith('SALIDA') ? '-' : '+' }}{{ m.cantidad_asignada | number:'1.2-2' }}
+              </span>
+              <span class="text-xs text-slate-400 ml-1">{{ m.unidad_abreviatura || 'u' }}</span>
+            </td>
+            <td>
+              <div *ngIf="m.numero_orden" class="text-xs font-mono font-bold text-blue-600 dark:text-blue-400">
+                OC: {{ m.numero_orden }}
+              </div>
+              <div *ngIf="m.numero_recepcion" class="text-[10px] text-slate-500">
+                REC: {{ m.numero_recepcion }}
+              </div>
+              <span *ngIf="!m.numero_orden && !m.numero_recepcion" class="text-xs text-slate-400">
+                Ajuste Directo
+              </span>
+            </td>
+            <td>
+              <span class="text-xs text-slate-700 dark:text-slate-300">
+                {{ m.nombre_usuario || 'Sistema' }}
+              </span>
+            </td>
+            <td>
+              <span class="text-xs text-slate-500 dark:text-slate-400">
+                {{ m.observaciones || '-' }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- EMPTY STATE MOVIMIENTOS -->
+      <div class="empty-state" *ngIf="!cargandoMovimientos && movimientos.length === 0">
+        <div class="empty-icon">🔄</div>
+        <h3>No hay movimientos registrados</h3>
+        <p>Los movimientos de almacén se generarán automáticamente cuando se reciban compras o se registren ajustes.</p>
+      </div>
+    </div>
+
+    <!-- PAGINACIÓN KARDEX -->
+    <div class="pagination-card" *ngIf="totalMovimientos > limiteMovimientos">
+      <span class="pagination-info">
+        Mostrando {{ (paginaMovimientos - 1) * limiteMovimientos + 1 }} - 
+        {{ paginaMovimientos * limiteMovimientos > totalMovimientos ? totalMovimientos : paginaMovimientos * limiteMovimientos }} 
+        de {{ totalMovimientos }} movimientos
+      </span>
+      <div class="pagination-actions">
+        <button 
+          type="button" 
+          class="btn-page" 
+          [disabled]="paginaMovimientos <= 1"
+          (click)="cambiarPaginaMov(paginaMovimientos - 1)">
+          ‹ Anterior
+        </button>
+        <span class="page-current">{{ paginaMovimientos }} / {{ totalPaginasMov }}</span>
+        <button 
+          type="button" 
+          class="btn-page" 
+          [disabled]="paginaMovimientos >= totalPaginasMov"
+          (click)="cambiarPaginaMov(paginaMovimientos + 1)">
+          Siguiente ›
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PESTAÑA 3: ÓRDENES DE COMPRA (MÓDULO EXISTENTE INTEGRADO) -->
+  <div *ngIf="tabActiva === 'compras'" class="tab-content">
+    <app-compras></app-compras>
+  </div>
+
+  <!-- MODAL DE AJUSTE DE INVENTARIO Y STOCK MÍNIMO -->
+  <div class="modal-overlay" *ngIf="modalAjusteAbierto" (click)="cerrarModalAjuste()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3>Ajuste de Inventario / Umbrales</h3>
+          <p class="modal-sub">
+            {{ materialSeleccionado?.codigo }} — {{ materialSeleccionado?.nombre_material }}
+          </p>
+        </div>
+        <button type="button" class="btn-close" (click)="cerrarModalAjuste()">✕</button>
+      </div>
+
+      <div class="modal-body" *ngIf="materialSeleccionado">
+        <!-- Resumen actual -->
+        <div class="info-strip">
+          <div class="strip-item">
+            <span class="strip-label">Stock Actual:</span>
+            <span class="strip-value font-mono font-bold">{{ materialSeleccionado.stock_actual }} {{ materialSeleccionado.unidad_abreviatura }}</span>
+          </div>
+          <div class="strip-item">
+            <span class="strip-label">Stock Mínimo Actual:</span>
+            <span class="strip-value font-mono">{{ materialSeleccionado.stock_minimo }} {{ materialSeleccionado.unidad_abreviatura }}</span>
+          </div>
+          <div class="strip-item">
+            <span class="strip-label">Costo Unitario:</span>
+            <span class="strip-value font-mono">Bs. {{ materialSeleccionado.precio | number:'1.2-2' }}</span>
+          </div>
+        </div>
+
+        <form (ngSubmit)="guardarAjuste()">
+          <!-- Tipo de Movimiento -->
+          <div class="form-group">
+            <label for="ajuste-tipo">Tipo de Operación</label>
+            <select id="ajuste-tipo" [(ngModel)]="formAjuste.tipo_movimiento" name="tipo_movimiento">
+              <option value="ENTRADA_AJUSTE">➕ Entrada / Incremento de Stock</option>
+              <option value="SALIDA_AJUSTE">➖ Salida / Merma de Stock</option>
+              <option value="AJUSTE_INVENTARIO">📋 Conteo Físico Directo (Reemplazar Stock)</option>
+            </select>
+          </div>
+
+          <!-- Cantidad -->
+          <div class="form-group">
+            <label for="ajuste-cant">
+              {{ formAjuste.tipo_movimiento === 'AJUSTE_INVENTARIO' ? 'Nueva Existencia Total' : 'Cantidad a Ajustar' }}
+              ({{ materialSeleccionado.unidad_abreviatura || 'unidades' }})
+            </label>
+            <input 
+              id="ajuste-cant"
+              type="number" 
+              step="0.01" 
+              min="0.01" 
+              [(ngModel)]="formAjuste.cantidad" 
+              name="cantidad" 
+              required 
+            />
+          </div>
+
+          <!-- Stock Mínimo -->
+          <div class="form-group">
+            <label for="ajuste-stock-min">Nuevo Umbral de Stock Mínimo (Alerta de reposición)</label>
+            <input 
+              id="ajuste-stock-min"
+              type="number" 
+              step="0.01" 
+              min="0" 
+              placeholder="Ej: 15.00"
+              [(ngModel)]="formAjuste.stock_minimo" 
+              name="stock_minimo" 
+            />
+            <small class="form-hint">Si el stock físico cae por debajo de este valor, el sistema emitirá alertas visuales.</small>
+          </div>
+
+          <!-- Justificación -->
+          <div class="form-group">
+            <label for="ajuste-obs">Motivo / Justificación del Ajuste *</label>
+            <textarea 
+              id="ajuste-obs"
+              rows="3" 
+              placeholder="Ej: Conteo físico mensual, merma por rotura, ingreso directo sin OC..." 
+              [(ngModel)]="formAjuste.observaciones" 
+              name="observaciones" 
+              required>
+            </textarea>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-secondary" (click)="cerrarModalAjuste()" [disabled]="guardandoAjuste">
+              Cancelar
+            </button>
+            <button type="submit" class="btn-primary" [disabled]="guardandoAjuste">
+              <span *ngIf="guardandoAjuste">Guardando...</span>
+              <span *ngIf="!guardandoAjuste">Guardar Ajuste</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>

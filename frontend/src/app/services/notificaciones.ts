@@ -41,6 +41,8 @@ export class NotificacionesService {
   private ngZone      = inject(NgZone);
 
   private socket: WebSocket | null = null;
+  private stopped = false;
+  private retry?: ReturnType<typeof setTimeout>;
   private cargandoHistorial = false;
 
   // Estado reactivo central: mezcla de historial (BD) + push (WS)
@@ -52,6 +54,7 @@ export class NotificacionesService {
   // ----------------------------------------------------------------
 
   conectar() {
+    this.stopped = false;
     if (!isPlatformBrowser(this.platformId)) return;
     if (this.socket) return;
 
@@ -101,12 +104,12 @@ export class NotificacionesService {
 
       this.socket.onclose = () => {
         this.socket = null;
-        if (this.authService.tokenExpirado()) {
+        if (this.stopped || this.authService.tokenExpirado()) {
           console.log('WebSocket desconectado: la sesión expiró.');
           return;
         }
         console.log('WebSocket Desconectado 🔴. Reconectando en 5s...');
-        setTimeout(() => this.conectar(), 5000);
+        this.retry = setTimeout(() => { if (!this.stopped) this.conectar(); }, 5000);
       };
 
       this.socket.onerror = (err) => {
@@ -116,6 +119,7 @@ export class NotificacionesService {
   }
 
   desconectar() {
+    this.stopped = true; if (this.retry) clearTimeout(this.retry);
     if (this.socket) {
       this.socket.close();
       this.socket = null;
@@ -135,7 +139,7 @@ export class NotificacionesService {
     this.cargandoHistorial = true;
 
     const headers = this.getAuthHeaders();
-    if (!headers) return;
+    if (!headers) { this.cargandoHistorial = false; return; }
 
     this.http.get<RespuestaHistorial>(
       `${environment.apiUrl}/api/ws/historial`,

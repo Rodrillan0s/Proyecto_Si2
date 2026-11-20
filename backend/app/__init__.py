@@ -1,8 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from app.config import Config
+from app.routes import reportes_routes
+from app.routes import suscripcion_routes
+from app.routes import pago_routes
+from app.routes import cronograma_routes
+from app.routes import commercial_routes
+from app.utils.reportes_errors import ReportesSchemaMissing
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.routes import main_routes, auth_routes, users_routes, tenant_routes, roles_routes, backup_routes, profile_routes, notificaciones_routes, password_recovery_routes, bitacora_routes, obra_routes, estructura_routes, unidad_routes, material_routes, proveedor_routes,orden_Trabajo_routes, incidencia_routes
+from app.routes import main_routes, auth_routes, users_routes, tenant_routes, roles_routes, backup_routes, profile_routes,estimacion_routes,control_costos_routes, notificaciones_routes, password_recovery_routes, bitacora_routes, obra_routes, estructura_routes, unidad_routes, material_routes, proveedor_routes, orden_Trabajo_routes, crm_routes, ai_routes, presupuesto_routes, compras_routes, inventario_routes , equipos_maquinaria_routes, incidencia_routes, avance_routes, consulta_tecnica_routes,documentos_routes
 
 
 def create_app() -> FastAPI:
@@ -12,20 +20,54 @@ def create_app() -> FastAPI:
         description="Backend FastAPI Base estructurado en 3 capas"
     )
 
+    from app.services.backups.settings import BackupError
+    from app.services.backups.coordination import MaintenanceMiddleware
+
+    @app.exception_handler(BackupError)
+    async def backup_error(request, exc):
+        return JSONResponse(status_code=exc.status, content={'detail': str(exc), 'code': exc.code})
+
+    app.add_middleware(MaintenanceMiddleware)
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_error(request, exc):
+        # Las rutinas antiguas devuelven SQLERRM y algunos handlers lo envuelven.
+        # Normalizar solo códigos comerciales conocidos, sin exponer el contexto SQL.
+        detail = exc.detail
+        if isinstance(detail, str):
+            for code, status in {'SUSCRIPCION_SOLO_LECTURA':403,'SUSCRIPCION_CUPO':409,
+                                 'SUSCRIPCION_FUNCION':403,'SUSCRIPCION_REPORTE':403,
+                                 'SUSCRIPCION_IA_CUPO':429,'SUSCRIPCION_MODULO':403}.items():
+                if code + ':' in detail:
+                    mensaje = detail.split(code + ':',1)[1].split('\n',1)[0].strip()
+                    return JSONResponse(status_code=status,content={'detail':mensaje,'code':code})
+        return JSONResponse(status_code=exc.status_code,content={'detail':detail},headers=exc.headers)
+
+    @app.exception_handler(ReportesSchemaMissing)
+    async def reportes_schema_missing(request, exc):
+        return JSONResponse(status_code=503, content={
+            'detail': str(exc), 'code': 'REPORTES_SCHEMA_MISSING'
+        })
+
     # CONFIGURACIÓN DE CORS
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[
             "http://localhost:4200",
-            "https://obratech-kjfu.onrender.com"
+            "https://obratech-kjfu.onrender.com",
+            "https://obratech-y040.onrender.com",
         ],
+        allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+)(:[0-9]+)?$",
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=['Content-Disposition', 'Retry-After'],
     )
 
     # REGISTRO DE RUTAS
     app.include_router(main_routes.router)
+    app.include_router(suscripcion_routes.router)
+    app.include_router(pago_routes.router)
     app.include_router(auth_routes.router,prefix='/api/auth')
     app.include_router(password_recovery_routes.router,prefix='/api/auth')
     app.include_router(users_routes.router,prefix='/api/usuarios')
@@ -40,6 +82,28 @@ def create_app() -> FastAPI:
     app.include_router(unidad_routes.router)
     app.include_router(material_routes.router,prefix='/api/materiales')
     app.include_router(proveedor_routes.router,prefix='/api/proveedores')
+    app.include_router(compras_routes.router,prefix='/api/compras')
     app.include_router(orden_Trabajo_routes.router)
+    app.include_router(crm_routes.router, prefix='/api/crm')
+    app.include_router(crm_routes.router, prefix='/crm')
+    app.include_router(ai_routes.router, prefix='/api/ai')
+    app.include_router(ai_routes.router, prefix='/ai')
+    app.include_router(presupuesto_routes.router_proyectos)
+    app.include_router(presupuesto_routes.router_costos)
+    app.include_router(inventario_routes.router, prefix='/api/inventario')
+    app.include_router(inventario_routes.router, prefix='/inventario')
+    app.include_router(equipos_maquinaria_routes.router)
+    app.include_router(estimacion_routes.router)
+    app.include_router(control_costos_routes.router)
     app.include_router(incidencia_routes.router,prefix='/api/incidencias')
+    app.include_router(reportes_routes.router)
+    app.include_router(reportes_routes.voice_router)
+    # CU18 – Avances de Obra
+    app.include_router(avance_routes.router)
+    # CU23 – Gestionar consultas técnicas de obra (RFI)
+    app.include_router(consulta_tecnica_routes.router, prefix='/api')
+    app.include_router(cronograma_routes.router)
+    # CU34 – Asistente Comercial Inteligente y Recomendaciones (HUs 147, 148, 149, 150)
+    app.include_router(commercial_routes.router)
+    app.include_router(documentos_routes.router, prefix='/api/documentos-tecnicos') 
     return app

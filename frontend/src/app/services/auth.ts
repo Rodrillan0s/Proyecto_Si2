@@ -6,6 +6,15 @@ import { environment } from '../../environments/environment';
 
 
 export type PermisoNombre =
+  | 'Visualizar_cronograma'
+  | 'Registrar_cronograma'
+  | 'Modificar_cronograma'
+  | 'Planificar_cronograma'
+  | 'Visualizar_reportes'
+  | 'Exportar_reportes'
+  | 'Enviar_reportes'
+  | 'Programar_reportes'
+  | 'Administrar_programaciones_reportes'
   | 'Visualizar_usuarios'
   | 'Registrar_usuarios'
   | 'Modificar_usuarios'
@@ -29,6 +38,19 @@ export type PermisoNombre =
   | 'Visualizar_proveedores'
   | 'Registrar_proveedores'
   | 'Modificar_proveedores'
+  | 'Visualizar_estimaciones'
+  | 'Registrar_estimaciones'
+  | 'Modificar_estimaciones'
+  | 'Eliminar_estimaciones'
+  | 'Modificar_presupuesto'
+  | 'Visualizar_mano_obra'
+  | 'Registrar_mano_obra'
+  | 'Visualizar_control_costos'
+  | 'Registrar_costos_ejecutados'
+  | 'Anular_costos_ejecutados'
+  | 'Registrar_ordenes_cambio'
+  | 'Modificar_ordenes_cambio'
+  | 'Aprobar_ordenes_cambio'
   | 'Visualizar_incidencias'
   | 'Registrar_incidencias'
   | 'Modificar_incidencias'
@@ -36,58 +58,80 @@ export type PermisoNombre =
   | 'Cerrar_incidencias';
 
 export const PERMISOS_OFICIALES: PermisoNombre[] = [
+  'Visualizar_cronograma', 'Registrar_cronograma', 'Modificar_cronograma', 'Planificar_cronograma',
+  'Visualizar_reportes', 'Exportar_reportes', 'Enviar_reportes', 'Programar_reportes', 'Administrar_programaciones_reportes',
   'Visualizar_usuarios', 'Registrar_usuarios', 'Modificar_usuarios', 'Eliminar_usuarios',
   'Visualizar_obras', 'Registrar_obras', 'Modificar_obras', 'Eliminar_obras',
   'Visualizar_empresa', 'Registrar_empresa', 'Modificar_empresa', 'Eliminar_empresa',
   'Visualizar_inventario', 'Registrar_inventario', 'Modificar_inventario', 'Eliminar_inventario',
   'Visualizar_materiales', 'Registrar_materiales', 'Modificar_materiales', 'Desactivar_materiales',
   'Visualizar_proveedores', 'Registrar_proveedores', 'Modificar_proveedores',
+  'Visualizar_estimaciones', 'Registrar_estimaciones', 'Modificar_estimaciones', 'Eliminar_estimaciones', 'Visualizar_mano_obra', 'Registrar_mano_obra',
+  'Modificar_presupuesto',
+  'Visualizar_control_costos', 'Registrar_costos_ejecutados', 'Anular_costos_ejecutados',
+  'Registrar_ordenes_cambio', 'Modificar_ordenes_cambio', 'Aprobar_ordenes_cambio',
   'Visualizar_incidencias', 'Registrar_incidencias', 'Modificar_incidencias', 'Asignar_incidencias', 'Cerrar_incidencias'
 ];
 
 export const MAPA_PERMISOS_POR_ROL: Record<string, PermisoNombre[]> = {
   'ADMINISTRADOR': [...PERMISOS_OFICIALES],
   'ADMINISTRADOR_EMPRESA': [
+    'Visualizar_cronograma', 'Registrar_cronograma', 'Modificar_cronograma', 'Planificar_cronograma',
+    'Visualizar_reportes', 'Exportar_reportes', 'Enviar_reportes', 'Programar_reportes', 'Administrar_programaciones_reportes',
     'Visualizar_usuarios', 'Registrar_usuarios', 'Modificar_usuarios', 'Eliminar_usuarios',
     'Visualizar_obras', 'Registrar_obras', 'Modificar_obras', 'Eliminar_obras',
     'Visualizar_empresa', 'Registrar_empresa', 'Modificar_empresa',
     'Visualizar_inventario', 'Registrar_inventario', 'Modificar_inventario', 'Eliminar_inventario',
     'Visualizar_materiales', 'Registrar_materiales', 'Modificar_materiales', 'Desactivar_materiales',
     'Visualizar_proveedores', 'Registrar_proveedores', 'Modificar_proveedores',
+    'Visualizar_estimaciones', 'Registrar_estimaciones', 'Modificar_estimaciones', 'Eliminar_estimaciones', 'Visualizar_mano_obra', 'Registrar_mano_obra',
+    'Modificar_presupuesto',
+    'Visualizar_control_costos', 'Registrar_costos_ejecutados', 'Anular_costos_ejecutados',
+    'Registrar_ordenes_cambio', 'Modificar_ordenes_cambio', 'Aprobar_ordenes_cambio',
     'Visualizar_incidencias', 'Registrar_incidencias', 'Modificar_incidencias', 'Asignar_incidencias', 'Cerrar_incidencias'
   ],
   'JEFE_DE_OBRA': [
+    'Visualizar_cronograma', 'Registrar_cronograma', 'Modificar_cronograma', 'Planificar_cronograma',
+    'Visualizar_reportes', 'Exportar_reportes', 'Enviar_reportes', 'Programar_reportes',
     'Visualizar_obras', 'Registrar_obras', 'Modificar_obras',
     'Visualizar_inventario', 'Modificar_inventario',
     'Visualizar_materiales',
     'Visualizar_proveedores',
+    'Visualizar_control_costos', 'Registrar_costos_ejecutados', 'Anular_costos_ejecutados',
+    'Registrar_ordenes_cambio', 'Modificar_ordenes_cambio', 'Aprobar_ordenes_cambio',
     'Visualizar_incidencias', 'Registrar_incidencias', 'Modificar_incidencias', 'Asignar_incidencias'
   ],
   'SUPERVISOR_OBRA': [
+    'Visualizar_cronograma', 'Planificar_cronograma',
     'Visualizar_obras', 'Modificar_obras',
     'Visualizar_inventario',
     'Visualizar_materiales',
     'Visualizar_incidencias', 'Modificar_incidencias', 'Cerrar_incidencias'
   ],
   'CLIENTE': [
+    'Visualizar_reportes', 'Exportar_reportes',
     'Visualizar_obras'
   ],
   'ELECTRICO': [
+    'Visualizar_reportes', 'Exportar_reportes',
     'Visualizar_obras',
     'Visualizar_inventario',
     'Visualizar_materiales'
   ],
   'PLOMERO': [
+    'Visualizar_reportes', 'Exportar_reportes',
     'Visualizar_obras',
     'Visualizar_inventario',
     'Visualizar_materiales'
   ],
   'MAESTRO_ALBANIL': [
+    'Visualizar_reportes', 'Exportar_reportes',
     'Visualizar_obras',
     'Visualizar_inventario',
     'Visualizar_materiales'
   ],
   'ALBANIL': [
+    'Visualizar_reportes', 'Exportar_reportes',
     'Visualizar_obras',
     'Visualizar_inventario',
     'Visualizar_materiales'
@@ -116,6 +160,7 @@ export class AuthService {
       localStorage.setItem('token', token);
       localStorage.setItem('usuario', JSON.stringify(usuario));
     }
+    this.usuarioSubject.next(usuario);
   }
 
   obtenerToken(): string | null {
@@ -134,6 +179,9 @@ export class AuthService {
     return usuarioString ? JSON.parse(usuarioString) : null;
   }
 
+  private usuarioSubject = new BehaviorSubject<any>(this.obtenerUsuario());
+  public usuario$: Observable<any> = this.usuarioSubject.asObservable();
+
   private empresaSeleccionadaSubject = new BehaviorSubject<any>(null);
   public empresaSeleccionada$: Observable<any> = this.empresaSeleccionadaSubject.asObservable();
   public empresaActiva$: Observable<any> = this.empresaSeleccionadaSubject.asObservable();
@@ -142,6 +190,7 @@ export class AuthService {
     if (isPlatformBrowser(this.platformId)) {
       localStorage.clear();
     }
+    this.usuarioSubject.next(null);
     this.empresaSeleccionadaSubject.next(null);
   }
 

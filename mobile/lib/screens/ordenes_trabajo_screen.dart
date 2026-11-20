@@ -196,7 +196,7 @@ class _OrdenesTrabajoScreenState extends State<OrdenesTrabajoScreen> {
                       child: Text(
                         auth.esVistaGlobal
                             ? 'Vista Global: Todas las Empresas'
-                            : 'Empresa Activa: ${auth.nombreEmpresaActiva ?? "Empresa"}',
+                            : 'Empresa: ${auth.empresaActivaNombre ?? auth.nombreEmpresa ?? "Constructora Obratec"}',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -444,10 +444,14 @@ class _OrdenesTrabajoScreenState extends State<OrdenesTrabajoScreen> {
               const SizedBox(height: 10),
 
               // Fila inferior: Cuadrilla y Fechas
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 4,
                 children: [
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.groups_rounded, size: 16, color: AppTheme.primary),
                       const SizedBox(width: 4),
@@ -463,6 +467,7 @@ class _OrdenesTrabajoScreenState extends State<OrdenesTrabajoScreen> {
                   ),
                   if (fechaInicio != null)
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(Icons.calendar_today_rounded, size: 13, color: AppTheme.textMuted),
                         const SizedBox(width: 4),

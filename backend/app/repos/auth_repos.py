@@ -96,6 +96,9 @@ def existe_nombre_usuario(nombre_usuario: str, db: PostgreSQL = None):
             db.close_connection()
 
 def registrar_usuario_bd(data: dict, persona_existe: bool, db: PostgreSQL = None):
+    # El registro público nunca puede elegir un rol global ni adherirse a una empresa por nombre.
+    data = dict(data)
+    data['nro_rol'] = None
     created = False
     if db is None:
         db = PostgreSQL()
@@ -143,6 +146,8 @@ def registrar_usuario_bd(data: dict, persona_existe: bool, db: PostgreSQL = None
                 f"SELECT 1 FROM {Config.SCHEMA}.t_usuario WHERE id_empresa = %s LIMIT 1;",
                 (id_empresa,), fetchone=True
             )
+            if usuarios_empresa:
+                raise ValueError('La empresa ya tiene usuarios. Solicite su alta al administrador de la empresa.')
             rol_empresa = db.execute_query(
                 f"""SELECT id_rol FROM {Config.SCHEMA}.t_rol
                     WHERE UPPER(nombre_rol) = 'ADMINISTRADOR_EMPRESA' LIMIT 1;""",

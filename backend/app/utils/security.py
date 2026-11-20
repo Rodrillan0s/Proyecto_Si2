@@ -2,7 +2,7 @@ import jwt
 import re
 from datetime import datetime,timedelta,timezone
 from app.config import Config
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 #INICAR PROTOCOLO DE DETECCION BEARER
@@ -33,6 +33,11 @@ def create_access_token(nro_usuario, username, nombre_rol, id_empresa, nombre_em
         'iat': datetime.now(timezone.utc)
     }
 
+    from uuid import uuid4
+    from app.repos.backup_repos import epoch
+    payload['jti'] = str(uuid4())
+    payload['session_epoch'] = epoch()
+
     # Usamos Config.TOKEN_KEY que definiste en tu archivo de configuración
     return jwt.encode(payload, Config.TOKEN_KEY, algorithm="HS256")
 
@@ -49,6 +54,9 @@ def decode_access_token(token: str):
     """
     try:
         payload = jwt.decode(token, Config.TOKEN_KEY, algorithms=["HS256"])
+        from app.repos.backup_repos import epoch
+        if payload.get('session_epoch', 0) != epoch():
+            return {'success': False, 'message': 'La sesión fue revocada tras una restauración. Inicie sesión nuevamente.'}
         
         return {
             'success': True,
@@ -69,7 +77,7 @@ def decode_access_token(token: str):
         }
 
 
-def verificar_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
+def verificar_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme), request: Request = None):
     """
     Dependencia reusable que extrae el token Bearer, lo valida con tu función 
     y retorna el payload decodificado si todo está correcto.
@@ -85,7 +93,11 @@ def verificar_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_s
         raise HTTPException(status_code=401, detail=resultado.get('message'))
         
     #SI LA VERIFICACION RETORNA EXITO RETORNAMOS EL CONTENIDO DEL TOKEN
-    return resultado.get('payload')
+    payload = resultado.get('payload')
+    if request is not None:
+        from app.services.suscripcion_policy import proteger_http
+        proteger_http(payload, request.method, request.url.path)
+    return payload
 
 
 def exigir_rol(*roles_permitidos):

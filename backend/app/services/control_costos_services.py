@@ -209,7 +209,13 @@ def anular_costo(id_costo, motivo, token, ip="unknown"):
 
 
 def _comparacion(id_obra, token, db=None):
-    empresa = _empresa(token)
+    if token.get("nombre_rol") == "ADMINISTRADOR":
+        obra_data = control_costos_repos.obtener_obra(None, id_obra, db=db)
+        if not obra_data:
+            raise ControlCostosError("La obra no existe o no pertenece a su empresa.", 404)
+        empresa = obra_data["id_empresa"]
+    else:
+        empresa = _empresa(token)
     transaction = {"db": db} if db is not None else {}
     line = control_costos_repos.obtener_linea_base(empresa, id_obra, **transaction)
     if not line:
@@ -245,7 +251,7 @@ def obtener_comparacion(id_obra, token):
 def obtener_resumen(id_obra, token, db=None):
     transaction = {"db": db} if db is not None else {}
     line, rows, totals = _comparacion(id_obra, token, **transaction)
-    empresa = _empresa(token)
+    empresa = line["id_empresa"] if token.get("nombre_rol") == "ADMINISTRADOR" else _empresa(token)
     costs = control_costos_repos.listar_costos(
         empresa, id_obra=id_obra, id_control_costo=line["id_control_costo"], **transaction
     )

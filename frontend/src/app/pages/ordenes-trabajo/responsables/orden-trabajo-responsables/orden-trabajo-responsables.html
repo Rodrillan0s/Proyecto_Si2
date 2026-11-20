@@ -131,7 +131,7 @@
         <div class="responsable-info">
 
           <div class="responsable-avatar">
-            {{ responsable.nombre_completo?.charAt(0)?.toUpperCase() || '?' }}
+            {{ (responsable.nombre_completo ? responsable.nombre_completo.charAt(0).toUpperCase() : '?') }}
           </div>
 
           <div class="responsable-data">

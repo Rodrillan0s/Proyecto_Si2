@@ -1,3 +1,5 @@
+import { LecturasVigentes } from '../../services/lecturas';
+import { ContextoOperativo } from '../../services/contexto-operativo';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -25,11 +27,13 @@ interface ProveedorFormModel extends ProveedorCreatePayload {
   styleUrl: './proveedores.css',
 })
 export class ProveedoresComponent implements OnInit {
+  private contexto = inject(ContextoOperativo);
   private service  = inject(ProveedorService);
   private matSvc   = inject(MaterialsService);
   private auth     = inject(AuthService);
   private cdr      = inject(ChangeDetectorRef);
   private destroyRef = inject(DestroyRef);
+  private reads = new LecturasVigentes(this.destroyRef);
   private busqueda$ = new Subject<string>();
 
   // ── Lista principal ──────────────────────────────────────────────────────
@@ -76,19 +80,22 @@ export class ProveedoresComponent implements OnInit {
   // LIFECYCLE
   // ─────────────────────────────────────────────────────────────────────────
   ngOnInit(): void {
+    this.contexto.proteger(() => this.modal === 'formulario' || this.modal === 'materiales', this.destroyRef);
+    this.contexto.protegerEscritura(() => this.operacionFormularioActiva || this.changingStatus || this.asociando, this.destroyRef);
     this.busqueda$
       .pipe(debounceTime(400), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => { this.pagina = 1; this.cargarProveedores(); });
 
-    this.auth.empresaActiva$
+    this.contexto.empresa$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((emp) => {
-        this.empresaActiva = emp;
+        this.empresaActiva = this.auth.obtenerEmpresaActiva();
+        this.reads.cancelar(); this.proveedores = []; this.modal = null;
         this.pagina = 1;
         this.cargarProveedores();
       });
 
-    this.cargarProveedores();
+
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -107,7 +114,7 @@ export class ProveedoresComponent implements OnInit {
         id_empresa: idEmpresa || undefined,
       })
       .pipe(finalize(() => { this.loadingProveedores = false; this.cdr.detectChanges(); }))
-      .subscribe({
+      .pipe(this.reads.reemplazar('proveedores')).subscribe({
         next: res => {
           this.proveedores   = res.data || [];
           this.total         = res.pagination.total;
@@ -150,9 +157,9 @@ export class ProveedoresComponent implements OnInit {
   abrirEditar(proveedor: Proveedor): void {
     if (this.loadingDetalle) return;
     this.loadingDetalle = true;
-    this.service.obtener(proveedor.id_proveedor)
+    this.service.obtener(proveedor.id_proveedor, this.auth.obtenerIdEmpresaActiva() || undefined)
       .pipe(finalize(() => { this.loadingDetalle = false; this.cdr.detectChanges(); }))
-      .subscribe({
+      .pipe(this.reads.reemplazar('detalle')).subscribe({
         next: res => {
           const p = res.data;
           this.editando = true;
@@ -175,9 +182,9 @@ export class ProveedoresComponent implements OnInit {
   abrirDetalle(proveedor: Proveedor): void {
     if (this.loadingDetalle) return;
     this.loadingDetalle = true;
-    this.service.obtener(proveedor.id_proveedor)
+    this.service.obtener(proveedor.id_proveedor, this.auth.obtenerIdEmpresaActiva() || undefined)
       .pipe(finalize(() => { this.loadingDetalle = false; this.cdr.detectChanges(); }))
-      .subscribe({
+      .pipe(this.reads.reemplazar('detalle')).subscribe({
         next: res => { this.detalle = res.data; this.modal = 'detalle'; this.cdr.detectChanges(); },
         error: err => this.mostrarError(this.mensajeError(err, 'No se pudo cargar el proveedor.')),
       });

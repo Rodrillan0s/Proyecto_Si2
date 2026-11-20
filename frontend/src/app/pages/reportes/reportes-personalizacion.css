@@ -1,0 +1,47 @@
+.period-select {
+  grid-column: 1 / -1;
+}
+.presentation {
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+  margin-top: 18px;
+}
+.presentation summary {
+  cursor: pointer;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+.presentation label {
+  margin-top: 12px;
+}
+.presentation .check-label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 400;
+}
+.presentation input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #b45309;
+}
+.column-selection {
+  max-height: 330px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+.column-order {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.column-order span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.column-order button {
+  padding: 5px 9px;
+}
