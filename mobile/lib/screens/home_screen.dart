@@ -885,7 +885,7 @@ class _HomeScreenState extends State<HomeScreen> {
       crossAxisCount: 3,
       mainAxisSpacing: 10,
       crossAxisSpacing: 10,
-      childAspectRatio: 1.05,
+      childAspectRatio: 0.92,
       children: [
         _buildQuickAccessItem(
           icon: Icons.apartment_rounded,
@@ -1013,7 +1013,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: BorderRadius.circular(12),
@@ -1030,17 +1030,20 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               child: Icon(icon, color: iconColor, size: 22),
             ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: titleColor,
+            const SizedBox(height: 6),
+            Flexible(
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: titleColor,
+                  height: 1.15,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
