@@ -5,6 +5,8 @@ from app.repos.orden_Trabajo_repos import (
     asignar_responsable_orden_trabajo_fn,
     eliminar_responsable_orden_trabajo_fn
 )
+
+
 def listar_ordenes_trabajo(
     token_data: dict,
     id_empresa: int = None,
@@ -37,7 +39,6 @@ def obtener_orden_trabajo(
     orden_nro: int,
     token_data: dict
 ) -> dict:
-
     id_usuario = token_data.get('nro_usuario')
     rol = token_data.get('nombre_rol') or ''
     id_empresa_token = token_data.get('id_empresa')
@@ -65,7 +66,6 @@ def crear_orden_trabajo(
     token_data: dict,
     client_ip: str = "unknown"
 ) -> dict:
-
     id_usuario = token_data.get('nro_usuario')
 
     if not id_usuario:
@@ -82,27 +82,23 @@ def crear_orden_trabajo(
         raise ValueError("El tipo_trab es obligatorio.")
 
     cuadrilla = data.get('cuadrilla')
-
     estado = (data.get('estado') or 'PENDIENTE').strip()
-
     fecha_inicio = data.get('fecha_inicio')
     fecha_fin = data.get('fecha_fin')
-
     observacion = (data.get('observacion') or '').strip()
-
     id_usuarios = data.get('id_usuarios') or []
 
     res = orden_Trabajo_repos.registrar_orden_trabajo_fn(
-    id_obra=id_obra,
-    tipo_trab=tipo_trab,
-    cuadrilla=cuadrilla,
-    estado=estado,
-    fecha_inicio=fecha_inicio or None,
-    fecha_fin=fecha_fin or None,
-    observacion=observacion or None,
-    id_usuarios=id_usuarios,
-    id_usuario_creador=id_usuario
-)
+        id_obra=id_obra,
+        tipo_trab=tipo_trab,
+        cuadrilla=cuadrilla,
+        estado=estado,
+        fecha_inicio=fecha_inicio or None,
+        fecha_fin=fecha_fin or None,
+        observacion=observacion or None,
+        id_usuarios=id_usuarios,
+        id_usuario_creador=id_usuario
+    )
 
     if not res.get('success'):
         raise ValueError(
@@ -113,22 +109,36 @@ def crear_orden_trabajo(
         )
 
     bitacora_repos.registrar_bitacora(
-    id_usuario=id_usuario,
-    modulo="ORDEN_TRABAJO",
-    accion="REGISTRAR_ORDEN",
-    descripcion=f"Orden de trabajo creada para obra {id_obra}.",
-    ip=client_ip,
-    estado="EXITOSO"
-)
+        id_usuario=id_usuario,
+        modulo="ORDEN_TRABAJO",
+        accion="REGISTRAR_ORDEN",
+        descripcion=f"Orden de trabajo creada para obra {id_obra}.",
+        ip=client_ip,
+        estado="EXITOSO"
+    )
+
+    try:
+        from app.services import notificaciones_services
+        notificaciones_services.emitir_notificacion_push_empresa(
+            titulo=f"Nueva orden de trabajo: {tipo_trab}",
+            cuerpo=f"Orden creada para la obra #{id_obra} ({estado}). {observacion}".strip(),
+            tipo_referencia="ORDEN_TRABAJO",
+            id_empresa=token_data.get('id_empresa'),
+            nro_referencia=id_obra,
+            usuarios_especificos=[id_usuario] + list(id_usuarios),
+        )
+    except Exception:
+        pass
 
     return res
+
+
 def actualizar_orden_trabajo(
     orden_nro: int,
     data: dict,
     token_data: dict,
     client_ip: str = "unknown"
 ) -> dict:
-
     id_usuario = token_data.get('nro_usuario')
     rol = token_data.get('nombre_rol') or ''
     id_empresa_token = token_data.get('id_empresa')
@@ -185,7 +195,6 @@ def eliminar_orden_trabajo(
     token_data: dict,
     client_ip: str = "unknown"
 ) -> dict:
-
     id_usuario = token_data.get('nro_usuario')
     rol = token_data.get('nombre_rol') or ''
     id_empresa_token = token_data.get('id_empresa')
@@ -226,7 +235,6 @@ def actualizar_estado_orden_trabajo(
     token_data: dict,
     client_ip: str = "unknown"
 ) -> dict:
-
     id_usuario = token_data.get('nro_usuario')
     rol = token_data.get('nombre_rol') or ''
     id_empresa_token = token_data.get('id_empresa')
@@ -264,6 +272,19 @@ def actualizar_estado_orden_trabajo(
         estado="EXITOSO"
     )
 
+    try:
+        from app.services import notificaciones_services
+        notificaciones_services.emitir_notificacion_push_empresa(
+            titulo=f"Orden de trabajo #{orden_nro}: {estado}",
+            cuerpo=f"El estado de la orden de trabajo #{orden_nro} cambió a {estado}.",
+            tipo_referencia="ORDEN_TRABAJO",
+            id_empresa=id_empresa_token,
+            nro_referencia=orden_nro,
+            usuarios_especificos=[id_usuario],
+        )
+    except Exception:
+        pass
+
     return res
 
 
@@ -271,7 +292,6 @@ def listar_historial_orden_trabajo(
     orden_nro: int,
     token_data: dict
 ) -> dict:
-
     id_usuario = token_data.get('nro_usuario')
     rol = token_data.get('nombre_rol') or ''
     id_empresa_token = token_data.get('id_empresa')
@@ -295,11 +315,12 @@ def listar_historial_orden_trabajo(
         )
 
     return res
+
+
 def listar_responsables_orden_trabajo(
     orden_nro: int,
     token_data: dict
 ) -> dict:
-
     id_usuario = token_data.get('nro_usuario')
 
     if not id_usuario:
@@ -326,7 +347,6 @@ def asignar_responsable_orden_trabajo(
     token_data: dict,
     client_ip: str = "unknown"
 ) -> dict:
-
     id_usuario = token_data.get('nro_usuario')
 
     if not id_usuario:
@@ -362,6 +382,19 @@ def asignar_responsable_orden_trabajo(
         estado="EXITOSO"
     )
 
+    try:
+        from app.services import notificaciones_services
+        notificaciones_services.emitir_notificacion_push_empresa(
+            titulo=f"Responsable asignado a OT #{orden_nro}",
+            cuerpo=f"Se asignó al usuario #{id_responsable} en la orden de trabajo #{orden_nro}.",
+            tipo_referencia="ORDEN_TRABAJO",
+            id_empresa=token_data.get('id_empresa'),
+            nro_referencia=orden_nro,
+            usuarios_especificos=[id_usuario, id_responsable],
+        )
+    except Exception:
+        pass
+
     return res
 
 
@@ -371,7 +404,6 @@ def eliminar_responsable_orden_trabajo(
     token_data: dict,
     client_ip: str = "unknown"
 ) -> dict:
-
     id_usuario = token_data.get('nro_usuario')
 
     if not id_usuario:

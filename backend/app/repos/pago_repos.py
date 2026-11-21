@@ -178,6 +178,23 @@ def listar_pagos_empresa(id_empresa):
         return [dict(row) for row in cur.fetchall()]
 
 
+def listar_todos_los_pagos():
+    with conexion() as cur:
+        cur.execute("""
+            SELECT pg.id_pago,pg.id_empresa,COALESCE(e.nombre_empresa, 'Empresa ' || pg.id_empresa) AS nombre_empresa,
+                   pg.codigo_plan,pl.nombre AS nombre_plan,
+                   pg.monto_menor,pg.moneda,pg.estado,pg.creado_en AS fecha,
+                   pg.confirmado_en,
+                   pg.stripe_checkout_session_id,pg.stripe_payment_intent_id,
+                   pg.stripe_checkout_url,pg.stripe_receipt_url
+            FROM obras.t_pago_suscripcion pg
+            LEFT JOIN obras.t_empresa e ON e.id_empresa=pg.id_empresa
+            LEFT JOIN obras.t_plan_suscripcion pl ON pl.codigo=pg.codigo_plan
+            ORDER BY pg.creado_en DESC,pg.id_pago DESC
+        """)
+        return [dict(row) for row in cur.fetchall()]
+
+
 def obtener_comprobante(id_pago):
     with conexion() as cur:
         cur.execute("""

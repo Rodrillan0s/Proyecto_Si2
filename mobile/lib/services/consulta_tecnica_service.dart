@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'api_client.dart';
+import 'notificacion_service.dart';
 
 class ConsultaTecnicaService {
   final Dio _dio = ApiClient.dio;
@@ -67,7 +68,13 @@ class ConsultaTecnicaService {
       }
 
       final response = await _dio.post('/api/proyectos/$idObra/consultas-tecnicas', data: payload);
-      return Map<String, dynamic>.from(response.data as Map);
+      final res = Map<String, dynamic>.from(response.data as Map);
+      NotificacionService.instance.emitLocalPush(
+        titulo: 'Nueva Consulta Técnica Registrada',
+        cuerpo: '${asunto.trim()} (Obra #$idObra).',
+        tipo: 'CONSULTA_TECNICA',
+      );
+      return res;
     } on DioException catch (e) {
       final msg = e.response?.data?['detail'] ?? 'Error al registrar consulta técnica';
       throw Exception(msg);
@@ -96,7 +103,13 @@ class ConsultaTecnicaService {
         '/api/consultas-tecnicas/$idConsultaTecnica/respuestas',
         data: {'respuesta': respuesta.trim()},
       );
-      return Map<String, dynamic>.from(response.data as Map);
+      final res = Map<String, dynamic>.from(response.data as Map);
+      NotificacionService.instance.emitLocalPush(
+        titulo: 'Respuesta Técnica Registrada (RFI #$idConsultaTecnica)',
+        cuerpo: respuesta.trim(),
+        tipo: 'CONSULTA_TECNICA',
+      );
+      return res;
     } on DioException catch (e) {
       final msg = e.response?.data?['detail'] ?? 'Error al registrar respuesta técnica';
       throw Exception(msg);
@@ -119,7 +132,13 @@ class ConsultaTecnicaService {
         '/api/consultas-tecnicas/$idConsultaTecnica/asignacion',
         data: payload,
       );
-      return Map<String, dynamic>.from(response.data as Map);
+      final res = Map<String, dynamic>.from(response.data as Map);
+      NotificacionService.instance.emitLocalPush(
+        titulo: 'Consulta Técnica #$idConsultaTecnica Asignada',
+        cuerpo: 'Responsable #$idResponsable asignado a la consulta.',
+        tipo: 'ASIGNACION_RFI',
+      );
+      return res;
     } on DioException catch (e) {
       final msg = e.response?.data?['detail'] ?? 'Error al asignar responsable';
       throw Exception(msg);
@@ -142,7 +161,15 @@ class ConsultaTecnicaService {
         '/api/consultas-tecnicas/$idConsultaTecnica/estado',
         data: payload,
       );
-      return Map<String, dynamic>.from(response.data as Map);
+      final res = Map<String, dynamic>.from(response.data as Map);
+      NotificacionService.instance.emitLocalPush(
+        titulo: 'Estado RFI #$idConsultaTecnica: $estado',
+        cuerpo: motivo != null && motivo.trim().isNotEmpty
+            ? motivo.trim()
+            : 'La consulta técnica cambió a estado $estado.',
+        tipo: 'CONSULTA_TECNICA',
+      );
+      return res;
     } on DioException catch (e) {
       final msg = e.response?.data?['detail'] ?? 'Error al cambiar estado';
       throw Exception(msg);

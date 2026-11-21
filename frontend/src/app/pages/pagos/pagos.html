@@ -1,16 +1,42 @@
 <main class="pagos-page text-slate-900 dark:text-slate-100">
+  <!-- ENCABEZADO EJECUTIVO -->
   <header class="page-heading">
     <div>
-      <p class="section-label">CU37</p>
-      <h1>{{ esGlobal ? 'Pagos SaaS y transacciones' : 'Pagos y suscripción' }}</h1>
-      <p>{{ esGlobal ? 'Consulte una transacción y solicite a Stripe su verificación.' : 'Administre el pago de su plan y consulte los comprobantes de su empresa.' }}</p>
+      <span class="section-badge">
+        <span class="badge-dot"></span>
+        {{ esGlobal ? 'Facturación & Pasarela Stripe' : 'Suscripción & Facturación' }}
+      </span>
+      <h1>{{ esGlobal ? 'Pagos SaaS y Transacciones' : 'Pagos y Suscripción' }}</h1>
+      <p>
+        {{ esGlobal
+          ? 'Monitoreo centralizado de cobros de suscripciones, conciliación en tiempo real con Stripe y auditoría de comprobantes.'
+          : 'Administre el plan activo de su constructora, gestione renovaciones y descargue los comprobantes emitidos.' }}
+      </p>
     </div>
-    <a *ngIf="!esGlobal" routerLink="/suscripciones" class="secondary-link">Ver detalle de suscripción</a>
+
+    <div class="header-actions">
+      <a *ngIf="!esGlobal" routerLink="/suscripciones" class="secondary-button">
+        Ver detalle de suscripción
+      </a>
+      <button *ngIf="esGlobal" type="button" class="secondary-button" (click)="cargarGlobal()" [disabled]="cargando()">
+        {{ cargando() ? 'Actualizando…' : '↻ Actualizar transacciones' }}
+      </button>
+    </div>
   </header>
 
-  <div *ngIf="error()" role="alert" class="notice notice-error">{{ error() }}</div>
-  <div *ngIf="mensaje()" role="status" class="notice notice-success">{{ mensaje() }}</div>
+  <!-- ALERTAS Y NOTIFICACIONES -->
+  <div *ngIf="error()" role="alert" class="notice notice-error">
+    <span>{{ error() }}</span>
+    <button type="button" class="notice-close" (click)="error.set('')" aria-label="Cerrar alerta">×</button>
+  </div>
+  <div *ngIf="mensaje()" role="status" class="notice notice-success">
+    <span>{{ mensaje() }}</span>
+    <button type="button" class="notice-close" (click)="mensaje.set('')" aria-label="Cerrar mensaje">×</button>
+  </div>
 
+  <!-- ======================================================================= -->
+  <!-- VISTA EMPRESA (ADMINISTRADOR_EMPRESA)                                   -->
+  <!-- ======================================================================= -->
   <ng-container *ngIf="!esGlobal">
     <section *ngIf="cargando()" aria-label="Cargando pagos" class="loading-grid" role="status">
       <span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span>
@@ -20,17 +46,19 @@
     <ng-container *ngIf="!cargando()">
       <section *ngIf="suscripcion() as actual" class="current-plan" aria-labelledby="plan-actual-title">
         <div>
-          <span class="current-plan-label">Plan actual</span>
+          <span class="current-plan-label">Plan vigente</span>
           <h2 id="plan-actual-title">{{ actual.nombre_plan || actual.codigo_plan || 'Sin plan asignado' }}</h2>
-          <p>Estado: {{ actual.estado_efectivo }}. Vigencia hasta {{ actual.fecha_fin || 'sin fecha definida' }}.</p>
+          <p>Estado operativo: <strong>{{ actual.estado_efectivo }}</strong> · Vigencia hasta {{ actual.fecha_fin || 'sin fecha definida' }}.</p>
         </div>
         <app-status-badge [estado]="actual.estado_efectivo"></app-status-badge>
       </section>
 
       <section aria-labelledby="planes-title" class="section-block">
         <div class="section-heading">
-          <h2 id="planes-title">Planes disponibles</h2>
-          <p>Los importes y la moneda se obtienen del servidor. Stripe procesa el pago en modo prueba.</p>
+          <div>
+            <h2 id="planes-title">Planes disponibles</h2>
+            <p>Seleccione un plan para contratar, renovar o ampliar las capacidades operativas de su empresa.</p>
+          </div>
         </div>
         <div class="plans-grid">
           <article *ngFor="let plan of planes()" class="plan-card" [class.plan-current]="esPlanActual(plan)">
@@ -39,7 +67,10 @@
                 <h3>{{ plan.nombre }}</h3>
                 <span *ngIf="esPlanActual(plan)" class="current-badge">Plan actual</span>
               </div>
-              <p class="plan-price">{{ dinero(plan.precio_menor, plan.moneda) }}<small>/ {{ plan.periodo_meses }} mes{{ plan.periodo_meses === 1 ? '' : 'es' }}</small></p>
+              <p class="plan-price">
+                {{ dinero(plan.precio_menor, plan.moneda) }}
+                <small>por {{ plan.periodo_meses }} mes{{ plan.periodo_meses === 1 ? '' : 'es' }}</small>
+              </p>
             </div>
             <p class="plan-description">{{ plan.descripcion }}</p>
             <dl class="plan-limits" *ngIf="plan.limite_usuarios || plan.limite_obras">
@@ -50,35 +81,51 @@
             <ul *ngIf="plan.prestaciones.length" class="features-list">
               <li *ngFor="let prestacion of plan.prestaciones">{{ prestacion }}</li>
             </ul>
-            <button type="button" class="primary-button" (click)="iniciarPago(plan)"
-              [disabled]="procesandoPlan() !== null">
-              {{ procesandoPlan() === plan.codigo ? 'Preparando Checkout...' : etiquetaAccion(plan) }}
+            <button type="button" class="primary-button" (click)="iniciarPago(plan)" [disabled]="procesandoPlan() !== null">
+              {{ procesandoPlan() === plan.codigo ? 'Preparando Checkout…' : etiquetaAccion(plan) }}
             </button>
           </article>
         </div>
       </section>
 
-      <section aria-labelledby="historial-title" class="section-block history-section">
+      <section aria-labelledby="historial-title" class="section-block surface-card">
         <div class="section-heading history-heading">
-          <div><h2 id="historial-title">Historial de pagos</h2><p>Intentos y pagos registrados para su empresa.</p></div>
-          <button type="button" class="secondary-button" (click)="cargarEmpresa()">Actualizar</button>
+          <div>
+            <h2 id="historial-title">Historial de pagos</h2>
+            <p>Registro cronológico de transacciones y comprobantes de su empresa.</p>
+          </div>
+          <button type="button" class="secondary-button" (click)="cargarEmpresa()">↻ Actualizar</button>
         </div>
 
-        <app-empty-state *ngIf="!historial().length" titulo="Aún no hay pagos"
-          descripcion="Cuando inicie un Checkout, el intento aparecerá en este historial."></app-empty-state>
+        <app-empty-state *ngIf="!historial().length" titulo="Aún no hay pagos registrados"
+          descripcion="Cuando inicie un proceso de pago o renovación, la transacción aparecerá en este listado."></app-empty-state>
 
         <div *ngIf="historial().length" class="table-wrap">
           <table>
-            <thead><tr><th>ID</th><th>Plan</th><th>Importe</th><th>Estado</th><th>Fecha</th><th>Confirmación</th><th>Acción</th></tr></thead>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Plan</th>
+                <th>Importe</th>
+                <th>Estado</th>
+                <th>Fecha</th>
+                <th>Confirmación</th>
+                <th class="text-right">Acciones</th>
+              </tr>
+            </thead>
             <tbody>
               <tr *ngFor="let pago of historial()">
-                <td data-label="ID">#{{ pago.id_pago }}</td>
+                <td data-label="ID"><span class="id-pill">#{{ pago.id_pago }}</span></td>
                 <td data-label="Plan"><strong>{{ pago.nombre_plan || pago.codigo_plan }}</strong></td>
-                <td data-label="Importe">{{ dinero(pago.monto_menor, pago.moneda) }}</td>
+                <td data-label="Importe"><span class="amount-cell">{{ dinero(pago.monto_menor, pago.moneda) }}</span></td>
                 <td data-label="Estado"><app-status-badge [estado]="pago.estado"></app-status-badge></td>
                 <td data-label="Fecha">{{ fecha(pago.fecha) }}</td>
                 <td data-label="Confirmación">{{ fecha(pago.confirmado_en) }}</td>
-                <td data-label="Acción"><button type="button" class="table-action" (click)="verComprobante(pago.id_pago)">Ver comprobante</button></td>
+                <td data-label="Acciones" class="actions-cell">
+                  <button type="button" class="action-btn" (click)="verComprobante(pago.id_pago)">
+                    Ver comprobante
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -87,51 +134,225 @@
     </ng-container>
   </ng-container>
 
-  <section *ngIf="esGlobal" class="admin-lookup" aria-labelledby="buscar-title">
-    <div class="section-heading">
-      <h2 id="buscar-title">Consultar transacción</h2>
-      <p>El backend actual permite consultar y verificar una transacción por su ID.</p>
-    </div>
-    <form (ngSubmit)="buscarPago()" class="lookup-form">
-      <label for="id-pago">ID de pago</label>
-      <div><input id="id-pago" name="idPago" type="number" min="1" step="1" required [(ngModel)]="idConsulta" placeholder="Ej. 4">
-      <button type="submit" class="primary-button" [disabled]="consultando()">{{ consultando() ? 'Consultando...' : 'Consultar' }}</button></div>
-    </form>
+  <!-- ======================================================================= -->
+  <!-- VISTA SUPER ADMIN GLOBAL (ADMINISTRADOR)                                -->
+  <!-- ======================================================================= -->
+  <ng-container *ngIf="esGlobal">
+    <!-- TARJETAS KPI EJECUTIVAS -->
+    <section class="kpi-grid" aria-label="Resumen de métricas de transacciones">
+      <article class="kpi-card kpi-highlight">
+        <span class="kpi-label">Recaudación Confirmada</span>
+        <strong class="kpi-value">{{ metricasGlobales().recaudadoBob }}</strong>
+        <span class="kpi-meta kpi-meta-ok">Cobros conciliados en firme</span>
+      </article>
 
-    <article *ngIf="pagoConsultado() as pago" class="transaction-card">
+      <article class="kpi-card">
+        <span class="kpi-label">Total Transacciones</span>
+        <strong class="kpi-value">{{ metricasGlobales().totalTransacciones }}</strong>
+        <span class="kpi-meta">Operaciones registradas en el ledger</span>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-label">Pagos Confirmados</span>
+        <strong class="kpi-value kpi-text-ok">{{ metricasGlobales().confirmados }}</strong>
+        <span class="kpi-meta">Suscripciones activadas o renovadas</span>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-label">Pendientes de Conciliación</span>
+        <strong class="kpi-value kpi-text-warn">{{ metricasGlobales().pendientes }}</strong>
+        <span class="kpi-meta">Por verificar ({{ metricasGlobales().pendienteBob }})</span>
+      </article>
+    </section>
+
+    <!-- BARRA DE FILTROS, BÚSQUEDA Y CONSULTA DIRECTA POR ID -->
+    <section class="surface-card toolbar-section" aria-label="Filtros y búsqueda de transacciones">
+      <div class="toolbar-row">
+        <div class="search-box">
+          <input
+            type="search"
+            [ngModel]="filtroBusqueda()"
+            (ngModelChange)="filtroBusqueda.set($event)"
+            placeholder="Filtrar por constructora, plan, #ID o sesión de Stripe…"
+            aria-label="Filtrar transacciones"
+          />
+        </div>
+
+        <div class="filter-pills" role="group" aria-label="Filtrar por estado">
+          <button type="button" class="pill-btn" [class.pill-active]="filtroEstado() === 'TODOS'" (click)="cambiarFiltroEstado('TODOS')">
+            Todos ({{ metricasGlobales().totalTransacciones }})
+          </button>
+          <button type="button" class="pill-btn" [class.pill-active]="filtroEstado() === 'CONFIRMADO'" (click)="cambiarFiltroEstado('CONFIRMADO')">
+            Confirmados ({{ metricasGlobales().confirmados }})
+          </button>
+          <button type="button" class="pill-btn" [class.pill-active]="filtroEstado() === 'PENDIENTE'" (click)="cambiarFiltroEstado('PENDIENTE')">
+            Pendientes ({{ metricasGlobales().pendientes }})
+          </button>
+          <button *ngIf="metricasGlobales().fallidos > 0" type="button" class="pill-btn" [class.pill-active]="filtroEstado() === 'FALLIDO_CANCELADO'" (click)="cambiarFiltroEstado('FALLIDO_CANCELADO')">
+            Otros ({{ metricasGlobales().fallidos }})
+          </button>
+        </div>
+
+        <form (ngSubmit)="buscarPago()" class="lookup-inline" aria-label="Consulta puntual por ID">
+          <label for="id-pago" class="sr-only">ID de pago</label>
+          <input
+            id="id-pago"
+            name="idPago"
+            type="number"
+            min="1"
+            step="1"
+            required
+            [(ngModel)]="idConsulta"
+            placeholder="Ir a ID # (ej. 8)"
+          />
+          <button type="submit" class="primary-button btn-compact" [disabled]="consultando()">
+            {{ consultando() ? 'Buscando…' : 'Inspeccionar ID' }}
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- TARJETA DE INSPECCIÓN PUNTUAL (CUANDO SE BUSCA UN ID ESPECÍFICO) -->
+    <article *ngIf="pagoConsultado() as pago" class="surface-card inspected-card" aria-label="Detalle de transacción inspeccionada">
       <div class="transaction-header">
-        <div><span>Pago #{{ pago.id_pago }}</span><h3>{{ pago.codigo_plan }}</h3></div>
-        <app-status-badge [estado]="pago.estado"></app-status-badge>
+        <div>
+          <span class="current-plan-label">Inspección directa · Transacción #{{ pago.id_pago }}</span>
+          <h3>Plan {{ pago.codigo_plan }} (Empresa #{{ pago.id_empresa }})</h3>
+        </div>
+        <div class="inspected-head-right">
+          <app-status-badge [estado]="pago.estado"></app-status-badge>
+          <button type="button" class="close-button" (click)="cerrarDetalleConsultado()" aria-label="Cerrar inspección">×</button>
+        </div>
       </div>
       <dl class="transaction-grid">
-        <div><dt>Empresa</dt><dd>{{ pago.id_empresa }}</dd></div>
-        <div><dt>Importe</dt><dd>{{ dinero(pago.monto_menor, pago.moneda) }}</dd></div>
-        <div><dt>Creado</dt><dd>{{ fecha(pago.creado_en) }}</dd></div>
-        <div><dt>Confirmado</dt><dd>{{ fecha(pago.confirmado_en) }}</dd></div>
+        <div><dt>ID Empresa</dt><dd>#{{ pago.id_empresa }}</dd></div>
+        <div><dt>Importe</dt><dd class="amount-cell">{{ dinero(pago.monto_menor, pago.moneda) }}</dd></div>
+        <div><dt>Fecha de creación</dt><dd>{{ fecha(pago.creado_en) }}</dd></div>
+        <div><dt>Fecha de confirmación</dt><dd>{{ fecha(pago.confirmado_en) }}</dd></div>
       </dl>
       <div class="transaction-actions">
         <button *ngIf="pago.estado === 'PENDIENTE'" type="button" class="primary-button" (click)="verificarPago()" [disabled]="verificando()">
-          {{ verificando() ? 'Verificando con Stripe...' : 'Verificar con Stripe' }}
+          {{ verificando() ? 'Verificando con Stripe…' : 'Verificar estado con Stripe' }}
         </button>
-        <button type="button" class="secondary-button" (click)="verComprobante(pago.id_pago)">Ver comprobante</button>
+        <button type="button" class="secondary-button" (click)="verComprobante(pago.id_pago)">
+          Ver comprobante detallado
+        </button>
       </div>
     </article>
-  </section>
 
+    <!-- TABLA GLOBAL DE TRANSACCIONES SAAS -->
+    <section class="surface-card history-section" aria-labelledby="ledger-title">
+      <div class="section-heading history-heading">
+        <div>
+          <h2 id="ledger-title">Registro general de transacciones</h2>
+          <p>Listado completo de intentos de cobro y suscripciones procesadas en la plataforma.</p>
+        </div>
+        <span class="results-counter">
+          Mostrando {{ transaccionesFiltradas().length }} de {{ metricasGlobales().totalTransacciones }} registros
+        </span>
+      </div>
+
+      <div *ngIf="cargando()" class="loading-grid" role="status">
+        <span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span>
+      </div>
+
+      <app-empty-state
+        *ngIf="!cargando() && !transaccionesFiltradas().length"
+        titulo="No se encontraron transacciones"
+        descripcion="No hay registros que coincidan con los filtros seleccionados.">
+      </app-empty-state>
+
+      <div *ngIf="!cargando() && transaccionesFiltradas().length" class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Empresa / Constructora</th>
+              <th>Plan</th>
+              <th>Importe</th>
+              <th>Estado</th>
+              <th>Registro</th>
+              <th>Confirmación</th>
+              <th class="text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let pago of transaccionesFiltradas()">
+              <td data-label="ID">
+                <span class="id-pill">#{{ pago.id_pago }}</span>
+              </td>
+              <td data-label="Empresa">
+                <div class="company-cell">
+                  <strong>{{ pago.nombre_empresa || ('Empresa #' + pago.id_empresa) }}</strong>
+                  <small *ngIf="pago.stripe_payment_intent_id || pago.stripe_checkout_session_id" class="ref-sub">
+                    {{ pago.stripe_payment_intent_id || (pago.stripe_checkout_session_id | slice:0:22) }}
+                  </small>
+                </div>
+              </td>
+              <td data-label="Plan">
+                <span class="plan-pill">{{ pago.nombre_plan || pago.codigo_plan }}</span>
+              </td>
+              <td data-label="Importe">
+                <span class="amount-cell">{{ dinero(pago.monto_menor, pago.moneda) }}</span>
+              </td>
+              <td data-label="Estado">
+                <app-status-badge [estado]="pago.estado"></app-status-badge>
+              </td>
+              <td data-label="Registro">{{ fecha(pago.fecha) }}</td>
+              <td data-label="Confirmación">{{ fecha(pago.confirmado_en) }}</td>
+              <td data-label="Acciones" class="actions-cell">
+                <button
+                  *ngIf="pago.estado === 'PENDIENTE'"
+                  type="button"
+                  class="verify-btn"
+                  (click)="verificarPagoEnTabla(pago)"
+                  [disabled]="verificandoId() === pago.id_pago || verificando()"
+                >
+                  {{ verificandoId() === pago.id_pago ? 'Verificando…' : 'Verificar Stripe' }}
+                </button>
+                <button type="button" class="action-btn" (click)="verComprobante(pago.id_pago)">
+                  Comprobante
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </ng-container>
+
+  <!-- ======================================================================= -->
+  <!-- MODAL DE COMPROBANTE Y REFERENCIAS TÉCNICAS                             -->
+  <!-- ======================================================================= -->
   <div *ngIf="comprobante() as item" class="modal-backdrop" (click)="cerrarComprobante()">
     <section class="receipt-modal" role="dialog" aria-modal="true" aria-labelledby="comprobante-title" (click)="$event.stopPropagation()">
-      <header><div><span>Comprobante local</span><h2 id="comprobante-title">Pago #{{ item.id_pago }}</h2></div>
-        <button type="button" class="close-button" aria-label="Cerrar comprobante" (click)="cerrarComprobante()">×</button></header>
-      <app-status-badge [estado]="item.estado"></app-status-badge>
+      <header>
+        <div>
+          <span class="current-plan-label">Comprobante de transacción</span>
+          <h2 id="comprobante-title">Pago #{{ item.id_pago }}</h2>
+        </div>
+        <button type="button" class="close-button" aria-label="Cerrar comprobante" (click)="cerrarComprobante()">×</button>
+      </header>
+      <div class="receipt-status-bar">
+        <span>Estado actual</span>
+        <app-status-badge [estado]="item.estado"></app-status-badge>
+      </div>
       <dl class="receipt-details">
-        <div><dt>Plan</dt><dd>{{ item.nombre_plan || item.codigo_plan }}</dd></div>
-        <div><dt>Importe</dt><dd>{{ dinero(item.monto_menor, item.moneda) }}</dd></div>
-        <div><dt>Confirmado</dt><dd>{{ fecha(item.confirmado_en) }}</dd></div>
-        <div><dt>Checkout Session</dt><dd class="reference">{{ item.stripe_checkout_session_id || 'No disponible' }}</dd></div>
-        <div><dt>PaymentIntent</dt><dd class="reference">{{ item.stripe_payment_intent_id || 'No disponible' }}</dd></div>
+        <div><dt>Plan contratado</dt><dd>{{ item.nombre_plan || item.codigo_plan }}</dd></div>
+        <div><dt>Importe total</dt><dd class="amount-cell">{{ dinero(item.monto_menor, item.moneda) }}</dd></div>
+        <div><dt>Fecha de confirmación</dt><dd>{{ fecha(item.confirmado_en) }}</dd></div>
+        <div><dt>ID Sesión Checkout Stripe</dt><dd class="reference">{{ item.stripe_checkout_session_id || 'No disponible' }}</dd></div>
+        <div><dt>ID PaymentIntent Stripe</dt><dd class="reference">{{ item.stripe_payment_intent_id || 'No disponible' }}</dd></div>
       </dl>
-      <p *ngIf="!item.stripe_receipt_url" class="receipt-note">Stripe aún no proporcionó una URL de recibo. Las referencias locales permanecen disponibles.</p>
-      <a *ngIf="item.stripe_receipt_url" class="primary-button receipt-link" [href]="item.stripe_receipt_url" target="_blank" rel="noopener noreferrer">Abrir comprobante</a>
+      <p *ngIf="!item.stripe_receipt_url" class="receipt-note">
+        Esta transacción aún no cuenta con recibo externo emitido por Stripe o se encuentra pendiente de confirmación.
+      </p>
+      <div class="modal-footer">
+        <button type="button" class="secondary-button" (click)="cerrarComprobante()">Cerrar</button>
+        <a *ngIf="item.stripe_receipt_url" class="primary-button receipt-link" [href]="item.stripe_receipt_url" target="_blank" rel="noopener noreferrer">
+          Abrir recibo oficial de Stripe ↗
+        </a>
+      </div>
     </section>
   </div>
 </main>

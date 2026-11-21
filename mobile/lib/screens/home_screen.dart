@@ -1,13 +1,17 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../services/auth_provider.dart';
+import '../services/notificacion_service.dart';
 import '../services/obra_service.dart';
 import '../services/empresa_service.dart';
 import '../theme/app_theme.dart';
 import 'asistente_screen.dart';
 import 'consultas_tecnicas_screen.dart';
+import 'crm_screen.dart';
 import 'incidencias_screen.dart';
 import 'materiales_screen.dart';
 import 'notificaciones_screen.dart';
@@ -16,6 +20,7 @@ import 'perfil_screen.dart';
 import 'proyectos_screen.dart';
 import 'proyecto_detalle_screen.dart';
 import 'avances_obra_screen.dart';
+import 'reportes_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -36,11 +41,49 @@ class _HomeScreenState extends State<HomeScreen> {
   int _conteoPlanificacion = 0;
   int _conteoConcluidas = 0;
   int? _empresaCargada;
+  StreamSubscription<Map<String, dynamic>>? _pushSubscription;
+  Map<String, dynamic>? _activePushBanner;
+  Timer? _pushBannerTimer;
 
   @override
   void initState() {
     super.initState();
     _cargarObras();
+    NotificacionService.instance.addListener(_onNotificacionesChanged);
+    _pushSubscription = NotificacionService.instance.incomingPushStream.listen(_onIncomingPush);
+    NotificacionService.instance.connectAndSync();
+  }
+
+  @override
+  void dispose() {
+    NotificacionService.instance.removeListener(_onNotificacionesChanged);
+    _pushSubscription?.cancel();
+    _pushBannerTimer?.cancel();
+    super.dispose();
+  }
+
+  void _onNotificacionesChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _onIncomingPush(Map<String, dynamic> alert) {
+    if (!mounted) return;
+    try {
+      HapticFeedback.mediumImpact();
+    } catch (_) {}
+    _pushBannerTimer?.cancel();
+    setState(() {
+      _activePushBanner = alert;
+    });
+    _pushBannerTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) {
+        setState(() {
+          _activePushBanner = null;
+        });
+      }
+    });
   }
 
   @override
@@ -313,11 +356,132 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0B0F19) : const Color(0xFFF8FAFC),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: pantallas,
+      body: Stack(
+        children: [
+          IndexedStack(
+            index: _currentIndex,
+            children: pantallas,
+          ),
+          if (_activePushBanner != null)
+            _buildFloatingPushBanner(isDark, _activePushBanner!),
+        ],
       ),
       bottomNavigationBar: _buildBottomNav(isDark),
+    );
+  }
+
+  Widget _buildFloatingPushBanner(bool isDark, Map<String, dynamic> alert) {
+    final titulo = (alert['titulo'] ?? 'Nueva notificación').toString().trim();
+    final cuerpo = (alert['cuerpo'] ?? alert['mensaje'] ?? '').toString().trim();
+    final tipo = (alert['tipo_referencia'] ?? alert['tipo_alerta'] ?? 'OBRA')
+        .toString()
+        .trim()
+        .toUpperCase();
+
+    return SafeArea(
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
+          child: Material(
+            elevation: 8,
+            borderRadius: BorderRadius.circular(14),
+            color: isDark ? const Color(0xFF131D31) : Colors.white,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () {
+                _pushBannerTimer?.cancel();
+                setState(() {
+                  _activePushBanner = null;
+                  _currentIndex = 3;
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppTheme.primary.withValues(alpha: 0.6),
+                    width: 1.4,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.notifications_active_rounded,
+                        color: AppTheme.primary,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primary.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  'PUSH · $tipo',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppTheme.primary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            titulo,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            ),
+                          ),
+                          if (cuerpo.isNotEmpty)
+                            Text(
+                              cuerpo,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                fontSize: 11.5,
+                                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 18, color: Color(0xFF94A3B8)),
+                      onPressed: () {
+                        _pushBannerTimer?.cancel();
+                        setState(() => _activePushBanner = null);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -363,7 +527,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () => setState(() => _currentIndex = 1),
           ),
           IconButton(
-            icon: const Icon(Icons.notifications_none_rounded, size: 22),
+            icon: _buildNotificationBadgeIcon(Icons.notifications_none_rounded, 22),
             tooltip: 'Notificaciones',
             onPressed: () => setState(() => _currentIndex = 3),
           ),
@@ -801,6 +965,36 @@ class _HomeScreenState extends State<HomeScreen> {
           borderColor: borderColor,
           titleColor: titleColor,
         ),
+        _buildQuickAccessItem(
+          icon: Icons.analytics_outlined,
+          iconColor: const Color(0xFF06B6D4),
+          label: 'Reportes',
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportesScreen())),
+          isDark: isDark,
+          cardBg: cardBg,
+          borderColor: borderColor,
+          titleColor: titleColor,
+        ),
+        _buildQuickAccessItem(
+          icon: Icons.people_alt_outlined,
+          iconColor: const Color(0xFFEC4899),
+          label: 'CRM & Clientes',
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CrmScreen())),
+          isDark: isDark,
+          cardBg: cardBg,
+          borderColor: borderColor,
+          titleColor: titleColor,
+        ),
+        _buildQuickAccessItem(
+          icon: Icons.auto_awesome_rounded,
+          iconColor: AppTheme.primary,
+          label: 'Asistente',
+          onTap: () => setState(() => _currentIndex = 2),
+          isDark: isDark,
+          cardBg: cardBg,
+          borderColor: borderColor,
+          titleColor: titleColor,
+        ),
       ],
     );
   }
@@ -1004,6 +1198,39 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildNotificationBadgeIcon(IconData iconData, double size) {
+    final unread = NotificacionService.instance.unreadCount;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Icon(iconData, size: size),
+        if (unread > 0)
+          Positioned(
+            right: -5,
+            top: -4,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4.5, vertical: 1),
+              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+              decoration: BoxDecoration(
+                color: AppTheme.error,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Center(
+                child: Text(
+                  unread > 99 ? '99+' : unread.toString(),
+                  style: GoogleFonts.inter(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildBottomNav(bool isDark) {
     return Container(
       decoration: BoxDecoration(
@@ -1025,24 +1252,24 @@ class _HomeScreenState extends State<HomeScreen> {
         unselectedItemColor: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
         selectedLabelStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w800),
         unselectedLabelStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500),
-        items: const [
-          BottomNavigationBarItem(
+        items: [
+          const BottomNavigationBarItem(
             icon: Icon(Icons.home_filled),
             label: 'Inicio',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.apartment_rounded),
             label: 'Proyectos',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.auto_awesome_rounded),
             label: 'Asistente',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.notifications_none_rounded),
+            icon: _buildNotificationBadgeIcon(Icons.notifications_none_rounded, 24),
             label: 'Notificaciones',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.more_horiz_rounded),
             label: 'Más',
           ),

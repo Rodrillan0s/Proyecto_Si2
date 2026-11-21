@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'api_client.dart';
+import 'notificacion_service.dart';
 
 class ObraService {
   static const String _basePath = '/api/proyectos';
@@ -70,10 +71,13 @@ class ObraService {
         data: datos,
       );
       final data = response.data;
-      if (data is Map) {
-        return Map<String, dynamic>.from(data);
-      }
-      return {'success': true};
+      final res = data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{'success': true};
+      NotificacionService.instance.emitLocalPush(
+        titulo: 'Nuevo Proyecto Registrado',
+        cuerpo: 'Se registró la obra "${datos['nombre'] ?? 'Proyecto'}" exitosamente.',
+        tipo: 'OBRA',
+      );
+      return res;
     } on DioException catch (e) {
       throw Exception(_parsearError(e));
     }
@@ -90,10 +94,13 @@ class ObraService {
         data: datos,
       );
       final data = response.data;
-      if (data is Map) {
-        return Map<String, dynamic>.from(data);
-      }
-      return {'success': true};
+      final res = data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{'success': true};
+      NotificacionService.instance.emitLocalPush(
+        titulo: 'Proyecto #$idObra Actualizado',
+        cuerpo: 'Se actualizaron los datos de "${datos['nombre'] ?? 'Obra'}".',
+        tipo: 'OBRA',
+      );
+      return res;
     } on DioException catch (e) {
       throw Exception(_parsearError(e));
     }
@@ -110,10 +117,13 @@ class ObraService {
         data: {'estado_obra': nuevoEstado},
       );
       final data = response.data;
-      if (data is Map) {
-        return Map<String, dynamic>.from(data);
-      }
-      return {'success': true};
+      final res = data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{'success': true};
+      NotificacionService.instance.emitLocalPush(
+        titulo: 'Estado de Obra #$idObra: $nuevoEstado',
+        cuerpo: 'El estado operativo del proyecto #$idObra cambió a $nuevoEstado.',
+        tipo: 'OBRA',
+      );
+      return res;
     } on DioException catch (e) {
       throw Exception(_parsearError(e));
     }
@@ -130,10 +140,13 @@ class ObraService {
         data: {'id_usuario': idUsuario},
       );
       final data = response.data;
-      if (data is Map) {
-        return Map<String, dynamic>.from(data);
-      }
-      return {'success': true};
+      final res = data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{'success': true};
+      NotificacionService.instance.emitLocalPush(
+        titulo: 'Responsable Asignado en Obra #$idObra',
+        cuerpo: 'El usuario #$idUsuario fue asignado como responsable del proyecto #$idObra.',
+        tipo: 'ASIGNACION_OBRA',
+      );
+      return res;
     } on DioException catch (e) {
       throw Exception(_parsearError(e));
     }
@@ -202,7 +215,13 @@ class ObraService {
         throw Exception(data?['message'] ?? 'Error al crear el elemento.');
       }
 
-      return Map<String, dynamic>.from(data);
+      final res = Map<String, dynamic>.from(data);
+      NotificacionService.instance.emitLocalPush(
+        titulo: 'Estructura Registrada en Obra #$idObra',
+        cuerpo: 'Se creó el elemento "${datos['nombre'] ?? 'Estructura'}" en el árbol de la obra.',
+        tipo: 'OBRA',
+      );
+      return res;
     } on DioException catch (e) {
       throw Exception(_parsearError(e));
     }

@@ -1,0 +1,642 @@
+<!-- CONTENEDOR EN MODO BURBUJA FLOTANTE O EMBEBIDO EN EL ASISTENTE UNIFICADO -->
+<section
+  *ngIf="abierto || embedded"
+  [ngClass]="
+    embedded
+      ? 'flex flex-col flex-1 min-h-0 w-full h-full bg-white dark:bg-[#111827] text-[#172033] dark:text-[#f1f5f9] overflow-hidden'
+      : 'fixed bottom-[92px] right-6 z-50 flex flex-col w-[min(440px,calc(100vw-32px))] h-[min(650px,calc(100dvh-120px))] bg-white dark:bg-[#111827] text-[#172033] dark:text-[#f1f5f9] border border-slate-200 dark:border-slate-700 rounded-[18px] shadow-[0_12px_48px_rgba(15,23,42,0.22)] overflow-hidden'
+  "
+  role="dialog"
+  aria-labelledby="commercial-assistant-title"
+  aria-modal="false"
+>
+  <!-- CABECERA DE LA BURBUJA (Solo cuando no está embebido dentro de app-asistente) -->
+  <header
+    *ngIf="!embedded"
+    class="flex items-center gap-3 px-4 py-3.5 border-b border-slate-200 dark:border-slate-700 shrink-0 bg-white dark:bg-[#111827]"
+  >
+    <div
+      class="grid place-items-center w-[38px] h-[38px] rounded-[10px] bg-amber-500 text-[#172033] text-xl font-bold shrink-0"
+      aria-hidden="true"
+    >
+      O
+    </div>
+    <div class="min-w-0 flex-1">
+      <h2 id="commercial-assistant-title" class="text-[15px] font-semibold leading-tight truncate m-0">
+        Asistente Comercial OBRATEC
+      </h2>
+      <p class="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5 mb-0">
+        {{ empresaActiva?.nombre_empresa || 'Selecciona constructora' }} ·
+        {{ resumenInventario.unidades_disponibles }} unid. disponibles
+      </p>
+    </div>
+    <button
+      type="button"
+      (click)="cerrarBurbuja()"
+      class="ml-auto text-2xl leading-none text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 w-8 h-8 grid place-items-center rounded-lg border-0 bg-transparent cursor-pointer"
+      aria-label="Cerrar asistente comercial"
+    >
+      ×
+    </button>
+  </header>
+
+  <!-- BARRA DE CONTEXTO DE CONSTRUCTORA Y ACCIONES RÁPIDAS -->
+  <div
+    class="flex items-center justify-between gap-2 px-4 py-2 border-b border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/60 shrink-0 text-xs"
+  >
+    <div class="flex items-center gap-1.5 min-w-0 flex-1">
+      <label for="comercial-empresa-select" class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 shrink-0">
+        Constructora:
+      </label>
+      <select
+        id="comercial-empresa-select"
+        [ngModel]="empresaRefSeleccionada"
+        (ngModelChange)="cambiarEmpresa($event)"
+        [disabled]="empresaFijaPorSesion"
+        class="flex-1 min-w-0 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-xs font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:border-amber-500"
+      >
+        <option *ngFor="let emp of empresas" [ngValue]="emp.id_empresa">
+          {{ emp.nombre_empresa }} ({{ emp.total_unidades }} unid.)
+        </option>
+      </select>
+    </div>
+
+    <div class="flex items-center gap-1.5 shrink-0">
+      <button
+        *ngIf="unidadesSeleccionadasComparar.length >= 2"
+        type="button"
+        (click)="compararUnidadesSeleccionadasEnChat()"
+        [disabled]="procesando"
+        class="shrink-0 px-2.5 py-1 rounded-md bg-amber-500 text-[#172033] font-bold text-[11px] hover:bg-amber-400 transition cursor-pointer"
+      >
+        ⚖️ Comparar ({{ unidadesSeleccionadasComparar.length }})
+      </button>
+      <button
+        *ngIf="mensajes.length > 0"
+        type="button"
+        (click)="limpiarConversacionActual()"
+        [disabled]="procesando"
+        title="Iniciar nueva conversación"
+        class="shrink-0 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:border-amber-500 text-[11px] font-medium transition cursor-pointer"
+      >
+        ↺ Nueva
+      </button>
+    </div>
+  </div>
+
+  <!-- ÁREA DE CONVERSACIÓN UNIFICADA -->
+  <div
+    #chatScroll
+    class="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4 overscroll-contain"
+    role="log"
+    aria-live="polite"
+    [attr.aria-busy]="procesando"
+  >
+    <!-- PANTALLA DE BIENVENIDA -->
+    <div *ngIf="!mensajes.length" class="py-2">
+      <span class="text-[10px] font-bold tracking-[0.1em] uppercase text-amber-700 dark:text-amber-400">
+        ¿QUÉ INMUEBLE O PLANO DESEAS CONSULTAR?
+      </span>
+      <h3 class="text-[21px] font-semibold leading-snug tracking-tight mt-2 mb-2">
+        Unidades, planos y costos,<br />en una sola conversación.
+      </h3>
+      <p class="text-[13px] leading-relaxed text-slate-500 dark:text-slate-400 mb-3">
+        Busca unidades en lenguaje natural, recibe recomendaciones según tu presupuesto,
+        compara opciones lado a lado, sube la foto de un plano para cotizar por estilo o solicita
+        contacto con un asesor.
+      </p>
+
+      <!-- Botones de acción rápida (Subir plano / Solicitar contacto) -->
+      <div class="flex flex-wrap gap-2 mb-3">
+        <button
+          type="button"
+          (click)="abrirSelectorPlano()"
+          [disabled]="procesando"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 hover:bg-amber-500/25 transition cursor-pointer"
+        >
+          📐 Subir imagen de plano para cotizar
+        </button>
+        <button
+          type="button"
+          (click)="abrirTarjetaContactoEnChat()"
+          [disabled]="procesando"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 transition cursor-pointer"
+        >
+          📞 Solicitar contacto de un asesor
+        </button>
+      </div>
+
+      <!-- Sugerencias iniciales -->
+      <div class="grid gap-2">
+        <button
+          *ngFor="let sug of preguntasSugeridas"
+          type="button"
+          (click)="enviarMensajeTexto(sug)"
+          [disabled]="procesando"
+          class="flex items-center justify-between text-left bg-slate-50 dark:bg-slate-800/80 hover:bg-amber-50/60 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-xs text-slate-800 dark:text-slate-100 transition cursor-pointer"
+        >
+          <span>{{ sug }}</span>
+          <span aria-hidden="true" class="ml-2 text-amber-600 dark:text-amber-400 font-bold">↗</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- FLUJO DE MENSAJES -->
+    <article
+      *ngFor="let msg of mensajes"
+      [ngClass]="
+        msg.rol === 'user'
+          ? 'ml-auto max-w-[90%] bg-slate-100 dark:bg-slate-800 rounded-xl px-3.5 py-2.5'
+          : 'max-w-[98%] space-y-2.5'
+      "
+    >
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-[10px] font-bold tracking-wider uppercase text-slate-500 dark:text-slate-400">
+          {{ msg.rol === 'user' ? 'Tú' : 'OBRATEC · ' + etiquetaIntencion(msg.intencion) }}
+        </span>
+        <span class="text-[10px] text-slate-400">{{ msg.fecha }}</span>
+      </div>
+
+      <!-- Vista previa del plano subido por el usuario -->
+      <div *ngIf="msg.planoPreviewUrl" class="mt-1.5 rounded-lg overflow-hidden border border-slate-300 dark:border-slate-700 bg-slate-900/5">
+        <img [src]="msg.planoPreviewUrl" alt="Plano subido" class="max-h-40 w-full object-contain bg-white dark:bg-slate-950" />
+        <div class="px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 flex justify-between">
+          <span class="truncate">{{ msg.planoNombre || 'Plano arquitectónico' }}</span>
+          <span *ngIf="msg.estiloPlano" class="font-bold text-amber-600 dark:text-amber-400">Estilo: {{ msg.estiloPlano }}</span>
+        </div>
+      </div>
+
+      <!-- Texto del mensaje -->
+      <p class="whitespace-pre-wrap break-words text-[13px] leading-relaxed m-0 mt-1">
+        {{ msg.texto }}
+      </p>
+
+      <!-- =================================================================== -->
+      <!-- TARJETA INLINE 1: RADIOGRAFÍA DE PLANO                              -->
+      <!-- =================================================================== -->
+      <div
+        *ngIf="msg.lecturaPlano"
+        class="mt-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 border-l-4 border-l-indigo-500 space-y-2 text-xs"
+      >
+        <div class="flex items-center justify-between gap-2">
+          <span class="font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300 text-[11px]">
+            📐 Lectura de Plano ({{ msg.lecturaPlano.tipo_inmueble_detectado }})
+          </span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
+            {{ msg.lecturaPlano.superficie_estimada_m2 }} m² · {{ msg.lecturaPlano.cantidad_plantas }} planta(s)
+          </span>
+        </div>
+
+        <div class="flex flex-wrap gap-1.5" *ngIf="msg.lecturaPlano.ambientes_detectados?.length">
+          <span
+            *ngFor="let amb of msg.lecturaPlano.ambientes_detectados"
+            class="px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[11px]"
+          >
+            <strong>{{ amb.cantidad }}x</strong> {{ amb.nombre }}
+            <span class="text-slate-400" *ngIf="amb.superficie_aprox_m2">(~{{ amb.superficie_aprox_m2 }}m²)</span>
+          </span>
+        </div>
+
+        <p class="text-[11px] text-slate-600 dark:text-slate-300 m-0" *ngIf="msg.lecturaPlano.recomendacion_arquitectonica">
+          <strong>Sugerencia técnica:</strong> {{ msg.lecturaPlano.recomendacion_arquitectonica }}
+        </p>
+      </div>
+
+      <!-- =================================================================== -->
+      <!-- TARJETA INLINE 2: ESTIMACIÓN DE COSTOS Y SELECTOR DE ESTILOS        -->
+      <!-- =================================================================== -->
+      <div
+        *ngIf="msg.estimacionCosto"
+        class="mt-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 border-l-4 border-l-amber-500 space-y-2.5 text-xs"
+      >
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 block">
+              💰 Estimación Paramétrica ({{ msg.estimacionCosto.parametros_entrada?.superficie_m2 }} m²)
+            </span>
+            <strong class="text-sm text-slate-900 dark:text-white">
+              {{ msg.estimacionCosto.parametros_entrada?.estilo_nombre }}
+            </strong>
+          </div>
+          <div class="text-right">
+            <div class="text-sm font-extrabold text-amber-700 dark:text-amber-400">
+              USD {{ msg.estimacionCosto.resumen_financiero?.total_estimado_usd | number:'1.0-0' }}
+            </div>
+            <div class="text-[10px] text-slate-500 dark:text-slate-400">
+              BOB {{ msg.estimacionCosto.resumen_financiero?.total_estimado_bob | number:'1.0-0' }} ·
+              {{ msg.estimacionCosto.resumen_financiero?.costo_m2_usd | number:'1.0-0' }} USD/m²
+            </div>
+          </div>
+        </div>
+
+        <!-- Píldoras interactivas para cambiar de estilo en vivo dentro del chat -->
+        <div *ngIf="msg.estimacionCosto.comparativa_estilos?.length" class="space-y-1">
+          <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 block">
+            Cambiar estilo de acabado para recalcular en vivo:
+          </span>
+          <div class="flex flex-wrap gap-1">
+            <button
+              *ngFor="let est of msg.estimacionCosto.comparativa_estilos"
+              type="button"
+              (click)="cambiarEstiloEnMensaje(msg, est.estilo_codigo)"
+              [disabled]="recalculandoEstilo"
+              [ngClass]="
+                est.es_seleccionado
+                  ? 'px-2 py-1 rounded-md text-[10px] font-bold bg-amber-500 text-[#172033] border border-amber-500 cursor-pointer'
+                  : 'px-2 py-1 rounded-md text-[10px] font-medium bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-amber-500 cursor-pointer'
+              "
+            >
+              {{ est.estilo_codigo }} · ${{ est.total_usd | number:'1.0-0' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Desglose por capítulos constructivos -->
+        <div class="space-y-1 pt-1 border-t border-slate-200/70 dark:border-slate-700/70">
+          <div
+            *ngFor="let cap of msg.estimacionCosto.desglose_capitulos"
+            class="flex items-center justify-between text-[11px]"
+          >
+            <span class="text-slate-600 dark:text-slate-300 truncate pr-2">
+              {{ cap.capitulo }} ({{ cap.porcentaje_incidencia }}%)
+            </span>
+            <span class="font-semibold shrink-0">USD {{ cap.monto_usd | number:'1.0-0' }}</span>
+          </div>
+        </div>
+
+        <!-- Evaluación de presupuesto objetivo si existe -->
+        <div
+          *ngIf="msg.estimacionCosto.evaluacion_presupuesto"
+          class="p-2 rounded-lg text-[11px]"
+          [ngClass]="
+            msg.estimacionCosto.evaluacion_presupuesto.alcanza_presupuesto
+              ? 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30'
+              : 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/30'
+          "
+        >
+          {{ msg.estimacionCosto.evaluacion_presupuesto.recomendacion }}
+        </div>
+      </div>
+
+      <!-- =================================================================== -->
+      <!-- TARJETA INLINE 3: UNIDADES INMOBILIARIAS RECOMENDADAS               -->
+      <!-- =================================================================== -->
+      <div *ngIf="msg.unidades?.length" class="mt-2 space-y-2">
+        <div
+          *ngFor="let u of msg.unidades"
+          class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 space-y-2 text-xs"
+        >
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="font-mono font-bold text-[11px] text-amber-700 dark:text-amber-400">
+                  {{ u.codigo_unidad }}
+                </span>
+                <span
+                  class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase"
+                  [ngClass]="
+                    u.disponibilidad_comercial === 'DISPONIBLE'
+                      ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+                      : 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300'
+                  "
+                >
+                  {{ u.disponibilidad_comercial }}
+                </span>
+                <span class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-[9px] font-semibold">
+                  {{ u.afinidad_score | number:'1.0-0' }}% afinidad
+                </span>
+              </div>
+              <h4 class="font-bold text-slate-900 dark:text-white text-xs mt-0.5 mb-0 truncate">
+                {{ u.nombre_unidad }} · {{ u.nombre_obra }}
+              </h4>
+            </div>
+            <div class="text-right shrink-0">
+              <div class="font-extrabold text-xs text-slate-900 dark:text-white">
+                USD {{ u.precio_usd | number:'1.0-0' }}
+              </div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400">
+                {{ u.superficie_m2 }} m² · {{ u.dormitorios }} dorm.
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="u.razones_recomendacion?.length" class="flex flex-wrap gap-1">
+            <span
+              *ngFor="let r of (u.razones_recomendacion || []).slice(0, 2)"
+              class="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300"
+            >
+              ✓ {{ r }}
+            </span>
+          </div>
+
+          <div class="flex items-center gap-1.5 pt-1">
+            <button
+              type="button"
+              (click)="toggleCompararUnidad(u.id_unidad)"
+              class="px-2.5 py-1 rounded-md text-[11px] font-semibold border transition cursor-pointer"
+              [ngClass]="
+                estaSeleccionadaComparar(u.id_unidad)
+                  ? 'bg-amber-500 text-[#172033] border-amber-500'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-amber-500'
+              "
+            >
+              ⚖️ {{ estaSeleccionadaComparar(u.id_unidad) ? 'Seleccionada' : 'Comparar' }}
+            </button>
+            <button
+              type="button"
+              (click)="abrirTarjetaContactoEnChat(u.id_unidad, u.codigo_unidad)"
+              class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-emerald-600 text-white hover:bg-emerald-500 border-0 transition cursor-pointer"
+            >
+              📞 Me interesa
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- =================================================================== -->
+      <!-- TARJETA INLINE 4: MATRIZ COMPARATIVA LADO A LADO                    -->
+      <!-- =================================================================== -->
+      <div
+        *ngIf="msg.comparativa?.matriz_comparativa?.length"
+        class="mt-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 space-y-2 text-xs overflow-x-auto"
+      >
+        <div class="font-bold text-[11px] uppercase tracking-wider text-amber-700 dark:text-amber-400">
+          ⚖️ Comparativa Lado a Lado ({{ msg.comparativa.total_comparadas }} unidades)
+        </div>
+        <table class="w-full text-left border-collapse text-[11px]">
+          <thead>
+            <tr class="border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">
+              <th class="py-1 pr-2">Unidad</th>
+              <th class="py-1 px-2">Precio USD</th>
+              <th class="py-1 px-2">Área</th>
+              <th class="py-1 px-2">USD/m²</th>
+              <th class="py-1 pl-2">Dorm.</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200/60 dark:divide-slate-700/60">
+            <tr *ngFor="let item of msg.comparativa.matriz_comparativa">
+              <td class="py-1.5 pr-2 font-semibold">
+                <span class="font-mono text-amber-700 dark:text-amber-400">{{ item.codigo_unidad }}</span>
+                <span class="block text-[10px] text-slate-500 truncate max-w-[110px]">{{ item.obra }}</span>
+              </td>
+              <td class="py-1.5 px-2 font-bold">${{ item.precio_usd | number:'1.0-0' }}</td>
+              <td class="py-1.5 px-2">{{ item.superficie_m2 }} m²</td>
+              <td class="py-1.5 px-2">${{ item.costo_m2_usd | number:'1.0-0' }}</td>
+              <td class="py-1.5 pl-2">{{ item.dormitorios }}D / {{ item.banos }}B</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- =================================================================== -->
+      <!-- TARJETA INLINE 5: SOLICITUD DE CONTACTO COMERCIAL CRM               -->
+      <!-- =================================================================== -->
+      <div
+        *ngIf="msg.mostrarFormularioContacto && !msg.registroCrm"
+        class="mt-2 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 border-l-4 border-l-emerald-500 space-y-2.5 text-xs"
+      >
+        <div class="flex items-center justify-between">
+          <span class="font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 text-[11px]">
+            📞 Solicitud de Contacto Comercial
+          </span>
+          <button
+            type="button"
+            (click)="msg.mostrarFormularioContacto = false"
+            class="text-slate-400 hover:text-slate-600 text-xs border-0 bg-transparent cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 gap-2">
+          <input
+            type="text"
+            [(ngModel)]="formContacto.nombre_completo"
+            placeholder="Tu nombre completo *"
+            class="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-xs"
+          />
+          <div class="grid grid-cols-2 gap-2">
+            <input
+              type="text"
+              [(ngModel)]="formContacto.telefono"
+              placeholder="Teléfono / WhatsApp *"
+              class="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-xs"
+            />
+            <input
+              type="email"
+              [(ngModel)]="formContacto.email"
+              placeholder="Correo electrónico"
+              class="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-xs"
+            />
+          </div>
+          <input
+            type="text"
+            [(ngModel)]="formContacto.notas"
+            placeholder="Comentario o horario preferido de llamada"
+            class="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-xs"
+          />
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-1">
+          <button
+            type="button"
+            (click)="enviarContactoDesdeTarjeta(msg)"
+            [disabled]="enviandoContacto"
+            class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs border-0 transition cursor-pointer"
+          >
+            {{ enviandoContacto ? 'Registrando…' : 'Registrar solicitud en CRM ✓' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- CONFIRMACIÓN DE LEAD REGISTRADO EN CRM -->
+      <div
+        *ngIf="msg.registroCrm"
+        class="mt-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 border-l-4 border-l-emerald-500 text-xs space-y-1"
+      >
+        <div class="font-bold text-emerald-800 dark:text-emerald-300 flex items-center justify-between">
+          <span>✓ Interés registrado en el CRM Comercial</span>
+          <span class="font-mono text-[10px]">Folio #{{ msg.registroCrm.id_cliente }}</span>
+        </div>
+        <p class="text-[11px] text-slate-600 dark:text-slate-300 m-0">
+          Asesor asignado: <strong>{{ msg.registroCrm.asesor_asignado }}</strong> · Estado:
+          <strong>{{ msg.registroCrm.estado }}</strong>
+        </p>
+      </div>
+
+      <!-- CHIPS DE SEGUIMIENTO SUGERIDOS -->
+      <div *ngIf="msg.sugerencias?.length" class="flex flex-wrap gap-1.5 pt-1">
+        <button
+          *ngFor="let chip of msg.sugerencias"
+          type="button"
+          (click)="enviarMensajeTexto(chip)"
+          [disabled]="procesando"
+          class="px-2.5 py-1 rounded-full text-[11px] bg-slate-100 dark:bg-slate-800 hover:bg-amber-500/20 border border-slate-200 dark:border-slate-700 hover:border-amber-500 text-slate-700 dark:text-slate-200 transition cursor-pointer"
+        >
+          {{ chip }}
+        </button>
+      </div>
+    </article>
+
+    <!-- INDICADOR DE CARGA -->
+    <div *ngIf="procesando" class="flex items-center gap-2 py-1 text-xs text-slate-500 dark:text-slate-400" role="status">
+      <span class="flex h-2 w-2 relative">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+        <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+      </span>
+      <span>Cargando…</span>
+    </div>
+  </div>
+
+  <!-- MENSAJE DE ERROR -->
+  <p
+    *ngIf="mensajeError"
+    class="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-4 py-2 m-0 border-t border-red-200 dark:border-red-900/50"
+    role="alert"
+  >
+    {{ mensajeError }}
+  </p>
+
+  <!-- COMPOSITOR UNIFICADO (Texto + Subida de Plano + Dictado por Voz + Contacto) -->
+  <form (ngSubmit)="enviarAccionPrincipal()" class="m-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 shrink-0">
+    <!-- Barra de vista previa cuando hay un plano adjunto -->
+    <div
+      *ngIf="archivoPlano"
+      class="flex items-center justify-between gap-2 px-3 py-2 bg-amber-500/10 border-b border-slate-200 dark:border-slate-700 text-xs"
+    >
+      <div class="flex items-center gap-2 min-w-0">
+        <img
+          *ngIf="previewPlanoUrl"
+          [src]="previewPlanoUrl"
+          alt="Preview plano"
+          class="w-8 h-8 rounded object-cover border border-amber-500/40 shrink-0"
+        />
+        <div class="min-w-0">
+          <p class="font-bold text-[11px] truncate m-0">{{ archivoPlano.name }}</p>
+          <div class="flex items-center gap-1 mt-0.5">
+            <span class="text-[10px] text-slate-500">Estilo:</span>
+            <select
+              [(ngModel)]="estiloPlanoSeleccionado"
+              name="estiloPlano"
+              class="rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-1.5 py-0.5 text-[10px] font-bold"
+            >
+              <option value="ESTANDAR">Estándar</option>
+              <option value="INDUSTRIAL">Industrial</option>
+              <option value="MINIMALISTA">Minimalista</option>
+              <option value="CONTEMPORANEO">Contemporáneo</option>
+              <option value="LUJO">Lujo</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <button
+        type="button"
+        (click)="quitarPlanoAdjunto()"
+        class="text-slate-400 hover:text-red-500 font-bold text-sm px-1.5 border-0 bg-transparent cursor-pointer"
+        aria-label="Quitar plano adjunto"
+      >
+        ×
+      </button>
+    </div>
+
+    <input
+      #planoFileInput
+      type="file"
+      accept="image/png,image/jpeg,image/webp"
+      class="hidden"
+      (change)="onPlanoSeleccionado($event)"
+    />
+
+    <textarea
+      #chatInput
+      name="mensajeComercial"
+      [(ngModel)]="mensajeInput"
+      rows="2"
+      maxlength="2000"
+      [placeholder]="
+        archivoPlano
+          ? 'Añade detalles opcionales sobre tu plano (ej. presupuesto máximo) y presiona Enviar…'
+          : 'Pregunta por unidades, presupuesto, compara opciones o adjunta un plano…'
+      "
+      [disabled]="procesando"
+      (keydown.enter)="onEnterKey($event)"
+      class="w-full resize-none max-h-28 border-0 rounded-xl px-3 py-2.5 bg-transparent text-[#172033] dark:text-[#f1f5f9] text-[13px] leading-snug focus:outline-none"
+    ></textarea>
+
+    <div class="flex items-center gap-1.5 px-2.5 pb-2">
+      <!-- Botón adjuntar plano -->
+      <button
+        type="button"
+        (click)="abrirSelectorPlano()"
+        [disabled]="procesando"
+        class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-0 bg-transparent cursor-pointer"
+        title="Subir imagen de plano arquitectónico (PNG, JPG, WEBP)"
+      >
+        📐 <span>Plano</span>
+      </button>
+
+      <!-- Botón abrir tarjeta de contacto rápido -->
+      <button
+        type="button"
+        (click)="abrirTarjetaContactoEnChat()"
+        [disabled]="procesando"
+        class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-0 bg-transparent cursor-pointer"
+        title="Solicitar contacto con un asesor comercial"
+      >
+        📞 <span>Contacto</span>
+      </button>
+
+      <!-- Botón de dictado por voz -->
+      <button
+        type="button"
+        (click)="toggleDictadoVoz()"
+        [disabled]="procesando"
+        [ngClass]="
+          escuchandoVoz
+            ? 'inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs text-red-600 font-bold border-0 bg-transparent cursor-pointer'
+            : 'inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border-0 bg-transparent cursor-pointer'
+        "
+      >
+        🎤 <span>{{ escuchandoVoz ? 'Detener' : 'Dictar' }}</span>
+      </button>
+
+      <small class="text-[9px] text-slate-400 flex-1 truncate text-right pr-1">
+        {{ archivoPlano ? 'Plano listo para cotizar' : 'Enter para enviar' }}
+      </small>
+
+      <!-- Botón Enviar -->
+      <button
+        type="submit"
+        [disabled]="procesando || (!mensajeInput.trim() && !archivoPlano)"
+        class="w-[34px] h-[34px] rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-[#172033] text-lg font-bold border-0 grid place-items-center cursor-pointer shrink-0"
+        aria-label="Enviar consulta comercial"
+      >
+        ↑
+      </button>
+    </div>
+  </form>
+</section>
+
+<!-- BOTÓN BURBUJA FLOTANTE (Igual al asistente administrativo cuando no está embebido) -->
+<button
+  *ngIf="!embedded"
+  type="button"
+  (click)="toggleBurbuja()"
+  [attr.aria-expanded]="abierto"
+  aria-label="Abrir o cerrar asistente comercial OBRATEC"
+  class="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 border-0 rounded-[30px] bg-[#172033] hover:bg-slate-800 text-white px-5 py-3.5 shadow-[0_6px_24px_rgba(15,23,42,0.28)] font-semibold text-sm cursor-pointer transition"
+>
+  <svg
+    width="23"
+    height="23"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.8"
+    aria-hidden="true"
+  >
+    <path d="M21 11.5a8.5 8.5 0 01-8.5 8.5H4l-2 2V11.5a9.5 9.5 0 0119 0z" />
+    <path d="M7 10h10M7 14h6" />
+  </svg>
+  <span>Asistente Comercial</span>
+</button>

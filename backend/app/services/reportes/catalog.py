@@ -16,16 +16,16 @@ class Definition:
 
 
 REGISTRY = {d.id: d for d in (
-    Definition("presupuestario", "Reporte presupuestario", "Visualizar_estimaciones", ("presupuesto", "estimaciones", "reporte presupuestario"), "Versiones de estimaciones por obra y moneda."),
-    Definition("comparativo_costos", "Comparativo de costos", "Visualizar_control_costos", ("costos", "desvios", "comparativo de costos", "gastos"), "Comparación acumulada CU17 con línea base activa; no es un flujo de caja.", True),
-    Definition("stock", "Stock de materiales", "Visualizar_inventario", ("stock", "inventario", "existencias", "materiales disponibles", "stock de materiales", "insumos criticos", "materiales criticos", "insumos por agotarse", "materiales por agotarse", "insumos que esten por agotarse", "insumos que estan por agotarse", "materiales con stock bajo", "insumos faltantes", "materiales faltantes"), "Existencias actuales y mínimos por material."),
+    Definition("presupuestario", "Reporte presupuestario", "Visualizar_estimaciones", ("presupuesto", "presupuestos", "estimaciones", "estimacion", "reporte presupuestario", "presupuesto de obra", "costo estimado", "costo presupuestado", "versiones de presupuesto"), "Versiones de estimaciones por obra y moneda."),
+    Definition("comparativo_costos", "Comparativo de costos", "Visualizar_control_costos", ("costos", "desvios", "desvío", "desvíos", "desvio", "sobrecosto", "sobrecostos", "obras con sobrecosto", "desvio presupuestario", "desviaciones", "comparativo de costos", "gastos", "costos ejecutados vs presupuestados"), "Comparación acumulada CU17 con línea base activa; no es un flujo de caja.", True),
+    Definition("stock", "Stock de materiales", "Visualizar_inventario", ("stock", "inventario", "existencias", "materiales disponibles", "stock de materiales", "insumos criticos", "materiales criticos", "insumos por agotarse", "materiales por agotarse", "insumos que esten por agotarse", "insumos que estan por agotarse", "materiales con stock bajo", "insumos faltantes", "materiales faltantes", "materiales agotados", "materiales sin stock", "insumos agotados", "stock agotado", "quiebre de stock"), "Existencias actuales y mínimos por material."),
     Definition("consumo_materiales", "Salidas de materiales", "Visualizar_inventario", ("consumo de materiales", "salidas de materiales", "materiales consumidos"), "Salidas registradas a órdenes de trabajo; no acredita consumo físico.", fecha=True),
     Definition("asignacion_personal", "Asignación de personal", "Visualizar_obras", ("asignacion de personal", "personal", "trabajadores"), "Asignaciones vigentes a obras, sin datos de contacto.", actores=("trabajador",)),
     Definition("utilizacion_personal", "Carga de personal", "Visualizar_obras", ("utilizacion de personal", "carga de personal", "carga de trabajo"), "Cantidad de OT asignadas; no mide horas ni productividad.", actores=("trabajador",)),
-    Definition("avance_ejecutivo", "Avance ejecutivo", "Visualizar_avances", ("avance", "avance ejecutivo", "progreso", "estado del proyecto"), "Último avance físico registrado por unidad; promedio sin ponderación.", actores=("CLIENTE",)),
+    Definition("avance_ejecutivo", "Avance ejecutivo", "Visualizar_avances", ("avance", "avance ejecutivo", "progreso", "estado del proyecto", "avance de obras", "avance de proyectos", "progreso de obras", "estado de avance", "porcentaje de avance", "obras retrasadas", "retraso de obras"), "Último avance físico registrado por unidad; promedio sin ponderación.", actores=("CLIENTE",)),
     Definition("estado_unidades", "Estado de unidades", "Visualizar_avances", ("unidades", "estado de unidades", "viviendas", "casas"), "Estado actual de las unidades en obras accesibles.", actores=("CLIENTE",)),
-    Definition("incidencias", "Reporte de incidencias", "Visualizar_incidencias", ("incidencias", "problemas", "incidentes"), "Incidencias y prioridad por obra.", actores=("trabajador",), fecha=True),
-    Definition("incidencias_criticas", "Incidencias críticas", "Visualizar_incidencias", ("incidencias criticas", "problemas criticos", "incidentes graves", "incidencias urgentes", "problemas graves"), "Incidencias de prioridad CRITICA.", actores=("trabajador",), fecha=True),
+    Definition("incidencias", "Reporte de incidencias", "Visualizar_incidencias", ("incidencias", "problemas", "incidentes", "problemas en obra", "fallas"), "Incidencias y prioridad por obra.", actores=("trabajador",), fecha=True),
+    Definition("incidencias_criticas", "Incidencias críticas", "Visualizar_incidencias", ("incidencias criticas", "problemas criticos", "incidentes graves", "incidencias urgentes", "problemas graves", "urgencias", "alertas criticas"), "Incidencias de prioridad CRITICA.", actores=("trabajador",), fecha=True),
 )}
 
 # Fecha significa el registro indicado, nunca una reconstrucción de estado histórico.
@@ -45,7 +45,14 @@ REGISTRY['costos_periodo'] = Definition('costos_periodo', 'Costos registrados po
     'Costos REGISTRADO de la línea base activa por obra y moneda; excluye anulados.',
     fecha=True, fecha_campo='Fecha del costo ejecutado')
 REGISTRY['saldo_comercial'] = Definition('saldo_comercial', 'Saldo comercial estimado por obra',
-    'Visualizar_control_costos', ('ganancias', 'ganancia', 'rentabilidad', 'utilidades', 'saldo comercial', 'obras rentables', 'perdidas'),
+    'Visualizar_control_costos', (
+        'ganancias', 'ganancia', 'rentabilidad', 'utilidades', 'utilidad', 'saldo comercial',
+        'obras rentables', 'perdidas', 'perdida', 'pérdida', 'pérdidas', 'obras con perdidas',
+        'obras con perdida', 'mayores perdidas', 'deficit', 'déficit', 'obras con mas deficit',
+        'obras con mayor deficit', 'obras con deficit', 'obras en deficit', 'obras deficitarias',
+        'proyectos deficitarios', 'mayor deficit', 'mas deficit', 'menos rentables', 'menor rentabilidad',
+        'saldo negativo', 'balance comercial', 'balance de obras', 'balance financiero'
+    ),
     'Montos pactados VENDIDO/ENTREGADO menos costos registrados de la línea base activa. No acredita cobros ni ganancias reales.',
     permisos_extra=('Visualizar_clientes',))
 

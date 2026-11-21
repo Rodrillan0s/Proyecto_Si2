@@ -160,6 +160,7 @@ export class AuthService {
       localStorage.setItem('token', token);
       localStorage.setItem('usuario', JSON.stringify(usuario));
     }
+    this.usuarioSubject.next(usuario);
   }
 
   obtenerToken(): string | null {
@@ -178,6 +179,9 @@ export class AuthService {
     return usuarioString ? JSON.parse(usuarioString) : null;
   }
 
+  private usuarioSubject = new BehaviorSubject<any>(this.obtenerUsuario());
+  public usuario$: Observable<any> = this.usuarioSubject.asObservable();
+
   private empresaSeleccionadaSubject = new BehaviorSubject<any>(null);
   public empresaSeleccionada$: Observable<any> = this.empresaSeleccionadaSubject.asObservable();
   public empresaActiva$: Observable<any> = this.empresaSeleccionadaSubject.asObservable();
@@ -186,6 +190,7 @@ export class AuthService {
     if (isPlatformBrowser(this.platformId)) {
       localStorage.clear();
     }
+    this.usuarioSubject.next(null);
     this.empresaSeleccionadaSubject.next(null);
   }
 

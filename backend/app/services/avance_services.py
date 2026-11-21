@@ -108,6 +108,18 @@ def registrar_avance(id_obra: int, data: dict, token_data: dict, client_ip: str 
         estado="EXITOSO",
     )
 
+    try:
+        from app.services import notificaciones_services
+        notificaciones_services.emitir_notificacion_push_empresa(
+            titulo=f"Avance registrado ({porcentaje}%)",
+            cuerpo=f"Se registró un avance del {porcentaje}% en la unidad #{id_unidad} de la obra #{id_obra}.",
+            tipo_referencia="AVANCE_OBRA",
+            id_empresa=token_data.get("id_empresa"),
+            nro_referencia=id_obra,
+        )
+    except Exception:
+        pass
+
     return res
 
 

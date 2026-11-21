@@ -5,9 +5,7 @@ import 'token_storage.dart';
 class AuthService {
   Future<Dio> _createDio() async {
     final customUrl = await TokenStorage.getValue('custom_api_url');
-    final baseUrl = (customUrl != null && customUrl.trim().isNotEmpty)
-        ? customUrl.trim()
-        : AppConfig.apiBaseUrl;
+    final baseUrl = AppConfig.resolveBaseUrl(customUrl);
 
     return Dio(
       BaseOptions(

@@ -513,3 +513,18 @@ def test_ruta_verificacion_acepta_administrador_empresa(monkeypatch):
     assert respuesta.status_code == 200
     verificar.assert_called_once_with(EMPRESA, 10)
 
+
+def test_listar_pagos_globales_solo_admin(monkeypatch):
+    usuarios = {
+        1: {'id_usuario': 1, 'id_empresa': 1, 'estado': 'ACTIVO', 'nombre_rol': 'ADMINISTRADOR'},
+        30: {'id_usuario': 30, 'id_empresa': 3, 'estado': 'ACTIVO', 'nombre_rol': 'ADMINISTRADOR_EMPRESA'},
+    }
+    monkeypatch.setattr(service.repo, 'obtener_usuario', lambda nro: usuarios[nro])
+    monkeypatch.setattr(service.repo, 'listar_todos_los_pagos', lambda: [{'id_pago': 8, 'nombre_empresa': 'OBRATEC'}])
+    resultado = service.listar_pagos_globales(ADMIN)
+    assert resultado == [{'id_pago': 8, 'nombre_empresa': 'OBRATEC'}]
+    with pytest.raises(HTTPException) as error:
+        service.listar_pagos_globales(EMPRESA)
+    assert error.value.status_code == 403
+
+

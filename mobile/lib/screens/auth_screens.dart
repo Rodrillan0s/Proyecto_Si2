@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../services/auth_provider.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import 'asistente_screen.dart';
 import 'recuperar_password_modal.dart';
 import 'registro_screen.dart';
 
@@ -215,7 +216,41 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 8),
+
+                    // Acceso público al Asistente Comercial e Inmobiliario
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AsistenteScreen(
+                                initialMode: 'comercial',
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.auto_awesome_rounded, size: 17, color: AppTheme.primary),
+                        label: Text(
+                          'Explorar catálogo y Asistente Comercial',
+                          style: GoogleFonts.inter(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: textColor,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+                          side: BorderSide(color: borderColor),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
 
                     // Términos y condiciones
                     Text(
