@@ -1,6 +1,6 @@
 import { Injectable, inject, PLATFORM_ID, NgZone } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth';
@@ -10,21 +10,46 @@ import { AuthService } from './auth';
 // ============================================================
 
 export interface Notificacion {
-  id_notificacion?: number;     // Solo existe en notificaciones del historial (BD)
-  tipo_alerta: string;          // Para push en tiempo real  (viene como tipo_alerta)
-  tipo_referencia?: string;     // Para historial desde BD   (viene como tipo_referencia)
+  id_notificacion?: number;
+  tipo_alerta: string;
+  tipo_referencia?: string;
   titulo: string;
   cuerpo: string;
   data?: any;
-  leida: boolean;               // Campo normalizado para el frontend
-  leido?: boolean;              // Campo original de BD (se mapea a 'leida')
+  leida: boolean;
+  leido?: boolean;
   fecha: Date;
   nro_emergencia?: number;
+  id_obra?: number;
+}
+
+export interface ConfiguracionAlertaEvento {
+  tipo_evento: string;
+  nombre: string;
+  descripcion: string;
+  categoria: string;
+  activo: boolean;
+  roles_destino: string[];
+  origen: 'OBRA' | 'EMPRESA' | 'DEFAULT';
+  heredado_de_empresa: boolean;
+  actualizado_en?: string | null;
+}
+
+export interface RespuestaConfiguracionAlertas {
+  success: boolean;
+  message?: string;
+  id_empresa: number;
+  id_obra: number | null;
+  nombre_obra: string | null;
+  migracion_pendiente: boolean;
+  roles_disponibles: string[];
+  data: ConfiguracionAlertaEvento[];
 }
 
 interface RespuestaHistorial {
   success: boolean;
   message: string;
+  no_leidas?: number;
   data: any[];
 }
 
@@ -35,7 +60,7 @@ interface RespuestaHistorial {
 @Injectable({ providedIn: 'root' })
 export class NotificacionesService {
 
-  private http       = inject(HttpClient);
+  private http        = inject(HttpClient);
   private authService = inject(AuthService);
   private platformId  = inject(PLATFORM_ID);
   private ngZone      = inject(NgZone);
@@ -48,6 +73,12 @@ export class NotificacionesService {
   // Estado reactivo central: mezcla de historial (BD) + push (WS)
   private notificacionesSource = new BehaviorSubject<Notificacion[]>([]);
   notificaciones$: Observable<Notificacion[]> = this.notificacionesSource.asObservable();
+
+  private cargandoSource = new BehaviorSubject<boolean>(false);
+  cargando$: Observable<boolean> = this.cargandoSource.asObservable();
+
+  private errorSource = new BehaviorSubject<string | null>(null);
+  error$: Observable<string | null> = this.errorSource.asObservable();
 
   // ----------------------------------------------------------------
   // CONEXIÓN WEBSOCKET
@@ -67,35 +98,44 @@ export class NotificacionesService {
 
     // 2. Abrir canal WebSocket
     const wsBaseUrl = environment.apiUrl.replace(/^http/, 'ws');
-    const wsUrl     = `${wsBaseUrl}/api/ws/notificaciones?token=${token}`;
+    const wsUrl     = `${wsBaseUrl}/api/ws/notificaciones?token=${encodeURIComponent(token)}`;
 
     this.ngZone.runOutsideAngular(() => {
       this.socket = new WebSocket(wsUrl);
 
       this.socket.onopen = () => {
-        console.log('WebSocket Notificaciones Conectado 🟢');
+        console.log('WebSocket Notificaciones Conectado');
       };
 
       this.socket.onmessage = (event) => {
         this.ngZone.run(() => {
           try {
             const dataBackend = JSON.parse(event.data);
+            if (!dataBackend || dataBackend.type === 'pong') return;
 
-            // Normalizar campo tipo (push usa tipo_alerta, BD usa tipo_referencia)
+            const tipo = dataBackend.tipo_referencia || dataBackend.tipo_alerta || dataBackend.tipo || 'GENERAL';
+            const idNotif = dataBackend.id_notificacion ? Number(dataBackend.id_notificacion) : undefined;
+            const fechaRaw = dataBackend.fecha_creacion || dataBackend.created_at;
+
             const nuevaNotificacion: Notificacion = {
-              tipo_alerta:     dataBackend.tipo_alerta,
-              tipo_referencia: dataBackend.tipo_alerta,
-              titulo:          dataBackend.titulo,
-              cuerpo:          dataBackend.cuerpo,
+              id_notificacion: idNotif,
+              tipo_alerta:     tipo,
+              tipo_referencia: tipo,
+              titulo:          dataBackend.titulo || 'Notificación',
+              cuerpo:          dataBackend.cuerpo || dataBackend.mensaje || '',
               data:            dataBackend.data,
-              leida:           false,
-              fecha:           new Date()
+              leida:           Boolean(dataBackend.leido),
+              leido:           Boolean(dataBackend.leido),
+              fecha:           fechaRaw ? new Date(fechaRaw) : new Date(),
+              nro_emergencia:  dataBackend.nro_emergencia ?? dataBackend.data?.nro_referencia,
+              id_obra:         dataBackend.id_obra ?? dataBackend.data?.id_obra,
             };
 
-            // Insertar al principio sin duplicar (por si ya llegó del historial)
             const listaActual = this.notificacionesSource.getValue();
-            this.notificacionesSource.next([nuevaNotificacion, ...listaActual]);
-
+            const sinDuplicado = idNotif
+              ? listaActual.filter(n => n.id_notificacion !== idNotif)
+              : listaActual;
+            this.notificacionesSource.next([nuevaNotificacion, ...sinDuplicado]);
           } catch (e) {
             console.error('Error al parsear notificación WS:', e);
           }
@@ -105,10 +145,8 @@ export class NotificacionesService {
       this.socket.onclose = () => {
         this.socket = null;
         if (this.stopped || this.authService.tokenExpirado()) {
-          console.log('WebSocket desconectado: la sesión expiró.');
           return;
         }
-        console.log('WebSocket Desconectado 🔴. Reconectando en 5s...');
         this.retry = setTimeout(() => { if (!this.stopped) this.conectar(); }, 5000);
       };
 
@@ -119,7 +157,8 @@ export class NotificacionesService {
   }
 
   desconectar() {
-    this.stopped = true; if (this.retry) clearTimeout(this.retry);
+    this.stopped = true;
+    if (this.retry) clearTimeout(this.retry);
     if (this.socket) {
       this.socket.close();
       this.socket = null;
@@ -127,19 +166,21 @@ export class NotificacionesService {
   }
 
   // ----------------------------------------------------------------
-  // HISTORIAL DESDE BASE DE DATOS
+  // HISTORIAL DESDE BASE DE DATOS (HU142)
   // ----------------------------------------------------------------
 
-  /**
-   * Llama a GET /api/ws/historial y puebla el BehaviorSubject
-   * con las notificaciones persistidas en BD.
-   */
   cargarHistorial() {
     if (this.cargandoHistorial) return;
     this.cargandoHistorial = true;
+    this.cargandoSource.next(true);
+    this.errorSource.next(null);
 
     const headers = this.getAuthHeaders();
-    if (!headers) { this.cargandoHistorial = false; return; }
+    if (!headers) {
+      this.cargandoHistorial = false;
+      this.cargandoSource.next(false);
+      return;
+    }
 
     this.http.get<RespuestaHistorial>(
       `${environment.apiUrl}/api/ws/historial`,
@@ -147,80 +188,118 @@ export class NotificacionesService {
     ).subscribe({
       next: (res) => {
         if (res.success && Array.isArray(res.data)) {
-          // Mapear el modelo de BD al modelo del frontend
-          const notificaciones: Notificacion[] = res.data.map(n => ({
-            id_notificacion: n.id_notificacion,
-            tipo_alerta:     n.tipo_referencia,   // normalizar nombre del campo
-            tipo_referencia: n.tipo_referencia,
-            titulo:          n.titulo,
-            cuerpo:          n.cuerpo,
-            leida:           n.leido,             // normalizar nombre del campo
-            leido:           n.leido,
-            fecha:           new Date(n.fecha_creacion),
-            nro_emergencia:  n.nro_emergencia,
-            data:            { nro_emergencia: n.nro_emergencia }
-          }));
+          const notificaciones: Notificacion[] = res.data.map(n => {
+            const tipo = n.tipo_referencia || n.tipo || 'GENERAL';
+            return {
+              id_notificacion: n.id_notificacion,
+              tipo_alerta:     tipo,
+              tipo_referencia: tipo,
+              titulo:          n.titulo,
+              cuerpo:          n.cuerpo || n.mensaje || '',
+              leida:           Boolean(n.leido),
+              leido:           Boolean(n.leido),
+              fecha:           n.fecha_creacion ? new Date(n.fecha_creacion) : new Date(),
+              nro_emergencia:  n.nro_emergencia,
+              data:            { nro_emergencia: n.nro_emergencia },
+            };
+          });
           this.notificacionesSource.next(notificaciones);
         }
         this.cargandoHistorial = false;
+        this.cargandoSource.next(false);
       },
       error: (err) => {
         console.error('Error cargando historial de notificaciones:', err);
+        const msg = err?.error?.detail || 'No se pudieron cargar las notificaciones. Intenta nuevamente.';
+        this.errorSource.next(msg);
         this.cargandoHistorial = false;
+        this.cargandoSource.next(false);
       }
     });
   }
 
   // ----------------------------------------------------------------
-  // MARCAR COMO LEÍDAS — sincronizado con el backend
+  // MARCAR COMO LEÍDAS — sincronizado con el backend (HU142)
   // ----------------------------------------------------------------
 
-  /**
-   * Marca TODAS las notificaciones como leídas.
-   * Llama a PUT /api/ws/leer con { marcar_todo: true }
-   * y actualiza el estado local optimistamente.
-   */
   marcarComoLeidas() {
     const headers = this.getAuthHeaders();
     if (!headers) return;
 
-    // Actualización optimista: no esperar respuesta del servidor para la UI
-    const listaActualizada = this.notificacionesSource.getValue()
-      .map(n => ({ ...n, leida: true, leido: true }));
+    const estadoPrevio = this.notificacionesSource.getValue();
+    const listaActualizada = estadoPrevio.map(n => ({ ...n, leida: true, leido: true }));
     this.notificacionesSource.next(listaActualizada);
 
-    // Persistir en BD
     this.http.put(
       `${environment.apiUrl}/api/ws/leer`,
       { marcar_todo: true },
       { headers }
     ).subscribe({
-      error: (err) => console.error('Error al marcar todas como leídas en BD:', err)
+      error: (err) => {
+        console.error('Error al marcar todas como leídas en BD:', err);
+        this.notificacionesSource.next(estadoPrevio);
+        this.errorSource.next(err?.error?.detail || 'No se pudieron marcar todas las notificaciones como leídas.');
+      }
     });
   }
 
-  /**
-   * Marca UNA notificación específica como leída por su id.
-   * Llama a PUT /api/ws/leer con { id_notificacion: N }
-   */
   marcarUnaComoLeida(id_notificacion: number) {
     const headers = this.getAuthHeaders();
     if (!headers) return;
 
-    // Actualización optimista
-    const listaActualizada = this.notificacionesSource.getValue().map(n =>
+    const estadoPrevio = this.notificacionesSource.getValue();
+    const listaActualizada = estadoPrevio.map(n =>
       n.id_notificacion === id_notificacion ? { ...n, leida: true, leido: true } : n
     );
     this.notificacionesSource.next(listaActualizada);
 
-    // Persistir en BD
     this.http.put(
       `${environment.apiUrl}/api/ws/leer`,
       { id_notificacion },
       { headers }
     ).subscribe({
-      error: (err) => console.error(`Error al marcar notificación ${id_notificacion} como leída:`, err)
+      error: (err) => {
+        console.error(`Error al marcar notificación ${id_notificacion} como leída:`, err);
+        this.notificacionesSource.next(estadoPrevio);
+        this.errorSource.next(err?.error?.detail || 'No se pudo actualizar el estado de la notificación.');
+      }
     });
+  }
+
+  // ----------------------------------------------------------------
+  // CONFIGURACIÓN DE ALERTAS POR EVENTOS (HU141)
+  // ----------------------------------------------------------------
+
+  obtenerConfiguracionAlertas(
+    idObra?: number | null,
+    idEmpresa?: number | null
+  ): Observable<RespuestaConfiguracionAlertas> {
+    const headers = this.getAuthHeaders() ?? new HttpHeaders();
+    let params = new HttpParams();
+    if (idObra !== null && idObra !== undefined) {
+      params = params.set('id_obra', String(idObra));
+    }
+    if (idEmpresa !== null && idEmpresa !== undefined) {
+      params = params.set('id_empresa', String(idEmpresa));
+    }
+    return this.http.get<RespuestaConfiguracionAlertas>(
+      `${environment.apiUrl}/api/ws/configuracion-alertas`,
+      { headers, params }
+    );
+  }
+
+  guardarConfiguracionAlertas(payload: {
+    id_obra?: number | null;
+    id_empresa?: number | null;
+    configuraciones?: Array<{ tipo_evento: string; activo: boolean; roles_destino: string[] }>;
+    restablecer_obra?: boolean;
+  }): Observable<RespuestaConfiguracionAlertas> {
+    const headers = this.getAuthHeaders() ?? new HttpHeaders();
+    return this.http.put<RespuestaConfiguracionAlertas>(
+      `${environment.apiUrl}/api/ws/configuracion-alertas`,
+      payload,
+      { headers }
+    );
   }
 
   // ----------------------------------------------------------------
