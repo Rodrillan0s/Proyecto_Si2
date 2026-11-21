@@ -1,27 +1,54 @@
+import json
 from app.classes.postgres import PostgreSQL
 from app.config import Config
+
+
+class NotificacionesSchemaMissing(Exception):
+    """Se lanza cuando la tabla de configuración de alertas CU22 aún no fue migrada."""
+
+
+def _es_tabla_ausente(exc: Exception) -> bool:
+    code = getattr(exc, "pgcode", None)
+    if code == "42P01":
+        return True
+    msg = str(exc).lower()
+    return "t_configuracion_alerta_evento" in msg and ("does not exist" in msg or "no existe" in msg)
+
+
+def _es_columna_ausente(exc: Exception) -> bool:
+    code = getattr(exc, "pgcode", None)
+    if code in ("42703", "42P10"):
+        return True
+    msg = str(exc).lower()
+    return ("column" in msg or "columna" in msg) and ("does not exist" in msg or "no existe" in msg)
 
 
 def obtener_usuarios_por_roles(roles: list, id_empresa: int = None):
     """
     Obtiene los usuarios activos de t_usuario filtrados por lista de roles y
-    opcionalmente por id_empresa (incluyendo también ADMINISTRADOR global).
+    por id_empresa. Solo incluye ADMINISTRADOR global si se solicita explícitamente
+    ese rol en la lista.
     """
     if not roles:
         return []
     db = PostgreSQL()
     db.create_connection()
     try:
-        roles_upper = [str(rol).strip().upper() for rol in roles if rol]
+        roles_upper = [str(rol).strip().upper() for rol in roles if rol and str(rol).strip()]
+        if not roles_upper:
+            return []
         format_strings = ','.join(['%s'] * len(roles_upper))
         params = list(roles_upper)
         filtro_empresa = ""
         if id_empresa is not None:
-            filtro_empresa = " AND (u.id_empresa = %s OR UPPER(r.nombre_rol) = 'ADMINISTRADOR')"
+            if "ADMINISTRADOR" in roles_upper:
+                filtro_empresa = " AND (u.id_empresa = %s OR UPPER(r.nombre_rol) = 'ADMINISTRADOR')"
+            else:
+                filtro_empresa = " AND u.id_empresa = %s"
             params.append(int(id_empresa))
 
         query = f"""
-            SELECT u.id_usuario, u.nombre_usuario, r.nombre_rol, u.id_empresa
+            SELECT u.id_usuario, u.username, r.nombre_rol, u.id_empresa
             FROM {Config.SCHEMA}.t_usuario u
             INNER JOIN {Config.SCHEMA}.t_rol r ON u.id_rol = r.id_rol
             WHERE UPPER(r.nombre_rol) IN ({format_strings})
@@ -42,6 +69,211 @@ def obtener_usuarios_por_roles(roles: list, id_empresa: int = None):
         db.close_connection()
 
 
+def filtrar_usuarios_autorizados_empresa(usuarios_ids: list, id_empresa: int = None) -> list:
+    """
+    Verifica que los IDs de usuario existan, estén en estado ACTIVO y pertenezcan
+    a la empresa del evento (o sean ADMINISTRADOR global). Evita notificaciones
+    cruzadas entre empresas.
+    """
+    ids_limpios = []
+    for uid in usuarios_ids or []:
+        try:
+            val = int(uid)
+            if val > 0 and val not in ids_limpios:
+                ids_limpios.append(val)
+        except (TypeError, ValueError):
+            continue
+    if not ids_limpios:
+        return []
+
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        placeholders = ",".join(["%s"] * len(ids_limpios))
+        params = list(ids_limpios)
+        filtro_empresa = ""
+        if id_empresa is not None:
+            filtro_empresa = " AND (u.id_empresa = %s OR UPPER(r.nombre_rol) = 'ADMINISTRADOR')"
+            params.append(int(id_empresa))
+
+        query = f"""
+            SELECT u.id_usuario
+            FROM {Config.SCHEMA}.t_usuario u
+            INNER JOIN {Config.SCHEMA}.t_rol r ON u.id_rol = r.id_rol
+            WHERE u.id_usuario IN ({placeholders})
+              AND u.estado = 'ACTIVO'
+              {filtro_empresa};
+        """
+        filas = db.execute_query(query, tuple(params), fetchall=True) or []
+        return [int(f[0]) for f in filas if f and f[0] is not None]
+    finally:
+        db.close_connection()
+
+
+def validar_obra_empresa(id_obra: int):
+    """
+    Obtiene los metadatos mínimos de una obra para validar pertenencia de tenant.
+    """
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        query = f"""
+            SELECT id_obra, nombre, id_empresa
+            FROM {Config.SCHEMA}.t_obra
+            WHERE id_obra = %s;
+        """
+        fila = db.execute_query(query, (int(id_obra),), fetchone=True)
+        if not fila:
+            return None
+        return {
+            "id_obra": int(fila[0]),
+            "nombre": fila[1],
+            "id_empresa": int(fila[2]) if fila[2] is not None else None,
+        }
+    finally:
+        db.close_connection()
+
+
+def obtener_configuraciones_alertas_db(id_empresa: int, id_obra: int = None) -> list:
+    """
+    Recupera las reglas de alertas de una empresa y, si se indica id_obra,
+    también las sobrescrituras específicas de esa obra.
+    """
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        if id_obra is not None:
+            query = f"""
+                SELECT id_configuracion, id_empresa, id_obra, tipo_evento,
+                       activo, roles_destino, actualizado_por, actualizado_en
+                FROM {Config.SCHEMA}.t_configuracion_alerta_evento
+                WHERE id_empresa = %s AND (id_obra IS NULL OR id_obra = %s)
+                ORDER BY id_obra NULLS FIRST, tipo_evento;
+            """
+            params = (int(id_empresa), int(id_obra))
+        else:
+            query = f"""
+                SELECT id_configuracion, id_empresa, id_obra, tipo_evento,
+                       activo, roles_destino, actualizado_por, actualizado_en
+                FROM {Config.SCHEMA}.t_configuracion_alerta_evento
+                WHERE id_empresa = %s AND id_obra IS NULL
+                ORDER BY tipo_evento;
+            """
+            params = (int(id_empresa),)
+
+        filas = db.execute_query(query, params, fetchall=True) or []
+        resultado = []
+        for f in filas:
+            roles_raw = f[5]
+            if isinstance(roles_raw, str):
+                try:
+                    roles_parsed = json.loads(roles_raw)
+                except Exception:
+                    roles_parsed = []
+            elif isinstance(roles_raw, list):
+                roles_parsed = roles_raw
+            else:
+                roles_parsed = []
+            resultado.append({
+                "id_configuracion": f[0],
+                "id_empresa": int(f[1]),
+                "id_obra": int(f[2]) if f[2] is not None else None,
+                "tipo_evento": f[3],
+                "activo": bool(f[4]),
+                "roles_destino": [str(r) for r in roles_parsed if r],
+                "actualizado_por": f[6],
+                "actualizado_en": f[7].strftime("%Y-%m-%d %H:%M:%S") if f[7] else None,
+            })
+        return resultado
+    except Exception as exc:
+        if _es_tabla_ausente(exc):
+            raise NotificacionesSchemaMissing(
+                "La migración SQL de configuración de alertas (20261121_cu22_notificaciones_alertas.sql) aún no está aplicada."
+            ) from exc
+        raise
+    finally:
+        db.close_connection()
+
+
+def guardar_configuraciones_alertas_db(
+    id_empresa: int,
+    configuraciones: list,
+    id_obra: int = None,
+    actualizado_por: int = None,
+) -> int:
+    """
+    Inserta o actualiza de forma atómica las preferencias de alertas para
+    (id_empresa, id_obra, tipo_evento).
+    """
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        query = f"""
+            INSERT INTO {Config.SCHEMA}.t_configuracion_alerta_evento
+                (id_empresa, id_obra, tipo_evento, activo, roles_destino, actualizado_por, actualizado_en)
+            VALUES (%s, %s, %s, %s, %s::jsonb, %s, CURRENT_TIMESTAMP)
+            ON CONFLICT (id_empresa, COALESCE(id_obra, 0), tipo_evento)
+            DO UPDATE SET
+                activo = EXCLUDED.activo,
+                roles_destino = EXCLUDED.roles_destino,
+                actualizado_por = EXCLUDED.actualizado_por,
+                actualizado_en = CURRENT_TIMESTAMP;
+        """
+        cur = db.conn.cursor()
+        try:
+            for item in configuraciones:
+                cur.execute(
+                    query,
+                    (
+                        int(id_empresa),
+                        int(id_obra) if id_obra is not None else None,
+                        item["tipo_evento"],
+                        bool(item["activo"]),
+                        json.dumps(item["roles_destino"]),
+                        int(actualizado_por) if actualizado_por is not None else None,
+                    ),
+                )
+            db.conn.commit()
+            return len(configuraciones)
+        except Exception:
+            db.conn.rollback()
+            raise
+        finally:
+            cur.close()
+    except Exception as exc:
+        if _es_tabla_ausente(exc):
+            raise NotificacionesSchemaMissing(
+                "La migración SQL de configuración de alertas (20261121_cu22_notificaciones_alertas.sql) aún no está aplicada."
+            ) from exc
+        raise
+    finally:
+        db.close_connection()
+
+
+def eliminar_configuraciones_obra_db(id_empresa: int, id_obra: int) -> int:
+    """
+    Elimina las sobrescrituras de una obra específica para que vuelva a heredar
+    la configuración general de su empresa.
+    """
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        query = f"""
+            DELETE FROM {Config.SCHEMA}.t_configuracion_alerta_evento
+            WHERE id_empresa = %s AND id_obra = %s;
+        """
+        filas = db.execute_query(query, (int(id_empresa), int(id_obra)), commit=True)
+        return filas or 0
+    except Exception as exc:
+        if _es_tabla_ausente(exc):
+            raise NotificacionesSchemaMissing(
+                "La migración SQL de configuración de alertas (20261121_cu22_notificaciones_alertas.sql) aún no está aplicada."
+            ) from exc
+        raise
+    finally:
+        db.close_connection()
+
+
 def obtener_usuarios_por_taller(nro_taller: int):
     """
     Compatibilidad con consultas por empresa/taller usando t_usuario.
@@ -50,7 +282,7 @@ def obtener_usuarios_por_taller(nro_taller: int):
     db.create_connection()
     try:
         query = f"""
-            SELECT id_usuario, nombre_usuario
+            SELECT id_usuario, username
             FROM {Config.SCHEMA}.t_usuario
             WHERE id_empresa = %s AND estado = 'ACTIVO';
         """
@@ -69,10 +301,60 @@ def guardar_notificacion_db(
     tipo_referencia: str,
     nro_usuario: int,
     nro_emergencia: int = None,
+    id_empresa: int = None,
+    id_obra: int = None,
+    clave_evento: str = None,
 ):
+    """
+    Persiste la notificación en obras.notificacion.
+    Usa columnas aditivas e idempotencia por clave_evento cuando la migración CU22
+    está aplicada, con degradación transparente al esquema base si aún no se aplicó.
+    """
     db = PostgreSQL()
     db.create_connection()
     try:
+        if clave_evento or id_empresa is not None or id_obra is not None:
+            try:
+                query_ext = f"""
+                    INSERT INTO {Config.SCHEMA}.notificacion
+                        (titulo, cuerpo, tipo_referencia, nro_usuario, nro_emergencia,
+                         id_empresa, id_obra, clave_evento)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (nro_usuario, clave_evento) WHERE clave_evento IS NOT NULL
+                    DO NOTHING
+                    RETURNING id_notificacion, fecha_creacion;
+                """
+                row = db.execute_query(
+                    query_ext,
+                    (
+                        titulo,
+                        cuerpo,
+                        tipo_referencia,
+                        int(nro_usuario),
+                        nro_emergencia,
+                        int(id_empresa) if id_empresa is not None else None,
+                        int(id_obra) if id_obra is not None else None,
+                        clave_evento,
+                    ),
+                    commit=True,
+                    fetchone=True,
+                )
+                if row:
+                    return {
+                        "id_notificacion": row[0],
+                        "fecha_creacion": row[1].strftime("%Y-%m-%d %H:%M:%S") if row[1] else None,
+                        "duplicada": False,
+                    }
+                if clave_evento:
+                    return {
+                        "id_notificacion": None,
+                        "fecha_creacion": None,
+                        "duplicada": True,
+                    }
+            except Exception as exc:
+                if not _es_columna_ausente(exc):
+                    raise
+
         query = f"""
             INSERT INTO {Config.SCHEMA}.notificacion
             (titulo, cuerpo, tipo_referencia, nro_usuario, nro_emergencia)
@@ -89,27 +371,45 @@ def guardar_notificacion_db(
             return {
                 "id_notificacion": row[0],
                 "fecha_creacion": row[1].strftime("%Y-%m-%d %H:%M:%S") if row[1] else None,
+                "duplicada": False,
             }
-        return {"id_notificacion": None, "fecha_creacion": None}
+        return {"id_notificacion": None, "fecha_creacion": None, "duplicada": False}
     finally:
         db.close_connection()
 
 
-def obtener_notificaciones_por_usuario_db(nro_usuario: int):
+def obtener_notificaciones_por_usuario_db(
+    nro_usuario: int,
+    solo_no_leidas: bool = False,
+    tipo: str = None,
+    limit: int = 100,
+):
     """
     Recupera el historial de alertas del usuario ordenado por las más recientes primero.
     """
     db = PostgreSQL()
     db.create_connection()
     try:
+        filtros = ["nro_usuario = %s"]
+        params = [int(nro_usuario)]
+        if solo_no_leidas:
+            filtros.append("leido = FALSE")
+        if tipo and str(tipo).strip():
+            filtros.append("UPPER(COALESCE(tipo_referencia, '')) = %s")
+            params.append(str(tipo).strip().upper())
+
+        limite_seguro = max(1, min(int(limit or 100), 200))
+        params.append(limite_seguro)
+        where_sql = " AND ".join(filtros)
+
         query = f"""
             SELECT id_notificacion, titulo, cuerpo, tipo_referencia, leido, fecha_creacion, nro_emergencia
             FROM {Config.SCHEMA}.notificacion
-            WHERE nro_usuario = %s
+            WHERE {where_sql}
             ORDER BY fecha_creacion DESC, id_notificacion DESC
-            LIMIT 100;
+            LIMIT %s;
         """
-        resultados = db.execute_query(query, (int(nro_usuario),), fetchall=True) or []
+        resultados = db.execute_query(query, tuple(params), fetchall=True) or []
         alertas = []
         for r in resultados:
             fecha_str = r[5].strftime("%Y-%m-%d %H:%M:%S") if r[5] else None

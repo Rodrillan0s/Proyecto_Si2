@@ -124,6 +124,7 @@ def crear_orden_trabajo(
             cuerpo=f"Orden creada para la obra #{id_obra} ({estado}). {observacion}".strip(),
             tipo_referencia="ORDEN_TRABAJO",
             id_empresa=token_data.get('id_empresa'),
+            id_obra=id_obra,
             nro_referencia=id_obra,
             usuarios_especificos=[id_usuario] + list(id_usuarios),
         )

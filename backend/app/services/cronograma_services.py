@@ -102,17 +102,32 @@ def obtener_cronograma(id_obra,id_cronograma,token,desde=None,hasta=None,corte=N
 
 def crear_cronograma(id_obra,datos,token,ip='unknown'):
     with repo.sesion(True) as db:
-        autorizar(db,id_obra,token,'crear')
+        obra=autorizar(db,id_obra,token,'crear')
         validar_plan(datos)
         id_cronograma=repo.crear(db,id_obra,datos)
         repo.actividades(db,id_cronograma,datos.actividades)
         repo.auditar(db,token,'CREAR',id_obra,id_cronograma,ip)
-        return {'success':True,'data':presentar(repo.obtener(db,id_obra,id_cronograma))}
+        resultado={'success':True,'data':presentar(repo.obtener(db,id_obra,id_cronograma))}
+    try:
+        from app.services import notificaciones_services
+        id_emp = obra.get('id_empresa') if isinstance(obra, dict) else token.get('id_empresa')
+        notificaciones_services.emitir_notificacion_push_empresa(
+            titulo=f"Nuevo cronograma: {datos.nombre}",
+            cuerpo=f"Se creó el cronograma '{datos.nombre}' para la obra #{id_obra} ({len(datos.actividades)} actividades).",
+            tipo_referencia="CRONOGRAMA",
+            id_empresa=id_emp,
+            id_obra=id_obra,
+            nro_referencia=id_cronograma,
+            clave_evento=f"CRONOGRAMA:CREAR:{id_cronograma}",
+        )
+    except Exception:
+        pass
+    return resultado
 
 
 def actualizar_cronograma(id_obra,id_cronograma,datos,token,ip='unknown',planificacion=False):
     with repo.sesion(True) as db:
-        autorizar(db,id_obra,token,'planificacion' if planificacion else 'modificar')
+        obra=autorizar(db,id_obra,token,'planificacion' if planificacion else 'modificar')
         actual=repo.obtener(db,id_obra,id_cronograma,True)
         if datos.version != actual['version']:
             raise CronogramaError('Otra persona modificó este cronograma. Recargue antes de guardar.',409)
@@ -123,7 +138,25 @@ def actualizar_cronograma(id_obra,id_cronograma,datos,token,ip='unknown',planifi
         repo.guardar(db,id_cronograma,datos)
         repo.actividades(db,id_cronograma,datos.actividades)
         repo.auditar(db,token,'PLANIFICAR' if planificacion else 'ACTUALIZAR',id_obra,id_cronograma,ip)
-        return {'success':True,'data':presentar(repo.obtener(db,id_obra,id_cronograma))}
+        presentado=presentar(repo.obtener(db,id_obra,id_cronograma))
+        resultado={'success':True,'data':presentado}
+    try:
+        from app.services import notificaciones_services
+        id_emp = obra.get('id_empresa') if isinstance(obra, dict) else token.get('id_empresa')
+        nueva_version = presentado.get('version') if isinstance(presentado, dict) else datos.version
+        accion_txt = "Planificación actualizada" if planificacion else "Cronograma actualizado"
+        notificaciones_services.emitir_notificacion_push_empresa(
+            titulo=f"{accion_txt}: {datos.nombre}",
+            cuerpo=f"Se actualizó el cronograma #{id_cronograma} de la obra #{id_obra} (v{nueva_version}).",
+            tipo_referencia="CRONOGRAMA",
+            id_empresa=id_emp,
+            id_obra=id_obra,
+            nro_referencia=id_cronograma,
+            clave_evento=f"CRONOGRAMA:ACT:{id_cronograma}:v{nueva_version}",
+        )
+    except Exception:
+        pass
+    return resultado
 
 
 def eliminar_cronograma(id_obra,id_cronograma,version,token,ip='unknown'):

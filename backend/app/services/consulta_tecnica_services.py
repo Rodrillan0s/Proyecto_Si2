@@ -97,8 +97,10 @@ def registrar_consulta(id_obra: int, data: dict, token) -> dict:
             cuerpo=asunto,
             tipo_referencia="CONSULTA_TECNICA",
             id_empresa=id_emp,
+            id_obra=id_obra,
             nro_referencia=id_ct,
             usuarios_especificos=[asignado_a] if asignado_a else None,
+            clave_evento=f"CONSULTA_TECNICA:CREAR:{id_ct}",
         )
     except Exception:
         pass

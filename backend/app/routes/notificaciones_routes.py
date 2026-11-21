@@ -1,4 +1,5 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, Depends, HTTPException, Body
+from typing import Optional
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, Depends, HTTPException, Body, Request
 from app.classes.websocket_manager import manager
 from app.utils.security import decode_access_token, verificar_token
 from app.services import notificaciones_services
@@ -42,13 +43,23 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(...)):
 
 
 @router.get('/historial')
-def get_mis_notificaciones(token_data: dict = Depends(verificar_token)):
+def get_mis_notificaciones(
+    solo_no_leidas: bool = Query(default=False),
+    tipo: Optional[str] = Query(default=None),
+    token_data: dict = Depends(verificar_token),
+):
     """
-    Endpoint HTTP para poblar la bandeja de entrada del usuario.
+    HU142: Endpoint HTTP para poblar la bandeja de entrada del usuario autenticado.
     """
     nro_usuario = token_data.get('nro_usuario')
     try:
-        return notificaciones_services.listar_mis_notificaciones(nro_usuario)
+        return notificaciones_services.listar_mis_notificaciones(
+            nro_usuario,
+            solo_no_leidas=solo_no_leidas,
+            tipo=tipo,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -56,7 +67,7 @@ def get_mis_notificaciones(token_data: dict = Depends(verificar_token)):
 @router.put('/leer')
 def update_marcar_como_leido(data: dict = Body(...), token_data: dict = Depends(verificar_token)):
     """
-    Endpoint para marcar una o todas las notificaciones como leídas.
+    HU142: Endpoint para marcar una o todas las notificaciones del usuario como leídas.
     """
     nro_usuario = token_data.get('nro_usuario')
     id_notificacion = data.get('id_notificacion')
@@ -70,6 +81,51 @@ def update_marcar_como_leido(data: dict = Body(...), token_data: dict = Depends(
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get('/configuracion-alertas')
+def get_configuracion_alertas(
+    id_obra: Optional[int] = Query(default=None),
+    id_empresa: Optional[int] = Query(default=None),
+    token_data: dict = Depends(verificar_token),
+):
+    """
+    HU141: Consulta la configuración de alertas por tipo de evento para la empresa
+    (y opcionalmente para una obra específica).
+    """
+    try:
+        return notificaciones_services.obtener_configuracion_alertas(
+            token_data=token_data,
+            id_obra=id_obra,
+            id_empresa_solicitada=id_empresa,
+        )
+    except notificaciones_services.NotificacionesError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put('/configuracion-alertas')
+def put_configuracion_alertas(
+    request: Request,
+    data: dict = Body(...),
+    token_data: dict = Depends(verificar_token),
+):
+    """
+    HU141: Actualiza la configuración de alertas por tipo de evento para la empresa
+    o sobrescribe reglas para una obra específica.
+    """
+    client_ip = request.client.host if request.client else "unknown"
+    try:
+        return notificaciones_services.actualizar_configuracion_alertas(
+            token_data=token_data,
+            data=data,
+            client_ip=client_ip,
+        )
+    except notificaciones_services.NotificacionesError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -100,6 +156,8 @@ def post_emitir_notificacion_prueba(
         tipo_referencia=tipo,
         id_empresa=token_data.get("id_empresa"),
         usuarios_especificos=[int(nro_usuario)],
+        roles_destino=[],
+        omitir_configuracion=True,
     )
     return {
         "success": True,

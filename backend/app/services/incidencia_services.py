@@ -205,10 +205,13 @@ def registrar(data, token, ip="unknown"):
     try:
         from app.services import notificaciones_services
         notificaciones_services.emitir_notificacion_push_empresa(
-            id_empresa=id_empresa,
+            id_empresa=id_empresa_real,
+            id_obra=id_obra,
+            nro_referencia=id_incidencia,
             titulo=f"Nueva Incidencia ({prioridad}): {titulo}",
             cuerpo=f"Obra #{id_obra} — {descripcion[:140]}",
-            tipo="ALERTA" if prioridad in ("ALTA", "CRITICA") else "SISTEMA",
+            tipo_referencia="INCIDENCIA",
+            clave_evento=f"INCIDENCIA:CREAR:{id_incidencia}",
         )
     except Exception:
         pass
@@ -356,10 +359,12 @@ def asignar_responsable(id_incidencia, data, token, ip="unknown"):
         from app.services import notificaciones_services
         notificaciones_services.emitir_notificacion_push_empresa(
             id_empresa=id_empresa_real,
+            nro_referencia=id_incidencia,
             titulo=f"Incidencia #{id_incidencia} Asignada",
             cuerpo=f"Se asignó responsable a la incidencia #{id_incidencia} (Estado: {nuevo_estado}).",
-            tipo="SISTEMA",
+            tipo_referencia="INCIDENCIA",
             usuarios_especificos=[int(id_responsable)],
+            clave_evento=f"INCIDENCIA:ASIGNAR:{id_incidencia}:{id_responsable}:{nuevo_estado}",
         )
     except Exception:
         pass
@@ -437,9 +442,12 @@ def cambiar_estado(id_incidencia, data, token, ip="unknown"):
         id_emp_inc = id_empresa or incidencia_repos.obtener_empresa_incidencia(id_incidencia)
         notificaciones_services.emitir_notificacion_push_empresa(
             id_empresa=id_emp_inc,
+            nro_referencia=id_incidencia,
             titulo=f"Incidencia #{id_incidencia}: {estado_nuevo}",
             cuerpo=f"La incidencia #{id_incidencia} cambió de {estado_actual} a {estado_nuevo}.",
-            tipo="EXITO" if estado_nuevo == "CERRADA" else "SISTEMA",
+            tipo_referencia="INCIDENCIA",
+            usuarios_especificos=[int(id_responsable)] if id_responsable else None,
+            clave_evento=f"INCIDENCIA:ESTADO:{id_incidencia}:{estado_actual}:{estado_nuevo}",
         )
     except Exception:
         pass
@@ -618,9 +626,11 @@ def adjuntar_evidencia(id_incidencia, token, filename, content_type, contenido, 
         id_emp_inc = id_empresa or incidencia_repos.obtener_empresa_incidencia(id_incidencia)
         notificaciones_services.emitir_notificacion_push_empresa(
             id_empresa=id_emp_inc,
+            nro_referencia=id_incidencia,
             titulo=f"Nueva Evidencia en Incidencia #{id_incidencia}",
             cuerpo=f"Se adjuntó evidencia fotográfica ({os.path.basename(filename or nombre_disco)}) a la incidencia #{id_incidencia}.",
-            tipo="SISTEMA",
+            tipo_referencia="INCIDENCIA",
+            clave_evento=f"INCIDENCIA:EVIDENCIA:{id_incidencia}:{id_evidencia}",
         )
     except Exception:
         pass
