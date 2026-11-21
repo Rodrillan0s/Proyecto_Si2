@@ -400,6 +400,69 @@ class NotificacionService extends ChangeNotifier {
     }
   }
 
+  /// HU141: Consulta la configuración de alertas por tipo de evento (empresa u obra).
+  Future<Map<String, dynamic>> obtenerConfiguracionAlertas({
+    int? idObra,
+    int? idEmpresa,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (idObra != null) queryParams['id_obra'] = idObra;
+      if (idEmpresa != null) queryParams['id_empresa'] = idEmpresa;
+
+      final response = await ApiClient.dio.get(
+        '$_basePath/configuracion-alertas',
+        queryParameters: queryParams.isEmpty ? null : queryParams,
+      );
+      final data = response.data;
+      if (data is! Map) {
+        throw Exception('Respuesta inválida del servidor.');
+      }
+      if (data['success'] != true) {
+        throw Exception(
+          data['detail'] ?? data['message'] ?? 'No se pudo cargar la configuración de alertas.',
+        );
+      }
+      return Map<String, dynamic>.from(data);
+    } on DioException catch (e) {
+      throw Exception(_parsearErrorDio(e));
+    }
+  }
+
+  /// HU141: Guarda la configuración de alertas por tipo de evento o restablece una obra.
+  Future<Map<String, dynamic>> actualizarConfiguracionAlertas({
+    int? idObra,
+    int? idEmpresa,
+    List<Map<String, dynamic>>? configuraciones,
+    bool restablecerObra = false,
+  }) async {
+    try {
+      final payload = <String, dynamic>{
+        'id_obra': idObra,
+        if (idEmpresa != null) 'id_empresa': idEmpresa,
+        if (restablecerObra) 'restablecer_obra': true,
+        if (!restablecerObra && configuraciones != null)
+          'configuraciones': configuraciones,
+      };
+      final response = await ApiClient.dio.put(
+        '$_basePath/configuracion-alertas',
+        data: payload,
+      );
+      final data = response.data;
+      if (data is! Map) {
+        throw Exception('Respuesta inválida del servidor.');
+      }
+      if (data['success'] != true) {
+        throw Exception(
+          data['detail'] ?? data['message'] ?? 'No se pudo guardar la configuración de alertas.',
+        );
+      }
+      return Map<String, dynamic>.from(data);
+    } on DioException catch (e) {
+      throw Exception(_parsearErrorDio(e));
+    }
+  }
+
   Future<Map<String, dynamic>> enviarNotificacionPrueba({
     String? titulo,
     String? cuerpo,

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../services/auth_provider.dart';
 import '../services/notificacion_service.dart';
+import '../services/obra_service.dart';
 import '../theme/app_theme.dart';
 
 class NotificacionesScreen extends StatefulWidget {
@@ -309,6 +312,10 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
       return true;
     }).toList();
 
+    final auth = context.watch<AuthProvider>();
+    final puedeConfigurar =
+        auth.esAdminGlobal || auth.esAdminEmpresa || auth.esJefeObra;
+
     return Scaffold(
       backgroundColor: bg,
       appBar: AppBar(
@@ -363,6 +370,12 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
           ],
         ),
         actions: [
+          if (puedeConfigurar)
+            IconButton(
+              tooltip: 'Configurar alertas por eventos',
+              icon: const Icon(Icons.tune_rounded, size: 21),
+              onPressed: () => _abrirConfiguracionAlertas(auth),
+            ),
           IconButton(
             tooltip: 'Enviar notificación push de prueba',
             icon: _enviandoPrueba
@@ -659,6 +672,19 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
     );
   }
 
+  void _abrirConfiguracionAlertas(AuthProvider auth) {
+    final idEmpresa = auth.esAdminGlobal ? auth.idEmpresaActiva : null;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _ConfiguracionAlertasSheet(
+        service: _service,
+        idEmpresa: idEmpresa,
+      ),
+    );
+  }
+
   Widget _buildFilterChip(
     String valor,
     String label,
@@ -685,6 +711,421 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
             fontWeight: seleccionado ? FontWeight.w700 : FontWeight.w600,
             color: seleccionado ? Colors.white : subColor,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ConfiguracionAlertasSheet extends StatefulWidget {
+  final NotificacionService service;
+  final int? idEmpresa;
+
+  const _ConfiguracionAlertasSheet({
+    required this.service,
+    this.idEmpresa,
+  });
+
+  @override
+  State<_ConfiguracionAlertasSheet> createState() =>
+      _ConfiguracionAlertasSheetState();
+}
+
+class _ConfiguracionAlertasSheetState
+    extends State<_ConfiguracionAlertasSheet> {
+  final ObraService _obraService = ObraService();
+  List<Map<String, dynamic>> _obras = [];
+  int? _obraSeleccionadaId;
+
+  List<Map<String, dynamic>> _eventos = [];
+  List<String> _rolesDisponibles = [];
+  bool _migracionPendiente = false;
+  bool _cargando = true;
+  bool _guardando = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarInicial();
+  }
+
+  Future<void> _cargarInicial() async {
+    try {
+      final obras = await _obraService.listarProyectos();
+      if (mounted) {
+        setState(() {
+          _obras = widget.idEmpresa != null
+              ? obras
+                  .where((o) =>
+                      int.tryParse(o['id_empresa']?.toString() ?? '') ==
+                      widget.idEmpresa)
+                  .toList()
+              : obras;
+        });
+      }
+    } catch (_) {}
+    await _cargarConfiguracion();
+  }
+
+  Future<void> _cargarConfiguracion() async {
+    setState(() {
+      _cargando = true;
+      _error = null;
+    });
+    try {
+      final res = await widget.service.obtenerConfiguracionAlertas(
+        idObra: _obraSeleccionadaId,
+        idEmpresa: widget.idEmpresa,
+      );
+      if (!mounted) return;
+      final data = (res['data'] as List? ?? [])
+          .whereType<Map>()
+          .map((e) {
+            final item = Map<String, dynamic>.from(e);
+            final roles = (item['roles_destino'] as List? ?? [])
+                .map((r) => r.toString())
+                .toList();
+            item['roles_destino'] = roles;
+            return item;
+          })
+          .toList();
+      final rolesDisp = (res['roles_disponibles'] as List? ?? [])
+          .map((r) => r.toString())
+          .toList();
+      setState(() {
+        _eventos = data;
+        _rolesDisponibles = rolesDisp;
+        _migracionPendiente = res['migracion_pendiente'] == true;
+        _cargando = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString().replaceAll('Exception: ', '');
+        _cargando = false;
+      });
+    }
+  }
+
+  Future<void> _guardar() async {
+    if (_guardando || _migracionPendiente) return;
+    setState(() {
+      _guardando = true;
+      _error = null;
+    });
+    try {
+      final payload = _eventos.map((e) {
+        return {
+          'tipo_evento': e['tipo_evento'],
+          'activo': e['activo'] == true,
+          'roles_destino': List<String>.from(e['roles_destino'] ?? []),
+        };
+      }).toList();
+
+      await widget.service.actualizarConfiguracionAlertas(
+        idObra: _obraSeleccionadaId,
+        idEmpresa: widget.idEmpresa,
+        configuraciones: payload,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Configuración de alertas guardada exitosamente.'),
+          backgroundColor: AppTheme.success,
+        ),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString().replaceAll('Exception: ', '');
+        _guardando = false;
+      });
+    }
+  }
+
+  Future<void> _restablecerObra() async {
+    if (_obraSeleccionadaId == null || _guardando || _migracionPendiente) return;
+    setState(() {
+      _guardando = true;
+      _error = null;
+    });
+    try {
+      await widget.service.actualizarConfiguracionAlertas(
+        idObra: _obraSeleccionadaId,
+        idEmpresa: widget.idEmpresa,
+        restablecerObra: true,
+      );
+      if (!mounted) return;
+      setState(() => _guardando = false);
+      await _cargarConfiguracion();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Reglas de obra restablecidas a valores de empresa.'),
+          backgroundColor: AppTheme.success,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString().replaceAll('Exception: ', '');
+        _guardando = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sheetBg = isDark ? const Color(0xFF131D31) : Colors.white;
+    final titleColor = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
+    final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final borderColor = isDark ? const Color(0xFF22304C) : const Color(0xFFE2E8F0);
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      minChildSize: 0.55,
+      maxChildSize: 0.95,
+      builder: (_, scrollController) => Container(
+        decoration: BoxDecoration(
+          color: sheetBg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          border: Border.all(color: borderColor),
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 12, 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Configurar alertas por eventos',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: titleColor,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Activa eventos y define roles destinatarios',
+                          style: GoogleFonts.inter(fontSize: 12, color: subColor),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, color: subColor),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            Divider(height: 1, color: borderColor),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: DropdownButtonFormField<int?>(
+                initialValue: _obraSeleccionadaId,
+                isExpanded: true,
+                decoration: InputDecoration(
+                  labelText: 'Ámbito de configuración',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                ),
+                items: [
+                  const DropdownMenuItem<int?>(
+                    value: null,
+                    child: Text('Toda la empresa (Reglas generales)'),
+                  ),
+                  ..._obras.map((obra) {
+                    final id = int.tryParse(obra['id_obra']?.toString() ?? '');
+                    final nombre = obra['nombre']?.toString() ?? 'Obra #$id';
+                    return DropdownMenuItem<int?>(
+                      value: id,
+                      child: Text(
+                        'Obra: $nombre',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }),
+                ],
+                onChanged: _guardando
+                    ? null
+                    : (val) {
+                        setState(() => _obraSeleccionadaId = val);
+                        _cargarConfiguracion();
+                      },
+              ),
+            ),
+            if (_migracionPendiente)
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.warning.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: AppTheme.warning.withValues(alpha: 0.4),
+                  ),
+                ),
+                child: Text(
+                  'Migración SQL pendiente: se muestran valores predeterminados del catálogo.',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: AppTheme.warning,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            if (_error != null)
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.error.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  _error!,
+                  style: GoogleFonts.inter(fontSize: 12, color: AppTheme.error),
+                ),
+              ),
+            Expanded(
+              child: _cargando
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView.separated(
+                      controller: scrollController,
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _eventos.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (_, idx) {
+                        final item = _eventos[idx];
+                        final activo = item['activo'] == true;
+                        final roles = List<String>.from(item['roles_destino'] ?? []);
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: borderColor),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item['nombre']?.toString() ?? '',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 13.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: titleColor,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          item['descripcion']?.toString() ?? '',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 11.5,
+                                            color: subColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Switch.adaptive(
+                                    value: activo,
+                                    activeThumbColor: AppTheme.primary,
+                                    onChanged: (_migracionPendiente || _guardando)
+                                        ? null
+                                        : (val) => setState(() => item['activo'] = val),
+                                  ),
+                                ],
+                              ),
+                              if (activo && _rolesDisponibles.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 6,
+                                  runSpacing: 6,
+                                  children: _rolesDisponibles.map((rol) {
+                                    final selected = roles.contains(rol);
+                                    return FilterChip(
+                                      label: Text(
+                                        rol,
+                                        style: GoogleFonts.inter(fontSize: 10.5),
+                                      ),
+                                      selected: selected,
+                                      onSelected: (_migracionPendiente || _guardando)
+                                          ? null
+                                          : (sel) {
+                                              setState(() {
+                                                if (sel && !roles.contains(rol)) {
+                                                  roles.add(rol);
+                                                } else {
+                                                  roles.remove(rol);
+                                                }
+                                                item['roles_destino'] = roles;
+                                              });
+                                            },
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+            Divider(height: 1, color: borderColor),
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  if (_obraSeleccionadaId != null && !_migracionPendiente)
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _guardando ? null : _restablecerObra,
+                        child: const Text('Restablecer'),
+                      ),
+                    ),
+                  if (_obraSeleccionadaId != null && !_migracionPendiente)
+                    const SizedBox(width: 10),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: (_guardando || _migracionPendiente || _cargando)
+                          ? null
+                          : _guardar,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: Text(
+                        _guardando ? 'Guardando...' : 'Guardar configuración',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
