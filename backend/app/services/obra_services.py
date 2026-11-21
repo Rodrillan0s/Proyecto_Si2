@@ -280,6 +280,19 @@ def actualizar_estado_obra(id_obra: int, nuevo_estado: str, token_data: dict, cl
         ip=client_ip,
         estado="EXITOSO"
     )
+    try:
+        from app.services import notificaciones_services
+        notificaciones_services.emitir_notificacion_push_empresa(
+            titulo=f"Estado de obra #{id_obra}: {nuevo_estado}",
+            cuerpo=f"El estado del proyecto #{id_obra} cambió a {nuevo_estado}.",
+            tipo_referencia="OBRA_ESTADO",
+            id_empresa=id_empresa,
+            id_obra=id_obra,
+            nro_referencia=id_obra,
+            clave_evento=f"OBRA_ESTADO:{id_obra}:{nuevo_estado}",
+        )
+    except Exception:
+        pass
     return res
 
 def asignar_responsable(id_obra: int, id_usuario: int, token_data: dict, client_ip: str = "unknown"):

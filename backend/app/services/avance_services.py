@@ -115,7 +115,9 @@ def registrar_avance(id_obra: int, data: dict, token_data: dict, client_ip: str 
             cuerpo=f"Se registró un avance del {porcentaje}% en la unidad #{id_unidad} de la obra #{id_obra}.",
             tipo_referencia="AVANCE_OBRA",
             id_empresa=token_data.get("id_empresa"),
+            id_obra=id_obra,
             nro_referencia=id_obra,
+            clave_evento=f"AVANCE_OBRA:{id_obra}:{id_unidad}:{res.get('id_avance') or porcentaje}",
         )
     except Exception:
         pass
