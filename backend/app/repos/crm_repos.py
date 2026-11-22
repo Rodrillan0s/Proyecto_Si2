@@ -139,6 +139,27 @@ def obtener_cliente_por_id(id_cliente: int, id_empresa: int = None):
         db.close_connection()
 
 
+def obtener_id_cliente_por_usuario_empresa(id_usuario: int, id_empresa: int):
+    sql = f"""
+        SELECT c.id_cliente
+        FROM {Config.SCHEMA}.t_usuario u
+        INNER JOIN {Config.SCHEMA}.t_crm_cliente c ON c.id_persona = u.id_persona
+        WHERE u.id_usuario = %s
+          AND u.id_empresa = %s
+          AND c.id_empresa = %s
+          AND u.id_persona IS NOT NULL
+          AND c.tipo_cliente = 'CLIENTE'
+        LIMIT 1;
+    """
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        row = db.execute_query(sql, (id_usuario, id_empresa, id_empresa), fetchone=True)
+        return row[0] if row else None
+    finally:
+        db.close_connection()
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # 3. GESTIÓN DE PERSONA Y CLIENTE
 # ─────────────────────────────────────────────────────────────────────────────
@@ -458,6 +479,49 @@ def listar_unidades_cliente(id_cliente: int):
     db.create_connection()
     try:
         rows = db.execute_query(sql, (id_cliente,), fetchall=True) or []
+        res = []
+        for r in rows:
+            res.append({
+                "id_cliente_unidad": r[0],
+                "id_cliente": r[1],
+                "id_unidad": r[2],
+                "estado_asociacion": r[3],
+                "monto_pactado": float(r[4]) if r[4] is not None else None,
+                "fecha_asociacion": r[5].isoformat() if r[5] else None,
+                "observaciones": r[6],
+                "codigo_unidad": r[7],
+                "tipo_unidad": r[8],
+                "superficie": float(r[9]) if r[9] is not None else None,
+                "estado_unidad_actual": r[10],
+                "id_obra": r[11],
+                "nombre_obra": r[12],
+                "codigo_obra": r[13],
+            })
+        return res
+    finally:
+        db.close_connection()
+
+
+def listar_unidades_cliente_cu30(id_cliente: int, id_empresa: int):
+    sql = f"""
+        SELECT cu.id_cliente_unidad, cu.id_cliente, cu.id_unidad, cu.estado_asociacion,
+               cu.monto_pactado, cu.fecha_asociacion, cu.observaciones,
+               u.codigo AS codigo_unidad, u.tipo_unidad, u.superficie, u.estado AS estado_unidad_actual,
+               o.id_obra, o.nombre AS nombre_obra, o.codigo AS codigo_obra
+        FROM {Config.SCHEMA}.t_crm_cliente_unidad cu
+        INNER JOIN {Config.SCHEMA}.t_crm_cliente c ON c.id_cliente = cu.id_cliente
+        INNER JOIN {Config.SCHEMA}.t_unidad_construccion u ON u.id_unidad = cu.id_unidad
+        INNER JOIN {Config.SCHEMA}.t_estructura_obra e ON e.id_estructura = u.id_estructura
+        INNER JOIN {Config.SCHEMA}.t_obra o ON o.id_obra = e.id_obra
+        WHERE c.id_cliente = %s
+          AND c.id_empresa = %s
+          AND o.id_empresa = %s
+        ORDER BY cu.fecha_asociacion DESC;
+    """
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        rows = db.execute_query(sql, (id_cliente, id_empresa, id_empresa), fetchall=True) or []
         res = []
         for r in rows:
             res.append({

@@ -10,7 +10,7 @@ Permisos utilizados:
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 
 from app.services import avance_services
-from app.utils.security import exigir_permiso
+from app.utils.security import exigir_permiso, exigir_rol
 
 router = APIRouter(
     prefix="/api/proyectos/{id_obra}/avances",
@@ -34,6 +34,26 @@ def get_avances(
 ):
     try:
         return avance_services.listar_avances(id_obra, token_data, estado)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
+
+@router.get("/cliente/unidades/{id_unidad}")
+def get_avance_fisico_unidad_cliente(
+    id_obra: int,
+    id_unidad: int,
+    token_data: dict = Depends(exigir_rol("CLIENTE")),
+):
+    try:
+        return avance_services.consultar_avance_fisico_unidad_cliente(
+            id_obra,
+            id_unidad,
+            token_data,
+        )
+    except PermissionError:
+        raise HTTPException(status_code=404, detail="Unidad no encontrada o no autorizada.")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:

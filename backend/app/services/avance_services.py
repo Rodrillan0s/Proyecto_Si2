@@ -6,7 +6,7 @@ de los repositorios de avances.
 from datetime import datetime, date
 from decimal import Decimal, InvalidOperation
 
-from app.repos import avance_repos, bitacora_repos
+from app.repos import avance_repos, bitacora_repos, crm_repos
 
 
 # ---------------------------------------------------------------------------
@@ -134,6 +134,43 @@ def listar_avances(id_obra: int, token_data: dict, estado: str = None) -> dict:
     res = avance_repos.listar_avances_fn(id_obra=id_obra, id_empresa=id_empresa, estado=estado)
     if not res.get("success"):
         raise ValueError(res.get("error", "Error al obtener la bitácora de avances de obra."))
+    return res
+
+
+def consultar_avance_fisico_unidad_cliente(
+    id_obra: int,
+    id_unidad: int,
+    token_data: dict,
+) -> dict:
+    if token_data.get("nombre_rol") != "CLIENTE":
+        raise PermissionError("No tiene permisos para consultar el avance de esta unidad.")
+
+    try:
+        id_usuario = int(token_data.get("nro_usuario"))
+        id_empresa = int(token_data.get("id_empresa"))
+    except (TypeError, ValueError):
+        raise PermissionError("No se pudo validar el cliente autenticado.")
+
+    id_cliente = crm_repos.obtener_id_cliente_por_usuario_empresa(id_usuario, id_empresa)
+    if id_cliente is None:
+        raise PermissionError("No se pudo validar el cliente autenticado.")
+
+    unidades = crm_repos.listar_unidades_cliente_cu30(id_cliente, id_empresa)
+    unidad_autorizada = any(
+        unidad.get("id_unidad") == id_unidad and unidad.get("id_obra") == id_obra
+        for unidad in unidades
+    )
+    if not unidad_autorizada:
+        raise PermissionError("La unidad no está asociada al cliente autenticado.")
+
+    res = avance_repos.listar_avance_fisico_unidad_cliente(
+        id_cliente=id_cliente,
+        id_unidad=id_unidad,
+        id_obra=id_obra,
+        id_empresa=id_empresa,
+    )
+    if not res.get("success"):
+        raise ValueError(res.get("error", "Error al obtener el avance físico de la unidad."))
     return res
 
 
