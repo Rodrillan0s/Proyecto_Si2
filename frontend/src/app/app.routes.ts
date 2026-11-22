@@ -91,6 +91,12 @@ export const routes: Routes = [
                 data: { permissions: ['Visualizar_materiales'] }
             },
             {
+                path: 'comercializacion',
+                loadComponent: () => import('./pages/comercializacion/comercializacion').then(module => module.ComercializacionComponent),
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_clientes', 'Registrar_obras'] }
+            },
+            {
                 path: 'crm',
                 loadComponent: () => import('./pages/crm/crm').then(module => module.CrmComponent),
                 canActivate: [roleGuard],

@@ -7,6 +7,7 @@ from app.routes import suscripcion_routes
 from app.routes import pago_routes
 from app.routes import cronograma_routes
 from app.routes import commercial_routes
+from app.routes import comercializacion_routes
 from app.utils.reportes_errors import ReportesSchemaMissing
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -105,5 +106,7 @@ def create_app() -> FastAPI:
     app.include_router(cronograma_routes.router)
     # CU34 – Asistente Comercial Inteligente y Recomendaciones (HUs 147, 148, 149, 150)
     app.include_router(commercial_routes.router)
+    # CU31 – Comercialización de Unidades Inmobiliarias (HUs 143, 144, 145, 146)
+    app.include_router(comercializacion_routes.router, prefix='/api/comercializacion')
     app.include_router(documentos_routes.router, prefix='/api/documentos-tecnicos') 
     return app
