@@ -55,7 +55,10 @@ export type PermisoNombre =
   | 'Registrar_incidencias'
   | 'Modificar_incidencias'
   | 'Asignar_incidencias'
-  | 'Cerrar_incidencias';
+  | 'Cerrar_incidencias'
+  | 'Visualizar_clientes'
+  | 'Registrar_clientes'
+  | 'Modificar_clientes';
 
 export const PERMISOS_OFICIALES: PermisoNombre[] = [
   'Visualizar_cronograma', 'Registrar_cronograma', 'Modificar_cronograma', 'Planificar_cronograma',
@@ -70,7 +73,8 @@ export const PERMISOS_OFICIALES: PermisoNombre[] = [
   'Modificar_presupuesto',
   'Visualizar_control_costos', 'Registrar_costos_ejecutados', 'Anular_costos_ejecutados',
   'Registrar_ordenes_cambio', 'Modificar_ordenes_cambio', 'Aprobar_ordenes_cambio',
-  'Visualizar_incidencias', 'Registrar_incidencias', 'Modificar_incidencias', 'Asignar_incidencias', 'Cerrar_incidencias'
+  'Visualizar_incidencias', 'Registrar_incidencias', 'Modificar_incidencias', 'Asignar_incidencias', 'Cerrar_incidencias',
+  'Visualizar_clientes', 'Registrar_clientes', 'Modificar_clientes'
 ];
 
 export const MAPA_PERMISOS_POR_ROL: Record<string, PermisoNombre[]> = {
@@ -88,7 +92,8 @@ export const MAPA_PERMISOS_POR_ROL: Record<string, PermisoNombre[]> = {
     'Modificar_presupuesto',
     'Visualizar_control_costos', 'Registrar_costos_ejecutados', 'Anular_costos_ejecutados',
     'Registrar_ordenes_cambio', 'Modificar_ordenes_cambio', 'Aprobar_ordenes_cambio',
-    'Visualizar_incidencias', 'Registrar_incidencias', 'Modificar_incidencias', 'Asignar_incidencias', 'Cerrar_incidencias'
+    'Visualizar_incidencias', 'Registrar_incidencias', 'Modificar_incidencias', 'Asignar_incidencias', 'Cerrar_incidencias',
+    'Visualizar_clientes', 'Registrar_clientes', 'Modificar_clientes'
   ],
   'JEFE_DE_OBRA': [
     'Visualizar_cronograma', 'Registrar_cronograma', 'Modificar_cronograma', 'Planificar_cronograma',
@@ -99,7 +104,8 @@ export const MAPA_PERMISOS_POR_ROL: Record<string, PermisoNombre[]> = {
     'Visualizar_proveedores',
     'Visualizar_control_costos', 'Registrar_costos_ejecutados', 'Anular_costos_ejecutados',
     'Registrar_ordenes_cambio', 'Modificar_ordenes_cambio', 'Aprobar_ordenes_cambio',
-    'Visualizar_incidencias', 'Registrar_incidencias', 'Modificar_incidencias', 'Asignar_incidencias'
+    'Visualizar_incidencias', 'Registrar_incidencias', 'Modificar_incidencias', 'Asignar_incidencias',
+    'Visualizar_clientes', 'Registrar_clientes', 'Modificar_clientes'
   ],
   'SUPERVISOR_OBRA': [
     'Visualizar_cronograma', 'Planificar_cronograma',

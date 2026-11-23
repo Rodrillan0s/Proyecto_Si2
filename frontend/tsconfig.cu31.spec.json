@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.spec.json",
+  "files": [
+    "src/app/pages/comercializacion/comercializacion.spec.ts"
+  ],
+  "include": [],
+  "exclude": []
+}

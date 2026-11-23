@@ -19,8 +19,11 @@ def modulo_ruta(ruta):
     if raiz=='proyectos':
         sub=partes[2] if len(partes)>2 else None
         return {'presupuestos':'presupuestos','costos-ejecutados':'control_costos','avances':'avances','consultas-tecnicas':'obras'}.get(sub,'obras')
+    if raiz=='public':
+        sub=partes[1] if len(partes)>1 else None
+        return {'comercial':'crm'}.get(sub)
     return {'estimaciones':'presupuestos','apus':'presupuestos','control-costos':'control_costos',
         'ordenes-trabajo':'ordenes_trabajo','incidencias':'incidencias','compras':'compras',
         'inventario':'inventario','materiales':'materiales','proveedores':'proveedores',
-        'equipos-maquinaria':'equipos','crm':'crm','usuarios':'usuarios','roles':'usuarios',
-        'reportes':'reportes','ai':'ia','voz':'ia','consultas-tecnicas':'obras'}.get(raiz)
+        'equipos-maquinaria':'equipos','crm':'crm','comercializacion':'crm','usuarios':'usuarios','roles':'usuarios',
+        'reportes':'reportes','ai':'ia','voz':'ia','consultas-tecnicas':'obras','documentos-tecnicos':'obras'}.get(raiz)

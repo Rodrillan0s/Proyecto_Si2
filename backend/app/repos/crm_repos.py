@@ -496,9 +496,10 @@ def listar_unidades_disponibles_empresa(id_empresa: int, id_obra: int = None):
         INNER JOIN {Config.SCHEMA}.t_estructura_obra e ON e.id_estructura = u.id_estructura
         INNER JOIN {Config.SCHEMA}.t_obra o ON o.id_obra = e.id_obra
         WHERE {" AND ".join(filtros)}
+          AND COALESCE(u.estado_comercial, 'DISPONIBLE') = 'DISPONIBLE'
           AND u.id_unidad NOT IN (
               SELECT id_unidad FROM {Config.SCHEMA}.t_crm_cliente_unidad
-              WHERE estado_asociacion = 'VENDIDO'
+              WHERE estado_asociacion IN ('RESERVADO', 'VENDIDO', 'ENTREGADO')
           )
         ORDER BY o.nombre, u.codigo;
     """

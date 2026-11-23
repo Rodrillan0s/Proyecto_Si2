@@ -34,6 +34,7 @@ export const NAVIGATION: NavSection[] = [
     { id: 'gastos-finales', label: 'Gastos operativos finales', route: '/gastos-finales', icon: cost, permissions: ['Visualizar_control_costos'] },
   ] },
   { id: 'comercial', label: 'COMERCIAL & CLIENTES', icon: people, items: [
+    { id: 'comercializacion', label: 'Comercialización de Unidades', route: '/comercializacion', icon: stock, permissions: ['Visualizar_clientes', 'Registrar_obras'] },
     { id: 'crm', label: 'CRM & Clientes', route: '/crm', icon: people, permissions: ['Visualizar_clientes'] },
     { id: 'asistente-comercial', label: 'Asistente Comercial', route: '/asistente-comercial', icon: chat },
   ] },

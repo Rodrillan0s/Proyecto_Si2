@@ -1,0 +1,36 @@
+/* Estilos específicos para la vista de Comercialización de Unidades (CU31) */
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+.text-3xs {
+  font-size: 0.65rem;
+  line-height: 0.85rem;
+}
+
+/* Transición suave para modales */
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-in {
+  animation: fadeInScale 0.15s ease-out forwards;
+}
+
+/* Hover de filas en la tabla de unidades: tono sutil y alto contraste en modo oscuro */
+:host-context(.dark) tbody tr:hover,
+:host-context(.dark) tbody tr:hover > td,
+.dark tbody tr:hover,
+.dark tbody tr:hover > td {
+  background-color: rgba(51, 65, 85, 0.45) !important;
+}
+
