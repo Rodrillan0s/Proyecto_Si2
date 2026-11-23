@@ -1,12 +1,8 @@
-import { DestroyRef } from '@angular/core';
-import { LecturasVigentes } from '../../services/lecturas';
-import { ContextoOperativo } from '../../services/contexto-operativo';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import { finalize, forkJoin } from 'rxjs';
+import { finalize, forkJoin, Subscription } from 'rxjs';
 import { DashboardCardComponent } from '../../components/ui/dashboard-card';
 import { PageHeaderComponent } from '../../components/ui/page-header';
 import { AuthService } from '../../services/auth';
@@ -14,11 +10,11 @@ import {
   CategoriaCosto, ComparacionPartida, ControlCostosService, CostoCreatePayload,
   CostoEjecutado, EstadoCosto, EstadoOrden, HistorialOrden, LineaBase,
   OrdenCambio, OrdenCreatePayload, OrdenDetallePayload, OrdenUpdatePayload,
-  PresupuestoAprobado, TipoCambio, TotalesControl
+  PresupuestoAprobado, TipoCambio, TotalesControl, ResumenFinalControl, ResumenManoObra
 } from '../../services/control-costos.service';
 import { Proyecto, ProyectosService } from '../../services/proyectos';
 
-type TabControl = 'resumen' | 'costos' | 'comparacion' | 'ordenes';
+type TabControl = 'resumen' | 'costos' | 'comparacion' | 'ordenes' | 'mano-obra' | 'final';
 type ModalControl = 'costo' | 'anular' | 'orden' | 'decidir' | 'historial' | null;
 
 interface ErrorHttp {
@@ -61,24 +57,35 @@ interface OrdenForm {
 @Component({
   selector: 'app-control-costos',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, PageHeaderComponent, DashboardCardComponent],
+  imports: [CommonModule, FormsModule, PageHeaderComponent, DashboardCardComponent],
   templateUrl: './control-costos.html',
   styleUrl: './control-costos.css'
 })
-export class ControlCostosComponent implements OnInit {
-  get contextoCompatible() {
-    if (this.auth.obtenerRolNormalizado?.() === 'ADMINISTRADOR') {
-      return !!this.auth.obtenerIdEmpresaActiva();
-    }
-    return this.auth.obtenerIdEmpresaActiva() === Number(this.auth.obtenerUsuario()?.id_empresa);
-  }
-  private contexto = inject(ContextoOperativo);
-  private destroyRef = inject(DestroyRef);
-  private reads = new LecturasVigentes(this.destroyRef);
+export class ControlCostosComponent implements OnInit, OnDestroy {
   private readonly service = inject(ControlCostosService);
   private readonly proyectosService = inject(ProyectosService);
   private readonly auth = inject(AuthService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly route = inject(ActivatedRoute);
+  private contexto = new Subscription();
+  private peticionFinal?: Subscription;
+  private peticionManoObra?: Subscription;
+  private readonly suscripciones = new Subscription();
+  private obraSolicitada = 0;
+  private finalSolicitado = false;
+
+  resumenFinal: ResumenFinalControl | null = null;
+  manoObra: ResumenManoObra = { trabajadores: [], jornadas: [] };
+  cargandoManoObra = false;
+  idTrabajadorSalario = 0;
+  salarioDiario = 0;
+  fechaVigenciaSalario = this.hoy();
+  idTrabajadorJornada = 0;
+  fechaJornada = this.hoy();
+  diasTrabajados = 1;
+  cargandoFinal = false;
+  errorFinal = '';
+  estadoFinal: 'inicial' | 'cargando' | 'listo' | 'no-finalizada' | 'sin-linea-base' | 'autorizacion' | 'conexion' | 'error' = 'inicial';
 
   proyectos: Proyecto[] = [];
   idObra = 0;
@@ -111,16 +118,31 @@ export class ControlCostosComponent implements OnInit {
   readonly tiposCambio: TipoCambio[] = ['AUMENTO_CANTIDAD', 'DISMINUCION_CANTIDAD', 'CAMBIO_COSTO', 'NUEVA_PARTIDA', 'ELIMINACION_PARTIDA'];
 
   ngOnInit(): void {
-    this.contexto.proteger(() => this.modal !== null, this.destroyRef);
-    this.contexto.protegerEscritura(() => this.guardando, this.destroyRef);
-    this.contexto.operativo$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-      this.reads.cancelar(); this.modal = null; this.limpiarContexto(); this.proyectos = [];
-      this.idObra = this.contexto.obra?.id_obra || 0;
-      if (this.contextoCompatible) this.cargarProyectos(); else { this.cargando = false; this.cargandoContexto = false; }
-    });
+    this.suscripciones.add(this.route.queryParamMap.subscribe(params => {
+      this.obraSolicitada = Number(params.get('id_obra')) || 0;
+      this.finalSolicitado = params.get('final') === 'true';
+      if (this.proyectos.length && this.obraSolicitada) this.abrirObraSolicitada();
+    }));
+    this.cargarProyectos();
   }
 
-  private hoy(): string { return new Date().toISOString().slice(0, 10); }
+  ngOnDestroy(): void {
+    this.contexto.unsubscribe();
+    this.peticionFinal?.unsubscribe();
+    this.peticionManoObra?.unsubscribe();
+    this.suscripciones.unsubscribe();
+  }
+
+  private abrirObraSolicitada(): void {
+    if (!this.proyectos.some(p => p.id_obra === this.obraSolicitada)) {
+      this.error = 'La obra solicitada no está disponible para tu usuario.';
+      return;
+    }
+    this.idObra = this.obraSolicitada;
+    this.cambiarObra();
+  }
+
+  hoy(): string { return new Date().toISOString().slice(0, 10); }
 
   private nuevoCosto(): CostoForm {
     return { id_partida_presupuestaria: 0, fecha: this.hoy(), concepto: '', categoria: 'MATERIAL', cantidad: 1, costo_unitario: 0, documento: '', observacion: '' };
@@ -136,31 +158,186 @@ export class ControlCostosComponent implements OnInit {
 
   cargarProyectos(): void {
     this.cargando = true;
-    this.proyectosService.listarProyectos().pipe(finalize(() => { this.cargando = false; this.cdr.detectChanges(); })).pipe(this.reads.reemplazar('obras')).subscribe({
-      next: response => { this.proyectos = (response.data || []).filter(p => Boolean(p.id_obra) && Number(p.id_empresa) === this.auth.obtenerIdEmpresaActiva()); if (this.idObra && this.proyectos.some(p => p.id_obra === this.idObra)) this.cambiarObra(); },
+    this.proyectosService.listarProyectos().pipe(finalize(() => { this.cargando = false; this.cdr.detectChanges(); })).subscribe({
+      next: response => {
+        this.proyectos = (response.data || []).filter(p => Boolean(p.id_obra));
+        if (this.obraSolicitada) this.abrirObraSolicitada();
+      },
       error: error => this.mostrarError(this.mensajeError(error, 'No se pudieron cargar las obras.'))
     });
   }
 
-  cambiarObra(): void {
-    if (!this.contextoCompatible) return;
-    if ((this.contexto.obra?.id_obra || 0) !== this.idObra) { if (!this.contexto.confirmarCambio()) return; this.contexto.seleccionar(this.proyectos.find(work => work.id_obra === this.idObra) || null); return; }
+  cambiarObra(abrirFinal = true): void {
+    this.contexto.unsubscribe();
+    this.contexto = new Subscription();
+    this.peticionFinal?.unsubscribe();
+    this.peticionManoObra?.unsubscribe();
+    this.resumenFinal = null;
+    this.errorFinal = '';
+    this.estadoFinal = 'inicial';
+    this.error = '';
+    this.cargandoContexto = false;
+    this.cargando = false;
     this.limpiarContexto();
+    this.idTrabajadorSalario = 0;
+    this.idTrabajadorJornada = 0;
     if (!this.idObra) return;
+    if (abrirFinal && (this.esObraFinalizada() || (this.finalSolicitado && this.idObra === this.obraSolicitada))) {
+      this.tab = 'final';
+      this.cargarResumenFinal();
+      return;
+    }
+    if (this.tab === 'final') this.tab = 'resumen';
     this.cargandoContexto = true;
-    this.service.presupuestosAprobados(this.idObra).pipe(this.reads.reemplazar('presupuestos')).subscribe({
+    this.contexto.add(this.service.presupuestosAprobados(this.idObra).subscribe({
       next: response => {
         this.presupuestos = response.data || [];
         this.idEstimacionSeleccionada = this.presupuestos[0]?.id_estimacion || 0;
         this.cdr.detectChanges();
       },
       error: error => this.mostrarError(this.mensajeError(error, 'No se pudieron cargar los presupuestos aprobados.'))
-    });
-    this.service.lineaBase(this.idObra).pipe(finalize(() => { this.cargandoContexto = false; this.cdr.detectChanges(); })).pipe(this.reads.reemplazar('linea-base')).subscribe({
+    }));
+    this.contexto.add(this.service.lineaBase(this.idObra).pipe(finalize(() => { this.cargandoContexto = false; this.cdr.detectChanges(); })).subscribe({
       next: response => { this.lineaBase = response.data; this.cargarDatosControl(); },
       error: error => {
         const err = error as ErrorHttp;
         if (err.status !== 404) this.mostrarError(this.mensajeError(error, 'No se pudo consultar la línea base.'));
+      }
+    }));
+    if (this.tab === 'mano-obra') this.cargarManoObra();
+  }
+
+  esObraFinalizada(): boolean { return this.obraSeleccionada()?.estado_obra === 'FINALIZADO'; }
+
+  seleccionarTab(tab: TabControl): void {
+    if (tab === 'final') {
+      this.peticionManoObra?.unsubscribe();
+      this.contexto.unsubscribe();
+      this.contexto = new Subscription();
+      this.cargando = false;
+      this.cargandoContexto = false;
+      this.tab = tab;
+      this.cargarResumenFinal();
+      return;
+    }
+    const desdeFinal = this.tab === 'final';
+    this.peticionFinal?.unsubscribe();
+    if (tab !== 'mano-obra') this.peticionManoObra?.unsubscribe();
+    this.tab = tab;
+    if (desdeFinal) this.cambiarObra(false);
+    else if (tab === 'mano-obra') this.cargarManoObra();
+  }
+
+  actualizar(): void {
+    if (this.tab === 'final') this.cargarResumenFinal();
+    else if (this.tab === 'mano-obra') this.cargarManoObra();
+    else this.cargarDatosControl();
+  }
+
+  cargarManoObra(): void {
+    if (!this.idObra || !this.puede('Visualizar_control_costos')) return;
+    this.peticionManoObra?.unsubscribe();
+    this.cargandoManoObra = true;
+    const idObra = this.idObra;
+    this.peticionManoObra = this.service.manoObra(idObra).pipe(finalize(() => {
+      this.cargandoManoObra = false;
+      this.cdr.detectChanges();
+    })).subscribe({
+      next: response => {
+        if (this.idObra !== idObra || this.tab !== 'mano-obra') return;
+        this.manoObra = response.data || { trabajadores: [], jornadas: [] };
+        if (!this.idTrabajadorSalario) this.idTrabajadorSalario = this.manoObra.trabajadores[0]?.id_usuario || 0;
+        if (!this.idTrabajadorJornada) this.idTrabajadorJornada = this.manoObra.trabajadores[0]?.id_usuario || 0;
+      },
+      error: error => {
+        if (this.idObra === idObra && this.tab === 'mano-obra') {
+          this.mostrarError(this.mensajeError(error, 'No se pudo consultar la mano de obra de la obra.'));
+        }
+      }
+    });
+  }
+
+  guardarSalario(): void {
+    if (!this.idObra || !this.idTrabajadorSalario || this.guardando) return;
+    if (!Number.isFinite(Number(this.salarioDiario)) || Number(this.salarioDiario) <= 0 || !this.fechaVigenciaSalario) {
+      this.mostrarError('Indica un salario diario mayor que cero y su fecha de vigencia.');
+      return;
+    }
+    this.guardando = true;
+    this.service.registrarSalario(this.idObra, this.idTrabajadorSalario, {
+      salario_diario: Number(this.salarioDiario),
+      fecha_vigencia: this.fechaVigenciaSalario
+    }).pipe(finalize(() => { this.guardando = false; this.cdr.detectChanges(); })).subscribe({
+      next: () => {
+        this.mostrarExito('Salario diario registrado con vigencia histórica.');
+        this.cargarManoObra();
+      },
+      error: error => this.mostrarError(this.mensajeError(error, 'No se pudo registrar el salario.'))
+    });
+  }
+
+  guardarJornada(): void {
+    if (!this.idObra || !this.idTrabajadorJornada || this.guardando) return;
+    if (!this.fechaJornada || !Number.isFinite(Number(this.diasTrabajados)) ||
+        Number(this.diasTrabajados) < 0 || Number(this.diasTrabajados) > 1) {
+      this.mostrarError('Registra una fecha válida y entre cero y un día trabajado.');
+      return;
+    }
+    this.guardando = true;
+    this.service.registrarJornada(this.idObra, {
+      id_usuario: this.idTrabajadorJornada,
+      fecha: this.fechaJornada,
+      dias_trabajados: Number(this.diasTrabajados)
+    }).pipe(finalize(() => { this.guardando = false; this.cdr.detectChanges(); })).subscribe({
+      next: () => {
+        this.mostrarExito('Jornada registrada. El costo se calculará en el backend al finalizar la obra.');
+        this.cargarManoObra();
+      },
+      error: error => this.mostrarError(this.mensajeError(error, 'No se pudo registrar la jornada.'))
+    });
+  }
+
+  cargarResumenFinal(): void {
+    this.peticionFinal?.unsubscribe();
+    this.resumenFinal = null;
+    this.errorFinal = '';
+    if (!this.puede('Visualizar_control_costos')) {
+      this.estadoFinal = 'autorizacion';
+      this.errorFinal = 'No tienes autorización para consultar el resumen económico final.';
+      return;
+    }
+    if (!this.esObraFinalizada()) {
+      this.estadoFinal = 'no-finalizada';
+      this.errorFinal = 'La obra debe estar FINALIZADO para consultar el resumen económico final.';
+      return;
+    }
+    this.estadoFinal = 'cargando';
+    this.cargandoFinal = true;
+    const idObra = this.idObra;
+    this.peticionFinal = this.service.resumenFinal(idObra).pipe(finalize(() => {
+      this.cargandoFinal = false;
+      this.cdr.detectChanges();
+    })).subscribe({
+      next: response => {
+        if (!response.success || response.data?.obra?.estado_obra !== 'FINALIZADO' || response.data.obra.id_obra !== idObra) {
+          this.estadoFinal = 'error';
+          this.errorFinal = 'El servidor no devolvió un resumen válido para la obra finalizada.';
+          return;
+        }
+        this.resumenFinal = response.data;
+        this.lineaBase = response.data.linea_base;
+        this.estadoFinal = 'listo';
+      },
+      error: (error: ErrorHttp) => {
+        this.resumenFinal = null;
+        const detail = typeof error.error?.detail === 'string' ? error.error.detail : '';
+        this.estadoFinal = error.status === 401 || error.status === 403 ? 'autorizacion'
+          : error.status === 0 ? 'conexion'
+          : error.status === 404 && /linea base|línea base/i.test(detail) ? 'sin-linea-base'
+          : error.status === 409 && /FINALIZADO/.test(detail) ? 'no-finalizada' : 'error';
+        this.errorFinal = this.mensajeError(error, error.status === 0
+          ? 'No se pudo conectar con el servidor. Intenta nuevamente.'
+          : 'No se pudo consultar el resumen económico final.');
       }
     });
   }
@@ -177,12 +354,12 @@ export class ControlCostosComponent implements OnInit {
   cargarDatosControl(): void {
     if (!this.lineaBase || !this.idObra) return;
     this.cargando = true;
-    forkJoin({
+    this.contexto.add(forkJoin({
       comparacion: this.service.comparacion(this.idObra),
       resumen: this.service.resumen(this.idObra),
       costos: this.service.costos({ id_control_costo: this.lineaBase.id_control_costo, estado: this.filtroEstadoCosto || undefined }),
       ordenes: this.service.ordenes({ id_control_costo: this.lineaBase.id_control_costo, estado: this.filtroEstadoOrden || undefined })
-    }).pipe(finalize(() => { this.cargando = false; this.cdr.detectChanges(); })).pipe(this.reads.reemplazar('control')).subscribe({
+    }).pipe(finalize(() => { this.cargando = false; this.cdr.detectChanges(); })).subscribe({
       next: response => {
         this.partidas = response.comparacion.data.partidas || [];
         this.totales = response.resumen.data.resumen;
@@ -190,12 +367,12 @@ export class ControlCostosComponent implements OnInit {
         this.ordenes = response.ordenes.data || [];
       },
       error: error => this.mostrarError(this.mensajeError(error, 'No se pudo cargar el control de costos.'))
-    });
+    }));
   }
 
   filtrarCostos(): void {
     if (!this.lineaBase) return;
-    this.service.costos({ id_control_costo: this.lineaBase.id_control_costo, estado: this.filtroEstadoCosto || undefined }).pipe(this.reads.reemplazar('costos')).subscribe({
+    this.service.costos({ id_control_costo: this.lineaBase.id_control_costo, estado: this.filtroEstadoCosto || undefined }).subscribe({
       next: response => { this.costos = response.data || []; this.cdr.detectChanges(); },
       error: error => this.mostrarError(this.mensajeError(error, 'No se pudieron filtrar los costos.'))
     });
@@ -203,7 +380,7 @@ export class ControlCostosComponent implements OnInit {
 
   filtrarOrdenes(): void {
     if (!this.lineaBase) return;
-    this.service.ordenes({ id_control_costo: this.lineaBase.id_control_costo, estado: this.filtroEstadoOrden || undefined }).pipe(this.reads.reemplazar('ordenes')).subscribe({
+    this.service.ordenes({ id_control_costo: this.lineaBase.id_control_costo, estado: this.filtroEstadoOrden || undefined }).subscribe({
       next: response => { this.ordenes = response.data || []; this.cdr.detectChanges(); },
       error: error => this.mostrarError(this.mensajeError(error, 'No se pudieron filtrar las órdenes.'))
     });
@@ -372,6 +549,7 @@ export class ControlCostosComponent implements OnInit {
 
   private limpiarContexto(): void {
     this.presupuestos = []; this.idEstimacionSeleccionada = 0; this.lineaBase = null; this.costos = []; this.partidas = []; this.ordenes = []; this.totales = null;
+    this.manoObra = { trabajadores: [], jornadas: [] };
   }
 
   private mensajeError(error: unknown, fallback: string): string {

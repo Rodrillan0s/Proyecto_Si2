@@ -5,7 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { of, Subject, throwError } from 'rxjs';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ProyectoDetalleComponent } from './proyecto-detalle';
-import { ProyectosService, PersonalObra, ApiResponseSimple } from '../../../services/proyectos';
+import { ProyectosService, Proyecto, PersonalObra, ApiResponseSimple } from '../../../services/proyectos';
 import { AuthService } from '../../../services/auth';
 
 describe('Personal en el detalle del proyecto', () => {
@@ -14,21 +14,22 @@ describe('Personal en el detalle del proyecto', () => {
     nombre_rol: 'ELECTRICO', estado: 'ACTIVO'
   };
   let component: ProyectoDetalleComponent;
-  let proyectos: { listarPersonal: ReturnType<typeof vi.fn>; candidatosPersonal: ReturnType<typeof vi.fn>; asignarPersonal: ReturnType<typeof vi.fn> };
-  let auth: { obtenerUsuario: ReturnType<typeof vi.fn> };
+  let proyectos: { listarPersonal: ReturnType<typeof vi.fn>; candidatosPersonal: ReturnType<typeof vi.fn>; asignarPersonal: ReturnType<typeof vi.fn>; actualizarEstadoProyecto: ReturnType<typeof vi.fn> };
+  let auth: { obtenerUsuario: ReturnType<typeof vi.fn>; hasPermission: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     proyectos = {
       listarPersonal: vi.fn(() => of({ success: true, data: [] })),
       candidatosPersonal: vi.fn(() => of({ success: true, data: [jhon] })),
-      asignarPersonal: vi.fn(() => of({ success: true, message: 'Personal asignado correctamente.' }))
+      asignarPersonal: vi.fn(() => of({ success: true, message: 'Personal asignado correctamente.' })),
+      actualizarEstadoProyecto: vi.fn(() => of({ success: true, message: 'Estado actualizado' }))
     };
-    auth = { obtenerUsuario: vi.fn(() => ({ nombre_rol: 'ADMINISTRADOR_EMPRESA' })) };
+    auth = { obtenerUsuario: vi.fn(() => ({ nombre_rol: 'ADMINISTRADOR_EMPRESA' })), hasPermission: vi.fn(() => true) };
     TestBed.configureTestingModule({ providers: [
       { provide: ProyectosService, useValue: proyectos },
       { provide: AuthService, useValue: auth },
       { provide: ActivatedRoute, useValue: {} },
-      { provide: Router, useValue: {} },
+      { provide: Router, useValue: { navigate: vi.fn() } },
       { provide: HttpClient, useValue: {} },
       { provide: ChangeDetectorRef, useValue: { detectChanges: vi.fn() } },
       { provide: NgZone, useValue: { run: (fn: () => void) => fn() } },
@@ -38,6 +39,36 @@ describe('Personal en el detalle del proyecto', () => {
     component.idObra = 8;
     vi.spyOn(component, 'mostrarExito').mockImplementation(() => {});
     vi.spyOn(component, 'mostrarError').mockImplementation(() => {});
+  });
+
+  it('finaliza mediante el servicio existente y permite abrir CU32 después del éxito', () => {
+    component.proyecto = { id_obra: 8, estado_obra: 'ACTIVO' } as Proyecto;
+    vi.spyOn(component, 'cargarProyecto').mockImplementation(() => {});
+    component.cambiarEstado('FINALIZADO');
+    expect(proyectos.actualizarEstadoProyecto).toHaveBeenCalledWith(8, 'FINALIZADO');
+    expect(component.proyecto.estado_obra).toBe('FINALIZADO');
+    expect(component.puedeConsultarResumenFinal()).toBe(true);
+    component.irAResumenFinal();
+    expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/control-costos'], {
+      queryParams: { id_obra: 8, final: 'true' }
+    });
+  });
+
+  it('no marca la obra finalizada cuando el backend revierte el cierre', () => {
+    component.proyecto = { id_obra: 8, estado_obra: 'ACTIVO' } as Proyecto;
+    proyectos.actualizarEstadoProyecto.mockReturnValue(throwError(() => ({ status: 404,
+      error: { detail: 'La obra no tiene una linea base ACTIVA.' } })));
+    component.cambiarEstado('FINALIZADO');
+    expect(component.proyecto.estado_obra).toBe('ACTIVO');
+    expect(component.puedeConsultarResumenFinal()).toBe(false);
+    expect(component.mostrarError).toHaveBeenCalledWith('La obra no tiene una linea base ACTIVA.');
+  });
+
+  it('no ofrece navegación financiera sin el permiso existente', () => {
+    component.proyecto = { id_obra: 8, estado_obra: 'FINALIZADO' } as Proyecto;
+    auth.hasPermission.mockReturnValue(false);
+    component.irAResumenFinal();
+    expect(TestBed.inject(Router).navigate).not.toHaveBeenCalled();
   });
 
   it('consulta personal y candidatos de la obra para el administrador', () => {

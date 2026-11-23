@@ -1,6 +1,11 @@
+
 {
   "extends": "./tsconfig.spec.json",
-  "files": ["src/app/pages/gastos-operativos/gastos-operativos.spec.ts", "src/app/services/control-costos.service.spec.ts"],
-  "include": [],
-  "exclude": []
+   "files": ["src/app/pages/gastos-operativos/gastos-operativos.spec.ts", "src/app/services/control-costos.service.spec.ts"],
+  "include": [
+    "src/**/*.d.ts",
+    "src/app/services/control-costos.service.spec.ts",
+    "src/app/pages/control-costos/control-costos.spec.ts",
+    "src/app/pages/proyectos/detalle/proyecto-detalle.spec.ts"
+  ]
 }

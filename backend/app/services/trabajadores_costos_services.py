@@ -1,23 +1,8 @@
 from datetime import date
-from functools import wraps
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from app.repos import control_costos_repos, trabajadores_costos_repos
 from app.services import control_costos_services as costos
-
-
-def requiere_esquema_cu32(func):
-    @wraps(func)
-    def wrapped(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as exc:
-            if trabajadores_costos_repos.falta_esquema_cu32(exc):
-                raise costos.ControlCostosError(
-                    'CU32 requiere instalar migration_cu32_mano_obra_trabajadores.sql en el entorno designado.', 503
-                ) from exc
-            raise
-    return wrapped
 
 
 def _id(value, label):
@@ -49,26 +34,18 @@ def _dias(value):
     return days.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
-@requiere_esquema_cu32
 def listar_mano_obra(id_obra, token):
+    empresa = costos._empresa(token)
     _id(id_obra, "La obra")
-    if token.get("nombre_rol") == "ADMINISTRADOR":
-        obra_data = control_costos_repos.obtener_obra(None, id_obra)
-        if not obra_data:
-            raise costos.ControlCostosError("La obra no existe o no pertenece a su empresa.", 404)
-        empresa = obra_data["id_empresa"]
-    else:
-        empresa = costos._empresa(token)
-        if not control_costos_repos.obtener_obra(empresa, id_obra):
-            raise costos.ControlCostosError(
-                "La obra no existe o no pertenece a su empresa.", 404
-            )
+    if not control_costos_repos.obtener_obra(empresa, id_obra):
+        raise costos.ControlCostosError(
+            "La obra no existe o no pertenece a su empresa.", 404
+        )
     obra = trabajadores_costos_repos.listar_trabajadores_obra(empresa, id_obra)
     jornadas = trabajadores_costos_repos.listar_jornadas_obra(empresa, id_obra)
     return {"success": True, "data": {"trabajadores": obra, "jornadas": jornadas}}
 
 
-@requiere_esquema_cu32
 def registrar_salario(id_obra, id_usuario, data, token):
     empresa = costos._empresa(token)
     obra = _id(id_obra, "La obra")
@@ -88,7 +65,6 @@ def registrar_salario(id_obra, id_usuario, data, token):
     return {"success": True, "data": result}
 
 
-@requiere_esquema_cu32
 def registrar_jornada(id_obra, data, token):
     empresa = costos._empresa(token)
     obra = _id(id_obra, "La obra")

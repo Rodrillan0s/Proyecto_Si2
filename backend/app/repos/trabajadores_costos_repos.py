@@ -10,14 +10,6 @@ class TrabajadoresCostosConflictError(Exception):
     pass
 
 
-def falta_esquema_cu32(exc):
-    return isinstance(exc, errors.UndefinedTable) and any(
-        table in str(exc) for table in (
-            't_salario_trabajador', 't_jornada_trabajador_obra', 't_cu32_mano_obra_cierre'
-        )
-    )
-
-
 def _columns(db):
     if not db.cur or not db.cur.description:
         return []
@@ -312,13 +304,6 @@ def tiene_mano_obra_calculada(id_empresa, id_obra, db=None):
             fetchone=True,
         )
         return bool(row and row[0])
-    except errors.UndefinedTable as exc:
-        # CU17 sigue funcionando antes de instalar CU32. No hay cierres
-        # calculados si su tabla todavía no existe. Nunca ocultar un error
-        # dentro de una transacción compartida que quedaría abortada.
-        if own_connection and falta_esquema_cu32(exc):
-            return False
-        raise
     finally:
         if own_connection:
             db.close_connection()
