@@ -10,10 +10,12 @@ import { AuthService } from '../../services/auth';
 import {
   CheckoutFlowService,
   ComprobantePago,
+  FiltrosTransacciones,
   PagoDetalle,
   PagoEmpresa,
   PagosService,
   PlanPago,
+  TransaccionSaaS,
 } from '../../services/pagos';
 import { PlanSuscripcion, SuscripcionEmpresa, SuscripcionService } from '../../services/suscripcion';
 
@@ -42,7 +44,11 @@ export class PagosComponent implements OnInit {
   planes = signal<PlanVista[]>([]);
   suscripcion = signal<SuscripcionEmpresa | null>(null);
   historial = signal<PagoEmpresa[]>([]);
+<<<<<<< HEAD
   transaccionesGlobales = signal<PagoEmpresa[]>([]);
+=======
+  transacciones = signal<TransaccionSaaS[]>([]);
+>>>>>>> ff3f2cea18858144e7af556633c9adc8872d3f3a
   comprobante = signal<ComprobantePago | null>(null);
   pagoConsultado = signal<PagoDetalle | null>(null);
 
@@ -50,6 +56,7 @@ export class PagosComponent implements OnInit {
   filtroEstado = signal<string>('TODOS');
 
   cargando = signal(true);
+  cargandoTransacciones = signal(false);
   cargandoComprobante = signal(false);
   procesandoPlan = signal<string | null>(null);
   verificando = signal(false);
@@ -58,6 +65,9 @@ export class PagosComponent implements OnInit {
   error = signal('');
   mensaje = signal('');
   idConsulta: number | null = null;
+  fechaDesde = '';
+  fechaHasta = '';
+  nombreEmpresa = '';
   private checkoutKeys = new Map<string, string>();
 
   readonly transaccionesFiltradas = computed(() => {
@@ -120,7 +130,12 @@ export class PagosComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.esGlobal) {
+<<<<<<< HEAD
       this.cargarGlobal();
+=======
+      this.cargando.set(false);
+      this.cargarTransacciones();
+>>>>>>> ff3f2cea18858144e7af556633c9adc8872d3f3a
       return;
     }
     this.cargarEmpresa();
@@ -217,6 +232,7 @@ export class PagosComponent implements OnInit {
     return this.suscripcion()?.codigo_plan === plan.codigo;
   }
 
+<<<<<<< HEAD
   cambiarFiltroEstado(estado: string): void {
     this.filtroEstado.set(estado);
   }
@@ -228,6 +244,55 @@ export class PagosComponent implements OnInit {
 
   cerrarDetalleConsultado(): void {
     this.pagoConsultado.set(null);
+=======
+  cargarTransacciones(): void {
+    if (!this.esGlobal || this.cargandoTransacciones()) return;
+    if (this.fechaDesde && this.fechaHasta && this.fechaHasta < this.fechaDesde) {
+      this.error.set('La fecha hasta no puede ser anterior a la fecha desde.');
+      return;
+    }
+    this.cargandoTransacciones.set(true);
+    this.error.set('');
+    const filtros: FiltrosTransacciones = {
+      fecha_desde: this.fechaDesde || undefined,
+      fecha_hasta: this.fechaHasta || undefined,
+      nombre_empresa: this.nombreEmpresa.trim() || undefined,
+    };
+    this.pagosApi.transacciones(filtros).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: respuesta => {
+        this.transacciones.set(respuesta.data);
+        this.cargandoTransacciones.set(false);
+      },
+      error: error => {
+        this.cargandoTransacciones.set(false);
+        this.error.set(this.errorTexto(error, 'No se pudieron cargar las transacciones SaaS.'));
+      },
+    });
+  }
+
+  restablecerFiltros(): void {
+    this.fechaDesde = '';
+    this.fechaHasta = '';
+    this.nombreEmpresa = '';
+    this.cargarTransacciones();
+  }
+
+  etiquetaMovimiento(transaccion: TransaccionSaaS): string {
+    switch (transaccion.tipo) {
+      case 'COMPRA': return 'Compra';
+      case 'RENOVACION': return 'Renovación';
+      case 'CAMBIO_PLAN': return 'Cambio de plan';
+      case 'CANCELACION': return 'Cancelación';
+      case 'VENCIMIENTO_CALCULADO': return 'Vencimiento calculado';
+    }
+  }
+
+  fechaMovimiento(transaccion: TransaccionSaaS): string {
+    if (!transaccion.es_calculado) return this.fecha(transaccion.fecha);
+    return new Intl.DateTimeFormat('es-BO', {
+      dateStyle: 'medium', timeZone: 'America/La_Paz',
+    }).format(new Date(transaccion.fecha));
+>>>>>>> ff3f2cea18858144e7af556633c9adc8872d3f3a
   }
 
   buscarPago(preservarMensaje = false): void {

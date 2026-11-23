@@ -1,4 +1,7 @@
+from datetime import date
+
 from fastapi import APIRouter, Depends, Header, Request
+from fastapi import Query
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.services import pago_services as service
@@ -43,11 +46,28 @@ def pagos_mi_empresa(
     return {'success': True, 'data': service.listar_pagos_mi_empresa(token)}
 
 
+<<<<<<< HEAD
 @router.get('/global')
 def pagos_globales(
     token: dict = Depends(exigir_rol('ADMINISTRADOR')),
 ):
     return {'success': True, 'data': service.listar_pagos_globales(token)}
+=======
+@router.get('/transacciones')
+def transacciones(
+    fecha_desde: date | None = Query(None),
+    fecha_hasta: date | None = Query(None),
+    nombre_empresa: str | None = Query(None, max_length=100),
+    limite: int = Query(50, ge=1, le=100),
+    token: dict = Depends(exigir_rol('ADMINISTRADOR')),
+):
+    return {
+        'success': True,
+        'data': service.listar_transacciones(
+            token, fecha_desde, fecha_hasta, nombre_empresa, limite,
+        ),
+    }
+>>>>>>> ff3f2cea18858144e7af556633c9adc8872d3f3a
 
 
 @router.get('/{id_pago}/comprobante')
@@ -78,4 +98,3 @@ def pago(id_pago: int, token: dict = Depends(verificar_token)):
         from fastapi import HTTPException
         raise HTTPException(422, 'Identificador de pago inválido.')
     return {'success': True, 'data': service.consultar_pago(token, id_pago)}
-
