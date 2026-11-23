@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'api_client.dart';
 
@@ -18,6 +19,65 @@ class UnidadService {
       }
 
       return [];
+    } on DioException catch (e) {
+      throw Exception(_parsearErrorDio(e));
+    }
+  }
+
+  /// CU30: Lista las unidades inmobiliarias asignadas al cliente autenticado
+  Future<List<Map<String, dynamic>>> listarUnidadesCliente() async {
+    try {
+      final response = await ApiClient.dio.get('/api/crm/cliente/unidades');
+      final data = response.data;
+
+      if (data is Map && data['data'] is List) {
+        final list = data['data'] as List;
+        return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+
+      if (data is List) {
+        return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+
+      return [];
+    } on DioException catch (e) {
+      throw Exception(_parsearErrorDio(e));
+    }
+  }
+
+  /// CU30 / HU115: Lista las fotografías autorizadas para una unidad asignada al cliente
+  Future<List<Map<String, dynamic>>> listarFotografiasUnidadCliente(int idUnidad) async {
+    try {
+      final response = await ApiClient.dio.get('/api/crm/cliente/unidades/$idUnidad/fotografias');
+      final data = response.data;
+
+      if (data is Map && data['data'] is List) {
+        final list = data['data'] as List;
+        return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+
+      if (data is List) {
+        return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+
+      return [];
+    } on DioException catch (e) {
+      throw Exception(_parsearErrorDio(e));
+    }
+  }
+
+  /// CU30 / HU115: Descarga los bytes del archivo binario de una fotografía mediante petición autenticada
+  Future<Uint8List> descargarArchivoFotografia(String urlArchivo) async {
+    try {
+      final response = await ApiClient.dio.get<List<int>>(
+        urlArchivo,
+        options: Options(responseType: ResponseType.bytes),
+      );
+
+      if (response.data != null) {
+        return Uint8List.fromList(response.data!);
+      }
+      throw Exception('No se recibieron datos de imagen.');
     } on DioException catch (e) {
       throw Exception(_parsearErrorDio(e));
     }
