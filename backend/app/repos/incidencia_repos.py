@@ -537,6 +537,93 @@ def obtener_evidencia(id_incidencia, id_evidencia, id_empresa=None):
         db.close_connection()
 
 
+def listar_fotografias_cliente_cu30(id_cliente, id_unidad, id_empresa):
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        rows = db.execute_query(
+            """
+            SELECT ev.id_evidencia, ev.id_incidencia, ev.nombre_archivo,
+                   ev.tipo_mime, ev.tamano_bytes, ev.fecha
+            FROM obras.t_incidencia_evidencia ev
+            JOIN obras.t_incidencia i ON i.id_incidencia = ev.id_incidencia
+            JOIN obras.t_unidad_construccion u ON u.id_unidad = i.id_unidad
+            JOIN obras.t_estructura_obra e
+              ON e.id_estructura = u.id_estructura
+             AND e.id_obra = i.id_obra
+            JOIN obras.t_obra o ON o.id_obra = i.id_obra
+            JOIN obras.t_crm_cliente c
+              ON c.id_cliente = %s
+             AND c.id_empresa = %s
+             AND c.tipo_cliente = 'CLIENTE'
+            WHERE i.id_unidad = %s
+              AND o.id_empresa = %s
+              AND EXISTS (
+                  SELECT 1
+                  FROM obras.t_crm_cliente_unidad cu
+                  WHERE cu.id_cliente = c.id_cliente
+                    AND cu.id_unidad = u.id_unidad
+              )
+              AND ev.tipo_mime IN ('image/jpeg', 'image/png', 'image/webp', 'image/gif')
+            ORDER BY ev.fecha DESC, ev.id_evidencia DESC;
+            """,
+            (id_cliente, id_empresa, id_unidad, id_empresa),
+            fetchall=True,
+        ) or []
+        return [
+            {
+                "id_evidencia": row[0],
+                "id_incidencia": row[1],
+                "nombre_archivo": row[2],
+                "tipo_mime": row[3],
+                "tamano_bytes": row[4],
+                "fecha": row[5].isoformat() if row[5] else None,
+            }
+            for row in rows
+        ]
+    finally:
+        db.close_connection()
+
+
+def obtener_fotografia_cliente_cu30(id_cliente, id_unidad, id_evidencia, id_empresa):
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        row = db.execute_query(
+            """
+            SELECT ev.id_incidencia, ev.ruta_archivo, ev.nombre_archivo, ev.tipo_mime
+            FROM obras.t_incidencia_evidencia ev
+            JOIN obras.t_incidencia i ON i.id_incidencia = ev.id_incidencia
+            JOIN obras.t_unidad_construccion u ON u.id_unidad = i.id_unidad
+            JOIN obras.t_estructura_obra e
+              ON e.id_estructura = u.id_estructura
+             AND e.id_obra = i.id_obra
+            JOIN obras.t_obra o ON o.id_obra = i.id_obra
+            JOIN obras.t_crm_cliente c
+              ON c.id_cliente = %s
+             AND c.id_empresa = %s
+             AND c.tipo_cliente = 'CLIENTE'
+            WHERE ev.id_evidencia = %s
+              AND i.id_unidad = %s
+              AND o.id_empresa = %s
+              AND EXISTS (
+                  SELECT 1
+                  FROM obras.t_crm_cliente_unidad cu
+                  WHERE cu.id_cliente = c.id_cliente
+                    AND cu.id_unidad = u.id_unidad
+              )
+              AND ev.tipo_mime IN ('image/jpeg', 'image/png', 'image/webp', 'image/gif');
+            """,
+            (id_cliente, id_empresa, id_evidencia, id_unidad, id_empresa),
+            fetchone=True,
+        )
+        if not row:
+            return None
+        return dict(zip(("id_incidencia", "ruta_archivo", "nombre_archivo", "tipo_mime"), row))
+    finally:
+        db.close_connection()
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # ÓRDENES DE TRABAJO AFECTADAS (relación M:N obras.t_incidencia_orden_trabajo)
 # Solo LECTURA de obras.t_orden_trabajo: no se modifica nada del módulo de OT.

@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Body, Depends, HTTPException, Request
+from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, Request, UploadFile
 from app.services import unidad_services, incidencia_services
-from app.utils.security import exigir_permiso, verificar_token
+from app.utils.security import exigir_permiso, obtener_permisos_rol, verificar_token
 
 
 router = APIRouter(prefix="/api/proyectos/{id_obra}/unidades", tags=["Unidades de Construcción"])
@@ -140,5 +140,58 @@ def put_materiales(id_obra: int, id_unidad: int, request: Request, data: dict = 
                    token_data: dict = Depends(exigir_permiso("Modificar_obras"))):
     try:
         return unidad_services.reemplazar_materiales(id_obra, id_unidad, data, token_data, _ip(request))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GESTIÓN Y CARGA DE FOTOGRAFÍAS DE UNIDAD (HU115 - Administrativo/Operativo)
+# ─────────────────────────────────────────────────────────────────────────────
+router_unidades = APIRouter(prefix="/api/unidades", tags=["Unidades de Construcción - Fotografías"])
+
+
+def acceso_carga_fotografias(token_data: dict = Depends(verificar_token)):
+    rol = str(token_data.get("nombre_rol") or "").strip().upper()
+    if rol == "ADMINISTRADOR":
+        return token_data
+    permisos = obtener_permisos_rol(rol)
+    roles_permitidos = {"JEFE DE OBRA", "JEFE_OBRA", "RESPONSABLE", "ADMINISTRADOR_EMPRESA"}
+    if "Modificar_obras" in permisos or "Registrar_avances" in permisos or rol in roles_permitidos:
+        return token_data
+    raise HTTPException(status_code=403, detail="No tiene permisos para gestionar fotografías de unidades.")
+
+
+@router_unidades.post("/{id_unidad}/fotografias", status_code=201)
+async def post_fotografia_unidad(
+    id_unidad: int,
+    request: Request,
+    archivo: UploadFile = File(...),
+    es_principal: bool = Form(False),
+    orden: int = Form(1),
+    token_data: dict = Depends(acceso_carga_fotografias),
+):
+    try:
+        contenido = await archivo.read()
+        return unidad_services.cargar_fotografia_unidad(
+            id_unidad=id_unidad,
+            token_data=token_data,
+            filename=archivo.filename,
+            content_type=archivo.content_type,
+            contenido=contenido,
+            es_principal=es_principal,
+            orden=orden,
+            client_ip=_ip(request),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router_unidades.get("/{id_unidad}/fotografias")
+def get_fotografias_unidad_admin(
+    id_unidad: int,
+    token_data: dict = Depends(acceso_carga_fotografias),
+):
+    try:
+        return unidad_services.listar_fotografias_unidad(id_unidad, token_data)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

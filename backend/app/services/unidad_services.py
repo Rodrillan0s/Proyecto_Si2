@@ -1,3 +1,6 @@
+import os
+import uuid
+from pathlib import Path
 from app.repos import unidad_repos, bitacora_repos, estructura_repos
 from decimal import Decimal, InvalidOperation
 
@@ -294,3 +297,100 @@ def reemplazar_materiales(id_obra, id_unidad, data, token_data, client_ip="unkno
         ip=client_ip, estado="EXITOSO"
     )
     return res
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FOTOGRAFÍAS DE UNIDAD (HU115 - Carga y Gestión Operativa)
+# ─────────────────────────────────────────────────────────────────────────────
+ALLOWED_FOTO_MIME = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+MAX_FOTO_BYTES = 10 * 1024 * 1024  # 10 MB
+
+
+def cargar_fotografia_unidad(
+    id_unidad: int,
+    token_data: dict,
+    filename: str,
+    content_type: str,
+    contenido: bytes,
+    es_principal: bool = False,
+    orden: int = 1,
+    client_ip: str = "unknown",
+):
+    if not contenido:
+        raise ValueError("El archivo está vacío.")
+    if len(contenido) > MAX_FOTO_BYTES:
+        raise ValueError("El archivo supera el tamaño máximo permitido (10 MB).")
+
+    tipo = (content_type or "").split(";")[0].strip().lower()
+    if tipo not in ALLOWED_FOTO_MIME:
+        raise ValueError("Solo se permiten fotografías (JPEG, PNG, WEBP o GIF).")
+
+    info = unidad_repos.obtener_empresa_de_unidad(id_unidad)
+    if not info:
+        raise ValueError("La unidad no existe.")
+
+    rol = str(token_data.get("nombre_rol") or "").strip().upper()
+    if rol != "ADMINISTRADOR":
+        empresa_token = token_data.get("id_empresa")
+        if not empresa_token or int(empresa_token) != int(info["id_empresa"]):
+            raise ValueError("No tiene autorización para cargar fotografías en esta unidad.")
+
+    nombre_base = os.path.basename(filename or "foto.jpg")
+    ext = os.path.splitext(nombre_base)[1].lower()
+    if ext not in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:
+        ext = ".jpg" if tipo == "image/jpeg" else ("." + tipo.split("/")[1])
+
+    nombre_disco = f"{uuid.uuid4().hex}{ext}"
+    backend_dir = Path(__file__).resolve().parents[2]
+    directorio_destino = backend_dir / "uploads" / "unidades" / str(id_unidad)
+    directorio_destino.mkdir(parents=True, exist_ok=True)
+
+    ruta_fisica = directorio_destino / nombre_disco
+    with open(ruta_fisica, "wb") as f:
+        f.write(contenido)
+
+    ruta_relativa = f"uploads/unidades/{id_unidad}/{nombre_disco}"
+    id_usuario = token_data.get("nro_usuario")
+    foto = unidad_repos.insertar_fotografia_unidad(
+        id_unidad=id_unidad,
+        ruta_archivo=ruta_relativa,
+        nombre_archivo=nombre_base,
+        tipo_mime=tipo,
+        tamano_bytes=len(contenido),
+        es_principal=bool(es_principal),
+        orden=int(orden or 1),
+        id_usuario=id_usuario,
+    )
+    try:
+        bitacora_repos.registrar_bitacora(
+            id_usuario=id_usuario,
+            modulo="UNIDADES_CONSTRUCCION",
+            accion="CARGAR_FOTOGRAFIA_UNIDAD",
+            descripcion=f"Fotografía {foto['id_fotografia']} ({nombre_base}) cargada en unidad {id_unidad}.",
+            ip=client_ip,
+            estado="EXITOSO",
+        )
+    except Exception:
+        pass
+
+    return {
+        "success": True,
+        "id_fotografia": foto["id_fotografia"],
+        "message": "Fotografía cargada exitosamente.",
+        "data": foto,
+    }
+
+
+def listar_fotografias_unidad(id_unidad: int, token_data: dict):
+    info = unidad_repos.obtener_empresa_de_unidad(id_unidad)
+    if not info:
+        raise ValueError("La unidad no existe.")
+
+    rol = str(token_data.get("nombre_rol") or "").strip().upper()
+    if rol != "ADMINISTRADOR":
+        empresa_token = token_data.get("id_empresa")
+        if not empresa_token or int(empresa_token) != int(info["id_empresa"]):
+            raise ValueError("No tiene autorización para visualizar fotografías de esta unidad.")
+
+    fotos = unidad_repos.listar_fotografias_unidad_admin(id_unidad)
+    return {"success": True, "data": fotos}

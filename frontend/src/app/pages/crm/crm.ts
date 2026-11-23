@@ -3,9 +3,10 @@ import { ContextoOperativo } from '../../services/contexto-operativo';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subject, debounceTime, distinctUntilChanged, finalize } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../services/auth';
+import { StatusBadgeComponent } from '../../components/ui/status-badge';
 import {
   CrmService,
   ClienteCRM,
@@ -16,14 +17,15 @@ import {
   TipoCliente,
   TipoInteraccion,
   EstadoAsociacionUnidad,
-  AsesorComercial
+  AsesorComercial,
+  SolicitudConstructoraCu30
 } from '../../services/crm.service';
 import { AsistenteService } from '../../services/asistente.service';
 
 @Component({
   selector: 'app-crm',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, StatusBadgeComponent],
   templateUrl: './crm.html',
   styleUrl: './crm.css'
 })
@@ -38,7 +40,22 @@ export class CrmComponent implements OnInit {
   private busqueda$ = new Subject<string>();
 
   // Pestaña activa
-  pestanaActiva: 'prospectos' | 'clientes' = 'prospectos';
+  pestanaActiva: 'prospectos' | 'clientes' | 'solicitudes' = 'prospectos';
+
+  // HU117: Solicitudes de Clientes (Constructora)
+  solicitudesConstructora: SolicitudConstructoraCu30[] = [];
+  cargandoSolicitudes = false;
+  filtroEstadoSolicitud: string = 'TODAS';
+  busquedaSolicitud: string = '';
+  mostrarModalResponder = false;
+  solicitudSeleccionada: SolicitudConstructoraCu30 | null = null;
+  guardandoRespuesta = false;
+  errorRespuesta = '';
+  formRespuesta = {
+    estado: 'EN_PROCESO',
+    respuesta: '',
+    id_fotografia_evidencia: null as number | null
+  };
 
   // Métricas
   metricas: MetricasCRM | null = null;
@@ -139,17 +156,66 @@ export class CrmComponent implements OnInit {
     observaciones: ''
   };
 
+  // Formulario de Comunicación Directa al Cliente (HU116)
+  mostrarModalComunicacion = false;
+  guardandoComunicacion = false;
+  clienteParaComunicacion: ClienteCRM | null = null;
+  unidadesClienteParaComunicacion: UnidadAsociadaCRM[] = [];
+  cargandoUnidadesParaComunicacion = false;
+  formComunicacion: {
+    id_cliente: number | null;
+    id_obra: number | null;
+    id_unidad: number | null;
+    titulo: string;
+    cuerpo: string;
+    tipo_referencia: string;
+  } = {
+    id_cliente: null,
+    id_obra: null,
+    id_unidad: null,
+    titulo: '',
+    cuerpo: '',
+    tipo_referencia: 'COMUNICACION'
+  };
+
+  get conteoSolicitudesPendientes(): number {
+    return this.solicitudesConstructora.filter(s => (s.estado || '').toUpperCase() === 'PENDIENTE').length;
+  }
+
+  get solicitudesFiltradas(): SolicitudConstructoraCu30[] {
+    return this.solicitudesConstructora.filter(s => {
+      const e = (s.estado || '').toUpperCase();
+      const coincideEstado = !this.filtroEstadoSolicitud || this.filtroEstadoSolicitud === 'TODAS'
+        ? true
+        : e === this.filtroEstadoSolicitud.toUpperCase();
+
+      const q = this.busquedaSolicitud.trim().toLowerCase();
+      if (!q) return coincideEstado;
+
+      const searchable = [
+        s.nombre_cliente || '',
+        s.codigo_unidad || '',
+        s.nombre_obra || '',
+        s.titulo || s.asunto || '',
+        s.descripcion || '',
+        s.estado || ''
+      ].join(' ').toLowerCase();
+
+      return coincideEstado && searchable.includes(q);
+    });
+  }
+
   // Mensajes de estado
   mensajeExito = '';
   mensajeError = '';
 
   ngOnInit(): void {
-    this.contexto.proteger(() => this.mostrarModalFormulario || this.mostrarModalInteraccion || this.mostrarModalCambiarEtapa || this.mostrarModalAsociarUnidad, this.destroyRef);
-    this.contexto.protegerEscritura(() => this.guardandoFormulario || this.guardandoInteraccion || this.guardandoCambioEtapa || this.guardandoAsociacion, this.destroyRef);
+    this.contexto.proteger(() => this.mostrarModalFormulario || this.mostrarModalInteraccion || this.mostrarModalCambiarEtapa || this.mostrarModalAsociarUnidad || this.mostrarModalComunicacion || this.mostrarModalResponder, this.destroyRef);
+    this.contexto.protegerEscritura(() => this.guardandoFormulario || this.guardandoInteraccion || this.guardandoCambioEtapa || this.guardandoAsociacion || this.guardandoComunicacion || this.guardandoRespuesta, this.destroyRef);
     this.contexto.empresa$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-      this.mostrarModalFormulario = false; this.mostrarModalDetalle = false; this.mostrarModalInteraccion = false; this.mostrarModalCambiarEtapa = false; this.mostrarModalAsociarUnidad = false; this.clienteSeleccionado = null; this.unidadesDisponibles = [];
+      this.mostrarModalFormulario = false; this.mostrarModalDetalle = false; this.mostrarModalInteraccion = false; this.mostrarModalCambiarEtapa = false; this.mostrarModalAsociarUnidad = false; this.mostrarModalComunicacion = false; this.mostrarModalResponder = false; this.solicitudSeleccionada = null; this.clienteParaComunicacion = null; this.clienteSeleccionado = null; this.unidadesDisponibles = [];
       this.reads.cancelar(); this.clientes = []; this.pagina = 1; this.filtroAsesor = null;
-      this.cargarMetricas(); this.cargarAsesores(); this.cargarLista();
+      this.cargarMetricas(); this.cargarAsesores(); this.cargarLista(); this.cargarSolicitudesConstructora();
     });
 
     // Suscripción reactiva para buscador con debounce
@@ -184,7 +250,7 @@ export class CrmComponent implements OnInit {
   }
 
   // ── Navegación entre pestañas ─────────────────────────────────────────────
-  cambiarPestana(p: 'prospectos' | 'clientes' | 'asistente_ia') {
+  cambiarPestana(p: 'prospectos' | 'clientes' | 'solicitudes' | 'asistente_ia') {
     if (p === 'asistente_ia') { this.asistente.open(); return; }
     this.pestanaActiva = p;
     this.limpiarMensajes();
@@ -198,7 +264,127 @@ export class CrmComponent implements OnInit {
       this.filtroEstado = '';
       this.pagina = 1;
       this.cargarLista();
+    } else if (p === 'solicitudes') {
+      this.cargarSolicitudesConstructora();
     }
+  }
+
+  // ── HU117: Gestión de Solicitudes de Clientes ─────────────────────────────
+  cargarSolicitudesConstructora(): void {
+    this.cargandoSolicitudes = true;
+    this.crmService.listarSolicitudesConstructora()
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          this.cargandoSolicitudes = false;
+          this.cdr.markForCheck();
+        })
+      )
+      .subscribe({
+        next: res => {
+          this.solicitudesConstructora = (res && res.success) ? (res.data || []) : [];
+          this.cdr.detectChanges();
+        },
+        error: err => {
+          console.error('Error al cargar solicitudes de constructora:', err);
+          this.solicitudesConstructora = [];
+          this.cdr.detectChanges();
+        }
+      });
+  }
+
+  abrirModalResponder(sol: SolicitudConstructoraCu30): void {
+    this.solicitudSeleccionada = sol;
+    this.errorRespuesta = '';
+    const actual = (sol.estado || '').toUpperCase();
+    let estadoSugerido = 'EN_PROCESO';
+    if (actual === 'PENDIENTE') {
+      estadoSugerido = 'EN_PROCESO';
+    } else if (actual === 'EN_PROCESO') {
+      estadoSugerido = 'ATENDIDA';
+    } else {
+      estadoSugerido = actual;
+    }
+
+    this.formRespuesta = {
+      estado: estadoSugerido,
+      respuesta: sol.respuesta || '',
+      id_fotografia_evidencia: sol.id_fotografia_evidencia || null
+    };
+    this.mostrarModalResponder = true;
+  }
+
+  cerrarModalResponder(): void {
+    this.mostrarModalResponder = false;
+    this.solicitudSeleccionada = null;
+    this.errorRespuesta = '';
+    this.guardandoRespuesta = false;
+  }
+
+  obtenerEstadosDisponibles(estadoActual: string): { valor: string; label: string }[] {
+    const actual = (estadoActual || '').toUpperCase();
+    if (actual === 'PENDIENTE') {
+      return [
+        { valor: 'EN_PROCESO', label: '🟡 EN PROCESO' },
+        { valor: 'ATENDIDA', label: '🟢 ATENDIDA' },
+        { valor: 'RECHAZADA', label: '🔴 RECHAZADA' }
+      ];
+    }
+    if (actual === 'EN_PROCESO') {
+      return [
+        { valor: 'EN_PROCESO', label: '🟡 EN PROCESO' },
+        { valor: 'ATENDIDA', label: '🟢 ATENDIDA' },
+        { valor: 'RECHAZADA', label: '🔴 RECHAZADA' }
+      ];
+    }
+    return [
+      { valor: actual, label: actual === 'ATENDIDA' ? '🟢 ATENDIDA' : '🔴 RECHAZADA' },
+      { valor: 'EN_PROCESO', label: '🟡 REABRIR (EN PROCESO)' }
+    ];
+  }
+
+  guardarRespuestaSolicitud(): void {
+    if (!this.solicitudSeleccionada) return;
+    this.errorRespuesta = '';
+
+    const estadoNuevo = (this.formRespuesta.estado || '').trim().toUpperCase();
+    const textoRespuesta = (this.formRespuesta.respuesta || '').trim();
+
+    if (estadoNuevo === 'ATENDIDA' && !textoRespuesta) {
+      this.errorRespuesta = 'Debe ingresar la respuesta oficial de la constructora para dar por ATENDIDA la solicitud.';
+      return;
+    }
+
+    if (estadoNuevo === 'RECHAZADA' && !textoRespuesta) {
+      this.errorRespuesta = 'Debe ingresar el motivo o justificación para dar por RECHAZADA la solicitud.';
+      return;
+    }
+
+    this.guardandoRespuesta = true;
+    const payload = {
+      estado: estadoNuevo,
+      respuesta: textoRespuesta || undefined,
+      id_fotografia_evidencia: this.formRespuesta.id_fotografia_evidencia || undefined
+    };
+
+    this.crmService.responderSolicitudConstructora(this.solicitudSeleccionada.id_solicitud, payload)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          this.guardandoRespuesta = false;
+          this.cdr.markForCheck();
+        })
+      )
+      .subscribe({
+        next: () => {
+          this.mostrarExito(`Solicitud #${this.solicitudSeleccionada?.id_solicitud} actualizada a estado ${estadoNuevo} correctamente.`);
+          this.cerrarModalResponder();
+          this.cargarSolicitudesConstructora();
+        },
+        error: err => {
+          this.errorRespuesta = err?.error?.detail || 'No se pudo registrar la respuesta de la constructora.';
+        }
+      });
   }
 
   onSearch(event: Event) {
@@ -544,6 +730,116 @@ export class CrmComponent implements OnInit {
         this.mostrarError(err.error?.detail || 'Error al actualizar estado de la asociación.');
       }
     });
+  }
+
+  // ── Emisión de Comunicaciones Directas (HU116) ───────────────────────────
+  abrirModalComunicacion(c: ClienteCRM, unidadPrevia?: UnidadAsociadaCRM) {
+    this.clienteParaComunicacion = c;
+    this.formComunicacion = {
+      id_cliente: c.id_cliente,
+      id_obra: unidadPrevia ? unidadPrevia.id_obra : null,
+      id_unidad: unidadPrevia ? unidadPrevia.id_unidad : null,
+      titulo: '',
+      cuerpo: '',
+      tipo_referencia: 'COMUNICACION'
+    };
+    this.limpiarMensajes();
+    this.mostrarModalComunicacion = true;
+
+    if (this.clienteSeleccionado && this.clienteSeleccionado.id_cliente === c.id_cliente && this.unidadesAsociadas.length > 0) {
+      this.unidadesClienteParaComunicacion = this.unidadesAsociadas;
+    } else {
+      this.cargandoUnidadesParaComunicacion = true;
+      this.crmService.obtenerDetalleHistorial(c.id_cliente, this.auth.obtenerIdEmpresaActiva() || undefined)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (res) => {
+            if (res && res.success) {
+              this.unidadesClienteParaComunicacion = res.data.unidades_asociadas || [];
+            }
+            this.cargandoUnidadesParaComunicacion = false;
+            this.cdr.detectChanges();
+          },
+          error: () => {
+            this.unidadesClienteParaComunicacion = [];
+            this.cargandoUnidadesParaComunicacion = false;
+            this.cdr.detectChanges();
+          }
+        });
+    }
+  }
+
+  alSeleccionarUnidadComunicacion(idUnidad: any) {
+    if (!idUnidad) {
+      this.formComunicacion.id_unidad = null;
+      return;
+    }
+    const id = Number(idUnidad);
+    this.formComunicacion.id_unidad = id;
+    const u = this.unidadesClienteParaComunicacion.find(item => item.id_unidad === id);
+    if (u && u.id_obra) {
+      this.formComunicacion.id_obra = u.id_obra;
+    }
+  }
+
+  cerrarModalComunicacion() {
+    this.mostrarModalComunicacion = false;
+    this.clienteParaComunicacion = null;
+    this.unidadesClienteParaComunicacion = [];
+    this.guardandoComunicacion = false;
+    this.formComunicacion = {
+      id_cliente: null,
+      id_obra: null,
+      id_unidad: null,
+      titulo: '',
+      cuerpo: '',
+      tipo_referencia: 'COMUNICACION'
+    };
+  }
+
+  enviarComunicacion() {
+    if (!this.clienteParaComunicacion || !this.formComunicacion.id_cliente) return;
+    if (!this.formComunicacion.titulo.trim()) {
+      this.mostrarError('El título de la comunicación es obligatorio.');
+      return;
+    }
+    if (!this.formComunicacion.cuerpo.trim()) {
+      this.mostrarError('El mensaje de la comunicación es obligatorio.');
+      return;
+    }
+
+    this.guardandoComunicacion = true;
+    this.limpiarMensajes();
+
+    const payload = {
+      id_cliente: this.formComunicacion.id_cliente,
+      id_obra: this.formComunicacion.id_obra ? Number(this.formComunicacion.id_obra) : null,
+      id_unidad: this.formComunicacion.id_unidad ? Number(this.formComunicacion.id_unidad) : null,
+      titulo: this.formComunicacion.titulo.trim(),
+      cuerpo: this.formComunicacion.cuerpo.trim(),
+      tipo_referencia: this.formComunicacion.tipo_referencia || 'COMUNICACION'
+    };
+
+    this.crmService.enviarComunicacionCliente(payload)
+      .pipe(
+        finalize(() => {
+          this.guardandoComunicacion = false;
+          this.cdr.detectChanges();
+        })
+      )
+      .subscribe({
+        next: (res) => {
+          this.guardandoComunicacion = false;
+          this.cerrarModalComunicacion();
+          this.mostrarExito(res?.message || 'Comunicación enviada exitosamente al cliente.');
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          this.guardandoComunicacion = false;
+          this.mostrarError(err.error?.detail || 'Error al enviar comunicación al cliente.');
+          this.cdr.detectChanges();
+        }
+      });
   }
 
   // ── Helpers UI y Pipeline ────────────────────────────────────────────────

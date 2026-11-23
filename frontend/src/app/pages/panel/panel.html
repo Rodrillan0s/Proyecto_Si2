@@ -680,83 +680,900 @@
     </ng-container>
 
     <!-- --------------------------------------------------------------------- -->
-    <!-- 5. DASHBOARD: CLIENTE (PORTAL DE SEGUIMIENTO DE PROYECTOS)           -->
+    <!-- 5. DASHBOARD: CLIENTE (PORTAL DE SEGUIMIENTO DE PROYECTOS - CU30)    -->
     <!-- --------------------------------------------------------------------- -->
     <ng-container *ngIf="rolUsuario === 'CLIENTE'">
       <!-- Bienvenida Ejecutiva -->
       <div class="rounded-xl border border-amber-200/60 dark:border-amber-900/40 bg-linear-to-r from-amber-50/60 to-white dark:from-slate-900 dark:to-slate-900/80 p-6 shadow-xs">
         <div class="max-w-2xl space-y-2">
           <h3 class="text-lg font-bold text-slate-900 dark:text-white">
-            Bienvenido a su Portal de Proyecto, {{ usuarioActual?.nombre_completo }}
+            Bienvenido a su Portal de Cliente, {{ usuarioActual?.nombre_completo }}
           </h3>
           <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-            Aquí puede realizar el seguimiento en tiempo real del progreso de sus construcciones contratadas con {{ usuarioActual?.nombre_empresa || 'OBRATEC' }}, consultar hitos concluidos y ponerse en contacto con su equipo a cargo.
+            Consulte en tiempo real el avance físico de sus unidades, galería de fotografías autorizadas, comunicaciones de la constructora y el estado de sus solicitudes.
           </p>
         </div>
       </div>
 
-      <!-- Tarjetas Métricas Cliente -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <!-- Tarjetas Métricas Resumen Cliente -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <app-dashboard-card
-          titulo="Mis Proyectos"
-          [valor]="totalProyectos"
-          subtitulo="Obras contratadas"
-          detalle="Seguimiento activo"
+          titulo="Mis Unidades"
+          [valor]="unidadesCliente.length"
+          subtitulo="Unidades adjudicadas"
+          [detalle]="(unidadSeleccionada?.codigo_unidad ? 'Seleccionada: ' + unidadSeleccionada?.codigo_unidad : 'Sin selección')"
           tipo="amber"
         >
           <svg icon class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
         </app-dashboard-card>
 
         <app-dashboard-card
-          titulo="Obras Activas"
-          [valor]="proyectosActivos"
-          subtitulo="En fase de construcción"
-          detalle="En ejecución continua"
+          titulo="Avance Actual"
+          [valor]="(ultimoAvance?.porcentaje_avance != null ? ultimoAvance!.porcentaje_avance + '%' : '0%')"
+          subtitulo="Avance físico certificado"
+          [detalle]="ultimoAvance?.estado_unidad ? ultimoAvance!.estado_unidad.replace('_', ' ') : 'Sin registro'"
           tipo="emerald"
         >
-          <svg icon class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          <svg icon class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </app-dashboard-card>
 
         <app-dashboard-card
-          titulo="Finalizadas"
-          [valor]="proyectosFinalizados"
-          subtitulo="Entregadas a satisfacción"
-          detalle="Proyectos concluidos"
+          titulo="Comunicaciones"
+          [valor]="comunicacionesCliente.length"
+          subtitulo="Avisos de la constructora"
+          [detalle]="comunicacionesNoLeidas + ' sin leer'"
           tipo="blue"
         >
-          <svg icon class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <svg icon class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        </app-dashboard-card>
+
+        <app-dashboard-card
+          titulo="Mis Solicitudes"
+          [valor]="solicitudesCliente.length"
+          subtitulo="Requerimientos y trámites"
+          detalle="Seguimiento directo"
+          tipo="default"
+        >
+          <svg icon class="w-5 h-5 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
         </app-dashboard-card>
       </div>
 
-      <!-- Detalle de Obras del Cliente -->
-      <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs">
-        <h4 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
-          Mis Obras en Curso
-        </h4>
-
-        <div *ngIf="cargandoProyectos" class="py-12 text-center text-xs text-slate-500">Cargando sus proyectos...</div>
-
-        <div *ngIf="!cargandoProyectos && proyectos.length === 0" class="py-8">
-          <app-empty-state titulo="Sin obras activas" descripcion="No tiene proyectos asociados en este momento."></app-empty-state>
+      <!-- ===================================================================== -->
+      <!-- SELECTOR DE UNIDAD DEL CLIENTE                                        -->
+      <!-- ===================================================================== -->
+      <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div>
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+              <span>Mis Unidades Contratadas</span>
+              <span *ngIf="unidadesCliente.length > 0" class="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                {{ unidadesCliente.length }} {{ unidadesCliente.length === 1 ? 'unidad' : 'unidades' }}
+              </span>
+            </h4>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              Seleccione la unidad que desea consultar para ver su avance físico e historial fotográfico.
+            </p>
+          </div>
+          <button
+            *ngIf="errorUnidadesCliente"
+            type="button"
+            (click)="cargarUnidadesCliente()"
+            class="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline shrink-0"
+          >
+            Reintentar carga ↻
+          </button>
         </div>
 
-        <div *ngIf="!cargandoProyectos && proyectos.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div *ngFor="let p of proyectos" class="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 space-y-3">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-mono font-bold text-amber-600 dark:text-amber-400">{{ p.codigo }}</span>
-              <app-status-badge [estado]="p.estado_obra"></app-status-badge>
-            </div>
-            <h5 class="text-base font-bold text-slate-900 dark:text-white">{{ p.nombre }}</h5>
-            <p class="text-xs text-slate-500 dark:text-slate-400">{{ p.descripcion || 'Proyecto constructivo en ejecución formal con OBRATEC.' }}</p>
+        <!-- Estado de carga unidades -->
+        <div *ngIf="cargandoUnidadesCliente" class="py-8 text-center text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
+          <svg class="animate-spin h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+          Cargando sus unidades autorizadas...
+        </div>
 
-            <div class="pt-3 border-t border-slate-200 dark:border-slate-700/60 flex items-center justify-between text-xs">
-              <span class="text-slate-500 dark:text-slate-400">Entrega Estimada: <strong class="text-slate-800 dark:text-slate-200">{{ p.fecha_fin || 'En cronograma' }}</strong></span>
-              <button (click)="verProyecto(p.id_obra)" class="text-amber-600 dark:text-amber-400 font-bold hover:underline">
-                Ver estado de avance →
+        <!-- Error unidades -->
+        <div *ngIf="errorUnidadesCliente" class="p-4 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 text-xs text-red-700 dark:text-red-300 flex items-center justify-between gap-3">
+          <span>{{ errorUnidadesCliente }}</span>
+          <button type="button" (click)="cargarUnidadesCliente()" class="font-bold underline shrink-0">Reintentar</button>
+        </div>
+
+        <!-- Sin unidades -->
+        <div *ngIf="!cargandoUnidadesCliente && !errorUnidadesCliente && unidadesCliente.length === 0" class="py-6">
+          <app-empty-state
+            titulo="Sin unidades registradas"
+            descripcion="No tiene unidades inmobiliarias asociadas en este momento."
+          ></app-empty-state>
+        </div>
+
+        <!-- Lista de tarjetas de unidades (Mobile first, grid 1 col en mobile, 2 en sm, 3 en lg) -->
+        <div *ngIf="!cargandoUnidadesCliente && unidadesCliente.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div
+            *ngFor="let u of unidadesCliente"
+            (click)="seleccionarUnidadCliente(u)"
+            [class.ring-2]="unidadSeleccionada?.id_unidad === u.id_unidad"
+            [class.ring-amber-500]="unidadSeleccionada?.id_unidad === u.id_unidad"
+            [class.border-amber-500]="unidadSeleccionada?.id_unidad === u.id_unidad"
+            [class.bg-amber-50/40]="unidadSeleccionada?.id_unidad === u.id_unidad"
+            [class.dark:bg-amber-950/20]="unidadSeleccionada?.id_unidad === u.id_unidad"
+            class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 cursor-pointer transition-all duration-200 hover:border-amber-400 hover:shadow-xs flex flex-col justify-between gap-3"
+          >
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-sm font-extrabold text-slate-900 dark:text-white">
+                    {{ u.codigo_unidad }}
+                  </span>
+                  <span class="text-[11px] font-medium px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                    {{ u.tipo_unidad || 'Unidad' }}
+                  </span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
+                  {{ u.nombre_obra }} <span *ngIf="u.codigo_obra" class="font-mono text-[11px]">({{ u.codigo_obra }})</span>
+                </p>
+              </div>
+              <app-status-badge [estado]="u.estado_asociacion"></app-status-badge>
+            </div>
+
+            <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+              <span *ngIf="u.superficie">Superficie: <strong class="text-slate-700 dark:text-slate-200">{{ u.superficie }} m²</strong></span>
+              <span *ngIf="!u.superficie">Estado actual: <strong class="text-slate-700 dark:text-slate-200">{{ u.estado_unidad_actual }}</strong></span>
+              <span *ngIf="unidadSeleccionada?.id_unidad === u.id_unidad" class="text-amber-600 dark:text-amber-400 font-bold text-xs flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>
+                Activa
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================================================================== -->
+      <!-- HU114: AVANCE DE MI UNIDAD                                            -->
+      <!-- ===================================================================== -->
+      <div *ngIf="unidadSeleccionada" class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div>
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+              <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+              Avance de mi unidad
+            </h4>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              Seguimiento del avance físico y estado actual de la unidad <strong class="text-slate-800 dark:text-slate-200">{{ unidadSeleccionada.codigo_unidad }}</strong> en <strong class="text-slate-800 dark:text-slate-200">{{ unidadSeleccionada.nombre_obra }}</strong>.
+            </p>
+          </div>
+          <button
+            type="button"
+            (click)="cargarAvanceFisicoUnidad(unidadSeleccionada.id_obra, unidadSeleccionada.id_unidad)"
+            class="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline shrink-0 flex items-center gap-1"
+          >
+            Actualizar avance ↻
+          </button>
+        </div>
+
+        <!-- Estado de carga avance -->
+        <div *ngIf="cargandoAvanceUnidad" class="py-8 text-center text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
+          <svg class="animate-spin h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+          Consultando avance físico oficial...
+        </div>
+
+        <!-- Error avance -->
+        <div *ngIf="errorAvanceUnidad" class="p-4 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 text-xs text-red-700 dark:text-red-300 flex items-center justify-between gap-3">
+          <span>{{ errorAvanceUnidad }}</span>
+          <button type="button" (click)="cargarAvanceFisicoUnidad(unidadSeleccionada.id_obra, unidadSeleccionada.id_unidad)" class="font-bold underline shrink-0">Reintentar</button>
+        </div>
+
+        <!-- Sin registros de avance -->
+        <div *ngIf="!cargandoAvanceUnidad && !errorAvanceUnidad && !ultimoAvance" class="py-6">
+          <app-empty-state
+            titulo="Sin registros de avance"
+            descripcion="Esta unidad aún no cuenta con avances físicos registrados."
+          ></app-empty-state>
+        </div>
+
+        <!-- Contenido de Avance Físico -->
+        <div *ngIf="!cargandoAvanceUnidad && ultimoAvance" class="space-y-4">
+          <!-- Porcentaje y Estado Actual -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
+            <div>
+              <span class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold block mb-1">
+                Porcentaje de Avance Físico
+              </span>
+              <div class="flex items-baseline gap-2">
+                <span class="text-3xl sm:text-4xl font-extrabold text-amber-600 dark:text-amber-400">
+                  {{ ultimoAvance.porcentaje_avance | number:'1.0-2' }}%
+                </span>
+                <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">completado</span>
+              </div>
+            </div>
+
+            <div class="sm:text-right">
+              <span class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold block mb-1">
+                Estado Actual
+              </span>
+              <app-status-badge [estado]="ultimoAvance.estado_unidad"></app-status-badge>
+            </div>
+          </div>
+
+          <!-- Barra de Progreso Visual Fluida -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs text-slate-500 dark:text-slate-400 font-semibold px-1">
+              <span>0% Inicial</span>
+              <span>100% Finalizado</span>
+            </div>
+            <div class="w-full bg-slate-200 dark:bg-slate-700/80 rounded-full h-4 overflow-hidden p-0.5 shadow-inner">
+              <div
+                class="bg-linear-to-r from-amber-500 to-amber-600 h-full rounded-full transition-all duration-700 shadow-sm flex items-center justify-end pr-1.5 text-[10px] font-bold text-white min-w-[2rem]"
+                [style.width.%]="ultimoAvance.porcentaje_avance > 100 ? 100 : (ultimoAvance.porcentaje_avance < 0 ? 0 : ultimoAvance.porcentaje_avance)"
+              >
+                {{ ultimoAvance.porcentaje_avance | number:'1.0-0' }}%
+              </div>
+            </div>
+          </div>
+
+          <!-- Metadatos de la última actualización -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
+            <div class="p-3 rounded-lg border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between">
+              <span class="text-slate-500 dark:text-slate-400 font-medium">Última actualización:</span>
+              <strong class="text-slate-800 dark:text-slate-200">
+                {{ (ultimoAvance.fecha_registro | date:'dd/MM/yyyy') || 'Sin fecha' }}
+              </strong>
+            </div>
+
+            <div class="p-3 rounded-lg border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between">
+              <span class="text-slate-500 dark:text-slate-400 font-medium">Unidad consultada:</span>
+              <strong class="text-slate-800 dark:text-slate-200">
+                {{ unidadSeleccionada.codigo_unidad }}
+              </strong>
+            </div>
+
+            <div *ngIf="ultimoAvance.observacion" class="sm:col-span-2 p-3.5 rounded-lg border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-slate-800/50">
+              <span class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-1">
+                Observación técnica:
+              </span>
+              <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                {{ ultimoAvance.observacion }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Historial de avances si existen múltiples -->
+          <div *ngIf="avancesUnidad.length > 1" class="pt-3 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              (click)="mostrarHistorialAvance = !mostrarHistorialAvance"
+              class="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1.5"
+            >
+              <span>{{ mostrarHistorialAvance ? 'Ocultar historial de avances' : 'Ver historial completo de avances (' + avancesUnidad.length + ' registros)' }}</span>
+              <svg class="w-3.5 h-3.5 transition-transform" [class.rotate-180]="mostrarHistorialAvance" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+
+            <div *ngIf="mostrarHistorialAvance" class="mt-3 space-y-2">
+              <div
+                *ngFor="let av of avancesUnidad; let i = index"
+                class="p-3 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
+              >
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="font-extrabold text-amber-600 dark:text-amber-400">{{ av.porcentaje_avance }}%</span>
+                    <span class="text-slate-400">•</span>
+                    <span class="text-slate-700 dark:text-slate-300 font-medium">{{ (av.fecha_registro | date:'dd/MM/yyyy') || 'Sin fecha' }}</span>
+                    <span *ngIf="i === 0" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">Más reciente</span>
+                  </div>
+                  <p *ngIf="av.observacion" class="text-slate-600 dark:text-slate-400 text-xs mt-1">
+                    {{ av.observacion }}
+                  </p>
+                </div>
+                <app-status-badge [estado]="av.estado_unidad"></app-status-badge>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================================================================== -->
+      <!-- HU115: FOTOGRAFÍAS DE MI UNIDAD                                       -->
+      <!-- ===================================================================== -->
+      <div *ngIf="unidadSeleccionada" class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div>
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+              <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              Fotografías de mi unidad
+            </h4>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              Fotografías y evidencias autorizadas correspondientes a la unidad <strong class="text-slate-800 dark:text-slate-200">{{ unidadSeleccionada.codigo_unidad }}</strong>.
+            </p>
+          </div>
+          <button
+            type="button"
+            (click)="cargarFotografiasUnidad(unidadSeleccionada.id_unidad)"
+            class="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline shrink-0 flex items-center gap-1"
+          >
+            Actualizar fotos ↻
+          </button>
+        </div>
+
+        <!-- Estado de carga fotografías -->
+        <div *ngIf="cargandoFotografiasUnidad" class="py-8 text-center text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
+          <svg class="animate-spin h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+          Cargando fotografías autorizadas...
+        </div>
+
+        <!-- Error fotografías -->
+        <div *ngIf="errorFotografiasUnidad" class="p-4 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 text-xs text-red-700 dark:text-red-300 flex items-center justify-between gap-3">
+          <span>{{ errorFotografiasUnidad }}</span>
+          <button type="button" (click)="cargarFotografiasUnidad(unidadSeleccionada.id_unidad)" class="font-bold underline shrink-0">Reintentar</button>
+        </div>
+
+        <!-- Sin fotografías -->
+        <div *ngIf="!cargandoFotografiasUnidad && !errorFotografiasUnidad && fotografiasUnidad.length === 0" class="py-6">
+          <app-empty-state
+            titulo="Sin fotografías disponibles"
+            descripcion="No hay fotografías disponibles para esta unidad."
+          ></app-empty-state>
+        </div>
+
+        <!-- Galería de fotografías (Mobile first: 1 col celular, 2 col tablet, 3-4 desktop) -->
+        <div *ngIf="!cargandoFotografiasUnidad && fotografiasUnidad.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div
+            *ngFor="let foto of fotografiasUnidad"
+            (click)="abrirModalFotografia(foto)"
+            class="group rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 overflow-hidden shadow-xs hover:shadow-md hover:border-amber-400 transition-all cursor-pointer flex flex-col"
+          >
+            <!-- Contenedor de imagen responsivo con aspect-ratio -->
+            <div class="relative w-full aspect-video sm:aspect-square bg-slate-100 dark:bg-slate-800 overflow-hidden flex items-center justify-center">
+              <div *ngIf="foto.cargandoBlob" class="flex flex-col items-center justify-center text-slate-400 text-xs gap-1.5 p-4">
+                <svg class="animate-spin h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                <span>Cargando imagen...</span>
+              </div>
+
+              <img
+                *ngIf="foto.blobUrl"
+                [src]="foto.blobUrl"
+                [alt]="foto.nombre_archivo"
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                loading="lazy"
+              />
+
+              <div *ngIf="foto.errorBlob" class="text-center p-4 text-xs text-slate-400">
+                <svg class="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <span>Foto disponible para descarga</span>
+              </div>
+
+              <!-- Overlay al pasar cursor / hover -->
+              <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/90 text-slate-900 text-xs font-bold shadow-sm">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
+                  Ampliar
+                </span>
+              </div>
+            </div>
+
+            <!-- Pie de la foto -->
+            <div class="p-3 text-xs space-y-1">
+              <p class="font-bold text-slate-800 dark:text-slate-200 truncate" [title]="foto.nombre_archivo">
+                {{ foto.nombre_archivo }}
+              </p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                {{ (foto.fecha | date:'dd/MM/yyyy HH:mm') || 'Sin fecha' }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================================================================== -->
+      <!-- MODAL VISOR DE FOTOGRAFÍA (HU115)                                     -->
+      <!-- ===================================================================== -->
+      <div
+        *ngIf="fotografiaModal"
+        class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-xs transition-opacity"
+        (click)="cerrarModalFotografia()"
+      >
+        <div
+          class="relative max-w-4xl w-full max-h-[92vh] bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-2xl flex flex-col border border-slate-200 dark:border-slate-800"
+          (click)="$event.stopPropagation()"
+        >
+          <!-- Cabecera modal -->
+          <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <div class="min-w-0 pr-2">
+              <h4 class="text-sm font-bold text-slate-900 dark:text-white truncate">
+                {{ fotografiaModal.nombre_archivo }}
+              </h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400">
+                Registrada: {{ (fotografiaModal.fecha | date:'dd/MM/yyyy HH:mm') || 'Sin fecha' }}
+              </p>
+            </div>
+            <button
+              type="button"
+              (click)="cerrarModalFotografia()"
+              class="p-2 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              title="Cerrar visor"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          <!-- Cuerpo modal con imagen responsiva -->
+          <div class="flex-1 overflow-auto p-2 sm:p-4 flex items-center justify-center bg-slate-950/20">
+            <img
+              *ngIf="fotografiaModal.blobUrl"
+              [src]="fotografiaModal.blobUrl"
+              [alt]="fotografiaModal.nombre_archivo"
+              class="max-w-full max-h-[68vh] object-contain rounded-lg shadow-sm"
+            />
+            <div *ngIf="!fotografiaModal.blobUrl" class="text-center py-12 text-slate-400 text-xs">
+              <p>Cargando visualización completa...</p>
+            </div>
+          </div>
+
+          <!-- Pie del modal con acciones -->
+          <div class="p-3 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between gap-3 text-xs">
+            <span class="text-slate-500 dark:text-slate-400 truncate">
+              Unidad: {{ unidadSeleccionada?.codigo_unidad }}
+            </span>
+            <div class="flex items-center gap-2 shrink-0">
+              <a
+                *ngIf="fotografiaModal.blobUrl"
+                [href]="fotografiaModal.blobUrl"
+                [download]="fotografiaModal.nombre_archivo"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 font-bold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition shadow-xs"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                Descargar foto
+              </a>
+              <button
+                type="button"
+                (click)="cerrarModalFotografia()"
+                class="px-3 py-1.5 font-semibold rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              >
+                Cerrar
               </button>
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- ===================================================================== -->
+      <!-- HU116 (COMUNICACIONES) & HU117 (SOLICITUDES) - 2 COLUMNAS EN DESKTOP  -->
+      <!-- ===================================================================== -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- ------------------------------------------------------------------- -->
+        <!-- HU116: COMUNICACIONES DIRECTAS DE LA CONSTRUCTORA                   -->
+        <!-- ------------------------------------------------------------------- -->
+        <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-4">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <h4 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                Comunicaciones
+              </h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400">
+                Avisos y comunicados oficiales emitidos por la constructora.
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span *ngIf="comunicacionesNoLeidas > 0" class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                {{ comunicacionesNoLeidas }} sin leer
+              </span>
+              <button
+                type="button"
+                (click)="cargarComunicacionesCliente()"
+                class="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline shrink-0"
+                title="Actualizar comunicaciones"
+              >
+                ↻
+              </button>
+            </div>
+          </div>
+
+          <!-- Estado de carga comunicaciones -->
+          <div *ngIf="cargandoComunicaciones" class="py-8 text-center text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
+            <svg class="animate-spin h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            Cargando comunicaciones...
+          </div>
+
+          <!-- Error comunicaciones -->
+          <div *ngIf="errorComunicaciones" class="p-4 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 text-xs text-red-700 dark:text-red-300 flex items-center justify-between gap-3">
+            <span>{{ errorComunicaciones }}</span>
+            <button type="button" (click)="cargarComunicacionesCliente()" class="font-bold underline shrink-0">Reintentar</button>
+          </div>
+
+          <!-- Sin comunicaciones -->
+          <div *ngIf="!cargandoComunicaciones && !errorComunicaciones && comunicacionesCliente.length === 0" class="py-6">
+            <app-empty-state
+              titulo="Sin comunicaciones"
+              descripcion="Actualmente no tienes comunicaciones."
+            ></app-empty-state>
+          </div>
+
+          <!-- Lista de comunicaciones -->
+          <div *ngIf="!cargandoComunicaciones && comunicacionesCliente.length > 0" class="space-y-3 max-h-[480px] overflow-y-auto pr-1">
+            <div
+              *ngFor="let com of comunicacionesCliente"
+              [class.border-l-4]="!com.leido"
+              [class.border-l-amber-500]="!com.leido"
+              [class.bg-amber-50/30]="!com.leido"
+              [class.dark:bg-amber-950/20]="!com.leido"
+              class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs space-y-2 transition-colors"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <span *ngIf="!com.leido" class="w-2 h-2 rounded-full bg-amber-500 shrink-0" title="Comunicación no leída"></span>
+                  <h5 class="text-sm font-bold text-slate-900 dark:text-white">
+                    {{ com.titulo }}
+                  </h5>
+                </div>
+                <span
+                  *ngIf="!com.leido"
+                  class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 shrink-0"
+                >
+                  Nuevo
+                </span>
+                <span
+                  *ngIf="com.leido"
+                  class="text-[11px] text-slate-400 dark:text-slate-500 shrink-0"
+                >
+                  Leído
+                </span>
+              </div>
+
+              <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">
+                {{ com.cuerpo || com.mensaje }}
+              </p>
+
+              <div class="flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 pt-1 border-t border-slate-100 dark:border-slate-800/60">
+                <span *ngIf="com.tipo_referencia || com.tipo" class="font-mono text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">
+                  {{ com.tipo_referencia || com.tipo }}
+                </span>
+                <span>
+                  {{ (com.fecha_creacion | date:'dd/MM/yyyy HH:mm') || (com.created_at | date:'dd/MM/yyyy HH:mm') || 'Sin fecha' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ------------------------------------------------------------------- -->
+        <!-- HU117: CONSULTAR ESTADO DE SOLICITUDES ENVIADAS                     -->
+        <!-- ------------------------------------------------------------------- -->
+        <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-4">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <h4 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                Mis solicitudes
+              </h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400">
+                Estado y seguimiento de trámites, reclamos y consultas presentadas.
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span *ngIf="solicitudesCliente.length > 0" class="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                {{ solicitudesCliente.length }}
+              </span>
+              <button
+                type="button"
+                (click)="abrirModalNuevaSolicitud()"
+                class="px-2.5 py-1 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1 transition-colors shadow-2xs"
+                title="Registrar nueva solicitud"
+              >
+                <span>+</span> Nueva solicitud
+              </button>
+              <button
+                type="button"
+                (click)="cargarSolicitudesCliente()"
+                class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm font-bold"
+                title="Actualizar solicitudes"
+              >
+                ↻
+              </button>
+            </div>
+          </div>
+
+          <!-- Estado de carga solicitudes -->
+          <div *ngIf="cargandoSolicitudes" class="py-8 text-center text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
+            <svg class="animate-spin h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            Cargando sus solicitudes...
+          </div>
+
+          <!-- Error solicitudes -->
+          <div *ngIf="errorSolicitudes" class="p-4 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 text-xs text-red-700 dark:text-red-300 flex items-center justify-between gap-3">
+            <span>{{ errorSolicitudes }}</span>
+            <button type="button" (click)="cargarSolicitudesCliente()" class="font-bold underline shrink-0">Reintentar</button>
+          </div>
+
+          <!-- Sin solicitudes -->
+          <div *ngIf="!cargandoSolicitudes && !errorSolicitudes && solicitudesCliente.length === 0" class="py-6 text-center space-y-3">
+            <app-empty-state
+              titulo="Sin solicitudes"
+              descripcion="No tienes solicitudes registradas. Puedes formular una consulta seleccionando '+ Nueva solicitud'."
+            ></app-empty-state>
+            <button
+              type="button"
+              (click)="abrirModalNuevaSolicitud()"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+            >
+              + Registrar primera solicitud
+            </button>
+          </div>
+
+          <!-- Lista de solicitudes -->
+          <div *ngIf="!cargandoSolicitudes && solicitudesCliente.length > 0" class="space-y-3 max-h-[480px] overflow-y-auto pr-1">
+            <div
+              *ngFor="let sol of solicitudesCliente"
+              class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 transition-all shadow-2xs space-y-2.5"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0 pr-2">
+                  <div class="flex items-center gap-2 mb-0.5">
+                    <span class="text-[10px] font-mono text-slate-400 font-bold">#{{ sol.id_solicitud }}</span>
+                    <span *ngIf="sol.codigo_unidad" class="text-[11px] font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                      Unidad: <strong>{{ sol.codigo_unidad }}</strong>
+                    </span>
+                    <span *ngIf="sol.nombre_obra" class="text-[11px] text-slate-400 truncate">
+                      · {{ sol.nombre_obra }}
+                    </span>
+                  </div>
+                  <h5 class="text-sm font-bold text-slate-900 dark:text-white leading-snug">
+                    {{ sol.titulo || sol.asunto }}
+                  </h5>
+                </div>
+                <app-status-badge [estado]="sol.estado"></app-status-badge>
+              </div>
+
+              <p *ngIf="sol.descripcion" class="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                {{ sol.descripcion }}
+              </p>
+
+              <!-- Vista previa si ya fue respondida -->
+              <div *ngIf="sol.respuesta" class="p-2.5 rounded-lg bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 text-xs">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 mb-0.5 flex items-center gap-1">
+                  <span>✓</span> Respuesta de la constructora:
+                </div>
+                <p class="text-xs text-emerald-950 dark:text-emerald-200 line-clamp-2 italic">
+                  "{{ sol.respuesta }}"
+                </p>
+              </div>
+
+              <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/60 text-[11px] text-slate-400 dark:text-slate-500">
+                <span>
+                  Fecha: <strong class="text-slate-600 dark:text-slate-400">{{ (sol.fecha_creacion | date:'dd/MM/yyyy') || 'Sin fecha' }}</strong>
+                </span>
+
+                <button
+                  type="button"
+                  (click)="abrirDetalleSolicitud(sol)"
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 transition-colors"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                  Ver detalle
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ───────────────────────────────────────────────────────────────── -->
+        <!-- MODAL DETALLE DE SOLICITUD (HU117)                                 -->
+        <!-- ───────────────────────────────────────────────────────────────── -->
+        <div *ngIf="mostrarModalDetalleSolicitud && solicitudSeleccionada" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
+          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-fade-in flex flex-col max-h-[90vh]">
+            <!-- Header modal -->
+            <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/40">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-mono font-bold text-slate-400">#{{ solicitudSeleccionada.id_solicitud }}</span>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white">Detalle de la Solicitud</h3>
+              </div>
+              <button (click)="cerrarModalDetalleSolicitud()" class="p-1 text-slate-400 hover:text-slate-600 font-bold cursor-pointer">✕</button>
+            </div>
+
+            <!-- Contenido scrollable -->
+            <div class="p-5 overflow-y-auto space-y-4 text-xs">
+              <!-- Estado y Título -->
+              <div class="space-y-1.5 pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Estado de la solicitud</span>
+                  <app-status-badge [estado]="solicitudSeleccionada.estado"></app-status-badge>
+                </div>
+                <h4 class="text-base font-bold text-slate-900 dark:text-white">
+                  {{ solicitudSeleccionada.titulo || solicitudSeleccionada.asunto }}
+                </h4>
+              </div>
+
+              <!-- Metadatos de Unidad y Obra -->
+              <div class="grid grid-cols-2 gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 text-[11px]">
+                <div>
+                  <span class="text-slate-400 block font-medium">Unidad relacionada:</span>
+                  <span class="font-bold text-slate-800 dark:text-slate-200">
+                    {{ solicitudSeleccionada.codigo_unidad || 'General' }}
+                    <span *ngIf="solicitudSeleccionada.tipo_unidad" class="font-normal text-slate-500">({{ solicitudSeleccionada.tipo_unidad }})</span>
+                  </span>
+                </div>
+                <div>
+                  <span class="text-slate-400 block font-medium">Proyecto / Obra:</span>
+                  <span class="font-bold text-slate-800 dark:text-slate-200">{{ solicitudSeleccionada.nombre_obra || 'No especificada' }}</span>
+                </div>
+                <div>
+                  <span class="text-slate-400 block font-medium">Fecha de creación:</span>
+                  <span class="font-semibold text-slate-700 dark:text-slate-300">
+                    {{ (solicitudSeleccionada.fecha_creacion | date:'dd/MM/yyyy HH:mm') || 'Sin fecha' }}
+                  </span>
+                </div>
+                <div>
+                  <span class="text-slate-400 block font-medium">Última actualización:</span>
+                  <span class="font-semibold text-slate-700 dark:text-slate-300">
+                    {{ (solicitudSeleccionada.fecha_actualizacion | date:'dd/MM/yyyy HH:mm') || '-' }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Descripción formulada por el cliente -->
+              <div class="space-y-1">
+                <label class="block text-[11px] font-bold uppercase text-slate-500 dark:text-slate-400">
+                  Descripción de su solicitud
+                </label>
+                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 text-slate-800 dark:text-slate-200 whitespace-pre-line leading-relaxed">
+                  {{ solicitudSeleccionada.descripcion }}
+                </div>
+              </div>
+
+              <!-- BLOQUE: Respuesta de la Constructora -->
+              <div class="space-y-1 pt-1">
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center justify-between">
+                  <span>Respuesta Oficial de la Constructora</span>
+                  <span *ngIf="solicitudSeleccionada.fecha_respuesta" class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold lowercase">
+                    atendido el {{ solicitudSeleccionada.fecha_respuesta | date:'dd/MM/yyyy HH:mm' }}
+                  </span>
+                </label>
+
+                <!-- Si ya fue atendida con respuesta -->
+                <div *ngIf="solicitudSeleccionada.respuesta" class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 space-y-2">
+                  <div class="flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300 font-bold text-xs">
+                    <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>Respuesta registrada por la empresa:</span>
+                  </div>
+                  <p class="text-xs text-emerald-950 dark:text-emerald-100 leading-relaxed whitespace-pre-line font-medium pl-5">
+                    {{ solicitudSeleccionada.respuesta }}
+                  </p>
+                </div>
+
+                <!-- Si fue rechazada -->
+                <div *ngIf="solicitudSeleccionada.estado === 'RECHAZADA' && !solicitudSeleccionada.respuesta" class="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 text-rose-800 dark:text-rose-300 text-xs">
+                  La solicitud no pudo ser procesada o fue rechazada por la constructora.
+                </div>
+
+                <!-- Si aún no ha sido respondida -->
+                <div *ngIf="!solicitudSeleccionada.respuesta && solicitudSeleccionada.estado !== 'RECHAZADA'" class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs flex items-center gap-2">
+                  <span class="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                  <span>Su solicitud está en proceso de atención por parte del personal de la constructora. Recibirá la respuesta oficial en esta sección.</span>
+                </div>
+              </div>
+
+              <!-- Evidencias fotográficas asociadas -->
+              <div *ngIf="solicitudSeleccionada.evidencia" class="space-y-1.5 pt-1">
+                <label class="block text-[11px] font-bold uppercase text-slate-500 dark:text-slate-400">
+                  Evidencia adjunta por la empresa
+                </label>
+                <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 flex items-center justify-between gap-3">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <svg class="w-5 h-5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <div class="truncate">
+                      <span class="font-bold text-slate-800 dark:text-slate-200 block truncate">{{ solicitudSeleccionada.evidencia.nombre_archivo }}</span>
+                      <span class="text-[10px] text-slate-400">Fotografía de evidencia verificada</span>
+                    </div>
+                  </div>
+                  <a
+                    *ngIf="solicitudSeleccionada.evidencia.url_archivo"
+                    [href]="solicitudSeleccionada.evidencia.url_archivo"
+                    target="_blank"
+                    class="px-2.5 py-1 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 hover:underline shrink-0"
+                  >
+                    Ver foto
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer modal: solo botón cerrar (NO chat, NO responder) -->
+            <div class="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end bg-slate-50 dark:bg-slate-800/40">
+              <button
+                type="button"
+                (click)="cerrarModalDetalleSolicitud()"
+                class="px-4 py-2 rounded-lg text-xs font-bold bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 transition-colors"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ───────────────────────────────────────────────────────────────── -->
+        <!-- MODAL REGISTRAR NUEVA SOLICITUD (HU117)                            -->
+        <!-- ───────────────────────────────────────────────────────────────── -->
+        <div *ngIf="mostrarModalNuevaSolicitud" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
+          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-fade-in">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/40">
+              <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Nueva Solicitud a la Constructora
+              </h3>
+              <button (click)="cerrarModalNuevaSolicitud()" class="p-1 text-slate-400 hover:text-slate-600 font-bold cursor-pointer">✕</button>
+            </div>
+
+            <div class="p-5 space-y-3.5 text-xs">
+              <!-- Selección de Unidad -->
+              <div>
+                <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+                  Unidad relacionada *
+                </label>
+                <select
+                  [(ngModel)]="formNuevaSolicitud.id_unidad"
+                  class="w-full text-xs px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                >
+                  <option *ngFor="let u of unidadesCliente" [value]="u.id_unidad">
+                    {{ u.codigo_unidad }} – {{ u.nombre_obra }} ({{ u.tipo_unidad }})
+                  </option>
+                </select>
+              </div>
+
+              <!-- Título de Solicitud -->
+              <div>
+                <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+                  Título de la solicitud *
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="formNuevaSolicitud.titulo"
+                  placeholder="Ej. Consulta de fase de construcción"
+                  class="w-full text-xs px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <!-- Descripción -->
+              <div>
+                <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+                  Descripción o requerimiento *
+                </label>
+                <textarea
+                  [(ngModel)]="formNuevaSolicitud.descripcion"
+                  rows="4"
+                  placeholder="Ej. Quiero conocer en qué fase exacta se encuentra actualmente mi unidad."
+                  class="w-full text-xs px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                ></textarea>
+              </div>
+
+              <!-- Feedback -->
+              <div *ngIf="errorGuardarSolicitud" class="p-3 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-300 text-xs">
+                {{ errorGuardarSolicitud }}
+              </div>
+              <div *ngIf="exitoGuardarSolicitud" class="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-xs font-semibold">
+                {{ exitoGuardarSolicitud }}
+              </div>
+            </div>
+
+            <!-- Footer modal -->
+            <div class="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2 bg-slate-50 dark:bg-slate-800/40">
+              <button
+                type="button"
+                (click)="cerrarModalNuevaSolicitud()"
+                class="px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                [disabled]="guardandoSolicitud"
+                (click)="guardarNuevaSolicitud()"
+                class="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors flex items-center gap-1.5 shadow-2xs"
+              >
+                <svg *ngIf="guardandoSolicitud" class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                <span>{{ guardandoSolicitud ? 'Enviando...' : 'Enviar Solicitud' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </ng-container>
 

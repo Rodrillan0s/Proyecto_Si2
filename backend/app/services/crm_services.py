@@ -1,7 +1,8 @@
 import re
+from pathlib import Path
 from app.classes.postgres import PostgreSQL
 from app.config import Config
-from app.repos import bitacora_repos, crm_repos
+from app.repos import bitacora_repos, crm_repos, notificaciones_repos
 from app.utils.security import es_admin_sistema
 
 
@@ -158,6 +159,389 @@ def obtener_detalle_historial(id_cliente: int, token: dict, id_empresa_solicitad
             "unidades_asociadas": unidades
         }
     }
+
+
+def listar_unidades_cliente_autenticado(token: dict):
+    try:
+        id_usuario = int(token.get("nro_usuario"))
+        id_empresa = int(token.get("id_empresa"))
+        if id_usuario <= 0 or id_empresa <= 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        raise CrmError("El token no identifica un usuario y una empresa válidos.", 403)
+
+    id_cliente = crm_repos.obtener_id_cliente_por_usuario_empresa(id_usuario, id_empresa)
+    if id_cliente is None:
+        raise CrmError("El usuario autenticado no tiene un cliente CRM asociado.", 404)
+
+    unidades = crm_repos.listar_unidades_cliente_cu30(id_cliente, id_empresa)
+    return {"success": True, "data": unidades}
+
+
+def _contexto_cliente_cu30(token: dict):
+    if not isinstance(token, dict) or str(token.get("nombre_rol") or "").strip().upper() != "CLIENTE":
+        raise CrmError("Esta operación está disponible únicamente para el rol CLIENTE.", 403)
+
+    try:
+        id_usuario = int(token.get("nro_usuario"))
+        id_empresa = int(token.get("id_empresa"))
+        if id_usuario <= 0 or id_empresa <= 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        raise CrmError("El token no identifica un usuario y una empresa válidos.", 403)
+
+    id_cliente = crm_repos.obtener_id_cliente_por_usuario_empresa(id_usuario, id_empresa)
+    if id_cliente is None:
+        raise CrmError("El usuario autenticado no tiene un cliente CRM asociado.", 404)
+    return id_cliente, id_usuario, id_empresa
+
+
+def _unidades_autorizadas_cliente(id_cliente: int, id_empresa: int):
+    return crm_repos.listar_unidades_cliente_cu30(id_cliente, id_empresa)
+
+
+def listar_fotografias_cliente_autenticado(id_unidad: int, token: dict):
+    id_cliente, _, id_empresa = _contexto_cliente_cu30(token)
+    unidades = _unidades_autorizadas_cliente(id_cliente, id_empresa)
+    if not any(unidad.get("id_unidad") == id_unidad for unidad in unidades):
+        raise CrmError("Unidad no encontrada o no autorizada.", 404)
+
+    fotografias = crm_repos.listar_fotografias_cliente_cu30(
+        id_cliente=id_cliente,
+        id_unidad=id_unidad,
+        id_empresa=id_empresa,
+    )
+    for fotografia in fotografias:
+        fotografia["url_archivo"] = (
+            f"/api/crm/cliente/unidades/{id_unidad}/fotografias/"
+            f"{fotografia['id_fotografia']}/archivo"
+        )
+    return {"success": True, "data": fotografias}
+
+
+def obtener_archivo_fotografia_cliente_autenticado(
+    id_unidad: int,
+    id_fotografia: int,
+    token: dict,
+):
+    id_cliente, _, id_empresa = _contexto_cliente_cu30(token)
+    unidades = _unidades_autorizadas_cliente(id_cliente, id_empresa)
+    if not any(unidad.get("id_unidad") == id_unidad for unidad in unidades):
+        raise CrmError("Unidad no encontrada o no autorizada.", 404)
+
+    fotografia = crm_repos.obtener_fotografia_cliente_cu30(
+        id_cliente=id_cliente,
+        id_unidad=id_unidad,
+        id_fotografia=id_fotografia,
+        id_empresa=id_empresa,
+    )
+    if not fotografia:
+        raise CrmError("Fotografía no encontrada o no autorizada.", 404)
+
+    backend_dir = Path(__file__).resolve().parents[2]
+    directorio_unidades = (backend_dir / "uploads" / "unidades").resolve()
+    ruta_archivo = (backend_dir / fotografia["ruta_archivo"]).resolve()
+    try:
+        ruta_archivo.relative_to(directorio_unidades)
+    except ValueError:
+        raise CrmError("El archivo de fotografía no está disponible.", 404)
+    if not ruta_archivo.is_file():
+        raise CrmError("El archivo de fotografía no está disponible.", 404)
+
+    return str(ruta_archivo), fotografia["nombre_archivo"], fotografia["tipo_mime"]
+
+
+def listar_comunicaciones_cliente_autenticado(token: dict):
+    id_cliente, id_usuario, id_empresa = _contexto_cliente_cu30(token)
+    comunicaciones = notificaciones_repos.listar_notificaciones_cliente_cu30(
+        id_cliente=id_cliente,
+        nro_usuario=id_usuario,
+        id_empresa=id_empresa,
+    )
+    return {
+        "success": True,
+        "no_leidas": sum(1 for comunicacion in comunicaciones if not comunicacion["leido"]),
+        "data": comunicaciones,
+    }
+
+
+def crear_comunicacion_cliente(data: dict, token: dict, ip: str = None, id_empresa_solicitada=None):
+    """
+    Registra y emite una comunicación directa de la constructora hacia un cliente (HU116).
+    Valida autorización, cliente, pertenencia multi-tenant y opcionalmente obra y unidad.
+    """
+    emp_id = _empresa(token, id_empresa_solicitada, obligatorio=True)
+
+    # 1. Validar cliente destinatario
+    id_cliente_raw = data.get("id_cliente")
+    if id_cliente_raw is None:
+        raise CrmError("El cliente destinatario (id_cliente) es obligatorio.", 400)
+    try:
+        id_cliente = int(id_cliente_raw)
+        if id_cliente <= 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        raise CrmError("El id_cliente debe ser un número entero positivo.", 400)
+
+    cliente = crm_repos.obtener_cliente_por_id(id_cliente, emp_id)
+    if not cliente:
+        raise CrmError(f"Cliente con ID {id_cliente} no encontrado en la empresa autorizada.", 404)
+
+    # 2. Obtener usuario destinatario asociado al cliente
+    nro_usuario = crm_repos.obtener_id_usuario_por_cliente(id_cliente, emp_id)
+    if not nro_usuario:
+        raise CrmError("El cliente seleccionado no tiene un usuario de portal registrado para recibir comunicaciones.", 400)
+
+    # 3. Validar contenido
+    titulo = str(data.get("titulo") or "").strip()
+    if not titulo:
+        raise CrmError("El título de la comunicación es obligatorio.", 400)
+    if len(titulo) > 200:
+        raise CrmError("El título no puede exceder los 200 caracteres.", 400)
+
+    cuerpo = str(data.get("cuerpo") or data.get("mensaje") or "").strip()
+    if not cuerpo:
+        raise CrmError("El mensaje o cuerpo de la comunicación es obligatorio.", 400)
+
+    tipo_referencia = str(data.get("tipo_referencia") or data.get("tipo") or "COMUNICACION").strip().upper()
+
+    # 4. Validar obra si fue proporcionada
+    id_obra = None
+    id_obra_raw = data.get("id_obra")
+    if id_obra_raw is not None and str(id_obra_raw).strip() != "":
+        try:
+            id_obra = int(id_obra_raw)
+            if id_obra <= 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            raise CrmError("El id_obra debe ser un número entero positivo.", 400)
+
+        info_obra = notificaciones_repos.validar_obra_empresa(id_obra)
+        if not info_obra or int(info_obra.get("id_empresa") or 0) != int(emp_id):
+            raise CrmError(f"La obra ID {id_obra} no existe o pertenece a otra empresa.", 403)
+
+    # 5. Validar unidad si fue proporcionada
+    id_unidad = None
+    id_unidad_raw = data.get("id_unidad")
+    if id_unidad_raw is not None and str(id_unidad_raw).strip() != "":
+        try:
+            id_unidad = int(id_unidad_raw)
+            if id_unidad <= 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            raise CrmError("El id_unidad debe ser un número entero positivo.", 400)
+
+        info_unidad = crm_repos.obtener_empresa_unidad(id_unidad)
+        if not info_unidad:
+            raise CrmError(f"La unidad ID {id_unidad} no existe en el sistema.", 404)
+        if int(info_unidad.get("id_empresa") or 0) != int(emp_id):
+            raise CrmError("Violación de aislamiento multitenant: la unidad pertenece a otra empresa.", 403)
+
+        if not crm_repos.validar_unidad_asociada_cliente(id_cliente, id_unidad):
+            raise CrmError(f"La unidad ID {id_unidad} no está asociada al cliente seleccionado.", 400)
+
+        obra_unidad = int(info_unidad["id_obra"])
+        if id_obra is None:
+            id_obra = obra_unidad
+        elif id_obra != obra_unidad:
+            raise CrmError(f"La unidad ID {id_unidad} no pertenece a la obra ID {id_obra}.", 400)
+
+    # 6. Persistir la comunicación
+    registro = notificaciones_repos.crear_comunicacion_cliente_db(
+        titulo=titulo,
+        cuerpo=cuerpo,
+        tipo_referencia=tipo_referencia,
+        nro_usuario=nro_usuario,
+        id_empresa=emp_id,
+        id_obra=id_obra,
+    )
+
+    # 7. Registrar bitácora
+    _log(
+        token=token,
+        accion="CREAR_COMUNICACION_CLIENTE",
+        descripcion=f"Comunicación enviada al cliente ID {id_cliente} (Usuario {nro_usuario}) para obra {id_obra or 'GENERAL'}: '{titulo}'.",
+        ip=ip or "127.0.0.1",
+    )
+
+    return {
+        "success": True,
+        "message": "Comunicación enviada exitosamente.",
+        "data": registro,
+    }
+
+
+def listar_solicitudes_cliente_autenticado(token: dict):
+    """
+    HU117: Lista las solicitudes registradas por el cliente autenticado.
+    Identidad y tenant resueltos estrictamente desde el token JWT.
+    """
+    id_cliente, id_usuario, id_empresa = _contexto_cliente_cu30(token)
+    solicitudes = crm_repos.listar_solicitudes_cliente_cu30(
+        id_cliente=id_cliente,
+        id_usuario=id_usuario,
+        id_empresa=id_empresa,
+    )
+    return {"success": True, "data": solicitudes}
+
+
+def obtener_detalle_solicitud_cliente_autenticado(id_solicitud: int, token: dict):
+    """
+    HU117: Consulta el detalle de una solicitud garantizando que pertenezca al cliente autenticado.
+    Si la solicitud pertenece a otro cliente o tenant, retorna 404 (aislamiento seguro).
+    """
+    id_cliente, id_usuario, id_empresa = _contexto_cliente_cu30(token)
+    solicitud = crm_repos.obtener_solicitud_cliente_cu30(
+        id_cliente=id_cliente,
+        id_usuario=id_usuario,
+        id_solicitud=id_solicitud,
+        id_empresa=id_empresa,
+    )
+    if not solicitud:
+        raise CrmError("Solicitud no encontrada o no pertenece al cliente.", 404)
+    return {"success": True, "data": solicitud}
+
+
+def registrar_solicitud_cliente_autenticado(data: dict, token: dict, ip: str = None):
+    """
+    HU117: Permite al cliente autenticado registrar una nueva solicitud o consulta sobre su unidad.
+    Valida pertenencia de la unidad al cliente mediante t_crm_cliente_unidad.
+    """
+    id_cliente, id_usuario, id_empresa = _contexto_cliente_cu30(token)
+
+    titulo = str(data.get("titulo") or data.get("asunto") or "").strip()
+    if not titulo:
+        raise CrmError("El título o asunto de la solicitud es obligatorio.", 400)
+
+    descripcion = str(data.get("descripcion") or "").strip()
+    if not descripcion:
+        raise CrmError("La descripción de la solicitud es obligatoria.", 400)
+
+    id_unidad = data.get("id_unidad")
+    id_obra = None
+
+    if id_unidad is not None:
+        try:
+            id_unidad = int(id_unidad)
+        except (ValueError, TypeError):
+            raise CrmError("El identificador de la unidad debe ser numérico.", 400)
+
+        # Validar que la unidad esté asociada al cliente autenticado
+        if not crm_repos.validar_unidad_asociada_cliente(id_cliente, id_unidad):
+            raise CrmError("La unidad indicada no está asociada a su cuenta de cliente.", 400)
+
+        info_unidad = crm_repos.obtener_empresa_unidad(id_unidad)
+        if not info_unidad or info_unidad.get("id_empresa") != id_empresa:
+            raise CrmError("La unidad no pertenece al tenant del cliente.", 403)
+        id_obra = info_unidad.get("id_obra")
+    else:
+        # Si no se indica unidad directa, obtener la obra del cliente o la unidad asociada
+        if data.get("id_obra"):
+            id_obra = int(data.get("id_obra"))
+            # Validar que la obra pertenezca a la empresa
+            info_obra = notificaciones_repos.validar_obra_empresa(id_obra)
+            if not info_obra or info_obra.get("id_empresa") != id_empresa:
+                raise CrmError("La obra no pertenece a la empresa.", 403)
+        else:
+            unidades = crm_repos.listar_unidades_cliente_cu30(id_cliente, id_empresa)
+            if unidades:
+                id_obra = unidades[0].get("id_obra")
+                id_unidad = unidades[0].get("id_unidad")
+            else:
+                raise CrmError("Debe especificar la obra o unidad relacionada a la solicitud.", 400)
+
+    registro = crm_repos.crear_solicitud_cliente_db(
+        id_cliente=id_cliente,
+        id_usuario=id_usuario,
+        id_empresa=id_empresa,
+        id_obra=id_obra,
+        id_unidad=id_unidad,
+        titulo=titulo,
+        descripcion=descripcion,
+    )
+
+    _log(
+        token=token,
+        accion="CREAR_SOLICITUD_CLIENTE",
+        descripcion=f"Solicitud #{registro['id_solicitud']} '{titulo}' registrada por cliente ID {id_cliente} (Usuario {id_usuario}) para unidad {id_unidad or 'GENERAL'}.",
+        ip=ip or "127.0.0.1",
+    )
+
+    return {
+        "success": True,
+        "message": "Solicitud registrada exitosamente.",
+        "data": registro,
+    }
+
+
+def responder_solicitud_constructora(id_solicitud: int, data: dict, token: dict, ip: str = None):
+    """
+    HU117: Permite a un usuario autorizado de la constructora gestionar y responder la solicitud:
+    - cambiar estado: PENDIENTE, EN_PROCESO, ATENDIDA, RECHAZADA.
+    - registrar respuesta oficial de la constructora y fecha de atención.
+    - asociar opcionalmente una fotografía de la unidad como evidencia.
+    """
+    emp_id = _empresa(token, obligatorio=False)
+    id_usuario_resp = token.get("nro_usuario")
+
+    estados_validos = {"PENDIENTE", "EN_PROCESO", "ATENDIDA", "RECHAZADA"}
+    nuevo_estado = str(data.get("estado") or "").strip().upper()
+    if nuevo_estado not in estados_validos:
+        raise CrmError(f"Estado inválido. Los estados permitidos son: {', '.join(sorted(estados_validos))}.", 400)
+
+    respuesta = str(data.get("respuesta") or "").strip() or None
+    if nuevo_estado == "ATENDIDA" and not respuesta:
+        raise CrmError("Debe registrar la respuesta de la constructora para marcar la solicitud como ATENDIDA.", 400)
+
+    # Validar existencia de la solicitud en el tenant
+    solicitud_actual = crm_repos.obtener_solicitud_por_id(id_solicitud, emp_id)
+    if not solicitud_actual:
+        raise CrmError("Solicitud no encontrada o no pertenece a la empresa constructora autorizada.", 404)
+
+    id_fotografia_evidencia = data.get("id_fotografia_evidencia")
+    if id_fotografia_evidencia is not None:
+        try:
+            id_fotografia_evidencia = int(id_fotografia_evidencia)
+        except (ValueError, TypeError):
+            id_fotografia_evidencia = None
+
+    actualizado = crm_repos.responder_solicitud_constructora_db(
+        id_solicitud=id_solicitud,
+        id_empresa=emp_id,
+        estado=nuevo_estado,
+        respuesta=respuesta,
+        id_usuario_respuesta=id_usuario_resp,
+        id_fotografia_evidencia=id_fotografia_evidencia,
+    )
+
+    if not actualizado:
+        raise CrmError("No se pudo actualizar la solicitud.", 500)
+
+    _log(
+        token=token,
+        accion="RESPONDER_SOLICITUD_CLIENTE",
+        descripcion=f"Solicitud #{id_solicitud} actualizada a '{nuevo_estado}' por usuario {id_usuario_resp}. Respuesta registrada: {bool(respuesta)}.",
+        ip=ip or "127.0.0.1",
+    )
+
+    return {
+        "success": True,
+        "message": f"Solicitud #{id_solicitud} actualizada a estado {nuevo_estado}.",
+        "data": actualizado,
+    }
+
+
+def listar_solicitudes_constructora(token: dict, id_obra: int = None, estado: str = None):
+    """
+    HU117: Lista solicitudes para revisión y gestión operativa de la constructora.
+    """
+    emp_id = _empresa(token, obligatorio=False)
+    solicitudes = crm_repos.listar_solicitudes_constructora(
+        id_empresa=emp_id,
+        id_obra=id_obra,
+        estado=estado,
+    )
+    return {"success": True, "data": solicitudes}
 
 
 # ─────────────────────────────────────────────────────────────────────────────

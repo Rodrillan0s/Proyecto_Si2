@@ -431,6 +431,90 @@ def obtener_notificaciones_por_usuario_db(
         db.close_connection()
 
 
+def listar_notificaciones_cliente_cu30(id_cliente: int, nro_usuario: int, id_empresa: int):
+    """Lista notificaciones personales, validando tenant y relaciones opcionales CU22."""
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        columnas = db.execute_query(
+            """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = %s
+              AND table_name = 'notificacion'
+              AND column_name IN ('id_empresa', 'id_obra');
+            """,
+            (Config.SCHEMA,),
+            fetchall=True,
+        ) or []
+        columnas_disponibles = {fila[0] for fila in columnas}
+
+        filtros = [
+            "n.nro_usuario = %s",
+            "u.id_usuario = n.nro_usuario",
+            "u.id_empresa = %s",
+        ]
+        params = [int(nro_usuario), int(id_empresa)]
+        if "id_empresa" in columnas_disponibles:
+            filtros.append("(n.id_empresa IS NULL OR n.id_empresa = %s)")
+            params.append(int(id_empresa))
+        if "id_obra" in columnas_disponibles:
+            filtros.append(
+                """
+                (
+                    n.id_obra IS NULL
+                    OR EXISTS (
+                        SELECT 1
+                        FROM {schema}.t_crm_cliente_unidad cu
+                        JOIN {schema}.t_crm_cliente c
+                          ON c.id_cliente = cu.id_cliente
+                         AND c.id_empresa = %s
+                         AND c.id_cliente = %s
+                         AND c.tipo_cliente = 'CLIENTE'
+                        JOIN {schema}.t_unidad_construccion un
+                          ON un.id_unidad = cu.id_unidad
+                        JOIN {schema}.t_estructura_obra e
+                          ON e.id_estructura = un.id_estructura
+                        JOIN {schema}.t_obra o
+                          ON o.id_obra = e.id_obra
+                         AND o.id_obra = n.id_obra
+                         AND o.id_empresa = %s
+                    )
+                )
+                """.format(schema=Config.SCHEMA)
+            )
+            params.extend((int(id_empresa), int(id_cliente), int(id_empresa)))
+
+        params.append(200)
+        query = f"""
+            SELECT n.id_notificacion, n.titulo, n.cuerpo, n.tipo_referencia,
+                   n.leido, n.fecha_creacion, n.nro_emergencia
+            FROM {Config.SCHEMA}.notificacion n
+            JOIN {Config.SCHEMA}.t_usuario u ON u.id_usuario = n.nro_usuario
+            WHERE {" AND ".join(filtros)}
+            ORDER BY n.fecha_creacion DESC, n.id_notificacion DESC
+            LIMIT %s;
+        """
+        rows = db.execute_query(query, tuple(params), fetchall=True) or []
+        return [
+            {
+                "id_notificacion": row[0],
+                "titulo": row[1],
+                "cuerpo": row[2],
+                "mensaje": row[2],
+                "tipo_referencia": row[3] or "GENERAL",
+                "tipo": row[3] or "GENERAL",
+                "leido": bool(row[4]),
+                "fecha_creacion": row[5].isoformat() if row[5] else None,
+                "created_at": row[5].isoformat() if row[5] else None,
+                "nro_emergencia": row[6],
+            }
+            for row in rows
+        ]
+    finally:
+        db.close_connection()
+
+
 def marcar_notificacion_leida_db(id_notificacion: int, nro_usuario: int):
     """
     Modifica el estado de 'leido' a TRUE para una sola alerta (comprobando pertenencia).
@@ -467,5 +551,86 @@ def marcar_todas_las_notificaciones_leidas_db(nro_usuario: int):
         """
         filas_afectadas = db.execute_query(query, (int(nro_usuario),), commit=True)
         return filas_afectadas or 0
+    finally:
+        db.close_connection()
+
+
+def crear_comunicacion_cliente_db(
+    titulo: str,
+    cuerpo: str,
+    tipo_referencia: str,
+    nro_usuario: int,
+    id_empresa: int,
+    id_obra: int = None,
+):
+    """
+    Inserta una comunicación directa de la constructora en obras.notificacion (HU116).
+    Garantiza leido = FALSE, fecha_creacion = CURRENT_TIMESTAMP y aislamiento de tenant.
+    """
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        columnas = db.execute_query(
+            """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = %s
+              AND table_name = 'notificacion'
+              AND column_name IN ('id_empresa', 'id_obra');
+            """,
+            (Config.SCHEMA,),
+            fetchall=True,
+        ) or []
+        columnas_disponibles = {fila[0] for fila in columnas}
+
+        if "id_empresa" in columnas_disponibles and "id_obra" in columnas_disponibles:
+            query = f"""
+                INSERT INTO {Config.SCHEMA}.notificacion
+                    (titulo, cuerpo, tipo_referencia, nro_usuario, id_empresa, id_obra, leido, fecha_creacion)
+                VALUES (%s, %s, %s, %s, %s, %s, FALSE, CURRENT_TIMESTAMP)
+                RETURNING id_notificacion, titulo, cuerpo, tipo_referencia, nro_usuario, id_empresa, id_obra, leido, fecha_creacion;
+            """
+            params = (
+                titulo,
+                cuerpo,
+                tipo_referencia,
+                int(nro_usuario),
+                int(id_empresa),
+                int(id_obra) if id_obra is not None else None,
+            )
+        elif "id_empresa" in columnas_disponibles:
+            query = f"""
+                INSERT INTO {Config.SCHEMA}.notificacion
+                    (titulo, cuerpo, tipo_referencia, nro_usuario, id_empresa, leido, fecha_creacion)
+                VALUES (%s, %s, %s, %s, %s, FALSE, CURRENT_TIMESTAMP)
+                RETURNING id_notificacion, titulo, cuerpo, tipo_referencia, nro_usuario, id_empresa, NULL, leido, fecha_creacion;
+            """
+            params = (titulo, cuerpo, tipo_referencia, int(nro_usuario), int(id_empresa))
+        else:
+            query = f"""
+                INSERT INTO {Config.SCHEMA}.notificacion
+                    (titulo, cuerpo, tipo_referencia, nro_usuario, leido, fecha_creacion)
+                VALUES (%s, %s, %s, %s, FALSE, CURRENT_TIMESTAMP)
+                RETURNING id_notificacion, titulo, cuerpo, tipo_referencia, nro_usuario, NULL, NULL, leido, fecha_creacion;
+            """
+            params = (titulo, cuerpo, tipo_referencia, int(nro_usuario))
+
+        row = db.execute_query(query, params, commit=True, fetchone=True)
+        if not row:
+            raise RuntimeError("No se pudo registrar la comunicación en la base de datos.")
+        return {
+            "id_notificacion": row[0],
+            "titulo": row[1],
+            "cuerpo": row[2],
+            "mensaje": row[2],
+            "tipo_referencia": row[3],
+            "tipo": row[3],
+            "nro_usuario": row[4],
+            "id_empresa": row[5],
+            "id_obra": row[6],
+            "leido": bool(row[7]),
+            "fecha_creacion": row[8].isoformat() if hasattr(row[8], "isoformat") else str(row[8]),
+            "created_at": row[8].isoformat() if hasattr(row[8], "isoformat") else str(row[8]),
+        }
     finally:
         db.close_connection()

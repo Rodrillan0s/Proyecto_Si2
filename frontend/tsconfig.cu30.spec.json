@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.spec.json",
+  "files": ["src/app/services/crm-cu30.spec.ts"],
+  "include": [],
+  "exclude": []
+}

@@ -48,6 +48,21 @@ export interface AvancesListResponse {
   data: OrdenAvance[];
 }
 
+export interface AvanceFisicoUnidadCu30 {
+  id_avance: number;
+  id_obra: number;
+  id_unidad: number;
+  porcentaje_avance: number;
+  estado_unidad: string;
+  fecha_registro: string | null;
+  observacion: string | null;
+}
+
+export interface AvanceFisicoUnidadCu30Response {
+  success: boolean;
+  data: AvanceFisicoUnidadCu30[];
+}
+
 // ─── Service ────────────────────────────────────────────────────────────────
 
 @Injectable({ providedIn: 'root' })
@@ -78,6 +93,17 @@ export class AvancesService {
   resumenAvances(idObra: number): Observable<ResumenAvancesResponse> {
     return this.http.get<ResumenAvancesResponse>(
       `${this.apiUrl}/api/proyectos/${idObra}/avances/resumen`,
+      { headers: this.getHeaders() }
+    );
+  }
+
+  /**
+   * HU114: Consulta el avance físico autorizado de una unidad para el rol CLIENTE.
+   * No requiere id_cliente ni id_empresa ya que el backend los obtiene del JWT.
+   */
+  consultarAvanceFisicoUnidadCliente(idObra: number, idUnidad: number): Observable<AvanceFisicoUnidadCu30Response> {
+    return this.http.get<AvanceFisicoUnidadCu30Response>(
+      `${this.apiUrl}/api/proyectos/${idObra}/avances/cliente/unidades/${idUnidad}`,
       { headers: this.getHeaders() }
     );
   }

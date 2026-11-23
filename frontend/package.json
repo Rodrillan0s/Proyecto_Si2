@@ -13,6 +13,7 @@
     "test:backups": "ng test --watch=false --ts-config=tsconfig.backups.spec.json --include=src/app/**/backup.spec.ts",
     "serve:ssr:frontend": "node dist/frontend/server/server.mjs",
     "test:navigation": "ng test --watch=false --ts-config=tsconfig.navigation.spec.json --include=src/app/**/lecturas.spec.ts --include=src/app/**/rendimiento.spec.ts --include=src/app/**/admin-layout.spec.ts",
+    "test:cu30": "ng test --watch=false --ts-config=tsconfig.cu30.spec.json --include=src/app/services/crm-cu30.spec.ts",
     "test:pagos": "ng test --watch=false --ts-config=tsconfig.pagos.spec.json --include=src/app/services/pagos.spec.ts --include=src/app/pages/pagos/**/*.spec.ts"
   },
   "private": true,

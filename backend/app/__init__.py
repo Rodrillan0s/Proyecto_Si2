@@ -80,6 +80,7 @@ def create_app() -> FastAPI:
     app.include_router(obra_routes.router,prefix='/api/proyectos')
     app.include_router(estructura_routes.router)
     app.include_router(unidad_routes.router)
+    app.include_router(unidad_routes.router_unidades)
     app.include_router(material_routes.router,prefix='/api/materiales')
     app.include_router(proveedor_routes.router,prefix='/api/proveedores')
     app.include_router(compras_routes.router,prefix='/api/compras')

@@ -1,11 +1,11 @@
-import { Component, Input, OnInit, inject, ChangeDetectorRef, NgZone } from '@angular/core';
+import { Component, Input, OnInit, inject, ChangeDetectorRef, NgZone, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { EstructuraService, EstructuraNodo } from '../../../services/estructura';
 import { AuthService } from '../../../services/auth';
 import {
   UnidadesService, UnidadConstruccion, UnidadAmbiente, UnidadCaracteristica,
-  ModeloUnidad, UnidadPersonalizacion, UnidadMaterial, MaterialDisponible
+  ModeloUnidad, UnidadPersonalizacion, UnidadMaterial, MaterialDisponible, UnidadFotografia
 } from '../../../services/unidades';
 
 @Component({
@@ -88,6 +88,16 @@ export class ProyectoEstructuraComponent implements OnInit {
   personalizacionForm: UnidadPersonalizacion = { tipo: 'OTRO', descripcion: '' };
   estadoObservacion = '';
   materialForm: UnidadMaterial = { id_material: 0, cantidad: 1 };
+
+  // HU115: Fotografías de unidad (Operativo / Jefe de Obra)
+  @ViewChild('inputFoto') inputFotoRef?: ElementRef<HTMLInputElement>;
+  fotografiasUnidad: UnidadFotografia[] = [];
+  cargandoFotosUnidad: boolean = false;
+  subiendoFoto: boolean = false;
+  mensajeFoto: string = '';
+  errorFoto: string = '';
+  fotoSeleccionada: File | null = null;
+  fotoPreviaUrl: string | null = null;
 
   ngOnInit() {
     if (this.idObra) {
@@ -756,6 +766,9 @@ export class ProyectoEstructuraComponent implements OnInit {
         this.unidadDetalle = res.data;
         this.mostrarDetalleUnidad = true;
         this.cerrarMenu();
+        if (this.unidadDetalle?.id_unidad) {
+          this.cargarFotosUnidad(this.unidadDetalle.id_unidad);
+        }
         this.cdr.detectChanges();
       },
       error: err => this.mostrarError(err?.error?.detail || 'No se pudo consultar la unidad.')
@@ -768,6 +781,146 @@ export class ProyectoEstructuraComponent implements OnInit {
     this.personalizacionForm = { tipo: 'OTRO', descripcion: '' };
     this.estadoObservacion = '';
     this.materialForm = { id_material: 0, cantidad: 1 };
+    this.fotografiasUnidad = [];
+    this.cancelarSubidaFoto();
+    this.mensajeFoto = '';
+    this.errorFoto = '';
+  }
+
+  // --- HU115: MÉTODOS DE GESTIÓN DE FOTOGRAFÍAS DE UNIDAD ---
+  puedeSubirFotografias(): boolean {
+    const user = this.authService.obtenerUsuario();
+    const rol = (user?.nombre_rol || '').trim().toUpperCase();
+    if (rol === 'CLIENTE') return false;
+    if (
+      rol === 'ADMINISTRADOR' ||
+      rol === 'ADMINISTRADOR_EMPRESA' ||
+      rol === 'JEFE DE OBRA' ||
+      rol === 'JEFE_OBRA' ||
+      rol === 'RESPONSABLE'
+    ) {
+      return true;
+    }
+    const permisos: string[] = user?.permisos || [];
+    return permisos.includes('Modificar_obras') || permisos.includes('Registrar_avances');
+  }
+
+  cargarFotosUnidad(idUnidad: number) {
+    this.cargandoFotosUnidad = true;
+    this.errorFoto = '';
+    this.unidadesService.listarFotografias(idUnidad).subscribe({
+      next: (res) => {
+        this.ngZone.run(() => {
+          this.fotografiasUnidad = res?.data || [];
+          this.cargandoFotosUnidad = false;
+          this.cdr.detectChanges();
+        });
+      },
+      error: (err) => {
+        this.ngZone.run(() => {
+          this.fotografiasUnidad = [];
+          this.cargandoFotosUnidad = false;
+          this.errorFoto = err?.error?.detail || 'No se pudieron cargar las fotografías de la unidad.';
+          this.cdr.detectChanges();
+        });
+      }
+    });
+  }
+
+  validarArchivoFoto(file: File): { valido: boolean; error?: string } {
+    const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp'];
+    const extensionesPermitidas = ['.jpg', '.jpeg', '.png', '.webp'];
+    const nombre = (file.name || '').toLowerCase();
+    const tieneExtensionValida = extensionesPermitidas.some(ext => nombre.endsWith(ext));
+    const tieneMimeValido = file.type ? tiposPermitidos.includes(file.type.toLowerCase()) : false;
+
+    if (!tieneMimeValido && !tieneExtensionValida) {
+      return { valido: false, error: 'Formato no permitido. Solo se permiten imágenes JPG, JPEG, PNG o WEBP.' };
+    }
+
+    const maxBytes = 10 * 1024 * 1024; // 10 MB
+    if (file.size > maxBytes) {
+      return { valido: false, error: 'El archivo excede el tamaño máximo permitido de 10 MB.' };
+    }
+
+    return { valido: true };
+  }
+
+  seleccionarArchivoFoto(event: Event) {
+    this.mensajeFoto = '';
+    this.errorFoto = '';
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    const file = input.files[0];
+    const validacion = this.validarArchivoFoto(file);
+    if (!validacion.valido) {
+      this.errorFoto = validacion.error || 'Selecciona una imagen válida de máximo 10 MB.';
+      this.cancelarSubidaFoto();
+      this.cdr.detectChanges();
+      return;
+    }
+
+    if (this.fotoPreviaUrl) {
+      try { URL.revokeObjectURL(this.fotoPreviaUrl); } catch {}
+    }
+
+    this.fotoSeleccionada = file;
+    this.fotoPreviaUrl = URL.createObjectURL(file);
+    this.cdr.detectChanges();
+  }
+
+  cancelarSubidaFoto() {
+    if (this.fotoPreviaUrl) {
+      try { URL.revokeObjectURL(this.fotoPreviaUrl); } catch {}
+    }
+    this.fotoSeleccionada = null;
+    this.fotoPreviaUrl = null;
+    if (this.inputFotoRef?.nativeElement) {
+      this.inputFotoRef.nativeElement.value = '';
+    }
+  }
+
+  subirFotoSeleccionada() {
+    if (!this.unidadDetalle?.id_unidad || !this.fotoSeleccionada) {
+      this.errorFoto = 'No hay ninguna fotografía seleccionada para subir.';
+      return;
+    }
+    if (this.subiendoFoto) return;
+
+    const validacion = this.validarArchivoFoto(this.fotoSeleccionada);
+    if (!validacion.valido) {
+      this.errorFoto = validacion.error || 'Selecciona una imagen válida de máximo 10 MB.';
+      return;
+    }
+
+    this.subiendoFoto = true;
+    this.mensajeFoto = '';
+    this.errorFoto = '';
+    const idUnidad = this.unidadDetalle.id_unidad;
+
+    this.unidadesService.subirFotografia(idUnidad, this.fotoSeleccionada).subscribe({
+      next: () => {
+        this.ngZone.run(() => {
+          this.subiendoFoto = false;
+          this.mensajeFoto = 'Fotografía cargada correctamente.';
+          this.cancelarSubidaFoto();
+          this.cargarFotosUnidad(idUnidad);
+          setTimeout(() => {
+            this.mensajeFoto = '';
+            this.cdr.detectChanges();
+          }, 4000);
+          this.cdr.detectChanges();
+        });
+      },
+      error: (err) => {
+        this.ngZone.run(() => {
+          this.subiendoFoto = false;
+          this.errorFoto = err?.error?.detail || 'No se pudo cargar la fotografía de la unidad.';
+          this.cdr.detectChanges();
+        });
+      }
+    });
   }
 
   cambiarEstadoUnidad(estado: string) {
