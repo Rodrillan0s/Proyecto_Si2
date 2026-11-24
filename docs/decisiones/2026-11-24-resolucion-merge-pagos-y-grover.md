@@ -47,4 +47,17 @@ Al inspeccionar `git status` y buscar marcadores de conflicto (`<<<<<<<`, `>>>>>
 
 ## 4. Implementación final y validación realizada
 
-*(Pendiente de completar tras resolución y ejecución de pruebas).*
+1. **Resolución de conflictos de Pagos SaaS (commit `3e53c1f` en `main`):**
+   - Restaurado `listar_todos_los_pagos()` en `backend/app/repos/pago_repos.py` junto a `listar_transacciones()`.
+   - Limpiados los marcadores de conflicto en `backend/tests/test_pagos.py`, `frontend/src/app/services/pagos.ts`, `frontend/src/app/pages/pagos/pagos.ts`, `pagos.html`, `pagos.css` y `pagos.spec.ts`, conservando tanto el ledger global (`/api/pagos/global`) como el dashboard `Actividad de suscripciones` (`/api/pagos/transacciones`).
+   - Instalada la dependencia `jspdf` declarada en `frontend/package.json` para habilitar `npm run build`.
+2. **Integración con `origin/Grover` (commit `cc02ed0` en `main`):**
+   - Resueltos los 8 conflictos de merge: se conservaron los archivos más recientes de CU32 de `main` (`trabajadores_costos_repos.py`, `gastos_operativos_services.py`, `trabajadores_costos_services.py`, `control-costos.html`, `control-costos.ts`, `tsconfig.cu32.spec.json`), se combinaron los scripts de `frontend/package.json` (`test:cu30`, `test:pagos`, `test:cu31`) y se integró el soporte de `ADMINISTRADOR` y alertas CU22 en `backend/app/services/control_costos_services.py`.
+3. **Validación ejecutada post-merge:**
+   - **Conflictos:** `git grep` confirma cero marcadores `<<<<<<<` / `>>>>>>>` en el repositorio.
+   - **Backend (`pytest`):** `130 passed, 10 subtests passed` (`test_pagos.py`, `test_control_costos_services.py`, `test_cu22_notificaciones.py`, `test_cu31_comercializacion.py`, `test_avance_hu114.py`, `test_crm_cliente_hu115_hu117.py`, `test_crm_cliente_unidades.py`, `test_security_rules.py`). Sin escritura a base de datos productiva.
+   - **Frontend (`npm run test:pagos`):** `17 passed` (3 archivos spec).
+   - **Frontend (`npm run test:cu30`):** `12 passed` (1 archivo spec).
+   - **Frontend (`npm run build`):** Compilación completa exitosa (`frontend/dist/frontend`).
+
+> Nota: Los cambios quedaron integrados en la rama local `main` (sin `git push` automático).
