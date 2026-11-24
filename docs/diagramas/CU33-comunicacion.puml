@@ -1,0 +1,38 @@
+@startuml
+title Diagrama de Comunicación UML 2.5.1 — CU33: Gestionar Garantías y Servicio Posventa Inmobiliario
+left to right direction
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam packageStyle rectangle
+
+actor "Administrador_empresa" as Admin
+actor "Cliente" as Cliente
+actor "Jefe de Obra" as JefeObra
+actor "Supervisor" as Supervisor
+
+package "Colaboración MVC" {
+  circle "UI: UIPosventa\n<<boundary>>" as UI
+  circle "ctrl: GestorPosventa\n<<control>>" as Ctrl
+  circle "garantia: UnidadGarantia\n<<entity>>" as Garantia
+  circle "solicitud: SolicitudPosventa\n<<entity>>" as Solicitud
+  circle "bitacora: BitacoraPosventa\n<<entity>>" as Bitacora
+  circle "evidencia: EvidenciaPosventa\n<<entity>>" as Evidencia
+  circle "clienteCRM: ClienteCRM\n<<entity>>" as ClienteCRM
+  circle "unidad: UnidadConstruccion\n<<entity>>" as Unidad
+}
+
+Admin -- UI : 1: registrarGarantia()\n4: clasificarSolicitud()\n8: consultarHistorial()
+Cliente -- UI : 2: consultarGarantias()\n3: registrarSolicitud()\n7: consultarSeguimiento()
+JefeObra -- UI : 5: asignarResponsable()
+Supervisor -- UI : 6: registrarAtencion()
+
+UI -- Ctrl : 1.1: registrar_garantia_inmobiliaria()\n2.1: consultar_garantias()\n3.1: registrar_solicitud_posventa()\n4.1: clasificar_solicitud_posventa()\n5.1: asignar_responsable_atencion()\n6.1: gestionar_atencion_solicitud()\n7.1: consultar_detalle_solicitud()\n8.1: consultar_historial_y_metricas()
+
+Ctrl -- Garantia : 1.1.2: crear_garantia()\n2.1.1: obtener_garantias()\n4.1.1: verificar_cobertura()\n8.1.2: contar_por_estado()
+Ctrl -- Solicitud : 3.1.2: crear_solicitud()\n4.1.2: actualizar_clasificacion()\n5.1.1: actualizar_asignacion()\n6.1.2: actualizar_estado()\n7.1.1: obtener_detalle()\n8.1.1: consolidar_trazabilidad()
+Ctrl -- Bitacora : 3.1.3: registrar_bitacora(CREACION)\n4.1.3: registrar_bitacora(CLASIFICACION)\n5.1.2: registrar_bitacora(ASIGNACION)\n6.1.3: registrar_bitacora(ATENCION)\n7.1.2: listar_linea_tiempo()
+Ctrl -- Evidencia : 3.1.4: adjuntar_evidencia()\n7.1.3: listar_evidencias()
+Ctrl -- Unidad : 1.1.1a: verificar_unidad_empresa()
+Ctrl -- ClienteCRM : 1.1.1b: verificar_propietario()
+
+@enduml

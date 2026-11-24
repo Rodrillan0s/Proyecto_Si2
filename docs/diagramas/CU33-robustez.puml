@@ -1,0 +1,48 @@
+@startuml
+title Diagrama de Robustez ICONIX — CU33: Gestionar Garantías y Servicio Posventa Inmobiliario
+left to right direction
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam packageStyle rectangle
+
+actor "Administrador_empresa" as Admin
+actor "Cliente" as Cliente
+actor "Jefe de Obra" as JefeObra
+actor "Supervisor" as Supervisor
+
+package "Límites («boundary»)" {
+  boundary "UIPosventa\n(Web / Móvil)" as UI
+}
+
+package "Controles («control»)" {
+  control "GestorPosventa" as Ctrl
+}
+
+package "Entidades («entity»)" {
+  entity "UnidadGarantia" as E_Garantia
+  entity "SolicitudPosventa" as E_Solicitud
+  entity "BitacoraPosventa" as E_Bitacora
+  entity "EvidenciaPosventa" as E_Evidencia
+  entity "UnidadConstruccion" as E_Unidad
+  entity "ClienteCRM" as E_Cliente
+  entity "Usuario" as E_Usuario
+}
+
+Admin --> UI : HU161: registrarGarantia(datos)\nHU164: clasificarSolicitud(categoria, prioridad)\nHU168: consultarHistorialYMetricas()
+Cliente --> UI : HU162: consultarGarantias()\nHU163: registrarSolicitud(defecto, fotos)\nHU167: consultarSeguimiento()
+JefeObra --> UI : HU165: asignarResponsable(supervisor, fecha)
+Supervisor --> UI : HU166: gestionarAtencion(estado, bitacora, materiales)
+
+UI --> Ctrl : invoca operaciones CU33
+
+Ctrl --> Ctrl : validarFechasYTipo()\nvalidarTransicionEstado()\ngenerarCodigoTicket()
+
+Ctrl --> E_Garantia : registrar_garantia()\nconsultar_garantias()\nverificar_cobertura()
+Ctrl --> E_Solicitud : registrar_solicitud()\nactualizar_clasificacion()\nasignar_supervisor()\nactualizar_estado()\nconsultar_detalle()
+Ctrl --> E_Bitacora : registrar_bitacora()\nlistar_linea_tiempo()
+Ctrl --> E_Evidencia : adjuntar_evidencia()\nlistar_evidencias()
+Ctrl --> E_Unidad : verificar_unidad_empresa()
+Ctrl --> E_Cliente : verificar_propietario()
+Ctrl --> E_Usuario : obtener_supervisores_empresa()
+
+@enduml

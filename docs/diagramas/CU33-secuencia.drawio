@@ -1,0 +1,608 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="sequence_cu33" name="CU33 - Secuencia MVC">
+    <mxGraphModel dx="1600" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1480" pageHeight="2300" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="frame" value="sd CU33 - Gestionar Garantías y Servicio Posventa Inmobiliario (UML 2.5.1 MVC)" style="swimlane;html=1;startSize=32;horizontal=1;fillColor=none;swimlaneFillColor=none;strokeColor=#475569;fontSize=14;fontStyle=1;align=left;spacingLeft=12;" vertex="1" parent="1">
+          <mxGeometry x="15" y="15" width="1450" height="2270" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="head_Admin" value="Administrador_empresa" style="shape=umlActor;fillColor=#e0f2fe;strokeColor=#0369a1;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="15" y="45" width="90" height="70" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="life_Admin" value="" style="shape=line;direction=south;strokeColor=#64748b;dashed=1;dashPattern=5 5;" vertex="1" parent="1">
+          <mxGeometry x="60" y="120" width="1" height="2120" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="head_Cliente" value="Cliente" style="shape=umlActor;fillColor=#e0f2fe;strokeColor=#0369a1;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="135" y="45" width="90" height="70" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="life_Cliente" value="" style="shape=line;direction=south;strokeColor=#64748b;dashed=1;dashPattern=5 5;" vertex="1" parent="1">
+          <mxGeometry x="180" y="120" width="1" height="2120" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="head_Jefe" value="Jefe de Obra" style="shape=umlActor;fillColor=#e0f2fe;strokeColor=#0369a1;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="255" y="45" width="90" height="70" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="life_Jefe" value="" style="shape=line;direction=south;strokeColor=#64748b;dashed=1;dashPattern=5 5;" vertex="1" parent="1">
+          <mxGeometry x="300" y="120" width="1" height="2120" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="head_Sup" value="Supervisor" style="shape=umlActor;fillColor=#e0f2fe;strokeColor=#0369a1;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="375" y="45" width="90" height="70" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="life_Sup" value="" style="shape=line;direction=south;strokeColor=#64748b;dashed=1;dashPattern=5 5;" vertex="1" parent="1">
+          <mxGeometry x="420" y="120" width="1" height="2120" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="head_UI" value="«boundary»&amp;#xa;UIPosventa" style="ellipse;fillColor=#c7eef4;strokeColor=#0e7490;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="505" y="60" width="90" height="50" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="life_UI" value="" style="shape=line;direction=south;strokeColor=#64748b;dashed=1;dashPattern=5 5;" vertex="1" parent="1">
+          <mxGeometry x="550" y="120" width="1" height="2120" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="head_Ctrl" value="«control»&amp;#xa;GestorPosventa" style="ellipse;fillColor=#fef08a;strokeColor=#ca8a04;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="655" y="60" width="90" height="50" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="life_Ctrl" value="" style="shape=line;direction=south;strokeColor=#64748b;dashed=1;dashPattern=5 5;" vertex="1" parent="1">
+          <mxGeometry x="700" y="120" width="1" height="2120" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="head_Garantia" value="«entity»&amp;#xa;UnidadGarantia" style="ellipse;fillColor=#dcfce7;strokeColor=#16a34a;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="815" y="60" width="90" height="50" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="life_Garantia" value="" style="shape=line;direction=south;strokeColor=#64748b;dashed=1;dashPattern=5 5;" vertex="1" parent="1">
+          <mxGeometry x="860" y="120" width="1" height="2120" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="head_Solicitud" value="«entity»&amp;#xa;SolicitudPosventa" style="ellipse;fillColor=#dcfce7;strokeColor=#16a34a;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="975" y="60" width="90" height="50" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="life_Solicitud" value="" style="shape=line;direction=south;strokeColor=#64748b;dashed=1;dashPattern=5 5;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="120" width="1" height="2120" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="head_Bitacora" value="«entity»&amp;#xa;BitacoraPosventa" style="ellipse;fillColor=#dcfce7;strokeColor=#16a34a;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1135" y="60" width="90" height="50" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="life_Bitacora" value="" style="shape=line;direction=south;strokeColor=#64748b;dashed=1;dashPattern=5 5;" vertex="1" parent="1">
+          <mxGeometry x="1180" y="120" width="1" height="2120" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="head_Evidencia" value="«entity»&amp;#xa;EvidenciaPosventa" style="ellipse;fillColor=#dcfce7;strokeColor=#16a34a;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1295" y="60" width="90" height="50" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="life_Evidencia" value="" style="shape=line;direction=south;strokeColor=#64748b;dashed=1;dashPattern=5 5;" vertex="1" parent="1">
+          <mxGeometry x="1340" y="120" width="1" height="2120" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="sec_0" value="HU161: Registrar Garantía" style="shape=note;whiteSpace=wrap;html=1;size=14;verticalAlign=middle;align=left;spacingLeft=10;fillColor=#f1f5f9;strokeColor=#64748b;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="150" width="350" height="30" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_1_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="60" y="195" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_1_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="195" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_1" value="1: registrarGarantia(datos)" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_1_s" target="anc_1_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_2_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="233" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_2_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="233" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_2" value="1.1: registrar_garantia_inmobiliaria(dto)" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_2_s" target="anc_2_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_3_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="271" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_3_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="291" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_3" value="1.1.1: validarFechasYTipo()" style="endArrow=block;dashed=0;html=1;rounded=0;strokeColor=#ca8a04;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_3_s" target="anc_3_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1">
+            <Array as="points">
+              <mxPoint x="735" y="271" />
+              <mxPoint x="735" y="291" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="anc_4_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="306" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_4_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="860" y="306" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_4" value="1.1.2: crear_garantia(datos)" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_4_s" target="anc_4_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_5_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="860" y="344" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_5_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="344" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_5" value="garantiaCreada" style="endArrow=open;dashed=1;strokeColor=#64748b;strokeWidth=1.2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_5_s" target="anc_5_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_6_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="382" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_6_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="382" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_6" value="201 Created" style="endArrow=open;dashed=1;strokeColor=#64748b;strokeWidth=1.2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_6_s" target="anc_6_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_7_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="420" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_7_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="60" y="420" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_7" value="póliza registrada" style="endArrow=open;dashed=1;strokeColor=#64748b;strokeWidth=1.2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_7_s" target="anc_7_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sec_8" value="HU162: Consultar Garantías" style="shape=note;whiteSpace=wrap;html=1;size=14;verticalAlign=middle;align=left;spacingLeft=10;fillColor=#f1f5f9;strokeColor=#64748b;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="458" width="350" height="30" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_9_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="180" y="503" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_9_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="503" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_9" value="2: solicitarMisGarantias(idUnidad)" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_9_s" target="anc_9_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_10_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="541" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_10_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="541" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_10" value="2.1: consultar_garantias(idEmpresa, idCliente)" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_10_s" target="anc_10_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_11_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="579" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_11_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="860" y="579" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_11" value="2.1.1: obtener_garantias_con_vigencia()" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_11_s" target="anc_11_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_12_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="860" y="617" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_12_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="617" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_12" value="listaGarantias" style="endArrow=open;dashed=1;strokeColor=#64748b;strokeWidth=1.2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_12_s" target="anc_12_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_13_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="655" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_13_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="655" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_13" value="200 OK (garantías vigentes/vencidas)" style="endArrow=open;dashed=1;strokeColor=#64748b;strokeWidth=1.2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_13_s" target="anc_13_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_14_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="693" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_14_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="180" y="693" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_14" value="desplegar garantías" style="endArrow=open;dashed=1;strokeColor=#64748b;strokeWidth=1.2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_14_s" target="anc_14_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sec_15" value="HU163: Registrar Solicitud de Posventa" style="shape=note;whiteSpace=wrap;html=1;size=14;verticalAlign=middle;align=left;spacingLeft=10;fillColor=#f1f5f9;strokeColor=#64748b;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="731" width="350" height="30" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_16_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="180" y="776" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_16_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="776" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_16" value="3: registrarSolicitud(defecto, evidencia)" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_16_s" target="anc_16_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_17_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="814" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_17_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="814" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_17" value="3.1: registrar_solicitud_posventa(dto)" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_17_s" target="anc_17_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_18_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="852" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_18_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="872" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_18" value="3.1.1: generarCodigoTicket()" style="endArrow=block;dashed=0;html=1;rounded=0;strokeColor=#ca8a04;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_18_s" target="anc_18_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1">
+            <Array as="points">
+              <mxPoint x="735" y="852" />
+              <mxPoint x="735" y="872" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="anc_19_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="887" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_19_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="887" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_19" value="3.1.2: crear_solicitud(PENDIENTE)" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_19_s" target="anc_19_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_20_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="925" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_20_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="925" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_20" value="idSolicitud" style="endArrow=open;dashed=1;strokeColor=#64748b;strokeWidth=1.2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_20_s" target="anc_20_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_21_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="963" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_21_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1180" y="963" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_21" value="3.1.3: registrar_bitacora(CREACION)" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_21_s" target="anc_21_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_22_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1001" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_22_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1340" y="1001" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_22" value="3.1.4: adjuntar_evidencia(fotos)" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_22_s" target="anc_22_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_23_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1039" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_23_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="1039" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_23" value="201 Created (ticket asignado)" style="endArrow=open;dashed=1;strokeColor=#64748b;strokeWidth=1.2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_23_s" target="anc_23_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_24_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="1077" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_24_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="180" y="1077" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_24" value="confirmación ticket" style="endArrow=open;dashed=1;strokeColor=#64748b;strokeWidth=1.2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_24_s" target="anc_24_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sec_25" value="HU164: Clasificar Solicitud y Validar Cobertura" style="shape=note;whiteSpace=wrap;html=1;size=14;verticalAlign=middle;align=left;spacingLeft=10;fillColor=#f1f5f9;strokeColor=#64748b;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1115" width="350" height="30" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_26_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="60" y="1160" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_26_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="1160" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_26" value="4: clasificarSolicitud(categoria, prioridad)" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_26_s" target="anc_26_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_27_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="1198" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_27_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1198" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_27" value="4.1: clasificar_solicitud_posventa(dto)" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_27_s" target="anc_27_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_28_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1236" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_28_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="860" y="1236" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_28" value="4.1.1: verificar_cobertura(idGarantia)" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_28_s" target="anc_28_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_29_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1274" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_29_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="1274" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_29" value="4.1.2: actualizar_clasificacion(CLASIFICADA)" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_29_s" target="anc_29_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_30_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1312" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_30_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1180" y="1312" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_30" value="4.1.3: registrar_bitacora(CLASIFICACION)" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_30_s" target="anc_30_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_31_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1350" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_31_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="1350" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_31" value="200 OK" style="endArrow=open;dashed=1;strokeColor=#64748b;strokeWidth=1.2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_31_s" target="anc_31_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_32_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="1388" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_32_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="60" y="1388" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_32" value="notificar solicitud lista para asignación" style="endArrow=open;dashed=1;strokeColor=#64748b;strokeWidth=1.2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_32_s" target="anc_32_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sec_33" value="HU165: Asignar Responsable de Atención" style="shape=note;whiteSpace=wrap;html=1;size=14;verticalAlign=middle;align=left;spacingLeft=10;fillColor=#f1f5f9;strokeColor=#64748b;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1426" width="350" height="30" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_34_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="300" y="1471" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_34_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="1471" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_34" value="5: asignarResponsable(supervisor, fechaVisita)" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_34_s" target="anc_34_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_35_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="1509" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_35_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1509" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_35" value="5.1: asignar_responsable_atencion(dto)" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_35_s" target="anc_35_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_36_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1547" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_36_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="1547" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_36" value="5.1.1: actualizar_asignacion(ASIGNADA)" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_36_s" target="anc_36_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_37_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1585" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_37_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1180" y="1585" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_37" value="5.1.2: registrar_bitacora(ASIGNACION)" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_37_s" target="anc_37_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_38_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1623" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_38_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="1623" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_38" value="200 OK" style="endArrow=open;dashed=1;strokeColor=#64748b;strokeWidth=1.2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_38_s" target="anc_38_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_39_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="1661" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_39_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="300" y="1661" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_39" value="confirmar asignación técnica" style="endArrow=open;dashed=1;strokeColor=#64748b;strokeWidth=1.2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_39_s" target="anc_39_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sec_40" value="HU166: Gestionar Atención Técnica y Cierre" style="shape=note;whiteSpace=wrap;html=1;size=14;verticalAlign=middle;align=left;spacingLeft=10;fillColor=#f1f5f9;strokeColor=#64748b;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1699" width="350" height="30" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_41_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="420" y="1744" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_41_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="1744" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_41" value="6: registrarAtencion(nuevoEstado, bitacora)" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_41_s" target="anc_41_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_42_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="1782" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_42_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1782" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_42" value="6.1: gestionar_atencion_solicitud(dto)" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_42_s" target="anc_42_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_43_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1820" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_43_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1840" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_43" value="6.1.1: validarTransicionEstado()" style="endArrow=block;dashed=0;html=1;rounded=0;strokeColor=#ca8a04;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_43_s" target="anc_43_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1">
+            <Array as="points">
+              <mxPoint x="735" y="1820" />
+              <mxPoint x="735" y="1840" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="anc_44_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1855" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_44_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="1855" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_44" value="6.1.2: actualizar_estado(RESUELTA)" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_44_s" target="anc_44_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_45_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1893" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_45_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1180" y="1893" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_45" value="6.1.3: registrar_bitacora(materiales, tareas)" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_45_s" target="anc_45_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_46_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1931" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_46_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="1931" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_46" value="200 OK" style="endArrow=open;dashed=1;strokeColor=#64748b;strokeWidth=1.2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_46_s" target="anc_46_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_47_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="1969" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_47_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="420" y="1969" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_47" value="estado actualizado" style="endArrow=open;dashed=1;strokeColor=#64748b;strokeWidth=1.2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_47_s" target="anc_47_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sec_48" value="HU167: Consultar Seguimiento y Línea de Tiempo" style="shape=note;whiteSpace=wrap;html=1;size=14;verticalAlign=middle;align=left;spacingLeft=10;fillColor=#f1f5f9;strokeColor=#64748b;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="2007" width="350" height="30" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_49_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="180" y="2052" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_49_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="2052" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_49" value="7: consultarProgresoTicket(idSolicitud)" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_49_s" target="anc_49_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_50_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="2090" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_50_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="2090" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_50" value="7.1: consultar_detalle_solicitud(idSolicitud)" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_50_s" target="anc_50_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_51_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="2128" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_51_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="2128" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_51" value="7.1.1: obtener_detalle_ticket()" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_51_s" target="anc_51_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_52_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="2166" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_52_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1180" y="2166" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_52" value="7.1.2: listar_linea_tiempo()" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_52_s" target="anc_52_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_53_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="2204" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_53_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1340" y="2204" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_53" value="7.1.3: listar_evidencias()" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_53_s" target="anc_53_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_54_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="2242" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_54_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="2242" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_54" value="200 OK" style="endArrow=open;dashed=1;strokeColor=#64748b;strokeWidth=1.2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_54_s" target="anc_54_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_55_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="2280" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_55_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="180" y="2280" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_55" value="desplegar timeline de atención" style="endArrow=open;dashed=1;strokeColor=#64748b;strokeWidth=1.2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_55_s" target="anc_55_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sec_56" value="HU168: Historial y Métricas Consolidadas" style="shape=note;whiteSpace=wrap;html=1;size=14;verticalAlign=middle;align=left;spacingLeft=10;fillColor=#f1f5f9;strokeColor=#64748b;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="2318" width="350" height="30" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_57_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="60" y="2363" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_57_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="2363" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_57" value="8: consultarHistorialYMetricas()" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_57_s" target="anc_57_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_58_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="2401" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_58_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="2401" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_58" value="8.1: consultar_historial_y_metricas()" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_58_s" target="anc_58_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_59_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="2439" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_59_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="2439" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_59" value="8.1.1: consolidar_trazabilidad()" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_59_s" target="anc_59_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_60_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="2477" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_60_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="860" y="2477" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_60" value="8.1.2: contar_por_estado()" style="endArrow=block;dashed=0;strokeColor=#1e293b;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_60_s" target="anc_60_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_61_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="2515" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_61_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="2515" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_61" value="200 OK" style="endArrow=open;dashed=1;strokeColor=#64748b;strokeWidth=1.2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_61_s" target="anc_61_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="anc_62_s" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="550" y="2553" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="anc_62_t" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="60" y="2553" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="msg_62" value="visualizar métricas y auditoría" style="endArrow=open;dashed=1;strokeColor=#64748b;strokeWidth=1.2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="anc_62_s" target="anc_62_t">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

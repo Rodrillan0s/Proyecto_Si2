@@ -1,0 +1,89 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="robustness_cu33" name="CU33 - Robustez ICONIX">
+    <mxGraphModel dx="1400" dy="950" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="950" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="frame" value="rd CU33 - Gestionar Garantías y Servicio Posventa Inmobiliario (Robustez ICONIX)" style="swimlane;html=1;startSize=32;horizontal=1;fillColor=none;swimlaneFillColor=none;strokeColor=#0284c7;fontSize=14;fontStyle=1;align=left;spacingLeft=12;" vertex="1" parent="1">
+          <mxGeometry x="20" y="20" width="1360" height="900" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="act_admin" value="Administrador_empresa" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#e0f2fe;strokeColor=#0369a1;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="100" width="50" height="90" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="act_cliente" value="Cliente" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#e0f2fe;strokeColor=#0369a1;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="300" width="50" height="90" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="act_jefe" value="Jefe de Obra" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#e0f2fe;strokeColor=#0369a1;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="500" width="50" height="90" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="act_supervisor" value="Supervisor" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#e0f2fe;strokeColor=#0369a1;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="700" width="50" height="90" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="b_ui" value="«boundary»&amp;#xa;UIPosventa&amp;#xa;(Web / Móvil)" style="shape=umlBoundary;whiteSpace=wrap;html=1;verticalAlign=top;fillColor=#e0f2fe;strokeColor=#0284c7;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="280" y="360" width="100" height="80" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="c_ctrl" value="«control»&amp;#xa;GestorPosventa" style="shape=umlControl;whiteSpace=wrap;html=1;verticalAlign=top;fillColor=#fef08a;strokeColor=#ca8a04;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="560" y="360" width="90" height="80" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="e_garantia" value="«entity»&amp;#xa;UnidadGarantia" style="shape=umlEntity;whiteSpace=wrap;html=1;verticalAlign=top;fillColor=#dcfce7;strokeColor=#16a34a;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="960" y="80" width="90" height="80" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="e_solicitud" value="«entity»&amp;#xa;SolicitudPosventa" style="shape=umlEntity;whiteSpace=wrap;html=1;verticalAlign=top;fillColor=#dcfce7;strokeColor=#16a34a;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="960" y="200" width="90" height="80" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="e_bitacora" value="«entity»&amp;#xa;BitacoraPosventa" style="shape=umlEntity;whiteSpace=wrap;html=1;verticalAlign=top;fillColor=#dcfce7;strokeColor=#16a34a;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="960" y="320" width="90" height="80" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="e_evidencia" value="«entity»&amp;#xa;EvidenciaPosventa" style="shape=umlEntity;whiteSpace=wrap;html=1;verticalAlign=top;fillColor=#dcfce7;strokeColor=#16a34a;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="960" y="440" width="90" height="80" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="e_unidad" value="«entity»&amp;#xa;UnidadConstruccion" style="shape=umlEntity;whiteSpace=wrap;html=1;verticalAlign=top;fillColor=#dcfce7;strokeColor=#16a34a;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="960" y="560" width="90" height="80" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="e_cliente" value="«entity»&amp;#xa;ClienteCRM" style="shape=umlEntity;whiteSpace=wrap;html=1;verticalAlign=top;fillColor=#dcfce7;strokeColor=#16a34a;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="960" y="680" width="90" height="80" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="e_usuario" value="«entity»&amp;#xa;Usuario" style="shape=umlEntity;whiteSpace=wrap;html=1;verticalAlign=top;fillColor=#dcfce7;strokeColor=#16a34a;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="960" y="800" width="90" height="80" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="e_a1" value="HU161: registrarGarantia()&amp;#xa;HU164: clasificarSolicitud()&amp;#xa;HU168: consultarHistorial()" style="endArrow=none;html=1;rounded=0;strokeColor=#334155;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="act_admin" target="b_ui">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="e_a2" value="HU162: consultarGarantias()&amp;#xa;HU163: registrarSolicitud()&amp;#xa;HU167: consultarSeguimiento()" style="endArrow=none;html=1;rounded=0;strokeColor=#334155;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="act_cliente" target="b_ui">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="e_a3" value="HU165: asignarResponsable()" style="endArrow=none;html=1;rounded=0;strokeColor=#334155;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="act_jefe" target="b_ui">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="e_a4" value="HU166: gestionarAtencion()" style="endArrow=none;html=1;rounded=0;strokeColor=#334155;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="act_supervisor" target="b_ui">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="e_bc" value="solicitarAccion(dto)" style="endArrow=classic;html=1;rounded=0;strokeColor=#0284c7;strokeWidth=2;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="b_ui" target="c_ctrl">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="e_ce1" value="registrar_garantia()&amp;#xa;verificar_cobertura()" style="endArrow=classic;html=1;rounded=0;strokeColor=#16a34a;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="c_ctrl" target="e_garantia">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="e_ce2" value="registrar_solicitud()&amp;#xa;actualizar_estado()" style="endArrow=classic;html=1;rounded=0;strokeColor=#16a34a;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="c_ctrl" target="e_solicitud">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="e_ce3" value="registrar_bitacora()&amp;#xa;listar_linea_tiempo()" style="endArrow=classic;html=1;rounded=0;strokeColor=#16a34a;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="c_ctrl" target="e_bitacora">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="e_ce4" value="adjuntar_evidencia()" style="endArrow=classic;html=1;rounded=0;strokeColor=#16a34a;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="c_ctrl" target="e_evidencia">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="e_ce5" value="verificar_unidad_empresa()" style="endArrow=classic;html=1;rounded=0;strokeColor=#16a34a;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="c_ctrl" target="e_unidad">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="e_ce6" value="verificar_propietario()" style="endArrow=classic;html=1;rounded=0;strokeColor=#16a34a;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="c_ctrl" target="e_cliente">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="e_ce7" value="obtener_supervisores()" style="endArrow=classic;html=1;rounded=0;strokeColor=#16a34a;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="c_ctrl" target="e_usuario">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

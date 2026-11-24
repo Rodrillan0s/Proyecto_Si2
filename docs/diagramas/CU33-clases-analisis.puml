@@ -1,0 +1,127 @@
+@startuml
+title Diagrama de Clases de Análisis UML 2.5.1 — CU33: Gestionar Garantías y Servicio Posventa Inmobiliario
+left to right direction
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName Arial
+hide empty members
+
+class "Actores del CU33\n(Admin, Cliente, Jefe, Supervisor)" as Actores <<actor>>
+
+class "UIPosventa" as UI <<boundary>> {
+  + mostrarFormularioGarantia(): void
+  + mostrarListadoGarantias(): void
+  + capturarSolicitudPosventa(): void
+  + mostrarBandejaClasificacion(): void
+  + capturarAsignacionResponsable(): void
+  + registrarBitacoraAtencion(): void
+  + desplegarTimelineSeguimiento(): void
+  + mostrarDashboardHistorial(): void
+}
+
+class "GestorPosventa" as Ctrl <<control>> {
+  + registrarGarantia(dto: RegistrarGarantiaDTO): GarantiaVO
+  + consultarGarantias(filtros: FiltrosGarantiaDTO): List~GarantiaVO~
+  + registrarSolicitud(dto: RegistrarSolicitudDTO): SolicitudVO
+  + clasificarSolicitud(id: int, dto: ClasificarDTO): SolicitudVO
+  + asignarResponsable(id: int, dto: AsignarDTO): SolicitudVO
+  + gestionarAtencion(id: int, dto: AtenderDTO): SolicitudVO
+  + consultarDetalleSolicitud(id: int): DetalleSolicitudVO
+  + consultarMetricasHistorial(filtros: FiltrosDTO): MetricasVO
+}
+
+class "UnidadGarantia" as Garantia <<entity>> {
+  - id_garantia: int
+  - id_empresa: int
+  - id_unidad: int
+  - id_cliente: int
+  - tipo_garantia: String
+  - descripcion_cobertura: String
+  - condiciones: String
+  - fecha_inicio: date
+  - fecha_fin: date
+  - estado_vigencia: String
+  + esVigente(): boolean
+  + cubreDefecto(tipo: String): boolean
+}
+
+class "SolicitudPosventa" as Solicitud <<entity>> {
+  - id_solicitud: int
+  - id_empresa: int
+  - codigo_ticket: String
+  - id_unidad: int
+  - id_cliente: int
+  - id_garantia: int
+  - id_supervisor: int
+  - titulo: String
+  - descripcion_defecto: String
+  - categoria: String
+  - prioridad: String
+  - estado: String
+  - aplica_garantia: boolean
+  - fecha_creacion: timestamp
+  - fecha_estimada_visita: date
+  - fecha_cierre: timestamp
+  + cambiarEstado(nuevoEstado: String): void
+  + asignarTecnico(idSupervisor: int, fecha: date): void
+}
+
+class "BitacoraPosventa" as Bitacora <<entity>> {
+  - id_bitacora: int
+  - id_solicitud: int
+  - id_usuario: int
+  - tipo_evento: String
+  - estado_resultante: String
+  - detalle_acciones: String
+  - materiales_utilizados: String
+  - fecha_registro: timestamp
+  + registrarEntrada(): void
+}
+
+class "EvidenciaPosventa" as Evidencia <<entity>> {
+  - id_evidencia: int
+  - id_solicitud: int
+  - id_bitacora: int
+  - id_usuario: int
+  - tipo_evidencia: String
+  - ruta_archivo: String
+  - nombre_archivo: String
+  - tipo_mime: String
+  - fecha_subida: timestamp
+  + obtenerUrlDescarga(): String
+}
+
+class "UnidadConstruccion" as Unidad <<entity>> {
+  - id_unidad: int
+  - codigo: String
+  - id_obra: int
+  + perteneceAEmpresa(idEmpresa: int): boolean
+}
+
+class "ClienteCRM" as Cliente <<entity>> {
+  - id_cliente: int
+  - id_persona: int
+  - id_empresa: int
+  - email: String
+  + esPropietarioDe(idUnidad: int): boolean
+}
+
+Actores ..> UI : interactúa con
+UI ..> Ctrl : solicita operaciones
+
+Ctrl ..> Garantia : gestiona
+Ctrl ..> Solicitud : gestiona
+Ctrl ..> Bitacora : registra
+Ctrl ..> Evidencia : adjunta
+Ctrl ..> Unidad : valida
+Ctrl ..> Cliente : valida
+
+Solicitud "1" *-- "0..*" Bitacora : contiene
+Solicitud "1" *-- "0..*" Evidencia : documenta
+Solicitud "0..*" --> "0..1" Garantia : amparada por
+Solicitud "0..*" --> "1" Unidad : reportada en
+Solicitud "0..*" --> "1" Cliente : solicitada por
+Garantia "0..*" --> "1" Unidad : cubre
+Garantia "0..*" --> "1" Cliente : emitida a
+
+@enduml

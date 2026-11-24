@@ -1,0 +1,125 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="timing_cu33" name="CU33 - Diagrama de Tiempo">
+    <mxGraphModel dx="1400" dy="950" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="950" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="frame" value="timing CU33 - Diagrama de Tiempo de Estados de Solicitud de Posventa" style="swimlane;html=1;startSize=32;horizontal=1;fillColor=none;swimlaneFillColor=none;strokeColor=#475569;fontSize=14;fontStyle=1;align=left;spacingLeft=12;" vertex="1" parent="1">
+          <mxGeometry x="20" y="20" width="1360" height="880" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="lbl_st_cerrada" value="CERRADA" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#f8fafc;strokeColor=#64748b;align=center;" vertex="1" parent="1">
+          <mxGeometry x="50" y="85" width="110" height="30" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="line_st_cerrada" value="" style="shape=line;strokeColor=#e2e8f0;dashed=1;dashPattern=3 3;" vertex="1" parent="1">
+          <mxGeometry x="170" y="100" width="1150" height="1" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="lbl_st_resuelta" value="RESUELTA" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#f8fafc;strokeColor=#64748b;align=center;" vertex="1" parent="1">
+          <mxGeometry x="50" y="165" width="110" height="30" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="line_st_resuelta" value="" style="shape=line;strokeColor=#e2e8f0;dashed=1;dashPattern=3 3;" vertex="1" parent="1">
+          <mxGeometry x="170" y="180" width="1150" height="1" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="lbl_st_atencion" value="EN_ATENCION" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#f8fafc;strokeColor=#64748b;align=center;" vertex="1" parent="1">
+          <mxGeometry x="50" y="245" width="110" height="30" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="line_st_atencion" value="" style="shape=line;strokeColor=#e2e8f0;dashed=1;dashPattern=3 3;" vertex="1" parent="1">
+          <mxGeometry x="170" y="260" width="1150" height="1" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="lbl_st_asignada" value="ASIGNADA" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#f8fafc;strokeColor=#64748b;align=center;" vertex="1" parent="1">
+          <mxGeometry x="50" y="325" width="110" height="30" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="line_st_asignada" value="" style="shape=line;strokeColor=#e2e8f0;dashed=1;dashPattern=3 3;" vertex="1" parent="1">
+          <mxGeometry x="170" y="340" width="1150" height="1" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="lbl_st_clasificada" value="CLASIFICADA" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#f8fafc;strokeColor=#64748b;align=center;" vertex="1" parent="1">
+          <mxGeometry x="50" y="405" width="110" height="30" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="line_st_clasificada" value="" style="shape=line;strokeColor=#e2e8f0;dashed=1;dashPattern=3 3;" vertex="1" parent="1">
+          <mxGeometry x="170" y="420" width="1150" height="1" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="lbl_st_pendiente" value="PENDIENTE" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#f8fafc;strokeColor=#64748b;align=center;" vertex="1" parent="1">
+          <mxGeometry x="50" y="485" width="110" height="30" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="line_st_pendiente" value="" style="shape=line;strokeColor=#e2e8f0;dashed=1;dashPattern=3 3;" vertex="1" parent="1">
+          <mxGeometry x="170" y="500" width="1150" height="1" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="lbl_st_rechazada" value="RECHAZADA" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#f8fafc;strokeColor=#64748b;align=center;" vertex="1" parent="1">
+          <mxGeometry x="50" y="565" width="110" height="30" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="line_st_rechazada" value="" style="shape=line;strokeColor=#e2e8f0;dashed=1;dashPattern=3 3;" vertex="1" parent="1">
+          <mxGeometry x="170" y="580" width="1150" height="1" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="m1" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#0284c7;strokeColor=#0369a1;" vertex="1" parent="1">
+          <mxGeometry x="255" y="495" width="10" height="10" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="ann_m1" value="t0: Reporte Cliente&amp;#xa;(HU163)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=bottom;fontSize=10;fontStyle=1;fontColor=#0f172a;" vertex="1" parent="1">
+          <mxGeometry x="195" y="455" width="130" height="35" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="m2" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#0284c7;strokeColor=#0369a1;" vertex="1" parent="1">
+          <mxGeometry x="445" y="415" width="10" height="10" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="ann_m2" value="t1: Clasificación Admin&amp;#xa;(HU164)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=bottom;fontSize=10;fontStyle=1;fontColor=#0f172a;" vertex="1" parent="1">
+          <mxGeometry x="385" y="375" width="130" height="35" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="edge_step_1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0284c7;strokeWidth=2.5;" edge="1" parent="1" source="m1" target="m2">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="m3" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#0284c7;strokeColor=#0369a1;" vertex="1" parent="1">
+          <mxGeometry x="635" y="335" width="10" height="10" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="ann_m3" value="t2: Asignación Jefe Obra&amp;#xa;(HU165)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=bottom;fontSize=10;fontStyle=1;fontColor=#0f172a;" vertex="1" parent="1">
+          <mxGeometry x="575" y="295" width="130" height="35" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="edge_step_2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0284c7;strokeWidth=2.5;" edge="1" parent="1" source="m2" target="m3">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="m4" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#0284c7;strokeColor=#0369a1;" vertex="1" parent="1">
+          <mxGeometry x="825" y="255" width="10" height="10" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="ann_m4" value="t3: Visita / Bitácora Sup&amp;#xa;(HU166)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=bottom;fontSize=10;fontStyle=1;fontColor=#0f172a;" vertex="1" parent="1">
+          <mxGeometry x="765" y="215" width="130" height="35" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="edge_step_3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0284c7;strokeWidth=2.5;" edge="1" parent="1" source="m3" target="m4">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="m5" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#0284c7;strokeColor=#0369a1;" vertex="1" parent="1">
+          <mxGeometry x="1015" y="175" width="10" height="10" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="ann_m5" value="t4: Solución / Reparación&amp;#xa;(HU166)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=bottom;fontSize=10;fontStyle=1;fontColor=#0f172a;" vertex="1" parent="1">
+          <mxGeometry x="955" y="135" width="130" height="35" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="edge_step_4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0284c7;strokeWidth=2.5;" edge="1" parent="1" source="m4" target="m5">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="m6" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#0284c7;strokeColor=#0369a1;" vertex="1" parent="1">
+          <mxGeometry x="1215" y="95" width="10" height="10" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="ann_m6" value="t5: Cierre / Conformidad&amp;#xa;(HU167/HU168)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=bottom;fontSize=10;fontStyle=1;fontColor=#0f172a;" vertex="1" parent="1">
+          <mxGeometry x="1155" y="55" width="130" height="35" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="edge_step_5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0284c7;strokeWidth=2.5;" edge="1" parent="1" source="m5" target="m6">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="m_rechazo" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ef4444;strokeColor=#b91c1c;" vertex="1" parent="1">
+          <mxGeometry x="480" y="575" width="10" height="10" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="ann_rechazo" value="[alt: No aplica garantía / Improcedente]&amp;#xa;Rechazo motivado" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=10;fontColor=#b91c1c;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="410" y="595" width="150" height="35" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="edge_rechazo" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ef4444;strokeWidth=2;dashed=1;" edge="1" parent="1" source="m2" target="m_rechazo">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="ruler_start" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="170" y="680" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="ruler_end" value="" style="ellipse;opacity=0;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1320" y="680" width="2" height="2" as="geometry" relative="0" />
+        </mxCell>
+        <mxCell id="time_ruler" value="Eje Temporal / Progresión de Ciclo de Vida del Ticket de Posventa" style="endArrow=classic;html=1;strokeColor=#475569;strokeWidth=1.5;fontSize=11;fontStyle=1;align=center;" edge="1" parent="1" source="ruler_start" target="ruler_end">
+          <mxGeometry x="0" y="0" width="0" height="0" as="geometry" relative="1" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

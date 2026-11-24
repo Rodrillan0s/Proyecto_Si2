@@ -1,0 +1,184 @@
+@startuml
+title Diagrama de Secuencia UML 2.5.1 (MVC) — CU33: Gestionar Garantías y Servicio Posventa Inmobiliario
+autonumber
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam sequenceMessageAlign center
+skinparam roundcorner 4
+
+actor "Administrador_empresa" as Admin
+actor "Cliente" as Cliente
+actor "Jefe de Obra" as JefeObra
+actor "Supervisor" as Supervisor
+
+participant "ui: UIPosventa" as UI <<boundary>>
+participant "ctrl: GestorPosventa" as Ctrl <<control>>
+participant "garantia: UnidadGarantia" as E_Garantia <<entity>>
+participant "solicitud: SolicitudPosventa" as E_Solicitud <<entity>>
+participant "bitacora: BitacoraPosventa" as E_Bitacora <<entity>>
+participant "evidencia: EvidenciaPosventa" as E_Evidencia <<entity>>
+participant "clienteCRM: ClienteCRM" as E_Cliente <<entity>>
+participant "unidad: UnidadConstruccion" as E_Unidad <<entity>>
+
+== HU161: Registrar Garantía Inmobiliaria ==
+Admin -> UI: registrarGarantia(idUnidad, idCliente, tipo, vigencia, cobertura)
+activate UI
+UI -> Ctrl: registrar_garantia_inmobiliaria(dto)
+activate Ctrl
+Ctrl -> Ctrl: validarFechasYTipo()
+Ctrl -> E_Unidad: verificar_unidad_pertenece_empresa(idUnidad, idEmpresa)
+activate E_Unidad
+E_Unidad --> Ctrl: unidadValida
+deactivate E_Unidad
+Ctrl -> E_Cliente: verificar_cliente_propietario(idCliente, idUnidad)
+activate E_Cliente
+E_Cliente --> Ctrl: esPropietario
+deactivate E_Cliente
+Ctrl -> E_Garantia: crear_garantia(datosGarantia)
+activate E_Garantia
+E_Garantia --> Ctrl: garantiaCreada
+deactivate E_Garantia
+Ctrl --> UI: 201 Created (Garantía registrada)
+deactivate Ctrl
+UI --> Admin: Mostrar confirmación y póliza activa
+deactivate UI
+
+== HU162: Consultar Garantías Inmobiliarias ==
+Cliente -> UI: solicitarMisGarantias(idUnidad)
+activate UI
+UI -> Ctrl: consultar_garantias(idEmpresa, idCliente)
+activate Ctrl
+Ctrl -> E_Garantia: obtener_garantias_con_vigencia(idEmpresa, idCliente)
+activate E_Garantia
+E_Garantia --> Ctrl: listaGarantiasVigencia
+deactivate E_Garantia
+Ctrl --> UI: 200 OK (Garantías con estado Vigente/Vencida)
+deactivate Ctrl
+UI --> Cliente: Mostrar garantías y coberturas
+deactivate UI
+
+== HU163: Registrar Solicitud de Posventa y Evidencia ==
+Cliente -> UI: registrarSolicitud(idUnidad, defecto, idGarantia, evidencia)
+activate UI
+UI -> Ctrl: registrar_solicitud_posventa(dto)
+activate Ctrl
+Ctrl -> Ctrl: generarCodigoTicket()
+Ctrl -> E_Solicitud: crear_solicitud(codigo, PENDIENTE)
+activate E_Solicitud
+E_Solicitud --> Ctrl: idSolicitud
+deactivate E_Solicitud
+Ctrl -> E_Bitacora: registrar_bitacora(CREACION, PENDIENTE)
+activate E_Bitacora
+E_Bitacora --> Ctrl: bitacoraOk
+deactivate E_Bitacora
+Ctrl -> E_Evidencia: adjuntar_evidencia(idSolicitud, archivo, CLIENTE_REPORTE)
+activate E_Evidencia
+E_Evidencia --> Ctrl: evidenciaOk
+deactivate E_Evidencia
+Ctrl --> UI: 201 Created (Ticket generado)
+deactivate Ctrl
+UI --> Cliente: Mostrar código de ticket y confirmación
+deactivate UI
+
+== HU164: Clasificar Solicitud y Validar Cobertura ==
+Admin -> UI: clasificarSolicitud(idSolicitud, categoria, prioridad, aplicaGarantia)
+activate UI
+UI -> Ctrl: clasificar_solicitud_posventa(idSolicitud, dto)
+activate Ctrl
+alt Aplica Garantía
+  Ctrl -> E_Garantia: verificar_cobertura(idGarantia, idUnidad)
+  activate E_Garantia
+  E_Garantia --> Ctrl: garantiaVigente
+  deactivate E_Garantia
+end
+Ctrl -> E_Solicitud: actualizar_clasificacion(categoria, prioridad, CLASIFICADA)
+activate E_Solicitud
+E_Solicitud --> Ctrl: solicitudClasificada
+deactivate E_Solicitud
+Ctrl -> E_Bitacora: registrar_bitacora(CLASIFICACION, CLASIFICADA)
+activate E_Bitacora
+E_Bitacora --> Ctrl: bitacoraOk
+deactivate E_Bitacora
+Ctrl --> UI: 200 OK (Solicitud clasificada)
+deactivate Ctrl
+UI --> Admin: Notificar clasificación habilitada para Jefe de Obra
+deactivate UI
+
+== HU165: Asignar Responsables de Atención ==
+JefeObra -> UI: asignarResponsable(idSolicitud, idSupervisor, fechaEstimada, notas)
+activate UI
+UI -> Ctrl: asignar_responsable_atencion(idSolicitud, dto)
+activate Ctrl
+Ctrl -> E_Solicitud: actualizar_asignacion(idSupervisor, fechaEstimada, ASIGNADA)
+activate E_Solicitud
+E_Solicitud --> Ctrl: solicitudAsignada
+deactivate E_Solicitud
+Ctrl -> E_Bitacora: registrar_bitacora(ASIGNACION, ASIGNADA)
+activate E_Bitacora
+E_Bitacora --> Ctrl: bitacoraOk
+deactivate E_Bitacora
+Ctrl --> UI: 200 OK (Supervisor asignado)
+deactivate Ctrl
+UI --> JefeObra: Confirmar asignación técnica
+deactivate UI
+
+== HU166: Gestionar Atención Técnica y Bitácora ==
+Supervisor -> UI: registrarAtencion(idSolicitud, nuevoEstado, acciones, materiales)
+activate UI
+UI -> Ctrl: gestionar_atencion_solicitud(idSolicitud, dto)
+activate Ctrl
+Ctrl -> Ctrl: validarTransicionEstado(estadoActual, nuevoEstado)
+Ctrl -> E_Solicitud: actualizar_estado(nuevoEstado, fechaCierre)
+activate E_Solicitud
+E_Solicitud --> Ctrl: estadoActualizado
+deactivate E_Solicitud
+Ctrl -> E_Bitacora: registrar_bitacora(ATENCION, nuevoEstado, materiales)
+activate E_Bitacora
+E_Bitacora --> Ctrl: bitacoraOk
+deactivate E_Bitacora
+Ctrl --> UI: 200 OK (Atención registrada)
+deactivate Ctrl
+UI --> Supervisor: Mostrar estado actualizado del caso
+deactivate UI
+
+== HU167: Consultar Seguimiento y Línea de Tiempo ==
+Cliente -> UI: consultarProgresoTicket(idSolicitud)
+activate UI
+UI -> Ctrl: consultar_detalle_solicitud_posventa(idSolicitud)
+activate Ctrl
+Ctrl -> E_Solicitud: obtener_detalle_ticket(idSolicitud)
+activate E_Solicitud
+E_Solicitud --> Ctrl: datosTicket
+deactivate E_Solicitud
+Ctrl -> E_Bitacora: listar_linea_tiempo(idSolicitud)
+activate E_Bitacora
+E_Bitacora --> Ctrl: historialEventos
+deactivate E_Bitacora
+Ctrl -> E_Evidencia: listar_evidencias(idSolicitud)
+activate E_Evidencia
+E_Evidencia --> Ctrl: listaEvidencias
+deactivate E_Evidencia
+Ctrl --> UI: 200 OK (Línea de tiempo completa)
+deactivate Ctrl
+UI --> Cliente: Desplegar timeline y fecha programada
+deactivate UI
+
+== HU168: Consultar Historial y Trazabilidad Consolidada ==
+Admin -> UI: consultarHistorialYMetricas()
+activate UI
+UI -> Ctrl: consultar_historial_y_metricas()
+activate Ctrl
+Ctrl -> E_Solicitud: consolidar_trazabilidad(idEmpresa)
+activate E_Solicitud
+E_Solicitud --> Ctrl: metricasSolicitudes
+deactivate E_Solicitud
+Ctrl -> E_Garantia: contar_por_estado(idEmpresa)
+activate E_Garantia
+E_Garantia --> Ctrl: metricasGarantias
+deactivate E_Garantia
+Ctrl --> UI: 200 OK (Dashboard consolidado)
+deactivate Ctrl
+UI --> Admin: Visualizar indicadores y trazabilidad
+deactivate UI
+
+@enduml

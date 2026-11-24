@@ -1,0 +1,9 @@
+﻿id_op,operacion,actor,boundary,control,entidades,metodo_control,metodo_entidad,estado
+HU161,Registrar Garantía Inmobiliaria,Administrador_empresa,UIPosventa,GestorPosventa,"UnidadGarantia, UnidadConstruccion, ClienteCRM",registrarGarantia(dto),crearGarantia(),CONFIRMADO
+HU162,Consultar Garantías Inmobiliarias,Cliente / Administrador_empresa,UIPosventa,GestorPosventa,UnidadGarantia,consultarGarantias(filtros),obtenerGarantiasConVigencia(),CONFIRMADO
+HU163,Registrar Solicitud de Posventa,Cliente,UIPosventa,GestorPosventa,"SolicitudPosventa, EvidenciaPosventa, BitacoraPosventa",registrarSolicitud(dto),"crearSolicitud(), adjuntarEvidencia(), registrarBitacora()",CONFIRMADO
+HU164,Clasificar Solicitud y Validar Garantía,Administrador_empresa,UIPosventa,GestorPosventa,"SolicitudPosventa, UnidadGarantia, BitacoraPosventa","clasificarSolicitud(idSolicitud, dto)","actualizarClasificacion(), verificarCobertura()",CONFIRMADO
+HU165,Asignar Responsables de Atención,Jefe de Obra,UIPosventa,GestorPosventa,"SolicitudPosventa, Usuario, BitacoraPosventa","asignarResponsable(idSolicitud, dto)","actualizarAsignacion(), registrarBitacora()",CONFIRMADO
+HU166,Gestionar Atención Técnica y Bitácora,Supervisor,UIPosventa,GestorPosventa,"SolicitudPosventa, BitacoraPosventa, EvidenciaPosventa","gestionarAtencion(idSolicitud, dto)","actualizarEstado(), registrarBitacora(), adjuntarEvidencia()",CONFIRMADO
+HU167,Consultar Seguimiento y Línea de Tiempo,Cliente,UIPosventa,GestorPosventa,"SolicitudPosventa, BitacoraPosventa, EvidenciaPosventa",consultarDetalleSolicitud(idSolicitud),"obtenerDetalleTicket(), listarBitacoras()",CONFIRMADO
+HU168,Consultar Historial y Trazabilidad,Administrador_empresa,UIPosventa,GestorPosventa,"SolicitudPosventa, UnidadGarantia",consultarMetricasHistorial(filtros),"consolidarTrazabilidad(), contarPorEstado()",CONFIRMADO
