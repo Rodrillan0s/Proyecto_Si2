@@ -12,6 +12,7 @@ import '../theme/app_theme.dart';
 import 'asistente_screen.dart';
 import 'consultas_tecnicas_screen.dart';
 import 'crm_screen.dart';
+import 'posventa_screen.dart';
 import 'incidencias_screen.dart';
 import 'materiales_screen.dart';
 import 'notificaciones_screen.dart';
@@ -980,6 +981,16 @@ class _HomeScreenState extends State<HomeScreen> {
           iconColor: const Color(0xFFEC4899),
           label: 'CRM & Clientes',
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CrmScreen())),
+          isDark: isDark,
+          cardBg: cardBg,
+          borderColor: borderColor,
+          titleColor: titleColor,
+        ),
+        _buildQuickAccessItem(
+          icon: Icons.verified_user_outlined,
+          iconColor: const Color(0xFF10B981),
+          label: 'Garantías y Posventa',
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PosventaScreen())),
           isDark: isDark,
           cardBg: cardBg,
           borderColor: borderColor,

@@ -25,5 +25,5 @@ def modulo_ruta(ruta):
     return {'estimaciones':'presupuestos','apus':'presupuestos','control-costos':'control_costos',
         'ordenes-trabajo':'ordenes_trabajo','incidencias':'incidencias','compras':'compras',
         'inventario':'inventario','materiales':'materiales','proveedores':'proveedores',
-        'equipos-maquinaria':'equipos','crm':'crm','comercializacion':'crm','usuarios':'usuarios','roles':'usuarios',
+        'equipos-maquinaria':'equipos','crm':'crm','comercializacion':'crm','posventa':'crm','usuarios':'usuarios','roles':'usuarios',
         'reportes':'reportes','ai':'ia','voz':'ia','consultas-tecnicas':'obras','documentos-tecnicos':'obras'}.get(raiz)

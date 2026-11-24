@@ -36,6 +36,7 @@ export const NAVIGATION: NavSection[] = [
   { id: 'comercial', label: 'COMERCIAL & CLIENTES', icon: people, items: [
     { id: 'comercializacion', label: 'Comercialización de Unidades', route: '/comercializacion', icon: stock, permissions: ['Visualizar_clientes', 'Registrar_obras'] },
     { id: 'crm', label: 'CRM & Clientes', route: '/crm', icon: people, permissions: ['Visualizar_clientes'] },
+    { id: 'posventa', label: 'Garantías y Posventa', route: '/posventa', icon: settings, permissions: ['Visualizar_posventa', 'Visualizar_garantias'] },
     { id: 'asistente-comercial', label: 'Asistente Comercial', route: '/asistente-comercial', icon: chat },
   ] },
   { id: 'inventario', label: 'INVENTARIO & LOGÍSTICA', icon: stock, items: [

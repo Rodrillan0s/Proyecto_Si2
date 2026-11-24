@@ -103,6 +103,12 @@ export const routes: Routes = [
                 data: { permissions: ['Visualizar_clientes'] }
             },
             {
+                path: 'posventa',
+                loadComponent: () => import('./pages/posventa/posventa').then(module => module.PosventaComponent),
+                canActivate: [roleGuard],
+                data: { permissions: ['Visualizar_posventa', 'Visualizar_garantias'] }
+            },
+            {
                 path: 'proveedores',
                 loadComponent: () => import('./pages/proveedores/proveedores').then(module => module.ProveedoresComponent),
                 canActivate: [roleGuard],

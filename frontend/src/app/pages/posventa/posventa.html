@@ -1,0 +1,458 @@
+<div class="posventa-container">
+  <div class="posventa-header">
+    <div class="title-section">
+      <h1>Garantías y Posventa</h1>
+      <p>Gestión de compromisos contractuales, garantías y solicitudes de atención posventa</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-secondary" (click)="abrirModalNuevaGarantia()" *ngIf="puedeRegistrarGarantia">
+        🛡️ Registrar Garantía
+      </button>
+      <button class="btn-primary" (click)="abrirModalNuevoReclamo()">
+        ➕ Nuevo Reclamo Posventa
+      </button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid" *ngIf="metricas">
+    <div class="kpi-card">
+      <div class="kpi-title">Total Solicitudes</div>
+      <div class="kpi-value">{{ metricas.total_solicitudes }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Tickets Pendientes</div>
+      <div class="kpi-value" style="color: #b45309;">{{ metricas.pendientes }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">En Atención</div>
+      <div class="kpi-value" style="color: #be185d;">{{ metricas.en_atencion }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Resueltas / Cerradas</div>
+      <div class="kpi-value" style="color: #15803d;">{{ metricas.resueltas }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Garantías Vigentes</div>
+      <div class="kpi-value" style="color: #0369a1;">{{ metricas.garantias_vigentes }}</div>
+    </div>
+  </div>
+
+  <!-- Tabs Nav -->
+  <div class="tabs-nav">
+    <button class="tab-btn" [class.active]="tabActiva === 'solicitudes'" (click)="cambiarTab('solicitudes')">
+      📑 Solicitudes de Atención ({{ solicitudes.length }})
+    </button>
+    <button class="tab-btn" [class.active]="tabActiva === 'garantias'" (click)="cambiarTab('garantias')">
+      🛡️ Garantías Inmobiliarias ({{ garantias.length }})
+    </button>
+    <button class="tab-btn" [class.active]="tabActiva === 'historial'" (click)="cambiarTab('historial')">
+      📊 Métricas y Trazabilidad (HU168)
+    </button>
+  </div>
+
+  <!-- TAB 1: SOLICITUDES DE POSVENTA -->
+  <div *ngIf="tabActiva === 'solicitudes'">
+    <div class="filters-bar">
+      <select class="filter-select" [(ngModel)]="filtroEstado" (change)="cargarSolicitudes()">
+        <option value="">Todos los Estados</option>
+        <option value="PENDIENTE">Pendientes</option>
+        <option value="CLASIFICADA">Clasificadas</option>
+        <option value="ASIGNADA">Asignadas</option>
+        <option value="EN_ATENCION">En Atención</option>
+        <option value="RESUELTA">Resueltas</option>
+        <option value="CERRADA">Cerradas</option>
+      </select>
+      <select class="filter-select" [(ngModel)]="filtroPrioridad" (change)="cargarSolicitudes()">
+        <option value="">Todas las Prioridades</option>
+        <option value="URGENTE">Urgente</option>
+        <option value="ALTA">Alta</option>
+        <option value="MEDIA">Media</option>
+        <option value="BAJA">Baja</option>
+      </select>
+    </div>
+
+    <div class="table-card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Ticket</th>
+            <th>Unidad / Obra</th>
+            <th>Cliente</th>
+            <th>Problema / Título</th>
+            <th>Prioridad</th>
+            <th>Estado</th>
+            <th>Supervisor</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let s of solicitudes">
+            <td><strong>{{ s.codigo_ticket }}</strong></td>
+            <td>
+              <div>{{ s.nombre_unidad }}</div>
+              <small style="color: #64748b;">{{ s.nombre_obra }}</small>
+            </td>
+            <td>{{ s.nombre_cliente }}</td>
+            <td>
+              <div><strong>{{ s.titulo }}</strong></div>
+              <small style="color: #64748b;" *ngIf="s.categoria">Esp: {{ s.categoria }}</small>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="'badge-' + s.prioridad.toLowerCase()">{{ s.prioridad }}</span>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="'badge-' + s.estado.toLowerCase().replace('_', '-')">{{ s.estado }}</span>
+            </td>
+            <td>{{ s.nombre_supervisor || 'Sin asignar' }}</td>
+            <td>
+              <div style="display: flex; gap: 0.25rem;">
+                <button class="btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;" (click)="verDetalle(s)">
+                  👁️ Detalle
+                </button>
+                <button class="btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; background: #4338ca;"
+                        *ngIf="s.estado === 'PENDIENTE' && puedeClasificar" (click)="abrirModalClasificar(s)">
+                  ⚖️ Clasificar
+                </button>
+                <button class="btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; background: #0369a1;"
+                        *ngIf="(s.estado === 'CLASIFICADA' || s.estado === 'ASIGNADA') && puedeAsignar" (click)="abrirModalAsignar(s)">
+                  👷 Asignar
+                </button>
+                <button class="btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; background: #be185d;"
+                        *ngIf="(s.estado === 'ASIGNADA' || s.estado === 'EN_ATENCION') && puedeAtender" (click)="abrirModalAtender(s)">
+                  🔧 Atender
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="solicitudes.length === 0">
+            <td colspan="8" style="text-align: center; color: #64748b; padding: 2rem;">
+              No se encontraron solicitudes con los filtros aplicados.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 2: GARANTÍAS INMOBILIARIAS -->
+  <div *ngIf="tabActiva === 'garantias'">
+    <div class="table-card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Unidad</th>
+            <th>Proyecto</th>
+            <th>Cliente Titular</th>
+            <th>Tipo Garantía</th>
+            <th>Cobertura</th>
+            <th>Vigencia</th>
+            <th>Estado</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let g of garantias">
+            <td><strong>{{ g.nombre_unidad }}</strong></td>
+            <td>{{ g.nombre_obra }}</td>
+            <td>{{ g.nombre_cliente }}</td>
+            <td><span class="badge badge-clasificada">{{ g.tipo_garantia }}</span></td>
+            <td>{{ g.descripcion_cobertura }}</td>
+            <td>{{ g.fecha_inicio }} al {{ g.fecha_fin }}</td>
+            <td>
+              <span class="badge" [class.badge-vigente]="g.estado === 'VIGENTE'" [class.badge-vencida]="g.estado === 'VENCIDA'">
+                {{ g.estado }}
+              </span>
+            </td>
+            <td>
+              <button class="btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;" (click)="solicitarPosventaDesdeGarantia(g)">
+                🛠️ Reportar Reclamo
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="garantias.length === 0">
+            <td colspan="8" style="text-align: center; color: #64748b; padding: 2rem;">
+              No hay garantías inmobiliarias registradas.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 3: HISTORIAL Y MÉTRICAS (HU168) -->
+  <div *ngIf="tabActiva === 'historial'">
+    <div class="kpi-grid" *ngIf="metricas">
+      <div class="kpi-card">
+        <div class="kpi-title">Promedio Días de Resolución</div>
+        <div class="kpi-value">{{ metricas.promedio_dias_resolucion }} días</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Cobertura por Garantía</div>
+        <div class="kpi-value">{{ metricas.cubiertas_por_garantia }} casos</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Casos Urgentes Atendidos</div>
+        <div class="kpi-value">{{ metricas.urgentes }} casos</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: REGISTRAR GARANTÍA (HU161) -->
+  <div class="modal-overlay" *ngIf="modalGarantiaAbierto">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>🛡️ Registrar Garantía Inmobiliaria (HU161)</h2>
+        <button class="close-btn" (click)="modalGarantiaAbierto = false">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Unidad vendida / reservada / entregada *</label>
+          <select class="form-select" [(ngModel)]="formGarantia.id_unidad" (change)="cambiarUnidadGarantia()">
+            <option [ngValue]="0">Seleccione una unidad</option>
+            <option *ngFor="let opcion of opcionesGarantia" [ngValue]="opcion.id_unidad">
+              {{ opcion.codigo_unidad }} - {{ opcion.nombre_obra }} - {{ opcion.nombre_cliente }}
+            </option>
+          </select>
+          <small *ngIf="opcionesGarantia.length === 0" style="color: #b45309;">
+            No hay unidades con cliente asociado en estado reservado, vendido o entregado.
+          </small>
+        </div>
+        <div class="form-group" *ngIf="unidadSeleccionadaGarantia() as opcion">
+          <label>Cliente propietario</label>
+          <input type="text" class="form-input" [value]="opcion.nombre_cliente" disabled />
+          <input type="hidden" [(ngModel)]="formGarantia.id_cliente" />
+        </div>
+        <div class="form-group">
+          <label>Tipo de Garantía *</label>
+          <select class="form-select" [(ngModel)]="formGarantia.tipo_garantia">
+            <option value="ESTRUCTURAL">Estructural (5-10 años)</option>
+            <option value="ACABADOS">Acabados y Pintura (1 año)</option>
+            <option value="INSTALACIONES_HIDROSANITARIAS">Instalaciones Hidrosanitarias</option>
+            <option value="INSTALACIONES_ELECTRICAS">Instalaciones Eléctricas</option>
+            <option value="IMPERMEABILIZACION">Impermeabilización</option>
+            <option value="OTRO">Otro compromiso</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Descripción de Cobertura *</label>
+          <textarea class="form-textarea" rows="3" [(ngModel)]="formGarantia.descripcion_cobertura" placeholder="Detalle qué defectos están cubiertos"></textarea>
+        </div>
+        <div class="form-group" style="display: flex; gap: 1rem;">
+          <div style="flex: 1;">
+            <label>Fecha de Inicio *</label>
+            <input type="date" class="form-input" [(ngModel)]="formGarantia.fecha_inicio" />
+          </div>
+          <div style="flex: 1;">
+            <label>Fecha de Vencimiento *</label>
+            <input type="date" class="form-input" [(ngModel)]="formGarantia.fecha_fin" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="modalGarantiaAbierto = false">Cancelar</button>
+        <button class="btn-primary" (click)="guardarGarantia()">Guardar Garantía</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: REGISTRAR RECLAMO (HU163) -->
+  <div class="modal-overlay" *ngIf="modalReclamoAbierto">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>🛠️ Registrar Solicitud de Posventa (HU163)</h2>
+        <button class="close-btn" (click)="modalReclamoAbierto = false">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Unidad inmobiliaria *</label>
+          <select class="form-select" [(ngModel)]="formReclamo.id_unidad" (change)="cambiarUnidadReclamo()">
+            <option [ngValue]="0">Seleccione una unidad</option>
+            <option *ngFor="let opcion of opcionesGarantia" [ngValue]="opcion.id_unidad">
+              {{ opcion.codigo_unidad }} - {{ opcion.nombre_obra }} - {{ opcion.nombre_cliente }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group" *ngIf="!esCliente && unidadSeleccionadaReclamo() as opcion">
+          <label>Cliente</label>
+          <input type="text" class="form-input" [value]="opcion.nombre_cliente" disabled />
+        </div>
+        <div class="form-group">
+          <label>Título del Reclamo *</label>
+          <input type="text" class="form-input" [(ngModel)]="formReclamo.titulo" placeholder="Ej. Fuga en lavaplatos" />
+        </div>
+        <div class="form-group">
+          <label>Descripción del Defecto Detectado *</label>
+          <textarea class="form-textarea" rows="4" [(ngModel)]="formReclamo.descripcion_defecto" placeholder="Describa el inconveniente"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="modalReclamoAbierto = false">Cancelar</button>
+        <button class="btn-primary" (click)="guardarReclamo()">Enviar Solicitud</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CLASIFICAR SOLICITUD (HU164) -->
+  <div class="modal-overlay" *ngIf="modalClasificarAbierto && solicitudSeleccionada">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>⚖️ Clasificar Solicitud: {{ solicitudSeleccionada.codigo_ticket }} (HU164)</h2>
+        <button class="close-btn" (click)="modalClasificarAbierto = false">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Especialidad / Naturaleza *</label>
+          <select class="form-select" [(ngModel)]="formClasificar.categoria">
+            <option value="PLOMERIA">Plomería / Fontanería</option>
+            <option value="ELECTRICIDAD">Electricidad</option>
+            <option value="ACABADOS">Acabados / Pintura / Pisos</option>
+            <option value="ESTRUCTURA">Estructura</option>
+            <option value="CERRAJERIA">Cerrajería / Puertas / Ventanas</option>
+            <option value="HUMEDAD">Humedad / Filtraciones</option>
+            <option value="OTRO">Otro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Prioridad de Atención *</label>
+          <select class="form-select" [(ngModel)]="formClasificar.prioridad">
+            <option value="BAJA">Baja</option>
+            <option value="MEDIA">Media</option>
+            <option value="ALTA">Alta</option>
+            <option value="URGENTE">Urgente</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" [(ngModel)]="formClasificar.aplica_garantia" />
+            ¿Aplica cobertura bajo garantía vigente?
+          </label>
+        </div>
+        <div class="form-group" *ngIf="formClasificar.aplica_garantia">
+          <label>ID de la Garantía Vigente *</label>
+          <input type="number" class="form-input" [(ngModel)]="formClasificar.id_garantia" placeholder="ID Garantía" />
+        </div>
+        <div class="form-group">
+          <label>Observaciones de Clasificación</label>
+          <textarea class="form-textarea" rows="2" [(ngModel)]="formClasificar.observaciones"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="modalClasificarAbierto = false">Cancelar</button>
+        <button class="btn-primary" (click)="guardarClasificacion()">Guardar Clasificación</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ASIGNAR SUPERVISOR (HU165) -->
+  <div class="modal-overlay" *ngIf="modalAsignarAbierto && solicitudSeleccionada">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>👷 Asignar Responsable de Atención (HU165)</h2>
+        <button class="close-btn" (click)="modalAsignarAbierto = false">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Supervisor / Técnico Responsable *</label>
+          <select class="form-select" [(ngModel)]="formAsignar.id_supervisor">
+            <option *ngFor="let sup of supervisores" [value]="sup.id_usuario">
+              {{ sup.nombre_completo }} ({{ sup.nombre_rol }})
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Fecha Estimada de Visita *</label>
+          <input type="date" class="form-input" [(ngModel)]="formAsignar.fecha_estimada_visita" />
+        </div>
+        <div class="form-group">
+          <label>Instrucciones Técnicas Internas</label>
+          <textarea class="form-textarea" rows="3" [(ngModel)]="formAsignar.instrucciones_tecnicas" placeholder="Instrucciones para el técnico..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="modalAsignarAbierto = false">Cancelar</button>
+        <button class="btn-primary" (click)="guardarAsignacion()">Confirmar Asignación</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ATENCIÓN TÉCNICA (HU166) -->
+  <div class="modal-overlay" *ngIf="modalAtenderAbierto && solicitudSeleccionada">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>🔧 Gestión de Atención de Posventa (HU166)</h2>
+        <button class="close-btn" (click)="modalAtenderAbierto = false">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Estado de la Atención *</label>
+          <select class="form-select" [(ngModel)]="formAtender.nuevo_estado">
+            <option value="EN_ATENCION">En Atención / Visita en curso</option>
+            <option value="RESUELTA">Resuelta / Trabajos Concluidos</option>
+            <option value="CERRADA">Cerrada Definitivamente</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Bitácora de Visita / Acciones Correctivas *</label>
+          <textarea class="form-textarea" rows="4" [(ngModel)]="formAtender.acciones_realizadas" placeholder="Detalle técnico de los trabajos efectuados..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Materiales e Insumos Utilizados</label>
+          <input type="text" class="form-input" [(ngModel)]="formAtender.materiales_utilizados" placeholder="Ej. 1 tubo PVC, sellador silicona..." />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="modalAtenderAbierto = false">Cancelar</button>
+        <button class="btn-primary" (click)="guardarAtencion()">Guardar Atención</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DETALLE Y TIMELINE (HU167) -->
+  <div class="modal-overlay" *ngIf="modalDetalleAbierto && solicitudSeleccionada">
+    <div class="modal-content" style="max-width: 700px;">
+      <div class="modal-header">
+        <h2>Ticket {{ solicitudSeleccionada.codigo_ticket }}</h2>
+        <button class="close-btn" (click)="modalDetalleAbierto = false">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="margin-bottom: 1rem;">
+          <h3 style="margin: 0; color: #0f172a;">{{ solicitudSeleccionada.titulo }}</h3>
+          <p style="color: #64748b; margin: 0.25rem 0;">{{ solicitudSeleccionada.descripcion_defecto }}</p>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+          <span class="badge" [ngClass]="'badge-' + solicitudSeleccionada.estado.toLowerCase().replace('_', '-')">
+            Estado: {{ solicitudSeleccionada.estado }}
+          </span>
+          <span class="badge" [ngClass]="'badge-' + solicitudSeleccionada.prioridad.toLowerCase()">
+            Prioridad: {{ solicitudSeleccionada.prioridad }}
+          </span>
+          <span class="badge badge-clasificada" *ngIf="solicitudSeleccionada.aplica_garantia">
+            🛡️ Cubierto por Garantía
+          </span>
+        </div>
+
+        <h4>Línea de Tiempo de Actualizaciones (HU167)</h4>
+        <div class="timeline">
+          <div class="timeline-item" *ngFor="let ev of solicitudSeleccionada.linea_tiempo">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <div class="timeline-header">
+                <span class="timeline-title">{{ ev.tipo_evento.replace('_', ' ') }}</span>
+                <span>{{ ev.fecha | slice:0:16 }}</span>
+              </div>
+              <div style="font-size: 0.9rem; color: #334155;">{{ ev.detalle_acciones }}</div>
+              <small style="color: #64748b;" *ngIf="ev.materiales_utilizados">
+                Insumos: {{ ev.materiales_utilizados }}
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" (click)="modalDetalleAbierto = false">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>

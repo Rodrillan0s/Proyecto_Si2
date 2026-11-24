@@ -58,7 +58,16 @@ export type PermisoNombre =
   | 'Cerrar_incidencias'
   | 'Visualizar_clientes'
   | 'Registrar_clientes'
-  | 'Modificar_clientes';
+  | 'Modificar_clientes'
+  | 'Visualizar_garantias'
+  | 'Registrar_garantias'
+  | 'Modificar_garantias'
+  | 'Visualizar_posventa'
+  | 'Registrar_posventa'
+  | 'Clasificar_posventa'
+  | 'Asignar_posventa'
+  | 'Atender_posventa'
+  | 'Cerrar_posventa';
 
 export const PERMISOS_OFICIALES: PermisoNombre[] = [
   'Visualizar_cronograma', 'Registrar_cronograma', 'Modificar_cronograma', 'Planificar_cronograma',
@@ -74,7 +83,10 @@ export const PERMISOS_OFICIALES: PermisoNombre[] = [
   'Visualizar_control_costos', 'Registrar_costos_ejecutados', 'Anular_costos_ejecutados',
   'Registrar_ordenes_cambio', 'Modificar_ordenes_cambio', 'Aprobar_ordenes_cambio',
   'Visualizar_incidencias', 'Registrar_incidencias', 'Modificar_incidencias', 'Asignar_incidencias', 'Cerrar_incidencias',
-  'Visualizar_clientes', 'Registrar_clientes', 'Modificar_clientes'
+  'Visualizar_clientes', 'Registrar_clientes', 'Modificar_clientes',
+  'Visualizar_garantias', 'Registrar_garantias', 'Modificar_garantias',
+  'Visualizar_posventa', 'Registrar_posventa', 'Clasificar_posventa',
+  'Asignar_posventa', 'Atender_posventa', 'Cerrar_posventa'
 ];
 
 export const MAPA_PERMISOS_POR_ROL: Record<string, PermisoNombre[]> = {
@@ -93,7 +105,10 @@ export const MAPA_PERMISOS_POR_ROL: Record<string, PermisoNombre[]> = {
     'Visualizar_control_costos', 'Registrar_costos_ejecutados', 'Anular_costos_ejecutados',
     'Registrar_ordenes_cambio', 'Modificar_ordenes_cambio', 'Aprobar_ordenes_cambio',
     'Visualizar_incidencias', 'Registrar_incidencias', 'Modificar_incidencias', 'Asignar_incidencias', 'Cerrar_incidencias',
-    'Visualizar_clientes', 'Registrar_clientes', 'Modificar_clientes'
+    'Visualizar_clientes', 'Registrar_clientes', 'Modificar_clientes',
+    'Visualizar_garantias', 'Registrar_garantias', 'Modificar_garantias',
+    'Visualizar_posventa', 'Registrar_posventa', 'Clasificar_posventa',
+    'Asignar_posventa', 'Atender_posventa', 'Cerrar_posventa'
   ],
   'JEFE_DE_OBRA': [
     'Visualizar_cronograma', 'Registrar_cronograma', 'Modificar_cronograma', 'Planificar_cronograma',
@@ -105,18 +120,21 @@ export const MAPA_PERMISOS_POR_ROL: Record<string, PermisoNombre[]> = {
     'Visualizar_control_costos', 'Registrar_costos_ejecutados', 'Anular_costos_ejecutados',
     'Registrar_ordenes_cambio', 'Modificar_ordenes_cambio', 'Aprobar_ordenes_cambio',
     'Visualizar_incidencias', 'Registrar_incidencias', 'Modificar_incidencias', 'Asignar_incidencias',
-    'Visualizar_clientes', 'Registrar_clientes', 'Modificar_clientes'
+    'Visualizar_clientes', 'Registrar_clientes', 'Modificar_clientes',
+    'Visualizar_garantias', 'Visualizar_posventa', 'Asignar_posventa', 'Atender_posventa'
   ],
   'SUPERVISOR_OBRA': [
     'Visualizar_cronograma', 'Planificar_cronograma',
     'Visualizar_obras', 'Modificar_obras',
     'Visualizar_inventario',
     'Visualizar_materiales',
-    'Visualizar_incidencias', 'Modificar_incidencias', 'Cerrar_incidencias'
+    'Visualizar_incidencias', 'Modificar_incidencias', 'Cerrar_incidencias',
+    'Visualizar_posventa', 'Atender_posventa'
   ],
   'CLIENTE': [
     'Visualizar_reportes', 'Exportar_reportes',
-    'Visualizar_obras'
+    'Visualizar_obras',
+    'Visualizar_garantias', 'Visualizar_posventa', 'Registrar_posventa'
   ],
   'ELECTRICO': [
     'Visualizar_reportes', 'Exportar_reportes',
