@@ -57,7 +57,7 @@ def create_app() -> FastAPI:
         allow_origins=[
             "http://localhost:4200",
             "https://obratech-kjfu.onrender.com",
-            "https://obratech-y040.onrender.com",
+            "https://obratec.onrender.com",
         ],
         allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+)(:[0-9]+)?$",
         allow_credentials=True,
