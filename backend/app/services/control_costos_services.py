@@ -209,7 +209,13 @@ def anular_costo(id_costo, motivo, token, ip="unknown"):
 
 
 def _comparacion(id_obra, token, db=None):
-    empresa = _empresa(token)
+    if token.get("nombre_rol") == "ADMINISTRADOR":
+        obra_data = control_costos_repos.obtener_obra(None, id_obra, db=db)
+        if not obra_data:
+            raise ControlCostosError("La obra no existe o no pertenece a su empresa.", 404)
+        empresa = obra_data["id_empresa"]
+    else:
+        empresa = _empresa(token)
     transaction = {"db": db} if db is not None else {}
     line = control_costos_repos.obtener_linea_base(empresa, id_obra, **transaction)
     if not line:
@@ -245,7 +251,7 @@ def obtener_comparacion(id_obra, token):
 def obtener_resumen(id_obra, token, db=None):
     transaction = {"db": db} if db is not None else {}
     line, rows, totals = _comparacion(id_obra, token, **transaction)
-    empresa = _empresa(token)
+    empresa = line["id_empresa"] if token.get("nombre_rol") == "ADMINISTRADOR" else _empresa(token)
     costs = control_costos_repos.listar_costos(
         empresa, id_obra=id_obra, id_control_costo=line["id_control_costo"], **transaction
     )
@@ -461,6 +467,19 @@ def crear_orden(data, token, ip="unknown"):
     if not result:
         raise ControlCostosError("No se pudo crear la orden de cambio.", 400)
     _log(token, "CREAR_ORDEN_CAMBIO", f"Orden {result['id_orden_cambio']} creada.", ip)
+    try:
+        from app.services import notificaciones_services
+        notificaciones_services.emitir_notificacion_push_empresa(
+            titulo=f"Nueva orden de cambio: {clean['codigo']}",
+            cuerpo=f"{clean['titulo']} (impacto: {total.quantize(CENTAVOS)}).",
+            tipo_referencia="ORDEN_CAMBIO",
+            id_empresa=empresa,
+            id_obra=line.get("id_obra"),
+            nro_referencia=result["id_orden_cambio"],
+            clave_evento=f"ORDEN_CAMBIO:CREAR:{result['id_orden_cambio']}",
+        )
+    except Exception:
+        pass
     return obtener_orden(result["id_orden_cambio"], token)
 
 
@@ -521,6 +540,19 @@ def _decidir_orden(id_orden, state, reason, token, ip):
         raise ControlCostosError("La orden ya no esta PENDIENTE.", 409)
     action = "APROBAR_ORDEN_CAMBIO" if state == "APROBADA" else "RECHAZAR_ORDEN_CAMBIO"
     _log(token, action, f"Orden {id_orden} cambiada a {state}.", ip)
+    try:
+        from app.services import notificaciones_services
+        notificaciones_services.emitir_notificacion_push_empresa(
+            titulo=f"Orden de cambio #{id_orden}: {state}",
+            cuerpo=f"La orden de cambio {current.get('codigo') or id_orden} fue {state.lower()}.",
+            tipo_referencia="ORDEN_CAMBIO",
+            id_empresa=empresa,
+            id_obra=current.get("id_obra"),
+            nro_referencia=id_orden,
+            clave_evento=f"ORDEN_CAMBIO:DECIDIR:{id_orden}:{state}",
+        )
+    except Exception:
+        pass
     return {"success": True, "data": result}
 
 

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
+from fastapi.responses import FileResponse
 from app.services import crm_services
-from app.utils.security import exigir_permiso
+from app.utils.security import exigir_permiso, exigir_rol, verificar_token, obtener_permisos_rol
 
 
 router = APIRouter(tags=["CRM"])
@@ -12,6 +13,28 @@ def _ip(request: Request) -> str:
 
 def _raise(exc):
     raise HTTPException(status_code=exc.status_code, detail=str(exc))
+
+
+def acceso_emision_comunicaciones(token_data: dict = Depends(verificar_token)):
+    rol = str(token_data.get("nombre_rol") or "").strip().upper()
+    if rol == "ADMINISTRADOR":
+        return token_data
+    roles_permitidos = {"ADMINISTRADOR", "ADMINISTRADOR_EMPRESA", "JEFE DE OBRA", "JEFE_OBRA", "RESPONSABLE"}
+    permisos = obtener_permisos_rol(rol)
+    if rol in roles_permitidos or "Modificar_clientes" in permisos or "Registrar_clientes" in permisos:
+        return token_data
+    raise HTTPException(status_code=403, detail="No tiene permisos para enviar comunicaciones a clientes.")
+
+
+def acceso_gestion_solicitudes(token_data: dict = Depends(verificar_token)):
+    rol = str(token_data.get("nombre_rol") or "").strip().upper()
+    if rol == "ADMINISTRADOR":
+        return token_data
+    roles_permitidos = {"ADMINISTRADOR", "ADMINISTRADOR_EMPRESA", "JEFE DE OBRA", "JEFE_OBRA", "RESPONSABLE"}
+    permisos = obtener_permisos_rol(rol)
+    if rol in roles_permitidos or "Modificar_clientes" in permisos or "Modificar_obras" in permisos:
+        return token_data
+    raise HTTPException(status_code=403, detail="No tiene permisos para gestionar solicitudes de clientes.")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -83,6 +106,150 @@ def get_unidades_disponibles(
     try:
         return crm_services.listar_unidades_disponibles(
             token=token, id_obra=id_obra, id_empresa_solicitada=id_empresa
+        )
+    except crm_services.CrmError as exc:
+        _raise(exc)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GET /api/crm/cliente/unidades
+# ─────────────────────────────────────────────────────────────────────────────
+@router.get("/cliente/unidades")
+def get_unidades_cliente(
+    token=Depends(exigir_rol("CLIENTE")),
+):
+    try:
+        return crm_services.listar_unidades_cliente_autenticado(token)
+    except crm_services.CrmError as exc:
+        _raise(exc)
+
+
+@router.get("/cliente/unidades/{id_unidad}/fotografias")
+def get_fotografias_cliente(
+    id_unidad: int,
+    token=Depends(exigir_rol("CLIENTE")),
+):
+    try:
+        return crm_services.listar_fotografias_cliente_autenticado(id_unidad, token)
+    except crm_services.CrmError as exc:
+        _raise(exc)
+
+
+@router.get("/cliente/unidades/{id_unidad}/fotografias/{id_fotografia}/archivo")
+def get_archivo_fotografia_cliente(
+    id_unidad: int,
+    id_fotografia: int,
+    token=Depends(exigir_rol("CLIENTE")),
+):
+    try:
+        ruta, nombre, tipo_mime = crm_services.obtener_archivo_fotografia_cliente_autenticado(
+            id_unidad,
+            id_fotografia,
+            token,
+        )
+        return FileResponse(ruta, media_type=tipo_mime, filename=nombre)
+    except crm_services.CrmError as exc:
+        _raise(exc)
+
+
+@router.get("/cliente/comunicaciones")
+def get_comunicaciones_cliente(
+    token=Depends(exigir_rol("CLIENTE")),
+):
+    try:
+        return crm_services.listar_comunicaciones_cliente_autenticado(token)
+    except crm_services.CrmError as exc:
+        _raise(exc)
+
+
+@router.post("/comunicaciones", status_code=201)
+def post_crear_comunicacion(
+    request: Request,
+    data: dict = Body(...),
+    token=Depends(acceso_emision_comunicaciones),
+):
+    try:
+        return crm_services.crear_comunicacion_cliente(
+            data=data,
+            token=token,
+            ip=_ip(request),
+        )
+    except crm_services.CrmError as exc:
+        _raise(exc)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HU117: SOLICITUDES DE CLIENTE
+# ─────────────────────────────────────────────────────────────────────────────
+@router.get("/cliente/solicitudes")
+def get_solicitudes_cliente(
+    token=Depends(exigir_rol("CLIENTE")),
+):
+    try:
+        return crm_services.listar_solicitudes_cliente_autenticado(token)
+    except crm_services.CrmError as exc:
+        _raise(exc)
+
+
+@router.get("/cliente/solicitudes/{id_solicitud}")
+def get_detalle_solicitud_cliente(
+    id_solicitud: int,
+    token=Depends(exigir_rol("CLIENTE")),
+):
+    try:
+        return crm_services.obtener_detalle_solicitud_cliente_autenticado(id_solicitud, token)
+    except crm_services.CrmError as exc:
+        _raise(exc)
+
+
+@router.post("/cliente/solicitudes", status_code=201)
+def post_solicitud_cliente(
+    request: Request,
+    data: dict = Body(...),
+    token=Depends(exigir_rol("CLIENTE")),
+):
+    try:
+        return crm_services.registrar_solicitud_cliente_autenticado(
+            data=data,
+            token=token,
+            ip=_ip(request),
+        )
+    except crm_services.CrmError as exc:
+        _raise(exc)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HU117: GESTIÓN DE SOLICITUDES POR CONSTRUCTORA
+# ─────────────────────────────────────────────────────────────────────────────
+@router.get("/solicitudes")
+def get_solicitudes_constructora(
+    id_obra: int = None,
+    estado: str = None,
+    token=Depends(acceso_gestion_solicitudes),
+):
+    try:
+        return crm_services.listar_solicitudes_constructora(
+            token=token,
+            id_obra=id_obra,
+            estado=estado,
+        )
+    except crm_services.CrmError as exc:
+        _raise(exc)
+
+
+@router.post("/solicitudes/{id_solicitud}/responder")
+def responder_solicitud_constructora(
+    id_solicitud: int,
+    request: Request,
+    data: dict = Body(...),
+    token=Depends(acceso_gestion_solicitudes),
+):
+    try:
+        return crm_services.responder_solicitud_constructora(
+            id_solicitud=id_solicitud,
+            data=data,
+            token=token,
+            ip=_ip(request),
         )
     except crm_services.CrmError as exc:
         _raise(exc)

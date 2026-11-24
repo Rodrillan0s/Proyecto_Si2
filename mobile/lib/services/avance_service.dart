@@ -45,6 +45,31 @@ class AvanceService {
     }
   }
 
+  // ── HU114: Consultar el avance físico de su unidad (Rol CLIENTE) ───────────
+  Future<List<Map<String, dynamic>>> consultarAvanceFisicoUnidadCliente({
+    required int idObra,
+    required int idUnidad,
+  }) async {
+    try {
+      final response = await ApiClient.dio.get(
+        '$_base/$idObra/avances/cliente/unidades/$idUnidad',
+      );
+      final data = response.data;
+      if (data is! Map || data['success'] != true) {
+        throw Exception(
+          data?['detail'] ?? 'Error al obtener el avance físico de la unidad.',
+        );
+      }
+      final rawList = data['data'];
+      if (rawList is! List) return [];
+      return rawList
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+    } on DioException catch (e) {
+      throw Exception(_parseError(e));
+    }
+  }
+
   // ── Helper de errores ──────────────────────────────────────────────────────
   String _parseError(DioException e) {
     if (e.response?.data != null && e.response!.data is Map) {

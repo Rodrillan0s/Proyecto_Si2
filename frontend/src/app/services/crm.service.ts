@@ -114,6 +114,88 @@ export interface DetalleHistorialCliente {
   unidades_asociadas: UnidadAsociadaCRM[];
 }
 
+export interface UnidadClienteCu30 {
+  id_cliente_unidad: number;
+  id_cliente: number;
+  id_unidad: number;
+  estado_asociacion: string;
+  monto_pactado?: number | null;
+  fecha_asociacion?: string | null;
+  observaciones?: string | null;
+  codigo_unidad: string;
+  tipo_unidad: string;
+  superficie?: number | null;
+  estado_unidad_actual: string;
+  id_obra: number;
+  nombre_obra: string;
+  codigo_obra: string;
+}
+
+export interface FotografiaClienteCu30 {
+  id_fotografia?: number;
+  id_evidencia?: number;
+  id_unidad?: number;
+  nombre_archivo: string;
+  tipo_mime: string;
+  tamano_bytes: number;
+  fecha: string | null;
+  created_at?: string | null;
+  es_principal?: boolean;
+  orden?: number;
+  url_archivo: string;
+  blobUrl?: string;
+  cargandoBlob?: boolean;
+  errorBlob?: boolean;
+}
+
+export interface ComunicacionClienteCu30 {
+  id_notificacion: number;
+  titulo: string;
+  cuerpo: string;
+  mensaje?: string;
+  tipo_referencia: string;
+  tipo?: string;
+  leido: boolean;
+  fecha_creacion: string | null;
+  created_at?: string | null;
+  nro_emergencia?: number | null;
+}
+
+export interface SolicitudEvidenciaCu30 {
+  id_fotografia: number;
+  nombre_archivo: string;
+  tipo_mime?: string | null;
+  tamano_bytes?: number | null;
+  url_archivo?: string | null;
+}
+
+export interface SolicitudClienteCu30 {
+  id_solicitud: number;
+  id_cliente?: number;
+  id_usuario?: number;
+  id_empresa?: number;
+  id_obra: number;
+  nombre_obra?: string;
+  codigo_obra?: string;
+  id_unidad?: number | null;
+  codigo_unidad?: string | null;
+  tipo_unidad?: string | null;
+  nombre_cliente?: string;
+  titulo?: string;
+  asunto: string;
+  descripcion: string;
+  estado: string;
+  respuesta?: string | null;
+  id_usuario_respuesta?: number | null;
+  id_fotografia_evidencia?: number | null;
+  evidencia?: SolicitudEvidenciaCu30 | null;
+  fecha_creacion: string | null;
+  fecha_actualizacion?: string | null;
+  fecha_respuesta?: string | null;
+}
+
+export type SolicitudConstructoraCu30 = SolicitudClienteCu30;
+
 export interface MetricasCRM {
   total_clientes: number;
   total_prospectos: number;
@@ -237,5 +319,91 @@ export class CrmService {
     if (id_obra) params = params.set('id_obra', id_obra.toString());
     if (id_empresa) params = params.set('id_empresa', id_empresa.toString());
     return this.http.get<{ success: boolean; data: UnidadDisponible[] }>(`${this.apiUrl}/clientes/unidades-disponibles`, { params });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // CU30: Portal del Cliente (HU114, HU115, HU116, HU117)
+  // Ningún método envía id_cliente ni id_empresa; el backend resuelve identidad
+  // y tenant exclusivamente desde los claims del token JWT.
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  listarUnidadesCliente(): Observable<{ success: boolean; data: UnidadClienteCu30[] }> {
+    return this.http.get<{ success: boolean; data: UnidadClienteCu30[] }>(
+      `${this.apiUrl}/cliente/unidades`
+    );
+  }
+
+  listarFotografiasUnidad(idUnidad: number): Observable<{ success: boolean; data: FotografiaClienteCu30[] }> {
+    return this.http.get<{ success: boolean; data: FotografiaClienteCu30[] }>(
+      `${this.apiUrl}/cliente/unidades/${idUnidad}/fotografias`
+    );
+  }
+
+  descargarFotografiaUnidad(idUnidad: number, idFotografia: number): Observable<Blob> {
+    return this.http.get(
+      `${this.apiUrl}/cliente/unidades/${idUnidad}/fotografias/${idFotografia}/archivo`,
+      { responseType: 'blob' }
+    );
+  }
+
+  listarComunicacionesCliente(): Observable<{ success: boolean; no_leidas: number; data: ComunicacionClienteCu30[] }> {
+    return this.http.get<{ success: boolean; no_leidas: number; data: ComunicacionClienteCu30[] }>(
+      `${this.apiUrl}/cliente/comunicaciones`
+    );
+  }
+
+  listarSolicitudesCliente(): Observable<{ success: boolean; data: SolicitudClienteCu30[] }> {
+    return this.http.get<{ success: boolean; data: SolicitudClienteCu30[] }>(
+      `${this.apiUrl}/cliente/solicitudes`
+    );
+  }
+
+  obtenerDetalleSolicitud(idSolicitud: number): Observable<{ success: boolean; data: SolicitudClienteCu30 }> {
+    return this.http.get<{ success: boolean; data: SolicitudClienteCu30 }>(
+      `${this.apiUrl}/cliente/solicitudes/${idSolicitud}`
+    );
+  }
+
+  crearSolicitudCliente(payload: { id_unidad?: number | null; id_obra?: number | null; titulo: string; descripcion: string }): Observable<{ success: boolean; message: string; data: SolicitudClienteCu30 }> {
+    return this.http.post<{ success: boolean; message: string; data: SolicitudClienteCu30 }>(
+      `${this.apiUrl}/cliente/solicitudes`,
+      payload
+    );
+  }
+
+  listarSolicitudesConstructora(filtros?: { id_obra?: number; estado?: string }): Observable<{ success: boolean; data: SolicitudConstructoraCu30[] }> {
+    let params = new HttpParams();
+    if (filtros?.id_obra) {
+      params = params.set('id_obra', filtros.id_obra.toString());
+    }
+    if (filtros?.estado) {
+      params = params.set('estado', filtros.estado);
+    }
+    return this.http.get<{ success: boolean; data: SolicitudConstructoraCu30[] }>(
+      `${this.apiUrl}/solicitudes`,
+      { params }
+    );
+  }
+
+  responderSolicitudConstructora(idSolicitud: number, payload: { estado: string; respuesta?: string; id_fotografia_evidencia?: number | null }): Observable<{ success: boolean; message: string; data: any }> {
+    return this.http.post<{ success: boolean; message: string; data: any }>(
+      `${this.apiUrl}/solicitudes/${idSolicitud}/responder`,
+      payload
+    );
+  }
+
+  // HU116: Emisión de comunicaciones hacia clientes
+  enviarComunicacionCliente(payload: {
+    id_cliente: number;
+    id_obra?: number | null;
+    id_unidad?: number | null;
+    titulo: string;
+    cuerpo: string;
+    tipo_referencia?: string;
+  }): Observable<{ success: boolean; message?: string; data: any }> {
+    return this.http.post<{ success: boolean; message?: string; data: any }>(
+      `${this.apiUrl}/comunicaciones`,
+      payload
+    );
   }
 }

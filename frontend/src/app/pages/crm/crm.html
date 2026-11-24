@@ -131,6 +131,24 @@
     </button>
 
     <button 
+      (click)="cambiarPestana('solicitudes')"
+      class="px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 cursor-pointer relative"
+      [ngClass]="pestanaActiva === 'solicitudes' 
+        ? 'bg-blue-600 text-white shadow-xs' 
+        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'">
+      <span>📋</span>
+      <span>Solicitudes de Clientes</span>
+      <span *ngIf="conteoSolicitudesPendientes > 0" 
+            class="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-white animate-pulse">
+        {{ conteoSolicitudesPendientes }}
+      </span>
+      <span *ngIf="conteoSolicitudesPendientes === 0 && solicitudesConstructora.length > 0"
+            class="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+        {{ solicitudesConstructora.length }}
+      </span>
+    </button>
+
+    <button 
       (click)="cambiarPestana('asistente_ia')"
       class="px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 cursor-pointer text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30">
       <span>✨</span>
@@ -275,6 +293,14 @@
                     <span>📋 Ficha</span>
                   </button>
 
+                  <!-- Enviar Comunicación Directa (HU116) -->
+                  <button 
+                    (click)="abrirModalComunicacion(c)"
+                    class="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-600 hover:text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                    title="Enviar comunicación directa al cliente (HU116)">
+                    <span>💬 Comunicar</span>
+                  </button>
+
                   <!-- Avanzar Etapa en Pipeline (HU83) -->
                   <div class="relative group" *ngIf="c.tipo_cliente === 'PROSPECTO'">
                     <button 
@@ -342,6 +368,155 @@
   </div>
 
   <!-- ========================================================================= -->
+  <!-- VISTA: HU117 SOLICITUDES DE CLIENTES (pestanaActiva === 'solicitudes')    -->
+  <!-- ========================================================================= -->
+  <div *ngIf="pestanaActiva === 'solicitudes'" class="space-y-4">
+    <!-- Encabezado de Sección y Filtros -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xs">
+      <div>
+        <h2 class="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+          <span>📋 Solicitudes de Clientes</span>
+          <span *ngIf="conteoSolicitudesPendientes > 0" class="text-xs px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-bold border border-amber-300 dark:border-amber-700">
+            {{ conteoSolicitudesPendientes }} pendiente{{ conteoSolicitudesPendientes > 1 ? 's' : '' }}
+          </span>
+        </h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+          Consulta y gestión de solicitudes enviadas por los clientes.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+        <!-- Buscador -->
+        <div class="relative w-full sm:w-64">
+          <input 
+            type="text"
+            [(ngModel)]="busquedaSolicitud"
+            placeholder="Buscar por cliente, unidad, obra..."
+            class="w-full text-xs px-3 py-2 pl-8 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
+          />
+          <span class="absolute left-2.5 top-2.5 text-slate-400 text-xs">🔍</span>
+        </div>
+
+        <!-- Filtro por Estado -->
+        <select 
+          [(ngModel)]="filtroEstadoSolicitud"
+          class="text-xs px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 cursor-pointer">
+          <option value="TODAS">Todos los estados</option>
+          <option value="PENDIENTE">🟡 Pendientes</option>
+          <option value="EN_PROCESO">🔵 En Proceso</option>
+          <option value="ATENDIDA">🟢 Atendidas</option>
+          <option value="RECHAZADA">🔴 Rechazadas</option>
+        </select>
+
+        <!-- Botón Refrescar -->
+        <button 
+          (click)="cargarSolicitudesConstructora()" 
+          title="Recargar solicitudes"
+          class="p-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer">
+          <svg class="w-4 h-4" [ngClass]="{'animate-spin': cargandoSolicitudes}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Spinner de Carga -->
+    <div *ngIf="cargandoSolicitudes" class="flex flex-col items-center justify-center p-12 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+      <div class="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">Cargando solicitudes de clientes...</p>
+    </div>
+
+    <!-- Listado / Tabla de Solicitudes -->
+    <div *ngIf="!cargandoSolicitudes" class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              <th class="py-3 px-4">Cliente</th>
+              <th class="py-3 px-4">Unidad</th>
+              <th class="py-3 px-4">Obra</th>
+              <th class="py-3 px-4">Solicitud</th>
+              <th class="py-3 px-4">Fecha</th>
+              <th class="py-3 px-4">Estado</th>
+              <th class="py-3 px-4 text-right">Acción</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+            <tr *ngFor="let sol of solicitudesFiltradas" class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+              <!-- Cliente -->
+              <td class="py-3 px-4">
+                <div class="font-bold text-slate-900 dark:text-white">
+                  {{ sol.nombre_cliente || ('Cliente #' + sol.id_cliente) }}
+                </div>
+                <div class="text-[10px] text-slate-400">ID Cliente: {{ sol.id_cliente }}</div>
+              </td>
+
+              <!-- Unidad -->
+              <td class="py-3 px-4 font-mono font-bold text-slate-700 dark:text-slate-300">
+                <span *ngIf="sol.codigo_unidad" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                  {{ sol.codigo_unidad }}
+                </span>
+                <span *ngIf="!sol.codigo_unidad" class="text-slate-400 italic font-normal">
+                  General
+                </span>
+              </td>
+
+              <!-- Obra -->
+              <td class="py-3 px-4 text-slate-700 dark:text-slate-300 font-medium">
+                {{ sol.nombre_obra || ('Obra #' + sol.id_obra) }}
+              </td>
+
+              <!-- Solicitud (Título + Descripción) -->
+              <td class="py-3 px-4 max-w-xs md:max-w-md">
+                <div class="font-bold text-slate-900 dark:text-white line-clamp-1">
+                  {{ sol.titulo || sol.asunto }}
+                </div>
+                <div class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5">
+                  {{ sol.descripcion }}
+                </div>
+                <div *ngIf="sol.respuesta" class="mt-1 text-[10px] text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 p-1 rounded border border-emerald-200 dark:border-emerald-900/50 line-clamp-1">
+                  💬 Respuesta: {{ sol.respuesta }}
+                </div>
+              </td>
+
+              <!-- Fecha -->
+              <td class="py-3 px-4 text-slate-500 dark:text-slate-400 whitespace-nowrap text-[11px]">
+                {{ sol.fecha_creacion | date:'dd/MM/yyyy HH:mm' }}
+              </td>
+
+              <!-- Estado -->
+              <td class="py-3 px-4 whitespace-nowrap">
+                <app-status-badge [estado]="sol.estado"></app-status-badge>
+              </td>
+
+              <!-- Acción -->
+              <td class="py-3 px-4 text-right whitespace-nowrap">
+                <button 
+                  (click)="abrirModalResponder(sol)"
+                  class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer flex items-center gap-1.5 ml-auto">
+                  <span>⚙️</span>
+                  <span>Gestionar</span>
+                </button>
+              </td>
+            </tr>
+
+            <!-- Estado Vacío -->
+            <tr *ngIf="solicitudesFiltradas.length === 0">
+              <td colspan="7" class="py-12 text-center text-slate-400">
+                <div class="text-3xl mb-2">📋</div>
+                <p class="font-bold text-sm text-slate-600 dark:text-slate-400">No se encontraron solicitudes de clientes</p>
+                <p class="text-xs text-slate-400 mt-1">
+                  {{ filtroEstadoSolicitud !== 'TODAS' || busquedaSolicitud ? 'Pruebe cambiando los filtros de búsqueda.' : 'No hay solicitudes registradas por clientes actualmente.' }}
+                </p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
   <!-- MODAL: FICHA INTEGRAL Y HISTORIAL COMPLETO DEL CLIENTE (HU81)             -->
   <!-- ========================================================================= -->
   <div *ngIf="mostrarModalDetalle && clienteSeleccionado" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
@@ -369,11 +544,36 @@
             </p>
           </div>
         </div>
-        <button (click)="cerrarModalDetalle()" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer font-bold text-sm">✕</button>
+        <div class="flex items-center gap-2">
+          <button 
+            type="button"
+            (click)="abrirModalComunicacion(clienteSeleccionado)"
+            class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+            title="Enviar comunicación directa al cliente (HU116)">
+            <span>💬 Enviar Comunicación</span>
+          </button>
+          <button (click)="cerrarModalDetalle()" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer font-bold text-sm">✕</button>
+        </div>
       </div>
 
       <!-- Contenido Scrolleable de la Ficha -->
       <div class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+
+        <!-- Mensajes de Estado en la Ficha -->
+        <div *ngIf="mensajeExito" class="p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs rounded-lg flex items-center justify-between shadow-xs">
+          <div class="flex items-center gap-2">
+            <span>✓</span>
+            <span>{{ mensajeExito }}</span>
+          </div>
+          <button (click)="mensajeExito = ''" class="text-emerald-600 hover:text-emerald-800 font-bold">✕</button>
+        </div>
+        <div *ngIf="mensajeError" class="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 text-xs rounded-lg flex items-center justify-between shadow-xs">
+          <div class="flex items-center gap-2">
+            <span>⚠</span>
+            <span>{{ mensajeError }}</span>
+          </div>
+          <button (click)="mensajeError = ''" class="text-red-600 hover:text-red-800 font-bold">✕</button>
+        </div>
 
         <!-- PIPELINE COMERCIAL VISUAL (STEPPER INTERACTIVO) -->
         <div class="p-4 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-3">
@@ -950,6 +1150,289 @@
           {{ guardandoCambioEtapa ? 'Actualizando...' : 'Confirmar Avance' }}
         </button>
       </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: ENVIAR COMUNICACIÓN DIRECTA AL CLIENTE (HU116)                     -->
+  <!-- ========================================================================= -->
+  <div *ngIf="mostrarModalComunicacion && clienteParaComunicacion" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-fade-in flex flex-col max-h-[92vh]">
+      <!-- Header -->
+      <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/40">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+            💬
+          </div>
+          <div>
+            <h3 class="text-sm font-black text-slate-900 dark:text-white">
+              Enviar Comunicación Directa
+            </h3>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400">
+              HU116 • Mensaje oficial de la constructora hacia el portal del cliente
+            </p>
+          </div>
+        </div>
+        <button (click)="cerrarModalComunicacion()" class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white font-bold cursor-pointer">✕</button>
+      </div>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6 space-y-4 text-xs overflow-y-auto flex-1">
+        <!-- Tarjeta info cliente destinatario -->
+        <div class="p-3 rounded-xl bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-900/40 flex items-center justify-between">
+          <div>
+            <span class="text-[10px] text-blue-600 dark:text-blue-400 uppercase font-black tracking-wider">Cliente destinatario</span>
+            <p class="font-bold text-slate-900 dark:text-white text-sm mt-0.5">{{ clienteParaComunicacion.nombre_completo }}</p>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+              {{ clienteParaComunicacion.email || 'Sin correo registrado' }} • CI: {{ clienteParaComunicacion.ci || 'Sin CI' }}
+            </p>
+          </div>
+          <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300">
+            {{ clienteParaComunicacion.tipo_cliente }}
+          </span>
+        </div>
+
+        <!-- Unidad inmobiliaria asociada (opcional) -->
+        <div>
+          <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+            Unidad Inmobiliaria (Opcional)
+          </label>
+          <select 
+            [ngModel]="formComunicacion.id_unidad"
+            (ngModelChange)="alSeleccionarUnidadComunicacion($event)"
+            class="w-full text-xs px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-blue-500">
+            <option [ngValue]="null">-- Comunicación general del proyecto (Sin unidad específica) --</option>
+            <option *ngFor="let u of unidadesClienteParaComunicacion" [value]="u.id_unidad">
+              {{ u.codigo_unidad }} — {{ u.nombre_obra }} ({{ u.tipo_unidad }})
+            </option>
+          </select>
+          <p class="text-[10px] text-slate-400 mt-1">
+            Si selecciona una unidad, el aviso quedará vinculado automáticamente a la obra correspondiente.
+          </p>
+        </div>
+
+        <!-- Tipo de comunicación -->
+        <div>
+          <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+            Tipo de aviso / categoría
+          </label>
+          <select 
+            [(ngModel)]="formComunicacion.tipo_referencia"
+            class="w-full text-xs px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-blue-500">
+            <option value="COMUNICACION">Comunicación oficial</option>
+            <option value="AVANCE">Avance de obra</option>
+            <option value="NOVEDAD">Novedad del proyecto</option>
+            <option value="INFORMACION">Información relevante</option>
+          </select>
+        </div>
+
+        <!-- Título -->
+        <div>
+          <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+            Título del comunicado <span class="text-red-500">*</span>
+          </label>
+          <input 
+            type="text"
+            [(ngModel)]="formComunicacion.titulo"
+            maxlength="200"
+            placeholder="Ej. Avance de su unidad"
+            class="w-full text-xs px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-blue-500" />
+        </div>
+
+        <!-- Mensaje -->
+        <div>
+          <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+            Mensaje / detalle de la comunicación <span class="text-red-500">*</span>
+          </label>
+          <textarea 
+            [(ngModel)]="formComunicacion.cuerpo"
+            rows="4"
+            placeholder="Redacte el aviso, novedad sobre la obra o información importante para el cliente..."
+            class="w-full text-xs px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 leading-relaxed"></textarea>
+        </div>
+
+        <p class="text-[11px] text-slate-400 bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800/80">
+          ℹ️ La comunicación aparecerá de inmediato en la sección <strong>Comunicaciones</strong> del portal del cliente con estado <em>Nuevo</em>.
+        </p>
+      </div>
+
+      <!-- Footer -->
+      <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 flex justify-end gap-2 shrink-0">
+        <button 
+          type="button"
+          (click)="cerrarModalComunicacion()"
+          class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">
+          Cancelar
+        </button>
+        <button 
+          type="button"
+          (click)="enviarComunicacion()"
+          [disabled]="guardandoComunicacion || !formComunicacion.titulo.trim() || !formComunicacion.cuerpo.trim()"
+          class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-xs font-bold transition-all cursor-pointer shadow-xs flex items-center gap-1.5">
+          <svg *ngIf="guardandoComunicacion" class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+          <span>{{ guardandoComunicacion ? 'Enviando comunicación...' : '+ Enviar comunicación' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: GESTIONAR Y RESPONDER SOLICITUD DE CLIENTE (HU117)                 -->
+  <!-- ========================================================================= -->
+  <div *ngIf="mostrarModalResponder && solicitudSeleccionada" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in">
+      
+      <!-- Header Modal -->
+      <div class="p-4 md:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/40">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-md">
+            📋
+          </div>
+          <div>
+            <h3 class="text-base font-black text-slate-900 dark:text-white">
+              Gestionar Solicitud #{{ solicitudSeleccionada.id_solicitud }}
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              Atención y respuesta oficial de la constructora al cliente
+            </p>
+          </div>
+        </div>
+        <button 
+          (click)="cerrarModalResponder()"
+          class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <!-- Body Modal -->
+      <div class="p-5 md:p-6 space-y-4 overflow-y-auto max-h-[calc(92vh-130px)]">
+        
+        <!-- Ficha Resumen de la Solicitud -->
+        <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-3">
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+            <div>
+              <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">CLIENTE</span>
+              <span class="font-bold text-slate-900 dark:text-white">
+                {{ solicitudSeleccionada.nombre_cliente || ('Cliente #' + solicitudSeleccionada.id_cliente) }}
+              </span>
+            </div>
+            <div>
+              <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">UNIDAD</span>
+              <span class="font-mono font-bold text-blue-600 dark:text-blue-400">
+                {{ solicitudSeleccionada.codigo_unidad || 'Sin unidad' }}
+              </span>
+            </div>
+            <div>
+              <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">OBRA</span>
+              <span class="font-bold text-slate-800 dark:text-slate-200">
+                {{ solicitudSeleccionada.nombre_obra || ('Obra #' + solicitudSeleccionada.id_obra) }}
+              </span>
+            </div>
+            <div>
+              <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">FECHA SOLICITUD</span>
+              <span class="text-slate-700 dark:text-slate-300">
+                {{ solicitudSeleccionada.fecha_creacion | date:'dd/MM/yyyy HH:mm' }}
+              </span>
+            </div>
+            <div>
+              <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">ESTADO ACTUAL</span>
+              <div class="mt-0.5">
+                <app-status-badge [estado]="solicitudSeleccionada.estado"></app-status-badge>
+              </div>
+            </div>
+          </div>
+
+          <div class="border-t border-slate-200 dark:border-slate-700/60 pt-3">
+            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">TÍTULO DE LA SOLICITUD</span>
+            <p class="text-xs font-bold text-slate-900 dark:text-white mt-0.5">
+              {{ solicitudSeleccionada.titulo || solicitudSeleccionada.asunto }}
+            </p>
+          </div>
+
+          <div>
+            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">DESCRIPCIÓN DEL CLIENTE</span>
+            <p class="text-xs text-slate-700 dark:text-slate-300 mt-0.5 whitespace-pre-wrap bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700/50">
+              {{ solicitudSeleccionada.descripcion }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Alerta de Error si aplica -->
+        <div *ngIf="errorRespuesta" class="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs rounded-xl flex items-center gap-2">
+          <span>⚠️</span>
+          <span>{{ errorRespuesta }}</span>
+        </div>
+
+        <!-- Formulario de Respuesta y Cambio de Estado -->
+        <div class="space-y-4 pt-1">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <span>⚙️</span>
+            <span>Atención de la Constructora</span>
+          </h4>
+
+          <!-- Selector de Estado -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Nuevo Estado de la Solicitud <span class="text-red-500">*</span>
+            </label>
+            <select 
+              [(ngModel)]="formRespuesta.estado"
+              class="w-full text-xs px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-blue-500 cursor-pointer">
+              <option *ngFor="let opt of obtenerEstadosDisponibles(solicitudSeleccionada.estado)" [value]="opt.valor">
+                {{ opt.label }}
+              </option>
+            </select>
+            <p class="text-[11px] text-slate-400 mt-1">
+              Flujo formal de ciclo de vida: PENDIENTE → EN_PROCESO → ATENDIDA (o RECHAZADA).
+            </p>
+          </div>
+
+          <!-- Campo de Respuesta Oficial -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Respuesta oficial de la constructora 
+              <span *ngIf="formRespuesta.estado === 'ATENDIDA' || formRespuesta.estado === 'RECHAZADA'" class="text-red-500">*</span>
+              <span *ngIf="formRespuesta.estado === 'EN_PROCESO'" class="text-slate-400 font-normal">(Opcional para avance intermedio)</span>
+            </label>
+            <textarea 
+              [(ngModel)]="formRespuesta.respuesta"
+              rows="4"
+              placeholder="Escriba aquí la respuesta oficial para el cliente (ej. fase actual de la obra, detalles técnicos, aclaraciones, etc.)..."
+              class="w-full text-xs px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 resize-none">
+            </textarea>
+            <p *ngIf="formRespuesta.estado === 'ATENDIDA'" class="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1">
+              ✓ Esta respuesta será visible directamente por el cliente en su panel "Mis solicitudes".
+            </p>
+            <p *ngIf="formRespuesta.estado === 'RECHAZADA'" class="text-[11px] text-red-600 dark:text-red-400 mt-1">
+              ⚠️ Explique de manera clara al cliente el motivo por el cual no procede la solicitud.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer Modal -->
+      <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 flex items-center justify-end gap-2">
+        <button 
+          type="button"
+          (click)="cerrarModalResponder()"
+          class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer">
+          Cancelar
+        </button>
+        <button 
+          type="button"
+          (click)="guardarRespuestaSolicitud()"
+          [disabled]="guardandoRespuesta"
+          class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition-all flex items-center gap-2 cursor-pointer">
+          <svg *ngIf="guardandoRespuesta" class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>{{ guardandoRespuesta ? 'Guardando respuesta...' : 'Guardar respuesta' }}</span>
+        </button>
+      </div>
+
     </div>
   </div>
 

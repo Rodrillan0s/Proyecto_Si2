@@ -28,6 +28,7 @@ export class StatusBadgeComponent {
       case 'DISPONIBLE':
       case 'EXITOSO':
       case 'CONFIRMADO':
+      case 'ATENDIDA':
         return 'bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800';
 
       case 'PLANIFICACION':
@@ -64,6 +65,7 @@ export class StatusBadgeComponent {
 
       case 'INACTIVO':
       case 'CANCELADO':
+      case 'RECHAZADA':
       case 'BLOQUEADO':
       case 'ELIMINADO':
       case 'CRITICO':
@@ -86,6 +88,7 @@ export class StatusBadgeComponent {
       case 'DISPONIBLE':
       case 'EXITOSO':
       case 'CONFIRMADO':
+      case 'ATENDIDA':
         return 'bg-emerald-500 animate-pulse';
 
       case 'PLANIFICACION':
@@ -122,6 +125,7 @@ export class StatusBadgeComponent {
 
       case 'INACTIVO':
       case 'CANCELADO':
+      case 'RECHAZADA':
       case 'BLOQUEADO':
       case 'ELIMINADO':
       case 'CRITICO':

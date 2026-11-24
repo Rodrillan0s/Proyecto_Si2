@@ -88,6 +88,19 @@ export interface MaterialDisponible {
   precio?: number;
 }
 
+export interface UnidadFotografia {
+  id_fotografia: number;
+  id_unidad: number;
+  ruta_archivo: string;
+  nombre_archivo: string;
+  tipo_mime?: string;
+  tamano_bytes?: number;
+  es_principal?: boolean;
+  orden?: number;
+  id_usuario?: number;
+  created_at?: string;
+}
+
 export interface RespuestaApi<T> {
   success: boolean;
   data: T;
@@ -187,6 +200,31 @@ export class UnidadesService {
     return this.http.put(
       `${this.apiUrl}/api/proyectos/${idObra}/unidades/${idUnidad}/materiales`,
       { materiales }, { headers: this.headers() }
+    );
+  }
+
+  listarFotografias(idUnidad: number): Observable<RespuestaApi<UnidadFotografia[]>> {
+    return this.http.get<RespuestaApi<UnidadFotografia[]>>(
+      `${this.apiUrl}/api/unidades/${idUnidad}/fotografias`,
+      { headers: this.headers() }
+    );
+  }
+
+  subirFotografia(
+    idUnidad: number,
+    archivo: File,
+    esPrincipal: boolean = false,
+    orden: number = 1
+  ): Observable<RespuestaApi<UnidadFotografia>> {
+    const formData = new FormData();
+    formData.append('archivo', archivo, archivo.name);
+    formData.append('es_principal', String(esPrincipal));
+    formData.append('orden', String(orden));
+
+    return this.http.post<RespuestaApi<UnidadFotografia>>(
+      `${this.apiUrl}/api/unidades/${idUnidad}/fotografias`,
+      formData,
+      { headers: this.headers() }
     );
   }
 }

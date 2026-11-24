@@ -260,6 +260,62 @@ class CrmService {
     }
   }
 
+  /// CU30 / HU116: Lista las comunicaciones oficiales emitidas por la constructora hacia el cliente autenticado
+  Future<List<Map<String, dynamic>>> listarComunicacionesCliente() async {
+    try {
+      final response = await ApiClient.dio.get('/api/crm/cliente/comunicaciones');
+      final data = response.data;
+
+      if (data is Map && data['data'] is List) {
+        final list = data['data'] as List;
+        return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+      if (data is List) {
+        return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+      return [];
+    } on DioException catch (e) {
+      throw Exception(_parsearError(e));
+    }
+  }
+
+  /// CU30 / HU117: Lista las solicitudes registradas por el cliente autenticado
+  Future<List<Map<String, dynamic>>> listarSolicitudesCliente() async {
+    try {
+      final response = await ApiClient.dio.get('/api/crm/cliente/solicitudes');
+      final data = response.data;
+
+      if (data is Map && data['data'] is List) {
+        final list = data['data'] as List;
+        return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+      if (data is List) {
+        return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+      return [];
+    } on DioException catch (e) {
+      throw Exception(_parsearError(e));
+    }
+  }
+
+  /// CU30 / HU117: Obtiene el detalle de una solicitud del cliente autenticado
+  Future<Map<String, dynamic>> obtenerDetalleSolicitudCliente(int idSolicitud) async {
+    try {
+      final response = await ApiClient.dio.get('/api/crm/cliente/solicitudes/$idSolicitud');
+      final data = response.data;
+
+      if (data is Map && data['data'] is Map) {
+        return Map<String, dynamic>.from(data['data'] as Map);
+      }
+      if (data is Map) {
+        return Map<String, dynamic>.from(data);
+      }
+      throw Exception('Datos de solicitud no válidos.');
+    } on DioException catch (e) {
+      throw Exception(_parsearError(e));
+    }
+  }
+
   String _parsearError(DioException e) {
     if (e.response?.data != null && e.response!.data is Map) {
       final data = e.response!.data as Map;

@@ -846,6 +846,128 @@
         <p *ngIf="materialesDisponibles.length === 0" class="text-xs text-amber-600">CU14 aún no dispone de materiales en el catálogo.</p>
       </section>
 
+      <!-- HU115: FOTOGRAFÍAS DE LA UNIDAD (OPERATIVO / JEFE DE OBRA) -->
+      <section class="space-y-4 border-t border-gray-100 dark:border-slate-800 pt-5">
+        <div class="flex justify-between items-center">
+          <div>
+            <h4 class="font-bold text-base text-gray-900 dark:text-white flex items-center gap-2">
+              <span>📷</span>
+              <span>FOTOGRAFÍAS DE LA UNIDAD</span>
+              <span *ngIf="fotografiasUnidad.length > 0" class="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300">
+                {{ fotografiasUnidad.length }}
+              </span>
+            </h4>
+            <p class="text-xs text-gray-500">Evidencias visuales y estado físico para clientes y jefatura de obra.</p>
+          </div>
+
+          <div *ngIf="puedeSubirFotografias()" class="flex items-center gap-2">
+            <input
+              #inputFoto
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              class="hidden"
+              (change)="seleccionarArchivoFoto($event)"
+            />
+            <button
+              type="button"
+              (click)="inputFoto.click()"
+              [disabled]="subiendoFoto"
+              class="btn-primary text-xs flex items-center gap-1.5"
+            >
+              <span>+</span>
+              <span>Subir fotografía</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Mensajes de éxito y error -->
+        <div *ngIf="mensajeFoto" class="p-3 rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900/40 text-xs text-green-700 dark:text-green-300 flex items-center gap-2">
+          <span>✓</span>
+          <span>{{ mensajeFoto }}</span>
+        </div>
+        <div *ngIf="errorFoto" class="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 text-xs text-red-700 dark:text-red-300 flex items-center justify-between gap-2">
+          <span>{{ errorFoto }}</span>
+          <button type="button" (click)="errorFoto = ''" class="text-red-500 font-bold text-xs hover:underline">Cerrar</button>
+        </div>
+
+        <!-- Previsualización de imagen antes de subir -->
+        <div *ngIf="fotoSeleccionada && fotoPreviaUrl" class="p-4 rounded-xl border border-orange-200 dark:border-orange-900/50 bg-orange-50/50 dark:bg-orange-950/20 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-orange-800 dark:text-orange-300 uppercase tracking-wider">Previsualización de fotografía seleccionada</span>
+            <span class="text-xs text-gray-500">{{ (fotoSeleccionada.size / 1024) | number:'1.0-1' }} KB</span>
+          </div>
+
+          <div class="flex flex-col sm:flex-row items-center gap-4">
+            <div class="w-full sm:w-48 h-36 rounded-lg overflow-hidden bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-slate-700 flex items-center justify-center shrink-0">
+              <img [src]="fotoPreviaUrl" alt="Previsualización" class="w-full h-full object-contain">
+            </div>
+
+            <div class="flex-1 space-y-2 w-full">
+              <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 break-all">{{ fotoSeleccionada.name }}</p>
+              <p class="text-xs text-gray-500">Comprueba la calidad de la fotografía antes de confirmarla. Se asociará directamente a la unidad {{ unidadDetalle.codigo }}.</p>
+
+              <div class="flex items-center gap-2 pt-2">
+                <button
+                  type="button"
+                  (click)="subirFotoSeleccionada()"
+                  [disabled]="subiendoFoto"
+                  class="btn-primary text-xs flex items-center gap-2"
+                >
+                  <svg *ngIf="subiendoFoto" class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                  <span>{{ subiendoFoto ? 'Subiendo...' : 'Subir fotografía' }}</span>
+                </button>
+                <button
+                  type="button"
+                  (click)="cancelarSubidaFoto()"
+                  [disabled]="subiendoFoto"
+                  class="btn-outline text-xs"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Estado de carga galería -->
+        <div *ngIf="cargandoFotosUnidad" class="py-6 text-center text-xs text-gray-500 flex items-center justify-center gap-2">
+          <svg class="animate-spin h-4 w-4 text-orange-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+          <span>Cargando fotografías...</span>
+        </div>
+
+        <!-- Sin fotografías -->
+        <div *ngIf="!cargandoFotosUnidad && fotografiasUnidad.length === 0" class="py-6 text-center rounded-xl bg-gray-50 dark:bg-slate-800/40 border border-dashed border-gray-200 dark:border-slate-800">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">No hay fotografías registradas para esta unidad.</p>
+          <p *ngIf="puedeSubirFotografias()" class="text-xs text-gray-400 mt-1">Usa el botón "+ Subir fotografía" para adjuntar la primera evidencia visual.</p>
+        </div>
+
+        <!-- Galería de fotografías existentes -->
+        <div *ngIf="!cargandoFotosUnidad && fotografiasUnidad.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div
+            *ngFor="let foto of fotografiasUnidad"
+            class="rounded-xl border border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50 p-3 flex flex-col justify-between hover:border-orange-400 transition-colors"
+          >
+            <div class="space-y-2">
+              <div class="h-28 rounded-lg bg-gray-100 dark:bg-slate-900 border border-gray-200/60 dark:border-slate-700/60 flex flex-col items-center justify-center text-gray-400">
+                <span class="text-2xl">📸</span>
+                <span class="text-[10px] uppercase font-semibold text-gray-500 mt-1">{{ foto.tipo_mime || 'IMAGEN' }}</span>
+              </div>
+              <div>
+                <p class="text-xs font-bold text-gray-800 dark:text-gray-200 truncate" [title]="foto.nombre_archivo">{{ foto.nombre_archivo }}</p>
+                <div class="flex items-center justify-between text-[11px] text-gray-400 mt-0.5">
+                  <span>{{ (foto.tamano_bytes ? foto.tamano_bytes / 1024 : 0) | number:'1.0-1' }} KB</span>
+                  <span *ngIf="foto.es_principal" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-100 text-amber-800">Principal</span>
+                </div>
+              </div>
+            </div>
+            <div class="border-t border-gray-200/50 dark:border-slate-700/50 pt-2 mt-2 text-[10px] text-gray-400 flex items-center justify-between">
+              <span>#{{ foto.orden || 1 }}</span>
+              <span>{{ foto.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="grid grid-cols-1 md:grid-cols-3 gap-3 border-t border-gray-100 dark:border-slate-800 pt-4 text-xs text-gray-500"><div class="p-3 border rounded-xl dark:border-slate-700"><strong class="block text-gray-700 dark:text-gray-200">Actividades</strong>Integración pendiente del módulo canónico.</div><div class="p-3 border rounded-xl dark:border-slate-700"><strong class="block text-gray-700 dark:text-gray-200">Recursos</strong>Integración pendiente del módulo canónico.</div><div class="p-3 border rounded-xl dark:border-slate-700"><strong class="block text-gray-700 dark:text-gray-200">Presupuesto</strong>No se reutiliza el presupuesto general como presupuesto de unidad.</div></section>
 
       <div class="flex justify-end gap-2"><button (click)="cerrarDetalleUnidad()" class="btn-outline">Cerrar</button><button *ngIf="esRolAutorizado()" (click)="editarUnidad()" class="btn-primary">Editar unidad</button></div>

@@ -10,6 +10,7 @@ import '../services/obra_service.dart';
 import '../services/empresa_service.dart';
 import '../theme/app_theme.dart';
 import 'asistente_screen.dart';
+import 'cliente_unidades_screen.dart';
 import 'consultas_tecnicas_screen.dart';
 import 'crm_screen.dart';
 import 'incidencias_screen.dart';
@@ -567,6 +568,12 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildCompanySelectorCard(auth, isDark, cardBg, borderColor, titleColor),
               const SizedBox(height: 20),
 
+              // Portal del Cliente (CU30)
+              if (auth.esCliente) ...[
+                _buildClientePortalCard(isDark, cardBg, borderColor, titleColor),
+                const SizedBox(height: 20),
+              ],
+
               // 2. Resumen General (Métricas 2x2)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -873,12 +880,102 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildClientePortalCard(
+    bool isDark,
+    Color cardBg,
+    Color borderColor,
+    Color titleColor,
+  ) {
+    final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: AppTheme.primary.withValues(alpha: isDark ? 0.35 : 0.45),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primary.withValues(alpha: isDark ? 0.12 : 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ClienteUnidadesScreen()),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary.withValues(alpha: isDark ? 0.22 : 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.home_work_rounded,
+                    color: AppTheme.primary,
+                    size: 26,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Mis Proyectos y Unidades',
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: titleColor,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Accede a tus proyectos y unidades asociadas como cliente.',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: subColor,
+                          height: 1.25,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 16,
+                  color: AppTheme.primary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildQuickAccessGrid(
     bool isDark,
     Color cardBg,
     Color borderColor,
     Color titleColor,
   ) {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -887,6 +984,20 @@ class _HomeScreenState extends State<HomeScreen> {
       crossAxisSpacing: 10,
       childAspectRatio: 0.92,
       children: [
+        if (auth.esCliente)
+          _buildQuickAccessItem(
+            icon: Icons.home_work_rounded,
+            iconColor: AppTheme.primary,
+            label: 'Mis Proyectos y Unidades',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ClienteUnidadesScreen()),
+            ),
+            isDark: isDark,
+            cardBg: cardBg,
+            borderColor: borderColor,
+            titleColor: titleColor,
+          ),
         _buildQuickAccessItem(
           icon: Icons.apartment_rounded,
           iconColor: AppTheme.primary,

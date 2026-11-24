@@ -356,3 +356,103 @@ def reemplazar_materiales(id_obra, id_unidad, id_empresa, materiales: list) -> d
         raise
     finally:
         db.close_connection()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FOTOGRAFÍAS DE UNIDAD (HU115 - Carga y Gestión Operativa)
+# ─────────────────────────────────────────────────────────────────────────────
+def obtener_empresa_de_unidad(id_unidad: int):
+    sql = """
+        SELECT u.id_unidad, u.codigo, e.id_obra, o.nombre AS nombre_obra, o.id_empresa
+        FROM obras.t_unidad_construccion u
+        JOIN obras.t_estructura_obra e ON e.id_estructura = u.id_estructura
+        JOIN obras.t_obra o ON o.id_obra = e.id_obra
+        WHERE u.id_unidad = %s;
+    """
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        row = db.execute_query(sql, (id_unidad,), fetchone=True)
+        if not row:
+            return None
+        return {
+            "id_unidad": row[0],
+            "codigo": row[1],
+            "id_obra": row[2],
+            "nombre_obra": row[3],
+            "id_empresa": row[4],
+        }
+    finally:
+        db.close_connection()
+
+
+def insertar_fotografia_unidad(id_unidad: int, ruta_archivo: str, nombre_archivo: str,
+                               tipo_mime: str, tamano_bytes: int, es_principal: bool,
+                               orden: int, id_usuario: int):
+    sql = """
+        INSERT INTO obras.t_unidad_fotografia (
+            id_unidad,
+            ruta_archivo,
+            nombre_archivo,
+            tipo_mime,
+            tamano_bytes,
+            es_principal,
+            orden,
+            id_usuario
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        RETURNING id_fotografia, created_at;
+    """
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        row = db.execute_query(
+            sql,
+            (id_unidad, ruta_archivo, nombre_archivo, tipo_mime, tamano_bytes, es_principal, orden, id_usuario),
+            fetchone=True,
+            commit=True,
+        )
+        return {
+            "id_fotografia": row[0],
+            "id_unidad": id_unidad,
+            "ruta_archivo": ruta_archivo,
+            "nombre_archivo": nombre_archivo,
+            "tipo_mime": tipo_mime,
+            "tamano_bytes": tamano_bytes,
+            "es_principal": es_principal,
+            "orden": orden,
+            "id_usuario": id_usuario,
+            "created_at": row[1].isoformat() if row[1] else None,
+        }
+    finally:
+        db.close_connection()
+
+
+def listar_fotografias_unidad_admin(id_unidad: int):
+    sql = """
+        SELECT id_fotografia, id_unidad, ruta_archivo, nombre_archivo, tipo_mime,
+               tamano_bytes, es_principal, orden, id_usuario, created_at
+        FROM obras.t_unidad_fotografia
+        WHERE id_unidad = %s
+        ORDER BY orden ASC, created_at DESC, id_fotografia DESC;
+    """
+    db = PostgreSQL()
+    db.create_connection()
+    try:
+        rows = db.execute_query(sql, (id_unidad,), fetchall=True) or []
+        return [
+            {
+                "id_fotografia": r[0],
+                "id_unidad": r[1],
+                "ruta_archivo": r[2],
+                "nombre_archivo": r[3],
+                "tipo_mime": r[4],
+                "tamano_bytes": r[5],
+                "es_principal": bool(r[6]),
+                "orden": r[7],
+                "id_usuario": r[8],
+                "created_at": r[9].isoformat() if r[9] else None,
+            }
+            for r in rows
+        ]
+    finally:
+        db.close_connection()
