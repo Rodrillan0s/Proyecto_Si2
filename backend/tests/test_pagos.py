@@ -592,9 +592,6 @@ def test_ruta_verificacion_acepta_administrador_empresa(monkeypatch):
         respuesta = client.post('/api/pagos/10/verificar')
     assert respuesta.status_code == 200
     verificar.assert_called_once_with(EMPRESA, 10)
-<<<<<<< HEAD
-
-
 def test_listar_pagos_globales_solo_admin(monkeypatch):
     usuarios = {
         1: {'id_usuario': 1, 'id_empresa': 1, 'estado': 'ACTIVO', 'nombre_rol': 'ADMINISTRADOR'},
@@ -607,7 +604,3 @@ def test_listar_pagos_globales_solo_admin(monkeypatch):
     with pytest.raises(HTTPException) as error:
         service.listar_pagos_globales(EMPRESA)
     assert error.value.status_code == 403
-
-
-=======
->>>>>>> ff3f2cea18858144e7af556633c9adc8872d3f3a

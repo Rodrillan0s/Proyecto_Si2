@@ -44,11 +44,8 @@ export class PagosComponent implements OnInit {
   planes = signal<PlanVista[]>([]);
   suscripcion = signal<SuscripcionEmpresa | null>(null);
   historial = signal<PagoEmpresa[]>([]);
-<<<<<<< HEAD
   transaccionesGlobales = signal<PagoEmpresa[]>([]);
-=======
   transacciones = signal<TransaccionSaaS[]>([]);
->>>>>>> ff3f2cea18858144e7af556633c9adc8872d3f3a
   comprobante = signal<ComprobantePago | null>(null);
   pagoConsultado = signal<PagoDetalle | null>(null);
 
@@ -130,12 +127,8 @@ export class PagosComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.esGlobal) {
-<<<<<<< HEAD
       this.cargarGlobal();
-=======
-      this.cargando.set(false);
       this.cargarTransacciones();
->>>>>>> ff3f2cea18858144e7af556633c9adc8872d3f3a
       return;
     }
     this.cargarEmpresa();
@@ -232,7 +225,6 @@ export class PagosComponent implements OnInit {
     return this.suscripcion()?.codigo_plan === plan.codigo;
   }
 
-<<<<<<< HEAD
   cambiarFiltroEstado(estado: string): void {
     this.filtroEstado.set(estado);
   }
@@ -244,7 +236,8 @@ export class PagosComponent implements OnInit {
 
   cerrarDetalleConsultado(): void {
     this.pagoConsultado.set(null);
-=======
+  }
+
   cargarTransacciones(): void {
     if (!this.esGlobal || this.cargandoTransacciones()) return;
     if (this.fechaDesde && this.fechaHasta && this.fechaHasta < this.fechaDesde) {
@@ -292,7 +285,6 @@ export class PagosComponent implements OnInit {
     return new Intl.DateTimeFormat('es-BO', {
       dateStyle: 'medium', timeZone: 'America/La_Paz',
     }).format(new Date(transaccion.fecha));
->>>>>>> ff3f2cea18858144e7af556633c9adc8872d3f3a
   }
 
   buscarPago(preservarMensaje = false): void {

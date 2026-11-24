@@ -178,7 +178,6 @@ def listar_pagos_empresa(id_empresa):
         return [dict(row) for row in cur.fetchall()]
 
 
-<<<<<<< HEAD
 def listar_todos_los_pagos():
     with conexion() as cur:
         cur.execute("""
@@ -193,7 +192,9 @@ def listar_todos_los_pagos():
             LEFT JOIN obras.t_plan_suscripcion pl ON pl.codigo=pg.codigo_plan
             ORDER BY pg.creado_en DESC,pg.id_pago DESC
         """)
-=======
+        return [dict(row) for row in cur.fetchall()]
+
+
 def listar_transacciones(fecha_desde=None, fecha_hasta=None, nombre_empresa=None, limite=50):
     with conexion() as cur:
         cur.execute("""
@@ -257,7 +258,6 @@ def listar_transacciones(fecha_desde=None, fecha_hasta=None, nombre_empresa=None
             fecha_desde, fecha_desde, fecha_hasta, fecha_hasta,
             nombre_empresa, nombre_empresa, limite,
         ))
->>>>>>> ff3f2cea18858144e7af556633c9adc8872d3f3a
         return [dict(row) for row in cur.fetchall()]
 
 

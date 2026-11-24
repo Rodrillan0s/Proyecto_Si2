@@ -113,13 +113,13 @@ def listar_pagos_mi_empresa(token):
     return repo.listar_pagos_empresa(empresa)
 
 
-<<<<<<< HEAD
 def listar_pagos_globales(token):
     usuario = _usuario_actual(token)
     if usuario['nombre_rol'] != 'ADMINISTRADOR':
         raise HTTPException(403, 'Solo el superadministrador puede listar los pagos globales.')
     return repo.listar_todos_los_pagos()
-=======
+
+
 def listar_transacciones(token, fecha_desde=None, fecha_hasta=None, nombre_empresa=None, limite=50):
     usuario = _usuario_actual(token)
     if usuario['nombre_rol'] != 'ADMINISTRADOR':
@@ -134,7 +134,6 @@ def listar_transacciones(token, fecha_desde=None, fecha_hasta=None, nombre_empre
     return repo.listar_transacciones(
         fecha_desde, fecha_hasta, empresa or None, limite,
     )
->>>>>>> ff3f2cea18858144e7af556633c9adc8872d3f3a
 
 
 def consultar_comprobante(token, id_pago):

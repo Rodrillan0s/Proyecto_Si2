@@ -125,17 +125,16 @@ export class PagosService {
     return this.http.get<RespuestaApi<PagoEmpresa[]>>(`${this.url}/mi-empresa`);
   }
 
-<<<<<<< HEAD
   pagosGlobales() {
     return this.http.get<RespuestaApi<PagoEmpresa[]>>(`${this.url}/global`);
-=======
+  }
+
   transacciones(filtros: FiltrosTransacciones = {}) {
     let params = new HttpParams();
     if (filtros.fecha_desde) params = params.set('fecha_desde', filtros.fecha_desde);
     if (filtros.fecha_hasta) params = params.set('fecha_hasta', filtros.fecha_hasta);
     if (filtros.nombre_empresa) params = params.set('nombre_empresa', filtros.nombre_empresa);
     return this.http.get<RespuestaApi<TransaccionSaaS[]>>(`${this.url}/transacciones`, { params });
->>>>>>> ff3f2cea18858144e7af556633c9adc8872d3f3a
   }
 
   comprobante(idPago: number) {

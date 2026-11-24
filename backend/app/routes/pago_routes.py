@@ -46,13 +46,13 @@ def pagos_mi_empresa(
     return {'success': True, 'data': service.listar_pagos_mi_empresa(token)}
 
 
-<<<<<<< HEAD
 @router.get('/global')
 def pagos_globales(
     token: dict = Depends(exigir_rol('ADMINISTRADOR')),
 ):
     return {'success': True, 'data': service.listar_pagos_globales(token)}
-=======
+
+
 @router.get('/transacciones')
 def transacciones(
     fecha_desde: date | None = Query(None),
@@ -67,7 +67,6 @@ def transacciones(
             token, fecha_desde, fecha_hasta, nombre_empresa, limite,
         ),
     }
->>>>>>> ff3f2cea18858144e7af556633c9adc8872d3f3a
 
 
 @router.get('/{id_pago}/comprobante')

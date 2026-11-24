@@ -36,11 +36,8 @@ describe('PagosComponent', () => {
     const pagos = {
       planes: vi.fn(() => of({ success: true, data: [plan] })),
       miEmpresa: vi.fn(() => of({ success: true, data: historial })),
-<<<<<<< HEAD
       pagosGlobales: vi.fn(() => of({ success: true, data: historial })),
-=======
       transacciones: vi.fn(() => of({ success: true, data: movimientos })),
->>>>>>> ff3f2cea18858144e7af556633c9adc8872d3f3a
       iniciarCheckout: vi.fn(() => of({ success: true, data: {
         id_pago: 5, estado: 'PENDIENTE', checkout_url: 'https://checkout.stripe.com/c/pay/test', checkout_expira_en: null,
       } })),
