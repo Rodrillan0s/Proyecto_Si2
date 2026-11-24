@@ -12,12 +12,97 @@ Reglas estrictas:
 - Genera hasta 3 escenarios (Económico, Equilibrado, Superior) cuando existen datos suficientes.
 - Recopila información faltante de forma progresiva (máximo 2 preguntas por turno).
 """
+import base64
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any
 from app.services.commercial.contracts import CommercialSearchCriteria
 from app.services.commercial import cost_estimation_service as cost_service
 
 TWO_DECIMALS = Decimal('0.01')
+
+_STYLE_PALETTES = {
+    'ESTANDAR': {'wall': '#f1f5f9', 'roof': '#b45309', 'accent': '#d97706', 'glass': '#bae6fd'},
+    'INDUSTRIAL': {'wall': '#e2e8f0', 'roof': '#334155', 'accent': '#ea580c', 'glass': '#94a3b8'},
+    'MINIMALISTA': {'wall': '#ffffff', 'roof': '#1e293b', 'accent': '#f59e0b', 'glass': '#7dd3fc'},
+    'CONTEMPORANEO': {'wall': '#fef3c7', 'roof': '#475569', 'accent': '#b45309', 'glass': '#93c5fd'},
+    'LUJO': {'wall': '#f8fafc', 'roof': '#0f172a', 'accent': '#eab308', 'glass': '#38bdf8'},
+}
+
+
+def generar_prototipo_visual_svg(
+    *,
+    tipologia: str,
+    superficie_m2: Decimal,
+    dormitorios: int,
+    banos: int,
+    codigo_estilo: str,
+    escenario: str,
+    plantas: int = 1,
+) -> dict[str, Any]:
+    """
+    Genera un prototipo arquitectónico conceptual (fachada + planta esquemática SVG)
+    como data URI listo para renderizar en Angular y Flutter sin inventar planos aprobados.
+    """
+    pal = _STYLE_PALETTES.get(codigo_estilo, _STYLE_PALETTES['MINIMALISTA'])
+    dorms = max(1, min(int(dormitorios or 2), 5))
+    ban = max(1, min(int(banos or 1), 4))
+    dorm_blocks = []
+    block_w = 136 / dorms
+    for i in range(dorms):
+        x = 248 + i * block_w
+        dorm_blocks.append(
+            f'<rect x="{x:.1f}" y="48" width="{block_w - 4:.1f}" height="52" rx="3" '
+            f'fill="#fef3c7" stroke="#b45309" stroke-width="1.2"/>'
+            f'<text x="{x + (block_w - 4) / 2:.1f}" y="78" text-anchor="middle" '
+            f'font-size="8.5" font-family="sans-serif" fill="#78350f">Dorm {i + 1}</text>'
+        )
+    second_floor = (
+        f'<rect x="34" y="60" width="168" height="44" rx="2" fill="{pal["wall"]}" stroke="#334155" stroke-width="1.5"/>'
+        f'<rect x="52" y="70" width="46" height="22" rx="2" fill="{pal["glass"]}" stroke="#334155" stroke-width="1"/>'
+        f'<rect x="128" y="70" width="54" height="22" rx="2" fill="{pal["glass"]}" stroke="#334155" stroke-width="1"/>'
+        f'<rect x="28" y="54" width="180" height="8" rx="2" fill="{pal["roof"]}"/>'
+        if plantas >= 2
+        else f'<polygon points="24,104 118,62 212,104" fill="{pal["roof"]}" opacity="0.92"/>'
+    )
+    svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 200" width="420" height="200">'
+        '<rect width="420" height="200" rx="12" fill="#0f172a"/>'
+        '<text x="18" y="22" font-size="11" font-weight="bold" font-family="sans-serif" fill="#f59e0b">'
+        f'PROTOTIPO {escenario.upper()} · {tipologia} ({superficie_m2} m² · {plantas}P)</text>'
+        '<text x="18" y="36" font-size="9" font-family="sans-serif" fill="#94a3b8">'
+        f'Estilo {codigo_estilo} · {dorms} Dorm. · {ban} Baño(s)</text>'
+        # Fachada (izquierda)
+        '<rect x="18" y="46" width="202" height="122" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1"/>'
+        f'{second_floor}'
+        f'<rect x="34" y="104" width="168" height="54" rx="2" fill="{pal["wall"]}" stroke="#334155" stroke-width="1.5"/>'
+        f'<rect x="50" y="122" width="26" height="36" rx="2" fill="{pal["accent"]}"/>'
+        f'<rect x="92" y="116" width="42" height="24" rx="2" fill="{pal["glass"]}" stroke="#334155" stroke-width="1"/>'
+        f'<rect x="146" y="116" width="42" height="24" rx="2" fill="{pal["glass"]}" stroke="#334155" stroke-width="1"/>'
+        '<line x1="24" y1="158" x2="212" y2="158" stroke="#64748b" stroke-width="2"/>'
+        # Planta esquemática (derecha)
+        '<rect x="236" y="46" width="166" height="122" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>'
+        + ''.join(dorm_blocks) +
+        '<rect x="248" y="106" width="84" height="52" rx="3" fill="#e0f2fe" stroke="#0284c7" stroke-width="1.2"/>'
+        '<text x="290" y="135" text-anchor="middle" font-size="9" font-family="sans-serif" fill="#0369a1">Sala / Comedor</text>'
+        '<rect x="336" y="106" width="54" height="24" rx="3" fill="#dcfce7" stroke="#16a34a" stroke-width="1.2"/>'
+        '<text x="363" y="121" text-anchor="middle" font-size="8" font-family="sans-serif" fill="#15803d">Cocina</text>'
+        '<rect x="336" y="134" width="54" height="24" rx="3" fill="#f1f5f9" stroke="#64748b" stroke-width="1.2"/>'
+        f'<text x="363" y="149" text-anchor="middle" font-size="8" font-family="sans-serif" fill="#334155">{ban} Baño(s)</text>'
+        '<text x="210" y="186" text-anchor="middle" font-size="8.5" font-family="sans-serif" fill="#94a3b8">'
+        'Prototipo conceptual preliminar — No equivale a plano arquitectónico aprobado</text>'
+        '</svg>'
+    )
+    b64 = base64.b64encode(svg.encode('utf-8')).decode('ascii')
+    return {
+        'titulo': f'Prototipo {escenario} · {tipologia} ({superficie_m2} m²)',
+        'estilo': codigo_estilo,
+        'superficie_m2': str(superficie_m2),
+        'dormitorios': dorms,
+        'banos': ban,
+        'plantas': plantas,
+        'imagen_svg_data_uri': f'data:image/svg+xml;base64,{b64}',
+        'nota': 'Prototipo conceptual preliminar; no equivale a diseño arquitectónico aprobado.',
+    }
 
 
 def _q2(val: Decimal) -> Decimal:
@@ -204,12 +289,13 @@ def generar_propuesta_proyecto(
 
     for nombre_esc, cod_estilo, factor_sup, enfoque in escenarios_config:
         sup_esc = _q2(max(Decimal('40.00'), sup_solicitada * factor_sup))
+        plantas_esc = 1 if sup_esc <= Decimal('140') else 2
         est = cost_service.estimar_costo_constructivo(
             id_empresa=id_empresa,
             superficie_m2=sup_esc,
             tipo_inmueble=tipo_inmueble,
             estilo_acabado=cod_estilo,
-            cantidad_plantas=1 if sup_esc <= Decimal('140') else 2,
+            cantidad_plantas=plantas_esc,
             dormitorios=dormitorios,
             banos=banos,
             presupuesto_objetivo=presupuesto_usd if presupuesto_usd is not None else None,
@@ -218,6 +304,15 @@ def generar_propuesta_proyecto(
         )
         r_fin = est['resumen_financiero']
         eval_p = est.get('evaluacion_presupuesto') or {}
+        proto = generar_prototipo_visual_svg(
+            tipologia=tipo_inmueble,
+            superficie_m2=sup_esc,
+            dormitorios=dormitorios,
+            banos=banos,
+            codigo_estilo=cod_estilo,
+            escenario=nombre_esc,
+            plantas=plantas_esc,
+        )
         escenarios.append({
             'escenario': nombre_esc,
             'enfoque': enfoque,
@@ -225,10 +320,12 @@ def generar_propuesta_proyecto(
             'estilo_nombre': est['parametros_entrada']['estilo_nombre'],
             'tipologia': tipo_inmueble,
             'superficie_aprox_m2': str(sup_esc),
+            'plantas': plantas_esc,
             'dormitorios': dormitorios,
             'banos': banos,
             'distribucion_ambientes': _distribuir_ambientes(sup_esc, dormitorios, banos),
             'materiales_acabados': est.get('especificaciones_estilo') or [],
+            'prototipo_visual': proto,
             'mobiliario_equipamiento': (
                 mob_param
                 if mob_param is not None
@@ -277,6 +374,11 @@ def generar_propuesta_proyecto(
         'Costos calculados sobre parámetros constructivos y APUs vigentes de la empresa; no incluyen terreno ni mobiliario suelto.',
     ]
 
+    prototipo_destacado = (
+        next((e['prototipo_visual'] for e in escenarios if e.get('encaja_presupuesto') is True), None)
+        or (escenarios[1]['prototipo_visual'] if len(escenarios) > 1 else escenarios[0]['prototipo_visual'])
+    )
+
     return {
         'viable': True,
         'informacion_insuficiente': False,
@@ -284,6 +386,7 @@ def generar_propuesta_proyecto(
         'tipologia': tipo_inmueble,
         'superficie_referencia_m2': str(sup_solicitada),
         'terreno': terreno_info,
+        'prototipo_destacado': prototipo_destacado,
         'escenarios': escenarios,
         'costos_confirmados': [],
         'costos_estimados': [

@@ -112,8 +112,26 @@ class _HomeScreenState extends State<HomeScreen> {
           fetcherRemoto: _obraService.listarProyectos,
         );
         lista = res.data;
+        if (!res.esCopiaLocal) {
+          unawaited(
+            OfflineSyncService.instance.precargarTodoOffline(
+              idEmpresa: empId,
+              userKey: auth.userIdentityKey,
+              esCliente: auth.esCliente,
+            ),
+          );
+        }
       } else {
         lista = await _obraService.listarProyectos();
+        if (empId != null && empId > 0) {
+          unawaited(
+            OfflineSyncService.instance.precargarTodoOffline(
+              idEmpresa: empId,
+              userKey: auth.userIdentityKey,
+              esCliente: auth.esCliente,
+            ),
+          );
+        }
       }
       if (!mounted) return;
 

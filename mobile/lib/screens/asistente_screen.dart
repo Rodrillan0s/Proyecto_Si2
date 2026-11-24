@@ -14,6 +14,7 @@ import '../services/notificacion_service.dart';
 import '../services/reportes_service.dart';
 import '../services/reportes_voice.dart';
 import '../theme/app_theme.dart';
+import '../widgets/architectural_prototype_card.dart';
 import '../widgets/chart_spec_card.dart';
 import 'reportes_screen.dart';
 
@@ -3134,6 +3135,11 @@ class _AsistenteScreenState extends State<AsistenteScreen> {
               style: GoogleFonts.inter(fontSize: 12, color: titleColor, height: 1.35),
             ),
           ] else ...[
+            if (propuesta['prototipo_destacado'] is Map) ...[
+              ArchitecturalPrototypeCard(
+                prototipo: Map<String, dynamic>.from(propuesta['prototipo_destacado'] as Map),
+              ),
+            ],
             if (terreno.isNotEmpty) ...[
               Text(
                 'Terreno (${terreno['estado'] ?? 'POR_CONFIRMAR'}): ${terreno['nota'] ?? ''}',

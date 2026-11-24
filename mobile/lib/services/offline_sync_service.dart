@@ -5,6 +5,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 
+import 'api_client.dart';
 import 'avance_service.dart';
 import 'incidencia_service.dart';
 import 'notificacion_service.dart';
@@ -92,12 +93,113 @@ class OfflineSyncService extends ChangeNotifier with WidgetsBindingObserver {
 
   bool get isOnline => _isOnline;
   bool get sincronizando => _sincronizando;
+  int? get activeEmpresaId => _activeEmpresaId;
+  String? get activeUserKey => _activeUserKey;
   DateTime? get ultimaActualizacionCache => _ultimaActualizacionCache;
   List<OfflineQueueItem> get items => List.unmodifiable(_items);
   int get pendientesCount => _items.where((e) => e.estado == 'PENDIENTE').length;
   int get sincronizadosCount => _items.where((e) => e.estado == 'SINCRONIZADO').length;
   int get erroresCount => _items.where((e) => e.estado == 'ERROR').length;
   bool get tienePendientes => pendientesCount > 0;
+
+  bool _precargandoTodo = false;
+
+  Future<void> guardarHttpCache(String cacheKey, Object payload) async {
+    final emp = _activeEmpresaId ?? 0;
+    final uKey = _activeUserKey ?? 'anon';
+    await _safeGuardarCache(
+      idEmpresa: emp,
+      userKey: uKey,
+      entidad: 'http_get',
+      clave: cacheKey,
+      payload: payload,
+    );
+  }
+
+  Future<dynamic> leerHttpCache(String cacheKey) async {
+    final emp = _activeEmpresaId ?? 0;
+    final uKey = _activeUserKey ?? 'anon';
+    final entry = await _safeObtenerCache(
+      idEmpresa: emp,
+      userKey: uKey,
+      entidad: 'http_get',
+      clave: cacheKey,
+    );
+    return entry?.payload;
+  }
+
+  /// Precarga en segundo plano todos los módulos operativos clave en SQLite
+  /// para que la app muestre obras, incidencias, órdenes de trabajo, avances,
+  /// materiales, notificaciones, CRM y reportes al quedar sin conexión.
+  Future<void> precargarTodoOffline({
+    required int idEmpresa,
+    required String userKey,
+    bool esCliente = false,
+  }) async {
+    if (_precargandoTodo) return;
+    _activeEmpresaId = idEmpresa;
+    _activeUserKey = userKey;
+    final online = await _checkConnectivity();
+    _isOnline = online;
+    if (!online) return;
+
+    _precargandoTodo = true;
+    try {
+      Future<void> warm(String path, {Map<String, dynamic>? query}) async {
+        try {
+          await ApiClient.dio.get(path, queryParameters: query);
+        } catch (_) {}
+      }
+
+      // 1. Precargar obras y sus detalles/unidades/avances
+      await precargarDatosObra(idEmpresa: idEmpresa, userKey: userKey);
+      List<dynamic> obras = [];
+      try {
+        final r = await ApiClient.dio.get('/api/proyectos/');
+        if (r.data is List) {
+          obras = r.data as List;
+        } else if (r.data is Map && r.data['data'] is List) {
+          obras = r.data['data'] as List;
+        }
+      } catch (_) {}
+
+      // 2. Módulos transversales (se guardan automáticamente vía interceptor SQLite de ApiClient)
+      final endpointsGlobales = <String>[
+        '/api/ws/historial',
+        '/api/proyectos/tipos',
+        '/api/reportes/catalogo',
+        '/api/incidencias/',
+        '/api/ordenes-trabajo/',
+        '/api/materiales/',
+        '/api/materiales/categorias',
+        '/api/consultas-tecnicas/',
+        if (esCliente) '/api/crm/cliente/unidades' else '/api/crm/clientes',
+        if (!esCliente) '/api/usuarios/',
+      ];
+      for (final ep in endpointsGlobales) {
+        await warm(ep);
+      }
+
+      // 3. Detalles por obra (top 10 obras activas para no saturar red móvil)
+      for (final o in obras.take(10)) {
+        if (o is! Map) continue;
+        final idObra = int.tryParse(o['id_obra']?.toString() ?? '');
+        if (idObra == null) continue;
+        await warm('/api/proyectos/$idObra');
+        await warm('/api/proyectos/$idObra/unidades');
+        await warm('/api/proyectos/$idObra/estructuras');
+        await warm('/api/proyectos/$idObra/avances');
+        await warm('/api/proyectos/$idObra/avances/resumen');
+        await warm('/api/incidencias/', query: {'id_obra': idObra});
+        await warm('/api/ordenes-trabajo/', query: {'id_obra': idObra});
+      }
+
+      _ultimaActualizacionCache = DateTime.now().toUtc();
+      notifyListeners();
+    } finally {
+      _precargandoTodo = false;
+    }
+  }
 
   static Future<bool> _defaultCheckConnectivity() async {
     try {
