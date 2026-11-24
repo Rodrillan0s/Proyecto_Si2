@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-11-22T15:00:00.000Z" agent="Antigravity" version="24.0.0" type="device">
+  <diagram id="cu41_secuencia_offline_sync" name="CU41 - Secuencia Offline Sync">
+    <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1650" pageHeight="1150" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="frame_sd" value="sd CU41 - Gestionar Operacion Offline y Sincronizacion (HU90-HU94)" style="shape=umlFrame;whiteSpace=wrap;html=1;width=420;height=22;fillColor=none;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=11;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="20" y="20" width="1580" height="1060" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_actor" value="user : PersonalCampo" style="shape=umlLifeline;participant=umlActor;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="50" y="60" width="40" height="1000" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_ui" value="ui : OperacionOfflineUI" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=11;fontColor=#000000;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="160" y="60" width="150" height="1000" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_sync" value="sync_mgr : SyncManager" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=11;fontColor=#000000;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="340" y="60" width="150" height="1000" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_sqlite" value="sqlite : LocalDbService" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=11;fontColor=#000000;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="520" y="60" width="150" height="1000" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_router" value="router : sync_routes" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=11;fontColor=#000000;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="60" width="140" height="1000" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_service" value="service : sync_services" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=11;fontColor=#000000;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="870" y="60" width="140" height="1000" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_t_avance" value="t_avance_obra" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=11;fontColor=#000000;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="60" width="130" height="1000" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_t_inc" value="t_incidencia" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=11;fontColor=#000000;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="60" width="130" height="1000" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_t_log" value="t_sincronizacion_log" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=11;fontColor=#000000;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="1360" y="60" width="140" height="1000" as="geometry" />
+        </mxCell>
+        <mxCell id="box_hu90" value="alt [HU90 - Consultar Obra sin Conexión]" style="shape=umlFrame;whiteSpace=wrap;html=1;width=180;height=20;fillColor=none;strokeColor=#333333;strokeWidth=1;strokeDasharray=3 3;fontFamily=Arial;fontSize=10;fontStyle=2;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="40" y="130" width="620" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_1" value="1: consultar_obra_offline(id_obra)" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="70" y="160" as="sourcePoint" />
+            <mxPoint x="235" y="160" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_2" value="2: obtener_datos_cache(id_obra)" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="235" y="185" as="sourcePoint" />
+            <mxPoint x="415" y="185" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_3" value="3: SELECT datos_obra FROM cache_obra WHERE id_obra=?" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="415" y="210" as="sourcePoint" />
+            <mxPoint x="595" y="210" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_4" value="4: return datos_cache_offline()" style="endArrow=open;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="595" y="235" as="sourcePoint" />
+            <mxPoint x="415" y="235" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_5" value="5: return datos_obra_offline()" style="endArrow=open;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="415" y="260" as="sourcePoint" />
+            <mxPoint x="235" y="260" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_6" value="6: mostrar_informacion_offline(datos)" style="endArrow=open;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="235" y="285" as="sourcePoint" />
+            <mxPoint x="70" y="285" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="box_hu91" value="alt [HU91 / HU92 - Registrar Avance o Incidencia sin Conexión]" style="shape=umlFrame;whiteSpace=wrap;html=1;width=180;height=20;fillColor=none;strokeColor=#333333;strokeWidth=1;strokeDasharray=3 3;fontFamily=Arial;fontSize=10;fontStyle=2;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="40" y="320" width="620" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_7" value="7: registrar_avance_o_incidencia(datos)" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="70" y="350" as="sourcePoint" />
+            <mxPoint x="235" y="350" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_8" value="8: guardar_registro_offline(tipo, payload)" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="235" y="380" as="sourcePoint" />
+            <mxPoint x="415" y="380" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_9" value="9: INSERT INTO cola_pendientes(tipo, payload, &#x27;PENDIENTE&#x27;)" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="415" y="410" as="sourcePoint" />
+            <mxPoint x="595" y="410" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_10" value="10: return id_local_pendiente" style="endArrow=open;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="595" y="440" as="sourcePoint" />
+            <mxPoint x="415" y="440" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_11" value="11: return confirmacion_guardado_local()" style="endArrow=open;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="415" y="470" as="sourcePoint" />
+            <mxPoint x="235" y="470" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_12" value="12: mostrar_notificacion(&#x27;Guardado localmente - Pendiente de Sync&#x27;)" style="endArrow=open;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="235" y="500" as="sourcePoint" />
+            <mxPoint x="70" y="500" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="box_hu93" value="alt [HU93 - Sincronizar Automáticamente al Recuperar Conexión]" style="shape=umlFrame;whiteSpace=wrap;html=1;width=180;height=20;fillColor=none;strokeColor=#333333;strokeWidth=1;strokeDasharray=3 3;fontFamily=Arial;fontSize=10;fontStyle=2;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="40" y="540" width="1530" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_13" value="13: evento_red(conexion_restablecida)" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="70" y="570" as="sourcePoint" />
+            <mxPoint x="415" y="570" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_14" value="14: SELECT * FROM cola_pendientes WHERE estado=&#x27;PENDIENTE&#x27;" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="415" y="600" as="sourcePoint" />
+            <mxPoint x="595" y="600" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_15" value="15: return lista_pendientes[avances, incidencias]" style="endArrow=open;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="595" y="630" as="sourcePoint" />
+            <mxPoint x="415" y="630" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_16" value="16: POST /api/v1/sync/batch (lote_datos, token_jwt)" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="415" y="665" as="sourcePoint" />
+            <mxPoint x="770" y="665" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_17" value="17: procesar_lote_sync(id_empresa, lote_datos)" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="770" y="695" as="sourcePoint" />
+            <mxPoint x="940" y="695" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_18a" value="18a: INSERT INTO obras.t_avance_obra (id_obra, porcentaje, ...)" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="940" y="720" as="sourcePoint" />
+            <mxPoint x="1105" y="720" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_18b" value="18b: INSERT INTO obras.t_incidencia (id_obra, titulo, ...)" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="940" y="745" as="sourcePoint" />
+            <mxPoint x="1265" y="745" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_19" value="19: INSERT INTO obras.t_sincronizacion_log (lote_id, total_ok)" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="940" y="770" as="sourcePoint" />
+            <mxPoint x="1430" y="770" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_20" value="20: return 200 OK (procesados: 5, ids_confirmados: [...])" style="endArrow=open;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="770" y="800" as="sourcePoint" />
+            <mxPoint x="415" y="800" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_21" value="21: UPDATE cola_pendientes SET estado=&#x27;SINCRONIZADO&#x27;" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="415" y="825" as="sourcePoint" />
+            <mxPoint x="595" y="825" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_22" value="22: notificar_sync_completado(total: 5)" style="endArrow=open;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="415" y="850" as="sourcePoint" />
+            <mxPoint x="235" y="850" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_23" value="23: actualizar_badge(&#x27;Todo sincronizado&#x27;)" style="endArrow=open;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="235" y="875" as="sourcePoint" />
+            <mxPoint x="70" y="875" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="box_hu94" value="alt [HU94 - Consultar Estado de Sincronización]" style="shape=umlFrame;whiteSpace=wrap;html=1;width=180;height=20;fillColor=none;strokeColor=#333333;strokeWidth=1;strokeDasharray=3 3;fontFamily=Arial;fontSize=10;fontStyle=2;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="40" y="900" width="620" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_24" value="24: consultar_estado_sincronizacion()" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="70" y="930" as="sourcePoint" />
+            <mxPoint x="235" y="930" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_25" value="25: obtener_resumen_cola()" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="235" y="955" as="sourcePoint" />
+            <mxPoint x="415" y="955" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_26" value="26: SELECT COUNT(*) GROUP BY estado" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="415" y="980" as="sourcePoint" />
+            <mxPoint x="595" y="980" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_27" value="27: return resumen { pendientes: 0, sincronizados: 12 }" style="endArrow=open;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="595" y="1010" as="sourcePoint" />
+            <mxPoint x="235" y="1010" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_28" value="28: renderizar_panel_sync(estado_actual)" style="endArrow=open;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9.5;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="235" y="1035" as="sourcePoint" />
+            <mxPoint x="70" y="1035" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

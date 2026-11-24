@@ -378,6 +378,51 @@ def consult(token, data, empresa=None):
     explicit_works = [w['id_obra'] for w in works if re.search(r'\b' + re.escape(normalize(w['nombre'])) + r'\b', normalize(question)) or (w.get('codigo') and re.search(r'\b' + re.escape(normalize(w['codigo'])) + r'\b', normalize(question)))]
     effective_work = explicit_works[0] if len(explicit_works) == 1 else navigation_work
 
+    # Orquestador IA Multi-Perfil con DeepSeek Function Calling y contexto de 6 compartimentos
+    if selected is None:
+        from app.services.ai import context_manager, orchestrator
+        try:
+            ai_provider = get_provider()
+        except ProviderError:
+            ai_provider = None
+        if ai_provider is not None and hasattr(ai_provider, 'chat_with_tools') and getattr(data, 'usar_ia', True):
+            state, _invalidated = context_manager.load_state(conversation, ctx)
+            with repo.transaction(snapshot=True) as db:
+                plan_row = subscription.obtener(ctx.empresa, getattr(db, 'cur', None))
+                plan_caps = subscription.capacidades(plan_row) if plan_row else None
+            try:
+                orch_resp = orchestrator.run_orchestrator(
+                    token=token,
+                    ctx=ctx,
+                    question=question,
+                    state=state,
+                    recent_rows=recent,
+                    available_reports=available,
+                    works=works,
+                    plan_caps=plan_caps,
+                    modules=modules,
+                    navigation_work=effective_work,
+                    provider=ai_provider,
+                )
+                ident = str(conversation['id']) if conversation else str(uuid4())
+                with repo.transaction() as db:
+                    fresh = context(db, ctx.usuario, ctx.empresa)
+                    if orch_resp.get('analysis_scope') is not None:
+                        assistant_analysis.reautorizar(db, fresh, orch_resp.pop('analysis_scope'))
+                    context_manager.save_turn(
+                        db,
+                        ident,
+                        fresh,
+                        question,
+                        orch_resp.get('respuesta', ''),
+                        state,
+                        orch_resp,
+                        is_new_conversation=(conversation is None),
+                    )
+                return dict(orch_resp, conversacion=ident)
+            except ProviderError:
+                pass  # Fallback automático y transparente al flujo determinista local
+
     plan = ReadPlan(accion='reportes', solicitudes=[selected]) if selected is not None else _plan(
         question, available, works, previous, topic, can_crm, sources, previous_queries,
         recent=recent, user_role=ctx.rol, id_obra_contexto=effective_work, permisos=ctx.permisos, modulos=modules
@@ -573,6 +618,8 @@ def consult(token, data, empresa=None):
             k: v for k, v in response.items()
             if k not in {'ejecucion', 'ejecuciones', 'respuesta', 'resultados_consulta', 'resultado_analisis'}
         }
+        if texto_resp:
+            metadata['texto_respuesta'] = str(texto_resp)[:2000]
         metadata['accion'] = plan.accion if isinstance(plan, ReadPlan) else response.get('accion', 'reportes')
         if response.get('operacion_propuesta'):
             metadata['operacion_propuesta'] = response['operacion_propuesta']

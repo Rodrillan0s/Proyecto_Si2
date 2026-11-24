@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-11-22T18:45:00.000Z" agent="Antigravity" version="24.0.0" type="device">
+  <diagram id="cu41_comunicacion_bce_puro" name="CU41 - Comunicacion BCE Puro">
+    <mxGraphModel dx="1200" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="600" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="&lt;b&gt;Diagrama de Comunicación (Análisis BCE Puro) — CU41: Operación Offline y Sincronización&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555555&quot;&gt;Solo Usuario — Boundary — Controller — Entidades (Sin servicios ni componentes de implementación)&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Arial;fontSize=12;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="40" y="25" width="850" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="actor_user" value="Personal de Campo" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=10;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="50" y="230" width="30" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="b_iu" value="IU_operacion_&lt;br&gt;offline" style="shape=umlBoundary;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=10;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="240" y="225" width="85" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="c_ctrl" value="Control_Operacion_&lt;br&gt;Offline" style="shape=umlControl;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=9.5;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="540" y="225" width="85" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="e_obra" value="Obra" style="shape=umlEntity;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=10;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="940" y="65" width="75" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="e_avance" value="Avance_Obra" style="shape=umlEntity;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=9.5;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="940" y="175" width="75" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="e_incidencia" value="Incidencia" style="shape=umlEntity;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=10;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="940" y="285" width="75" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cola" value="Cola_&lt;br&gt;Sincronizacion" style="shape=umlEntity;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=9.5;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="940" y="395" width="75" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_user_iu" value="1: consultarObra() [HU90] →&lt;br&gt;4: registrarAvance() [HU91] →&lt;br&gt;7: registrarIncidencia() [HU92] →&lt;br&gt;10: sincronizarDatos() [HU93] →&lt;br&gt;13: consultarEstadoSync() [HU94] →" style="endArrow=none;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1" source="actor_user" target="b_iu">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_iu_ctrl" value="2: solicitarDatosObra() →&lt;br&gt;5: procesarRegistroAvance() →&lt;br&gt;8: procesarRegistroIncidencia() →&lt;br&gt;11: ejecutarSincronizacion() →&lt;br&gt;14: consultarEstado() →" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1" source="b_iu" target="c_ctrl">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_ctrl_obra" value="3: consultarDatosObra() →" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1" source="c_ctrl" target="e_obra">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_ctrl_avance" value="6: crearAvance() [HU91] →" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1" source="c_ctrl" target="e_avance">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_ctrl_incidencia" value="9: crearIncidencia() [HU92] →" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1" source="c_ctrl" target="e_incidencia">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_ctrl_cola" value="6b/9b: encolarPendiente() →&lt;br&gt;12: procesarPendientes() [HU93] →&lt;br&gt;15: contarPorEstado() [HU94] →" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1" source="c_ctrl" target="e_cola">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

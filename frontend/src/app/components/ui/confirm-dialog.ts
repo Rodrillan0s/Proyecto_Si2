@@ -8,26 +8,30 @@ import { CommonModule } from '@angular/common';
   template: `
     <div
       *ngIf="abierto"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
+      role="dialog"
+      aria-modal="true"
+      class="ob-modal-overlay"
+      (click)="!cargando && onCancelar.emit()"
     >
       <div
-        class="relative w-full max-w-md rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-4"
+        class="ob-modal max-w-md p-5 sm:p-6 space-y-4"
+        (click)="$event.stopPropagation()"
       >
-        <div class="flex items-center gap-3">
+        <div class="flex items-start gap-3">
           <div
-            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
             [ngClass]="tipo === 'peligro' ? 'bg-rose-100 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400' : 'bg-amber-100 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400'"
           >
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
-          <div>
+          <div class="min-w-0">
             <h3 class="text-base font-bold text-slate-900 dark:text-white">
               {{ titulo }}
             </h3>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Acción de confirmación de seguridad
+              Confirma esta acción para continuar
             </p>
           </div>
         </div>
@@ -36,12 +40,12 @@ import { CommonModule } from '@angular/common';
           {{ mensaje }}
         </p>
 
-        <div class="flex items-center justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+        <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
           <button
             type="button"
             (click)="onCancelar.emit()"
             [disabled]="cargando"
-            class="px-4 py-2 text-xs font-semibold rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            class="ob-btn-secondary text-xs py-2 min-h-[38px]"
           >
             {{ cancelarTexto }}
           </button>
@@ -49,10 +53,10 @@ import { CommonModule } from '@angular/common';
             type="button"
             (click)="onConfirmar.emit()"
             [disabled]="cargando"
-            class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg text-white transition shadow-xs"
-            [ngClass]="tipo === 'peligro' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-amber-600 hover:bg-amber-700'"
+            class="text-xs py-2 min-h-[38px]"
+            [ngClass]="tipo === 'peligro' ? 'ob-btn-danger' : 'ob-btn-primary'"
           >
-            <svg *ngIf="cargando" class="animate-spin -ml-1 mr-1 h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+            <svg *ngIf="cargando" class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
             </svg>

@@ -1,6 +1,6 @@
 <div class="control-page">
   <app-page-header
-    categoria="GESTIÓN DE OBRAS"
+    categoria="Finanzas y costos"
     titulo="Control de costos"
     subtitulo="Seguimiento del presupuesto base, costos ejecutados y órdenes de cambio."
     [codigo]="lineaBase?.obra_codigo || obraSeleccionada()?.codigo">
@@ -67,7 +67,7 @@
     </section>
     <ng-container *ngIf="!cargandoFinal && resumenFinal as final">
       <section class="content-panel">
-        <div class="panel-header"><div><p class="eyebrow">CU32 · HU135 · HU136 · HU137</p><h2>Resumen económico final</h2><p>Costos registrados consolidados. Los costos anulados están excluidos del costo final.</p></div><span class="status-pill active">OBRA FINALIZADA</span></div>
+        <div class="panel-header"><div><p class="eyebrow">Cierre económico</p><h2>Resumen económico final</h2><p>Costos registrados consolidados. Los costos anulados están excluidos del costo final.</p></div><span class="status-pill active">OBRA FINALIZADA</span></div>
         <div class="baseline-detail">
           <div><span>Obra</span><strong>{{ final.obra.codigo }} · {{ final.obra.nombre }}</strong></div>
           <div><span>Línea base aprobada</span><strong>{{ final.linea_base.presupuesto_nombre || ('Presupuesto #' + final.linea_base.id_estimacion_base) }}</strong></div>
@@ -84,13 +84,13 @@
         <app-dashboard-card titulo="Variación revisada" [valor]="dinero(final.resumen.variacion_revisada)" [tipo]="final.resumen.variacion_revisada > 0 ? 'rose' : 'emerald'" [detalle]="final.resumen.variacion_revisada_porcentaje == null ? 'No disponible: presupuesto cero' : (final.resumen.variacion_revisada_porcentaje | number:'1.2-2') + '%'" subtitulo="Costo final frente al presupuesto revisado"></app-dashboard-card>
       </section>
       <section class="content-panel" *ngIf="final.desglose_por_categoria as desglose">
-        <div class="panel-header"><div><p class="eyebrow">HU135</p><h2>Desglose de costos</h2><p>Importes consolidados por el servidor: costos vigentes más mano de obra calculada. Los costos anulados están excluidos.</p></div></div>
+        <div class="panel-header"><div><p class="eyebrow">Consolidado</p><h2>Desglose de costos</h2><p>Importes consolidados: costos vigentes más mano de obra calculada. Los costos anulados están excluidos.</p></div></div>
         <div class="table-wrap"><table><thead><tr><th>Categoría</th><th class="numeric">Costo registrado</th></tr></thead><tbody>
           <ng-container *ngFor="let categoria of categorias"><tr *ngIf="desglose[categoria] != null"><td>{{ formatoTipo(categoria) }}<small *ngIf="categoria === 'MANO_OBRA'">Incluye el cálculo de trabajadores cuando corresponde</small></td><td class="numeric amount">{{ dinero(desglose[categoria]) }}</td></tr></ng-container>
         </tbody></table></div>
       </section>
       <section class="content-panel" *ngIf="final.mano_obra_trabajadores?.length">
-        <div class="panel-header"><div><p class="eyebrow">TRAZABILIDAD · CU32</p><h2>Mano de obra por trabajador</h2><p>Salario diario, jornadas y costo guardados en el cierre de la obra.</p></div></div>
+        <div class="panel-header"><div><p class="eyebrow">Trazabilidad</p><h2>Mano de obra por trabajador</h2><p>Salario diario, jornadas y costo guardados en el cierre de la obra.</p></div></div>
         <div class="table-wrap"><table><thead><tr><th>Trabajador</th><th>Fecha</th><th class="numeric">Días</th><th class="numeric">Salario diario</th><th class="numeric">Costo</th></tr></thead><tbody>
           <tr *ngFor="let jornada of final.mano_obra_trabajadores">
             <td><strong>{{ jornada.nombre_completo }}</strong><small>{{ jornada.nombre_rol }}</small></td>
@@ -107,7 +107,7 @@
   <ng-container *ngIf="idObra && tab === 'mano-obra'">
     <div class="loading-panel" *ngIf="cargandoManoObra" role="status"><span class="spinner"></span><p>Consultando trabajadores y jornadas...</p></div>
     <section class="content-panel" *ngIf="!cargandoManoObra">
-      <div class="panel-header"><div><p class="eyebrow">CU32 · MANO DE OBRA</p><h2>Trabajadores asignados</h2><p>La jornada se registra por fecha y se calcula con el salario diario vigente para esa fecha. El backend congela el importe al finalizar la obra.</p></div></div>
+      <div class="panel-header"><div><p class="eyebrow">Mano de obra</p><h2>Trabajadores asignados</h2><p>La jornada se registra por fecha y se calcula con el salario diario vigente. El importe se consolida al finalizar la obra.</p></div></div>
       <div class="empty-table" *ngIf="!manoObra.trabajadores.length">No hay trabajadores asignados a esta obra. Asigna personal desde el detalle de la obra antes de registrar salarios o jornadas.</div>
       <div class="baseline-detail" *ngIf="manoObra.trabajadores.length">
         <div *ngFor="let trabajador of manoObra.trabajadores">
@@ -176,7 +176,7 @@
 
     <section class="content-panel" *ngIf="!cargando && tab === 'costos'">
       <div class="panel-header panel-header-responsive">
-        <div><p class="eyebrow">HU59</p><h2>Costos ejecutados</h2><p>Los costos anulados se conservan para trazabilidad.</p></div>
+        <div><p class="eyebrow">Ejecución</p><h2>Costos ejecutados</h2><p>Los costos anulados se conservan para trazabilidad.</p></div>
         <div class="panel-tools">
           <select [(ngModel)]="filtroEstadoCosto" (ngModelChange)="filtrarCostos()" aria-label="Filtrar costos por estado"><option value="">Todos los estados</option><option value="REGISTRADO">Registrados</option><option value="ANULADO">Anulados</option></select>
           <button class="btn-primary" type="button" (click)="abrirCosto()" *ngIf="puede('Registrar_costos_ejecutados')">Registrar costo</button>
@@ -198,7 +198,7 @@
     </section>
 
     <section class="content-panel" *ngIf="!cargando && tab === 'comparacion'">
-      <div class="panel-header"><div><p class="eyebrow">HU60</p><h2>Presupuestado vs. ejecutado</h2><p>Valores calculados por la API sobre el costo directo de la línea base.</p></div></div>
+      <div class="panel-header"><div><p class="eyebrow">Comparativa</p><h2>Presupuestado vs. ejecutado</h2><p>Valores calculados sobre el costo directo de la línea base.</p></div></div>
       <div class="table-wrap">
         <table class="comparison-table">
           <thead><tr><th>Código / partida</th><th class="numeric">Presupuestado</th><th class="numeric">Ejecutado</th><th class="numeric">Variación</th><th class="numeric">Revisado</th><th class="numeric">Variación revisada</th></tr></thead>
@@ -215,7 +215,7 @@
 
     <section class="content-panel" *ngIf="!cargando && tab === 'ordenes'">
       <div class="panel-header panel-header-responsive">
-        <div><p class="eyebrow">HU61 · HU62 · HU63</p><h2>Órdenes de cambio</h2><p>Solo las órdenes pendientes pueden modificarse o decidirse.</p></div>
+        <div><p class="eyebrow">Control de cambios</p><h2>Órdenes de cambio</h2><p>Solo las órdenes pendientes pueden modificarse o decidirse.</p></div>
         <div class="panel-tools"><select [(ngModel)]="filtroEstadoOrden" (ngModelChange)="filtrarOrdenes()" aria-label="Filtrar órdenes por estado"><option value="">Todos los estados</option><option value="PENDIENTE">Pendientes</option><option value="APROBADA">Aprobadas</option><option value="RECHAZADA">Rechazadas</option></select><button class="btn-primary" type="button" (click)="abrirNuevaOrden()" *ngIf="puede('Registrar_ordenes_cambio')">Nueva orden</button></div>
       </div>
       <div class="table-wrap" *ngIf="ordenes.length; else sinOrdenes"><table><thead><tr><th>Código / orden</th><th>Fecha</th><th class="numeric">Impacto costo</th><th class="numeric">Plazo</th><th>Estado</th><th class="actions">Acciones</th></tr></thead><tbody>
@@ -231,7 +231,7 @@
   <div class="modal-backdrop" *ngIf="modal" (click)="cerrarModal()">
     <section class="modal" [class.modal-wide]="modal === 'orden' || modal === 'historial'" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
       <ng-container *ngIf="modal === 'costo'">
-        <header class="modal-header"><div><p class="eyebrow">HU59</p><h2>Registrar costo ejecutado</h2></div><button class="close" type="button" (click)="cerrarModal()">×</button></header>
+        <header class="modal-header"><div><p class="eyebrow">Nuevo registro</p><h2>Registrar costo ejecutado</h2></div><button class="close" type="button" (click)="cerrarModal()">×</button></header>
         <form (ngSubmit)="guardarCosto()"><div class="modal-body form-grid">
           <div class="field span-2"><label for="costo-partida">Partida *</label><select id="costo-partida" name="costo-partida" [(ngModel)]="costoForm.id_partida_presupuestaria" required><option [ngValue]="0">Selecciona una partida</option><option *ngFor="let partida of partidasBase()" [ngValue]="partida.id_partida_presupuestaria">{{ partida.item_codigo }} · {{ partida.partida }}</option></select></div>
           <div class="field"><label for="costo-fecha">Fecha *</label><input id="costo-fecha" name="costo-fecha" type="date" [(ngModel)]="costoForm.fecha" required></div>
@@ -252,7 +252,7 @@
       </ng-container>
 
       <ng-container *ngIf="modal === 'orden'">
-        <header class="modal-header"><div><p class="eyebrow">HU61</p><h2>{{ ordenEditando ? 'Editar orden pendiente' : 'Nueva orden de cambio' }}</h2></div><button class="close" type="button" (click)="cerrarModal()">×</button></header>
+        <header class="modal-header"><div><p class="eyebrow">Orden de cambio</p><h2>{{ ordenEditando ? 'Editar orden pendiente' : 'Nueva orden de cambio' }}</h2></div><button class="close" type="button" (click)="cerrarModal()">×</button></header>
         <form (ngSubmit)="guardarOrden()"><div class="modal-body">
           <div class="form-grid">
             <div class="field"><label for="orden-codigo">Código *</label><input id="orden-codigo" name="orden-codigo" maxlength="40" [(ngModel)]="ordenForm.codigo" [disabled]="!!ordenEditando" required></div>
@@ -278,13 +278,13 @@
       </ng-container>
 
       <ng-container *ngIf="modal === 'decidir' && ordenObjetivo">
-        <header class="modal-header"><div><p class="eyebrow" [class.danger-text]="accionDecision === 'RECHAZAR'">HU62</p><h2>{{ accionDecision === 'APROBAR' ? 'Aprobar orden' : 'Rechazar orden' }}</h2></div><button class="close" type="button" (click)="cerrarModal()">×</button></header>
+        <header class="modal-header"><div><p class="eyebrow" [class.danger-text]="accionDecision === 'RECHAZAR'">Resolución</p><h2>{{ accionDecision === 'APROBAR' ? 'Aprobar orden' : 'Rechazar orden' }}</h2></div><button class="close" type="button" (click)="cerrarModal()">×</button></header>
         <div class="modal-body"><div class="confirm-box"><strong>{{ ordenObjetivo.codigo }} · {{ ordenObjetivo.titulo }}</strong><span>{{ dinero(ordenObjetivo.impacto_costo) }}</span></div><div class="field"><label for="motivo-decision">{{ accionDecision === 'RECHAZAR' ? 'Motivo *' : 'Comentario' }}</label><textarea id="motivo-decision" rows="3" [(ngModel)]="motivo" [placeholder]="accionDecision === 'RECHAZAR' ? 'El rechazo requiere un motivo' : 'Comentario opcional de aprobación'"></textarea></div></div>
         <footer class="modal-footer"><button class="btn-outline" (click)="cerrarModal()">Cancelar</button><button [class]="accionDecision === 'APROBAR' ? 'btn-success' : 'btn-danger'" (click)="confirmarDecision()" [disabled]="guardando || (accionDecision === 'RECHAZAR' && !motivo.trim())">{{ guardando ? 'Procesando...' : accionDecision === 'APROBAR' ? 'Aprobar orden' : 'Rechazar orden' }}</button></footer>
       </ng-container>
 
       <ng-container *ngIf="modal === 'historial' && ordenObjetivo">
-        <header class="modal-header"><div><p class="eyebrow">HU63 · TRAZABILIDAD</p><h2>Historial de {{ ordenObjetivo.codigo }}</h2></div><button class="close" type="button" (click)="cerrarModal()">×</button></header>
+        <header class="modal-header"><div><p class="eyebrow">Trazabilidad</p><h2>Historial de {{ ordenObjetivo.codigo }}</h2></div><button class="close" type="button" (click)="cerrarModal()">×</button></header>
         <div class="modal-body"><div class="timeline" *ngIf="historial.length; else sinHistorial"><article *ngFor="let evento of historial"><div class="timeline-dot"></div><div class="timeline-card"><div class="timeline-head"><strong>{{ formatoTipo(evento.accion) }}</strong><time>{{ evento.fecha_evento | date:'dd/MM/yyyy HH:mm' }}</time></div><div class="state-change"><span>{{ evento.estado_anterior || 'INICIO' }}</span><b>→</b><span>{{ evento.estado_nuevo }}</span></div><p *ngIf="evento.comentario">{{ evento.comentario }}</p><small>{{ evento.usuario }}<ng-container *ngIf="evento.ip_origen"> · {{ evento.ip_origen }}</ng-container></small></div></article></div><ng-template #sinHistorial><div class="empty-table">No hay eventos registrados.</div></ng-template></div>
         <footer class="modal-footer"><button class="btn-outline" (click)="cerrarModal()">Cerrar</button></footer>
       </ng-container>

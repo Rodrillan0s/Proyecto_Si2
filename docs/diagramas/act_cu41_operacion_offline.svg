@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1140" height="960" viewBox="0 0 1140 960">
+<defs>
+      <marker id="act-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#000000"/>
+      </marker>
+      <filter id="shadow" x="-5%" y="-5%" width="110%" height="115%">
+        <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.08"/>
+      </filter>
+    </defs>
+<rect width="1140" height="960" fill="#FFFFFF"/>
+<text x="45" y="30" font-family="Arial, Helvetica, sans-serif" font-size="14.5" font-weight="bold" fill="#000000">CU41M – Gestionar operación offline y sincronización</text>
+<text x="45" y="47" font-family="Arial, Helvetica, sans-serif" font-size="10.5" fill="#555555">Representación de trabajo sin conexión en faena, almacenamiento SQLite, recuperación de red y sincronización atómica.</text>
+<rect x="45" y="58" width="1050" height="877" fill="none" stroke="#000000" stroke-width="1.3"/>
+<rect x="45.0" y="58" width="350.0" height="38" fill="#F0F2F5" stroke="#000000" stroke-width="1.2"/>
+<text x="220.0" y="82" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" font-weight="bold" fill="#111111">Personal de Campo</text>
+<rect x="395.0" y="58" width="350.0" height="38" fill="#F0F2F5" stroke="#000000" stroke-width="1.2"/>
+<text x="570.0" y="82" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" font-weight="bold" fill="#111111">Aplicación Móvil (Offline)</text>
+<line x1="395.0" y1="96" x2="395.0" y2="935" stroke="#000000" stroke-width="1.2"/>
+<rect x="745.0" y="58" width="350.0" height="38" fill="#F0F2F5" stroke="#000000" stroke-width="1.2"/>
+<text x="920.0" y="82" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" font-weight="bold" fill="#111111">Servidor Central</text>
+<line x1="745.0" y1="96" x2="745.0" y2="935" stroke="#000000" stroke-width="1.2"/>
+<line x1="220" y1="146" x2="220" y2="180.0" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 220 230.0 L 220 205.0 L 570 205.0 L 570 180.0" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 570 230.0 L 570 250.0 L 220 250.0 L 220 270.0" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<rect x="354.35" y="242.0" width="81.3" height="16" rx="3" fill="#FFFFFF" stroke="#BBBBBB" stroke-width="1"/>
+<text x="395.0" y="254.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Caché lista</text>
+<path d="M 220 320.0 L 220 295.0 L 570 295.0 L 570 270.0" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<line x1="570" y1="320.0" x2="570" y2="365.0" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 550.0 385 L 550.0 417.5 L 220 417.5 L 220 450.0" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<rect x="334.9" y="409.5" width="100.2" height="16" rx="3" fill="#FFFFFF" stroke="#BBBBBB" stroke-width="1"/>
+<text x="385.0" y="421.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">[Sin conexión]</text>
+<path d="M 115.0 475 L 22 475 L 22 295 L 110.0 295" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<rect x="27" y="377.0" width="114.0" height="16" rx="3" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="1"/>
+<text x="32" y="389.0" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Nuevos registros</text>
+<line x1="570" y1="405.0" x2="570" y2="515.0" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<rect x="497.85" y="452.0" width="144.29999999999998" height="16" rx="3" fill="#FFFFFF" stroke="#BBBBBB" stroke-width="1"/>
+<text x="570" y="464.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">[Conexión restaurada]</text>
+<path d="M 570 565.0 L 570 540.0 L 920 540.0 L 920 515.0" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<rect x="698.05" y="532.0" width="93.89999999999999" height="16" rx="3" fill="#FFFFFF" stroke="#BBBBBB" stroke-width="1"/>
+<text x="745.0" y="544.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Envío de lote</text>
+<line x1="920" y1="565.0" x2="920" y2="605.0" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 900.0 625 L 900.0 655.0 L 830 655.0 L 830 685.0" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<rect x="824.35" y="647.0" width="81.3" height="16" rx="3" fill="#FFFFFF" stroke="#BBBBBB" stroke-width="1"/>
+<text x="865.0" y="659.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">[Conflicto]</text>
+<path d="M 940.0 625 L 940.0 655.0 L 1010 655.0 L 1010 685.0" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<rect x="921.75" y="647.0" width="106.5" height="16" rx="3" fill="#FFFFFF" stroke="#BBBBBB" stroke-width="1"/>
+<text x="975.0" y="659.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">[Sin conflicto]</text>
+<path d="M 830 735.0 L 830 752.0 L 920 752.0 L 920 769.0" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 1010 735.0 L 1010 752.0 L 920 752.0 L 920 769.0" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 920 781.0 L 920 793.0 L 570 793.0 L 570 805.0" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<rect x="691.75" y="785.0" width="106.5" height="16" rx="3" fill="#FFFFFF" stroke="#BBBBBB" stroke-width="1"/>
+<text x="745.0" y="797.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Lote confirmado</text>
+<path d="M 570 855.0 L 570 876.5 L 220 876.5 L 220 898" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<rect x="335.45" y="868.5" width="119.1" height="16" rx="3" fill="#FFFFFF" stroke="#BBBBBB" stroke-width="1"/>
+<text x="395.0" y="880.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Sincronización OK</text>
+<circle cx="220" cy="135" r="11" fill="#000000" stroke="#000000" stroke-width="1.2" filter="url(#shadow)"/>
+<rect x="110.0" y="180.0" width="220" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="220" y="202" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Ingresar a frente de obra</text>
+<text x="220" y="216" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">sin cobertura celular</text>
+<rect x="460.0" y="180.0" width="220" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="570" y="202" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Habilitar modo local con snapshot</text>
+<text x="570" y="216" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">de obra en caché</text>
+<rect x="110.0" y="270.0" width="220" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="220" y="292" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Registrar avances físicos</text>
+<text x="220" y="306" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y reporte de incidencias</text>
+<rect x="460.0" y="270.0" width="220" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="570" y="292" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Almacenar datos en SQLite local</text>
+<text x="570" y="306" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">como PENDIENTE_SYNC</text>
+<polygon points="570,365.0 590.0,385 570,405.0 550.0,385" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<rect x="481.3" y="345.0" width="177.4" height="16" rx="3" fill="#FFFFFF" stroke="#AAAAAA" stroke-width="0.8"/>
+<text x="570" y="357.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="bold" fill="#000000">¿Detecta conexión Internet?</text>
+<rect x="115.0" y="450.0" width="210" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="220" y="472" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Continuar jornada operativa</text>
+<text x="220" y="486" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">registrando en local</text>
+<rect x="460.0" y="515.0" width="220" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="570" y="537" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Empaquetar lote de pendientes</text>
+<text x="570" y="551" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y enviar a sincronizar</text>
+<rect x="810.0" y="515.0" width="220" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="920" y="537" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Validar autenticación, permisos</text>
+<text x="920" y="551" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y verificar idempotencia</text>
+<polygon points="920,605.0 940.0,625 920,645.0 900.0,625" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<rect x="831.3" y="585.0" width="177.4" height="16" rx="3" fill="#FFFFFF" stroke="#AAAAAA" stroke-width="0.8"/>
+<text x="920" y="597.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="bold" fill="#000000">¿Hay conflictos de versión?</text>
+<rect x="755.0" y="685.0" width="150" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="830" y="707" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Aplicar regla Last-Write</text>
+<text x="830" y="721" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y registrar en auditoría</text>
+<rect x="935.0" y="685.0" width="150" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="1010" y="707" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Consolidar avances e</text>
+<text x="1010" y="721" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">incidencias en base datos</text>
+<rect x="895.0" y="769.0" width="50" height="12" rx="3" fill="#000000"/>
+<rect x="460.0" y="805.0" width="220" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="570" y="827" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Actualizar registros locales</text>
+<text x="570" y="841" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">a SINCRONIZADO</text>
+<circle cx="220" cy="910" r="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.4" filter="url(#shadow)"/>
+<circle cx="220" cy="910" r="7" fill="#000000"/>
+</svg>

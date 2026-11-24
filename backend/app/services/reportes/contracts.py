@@ -34,6 +34,7 @@ class ReportRequest(BaseModel):
     reporte: str = Field(min_length=1, max_length=60)
     filtros: Filters = Field(default_factory=Filters)
     presentacion: Presentation = Field(default_factory=Presentation)
+    consulta_dinamica: dict | None = None
 
 
 class Interpretation(BaseModel):

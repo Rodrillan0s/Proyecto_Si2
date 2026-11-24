@@ -7,6 +7,7 @@ from datetime import datetime, date
 from decimal import Decimal, InvalidOperation
 
 from app.repos import avance_repos, bitacora_repos, crm_repos
+from app.services import sync_offline_services
 
 
 # ---------------------------------------------------------------------------
@@ -50,7 +51,13 @@ def _validar_fecha(fecha_str) -> date:
 # Operaciones principales
 # ---------------------------------------------------------------------------
 
-def registrar_avance(id_obra: int, data: dict, token_data: dict, client_ip: str = "unknown") -> dict:
+def registrar_avance(
+    id_obra: int,
+    data: dict,
+    token_data: dict,
+    client_ip: str = "unknown",
+    idempotency_key: str | None = None,
+) -> dict:
     """
     Registra un nuevo avance de obra.
     Roles autorizados (definidos por permiso 'Registrar_avances'):
@@ -60,6 +67,10 @@ def registrar_avance(id_obra: int, data: dict, token_data: dict, client_ip: str 
     """
     id_empresa = _id_empresa(token_data)
     id_usuario = token_data.get("nro_usuario")
+    clave_idemp = sync_offline_services.extraer_clave_idempotencia(data, idempotency_key)
+    fecha_ocurrencia_local = sync_offline_services.parsear_fecha_ocurrencia_local(
+        data.get("fecha_ocurrencia_local")
+    )
 
     # Validar unidad
     id_unidad = data.get("id_unidad")
@@ -75,54 +86,69 @@ def registrar_avance(id_obra: int, data: dict, token_data: dict, client_ip: str 
     # Validar porcentaje
     porcentaje = _validar_porcentaje(data.get("porcentaje_avance"))
 
-    # Validar fecha
-    fecha = _validar_fecha(data.get("fecha_registro"))
+    # Validar fecha (si llega fecha_ocurrencia_local y no fecha_registro, derivar fecha de ocurrencia)
+    fecha_raw = data.get("fecha_registro")
+    if not fecha_raw and fecha_ocurrencia_local is not None:
+        fecha_raw = fecha_ocurrencia_local.date()
+    fecha = _validar_fecha(fecha_raw)
 
     # Observación opcional
     observacion = str(data.get("observacion") or "").strip()
 
-    # Llamar al repositorio
-    res = avance_repos.registrar_avance_fn(
-        id_obra=id_obra,
-        id_unidad=id_unidad,
-        id_empresa=id_empresa,
-        porcentaje=porcentaje,
-        fecha_registro=fecha,
-        observacion=observacion,
-        id_usuario=id_usuario,
-    )
-
-    if not res.get("success"):
-        raise ValueError(res.get("error", "No se pudo registrar el avance."))
-
-    # Registrar en bitácora
-    bitacora_repos.registrar_bitacora(
-        id_usuario=id_usuario,
-        modulo="AVANCES_OBRA",
-        accion="REGISTRAR_AVANCE",
-        descripcion=(
-            f"Avance de {porcentaje}% registrado en unidad {id_unidad} "
-            f"del proyecto {id_obra}. Observacion: {observacion or 'Ninguna'}"
-        ),
-        ip=client_ip,
-        estado="EXITOSO",
-    )
-
-    try:
-        from app.services import notificaciones_services
-        notificaciones_services.emitir_notificacion_push_empresa(
-            titulo=f"Avance registrado ({porcentaje}%)",
-            cuerpo=f"Se registró un avance del {porcentaje}% en la unidad #{id_unidad} de la obra #{id_obra}.",
-            tipo_referencia="AVANCE_OBRA",
-            id_empresa=token_data.get("id_empresa"),
+    def _ejecutar():
+        res = avance_repos.registrar_avance_fn(
             id_obra=id_obra,
-            nro_referencia=id_obra,
-            clave_evento=f"AVANCE_OBRA:{id_obra}:{id_unidad}:{res.get('id_avance') or porcentaje}",
+            id_unidad=id_unidad,
+            id_empresa=id_empresa,
+            porcentaje=porcentaje,
+            fecha_registro=fecha,
+            observacion=observacion,
+            id_usuario=id_usuario,
         )
-    except Exception:
-        pass
 
-    return res
+        if not res.get("success"):
+            raise ValueError(res.get("error", "No se pudo registrar el avance."))
+
+        bitacora_repos.registrar_bitacora(
+            id_usuario=id_usuario,
+            modulo="AVANCES_OBRA",
+            accion="REGISTRAR_AVANCE",
+            descripcion=(
+                f"Avance de {porcentaje}% registrado en unidad {id_unidad} "
+                f"del proyecto {id_obra}. Observacion: {observacion or 'Ninguna'}"
+            ),
+            ip=client_ip,
+            estado="EXITOSO",
+        )
+
+        try:
+            from app.services import notificaciones_services
+            notificaciones_services.emitir_notificacion_push_empresa(
+                titulo=f"Avance registrado ({porcentaje}%)",
+                cuerpo=f"Se registró un avance del {porcentaje}% en la unidad #{id_unidad} de la obra #{id_obra}.",
+                tipo_referencia="AVANCE_OBRA",
+                id_empresa=token_data.get("id_empresa"),
+                id_obra=id_obra,
+                nro_referencia=id_obra,
+                clave_evento=f"AVANCE_OBRA:{id_obra}:{id_unidad}:{res.get('id_avance') or porcentaje}",
+            )
+        except Exception:
+            pass
+
+        return res
+
+    return sync_offline_services.ejecutar_con_idempotencia(
+        id_empresa=token_data.get("id_empresa"),
+        id_usuario=id_usuario,
+        tipo_operacion="AVANCE_OBRA",
+        id_obra=id_obra,
+        client_operation_id=clave_idemp,
+        fecha_ocurrencia_local=fecha_ocurrencia_local,
+        fn_ejecutar=_ejecutar,
+        fn_extraer_id=lambda r: r.get("id_avance") if isinstance(r, dict) else None,
+        tabla_recurso="t_avance_obra",
+        columna_pk="id_avance",
+    )
 
 
 def listar_avances(id_obra: int, token_data: dict, estado: str = None) -> dict:

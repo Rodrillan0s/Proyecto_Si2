@@ -1,269 +1,384 @@
 <div class="home-container" [class.dark]="modoOscuro">
-
-  <!-- PANEL NAVBAR (PROCORE STYLE) -->
+  <!-- BARRA SUPERIOR CORPORATIVA -->
   <header class="panel-header">
     <div class="panel-header-left">
-      <button class="hamburger-btn" (click)="toggleSidebar()" aria-label="Alternar menú de navegación">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+      <button
+        type="button"
+        class="hamburger-btn"
+        (click)="toggleSidebar()"
+        aria-label="Alternar menú de navegación"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
       </button>
-      <span class="panel-brand" (click)="navegarA('/panel')" style="cursor:pointer">OBRATEC</span>
-      <!-- ========================================================================= -->
-      <!-- SELECTOR DE EMPRESA ACTIVA (MULTI-TENANT)                                 -->
-      <!-- ========================================================================= -->
-      <!-- Caso 1: ADMINISTRADOR Global (Dropdown interactivo con buscador) -->
-      <div *ngIf="esAdministradorGlobal()" class="relative ml-2 sm:ml-3" data-company-selector>
-        <button 
+
+      <a class="panel-brand" (click)="navegarA('/panel')" role="button" tabindex="0" (keyup.enter)="navegarA('/panel')">
+        <span class="brand-mark" aria-hidden="true">O</span>
+        <span class="brand-text">OBRATEC</span>
+      </a>
+
+      <!-- Selector de empresa activa (Administrador global) -->
+      <div *ngIf="esAdministradorGlobal()" class="relative" data-company-selector>
+        <button
           (click)="toggleSelectorEmpresas()"
           type="button"
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-sm border text-xs font-bold transition-all shadow-xs"
-          [ngClass]="empresaSeleccionada 
-            ? 'bg-amber-500/10 dark:bg-amber-500/20 border-amber-500/50 text-amber-800 dark:text-amber-400 hover:bg-amber-500/20' 
-            : 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-amber-500'"
-          title="Cambiar Empresa Activa">
-          <span class="text-sm">🏢</span>
-          <span class="truncate max-w-[130px] md:max-w-[200px]">
+          class="context-chip"
+          [class.context-chip-active]="!!empresaSeleccionada"
+          title="Cambiar empresa activa"
+        >
+          <svg class="w-3.5 h-3.5 shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3 21h18M5 21V3h14v18M9 7h1m4 0h1M9 11h1m4 0h1M10 21v-6h4v6" />
+          </svg>
+          <span class="truncate max-w-[115px] sm:max-w-[170px] md:max-w-[200px]">
             {{ empresaSeleccionada?.nombre_empresa || 'Todas las empresas' }}
           </span>
-          <svg class="w-3.5 h-3.5 transition-transform duration-200 text-slate-400" [class.rotate-180]="mostrarSelectorEmpresas" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          <svg class="w-3.5 h-3.5 shrink-0 transition-transform duration-200 opacity-70" [class.rotate-180]="mostrarSelectorEmpresas" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
 
-        <!-- Menu Flotante de Selección -->
-        <div *ngIf="mostrarSelectorEmpresas" class="absolute left-0 mt-2 w-80 bg-white dark:bg-slate-900 rounded-md shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden z-[110]">
-          <!-- Encabezado y buscador -->
+        <!-- Menú desplegable de empresas -->
+        <div *ngIf="mostrarSelectorEmpresas" class="header-dropdown header-dropdown-left w-80 max-w-[calc(100vw-1.5rem)]">
           <div class="p-3 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Contexto de Empresa</span>
-              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">Multi-tenant</span>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Empresa activa</span>
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">Selector</span>
             </div>
             <div class="relative">
-              <input 
-                type="text" 
-                [(ngModel)]="busquedaEmpresa" 
+              <input
+                type="text"
+                [(ngModel)]="busquedaEmpresa"
                 (input)="filtrarEmpresasSelector()"
-                placeholder="Buscar empresa por nombre..." 
-                class="w-full text-xs py-1.5 pl-7 pr-2 rounded bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-amber-500"
+                placeholder="Buscar empresa por nombre..."
+                class="w-full text-xs py-2 pl-8 pr-3 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-amber-500"
               />
-              <svg class="w-3.5 h-3.5 absolute left-2 top-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <svg class="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
             </div>
           </div>
 
-          <!-- Opciones -->
           <div class="max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60">
-            <!-- Opción: Vista Global -->
-            <button 
+            <button
               (click)="seleccionarEmpresa(null)"
               type="button"
               class="w-full text-left p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors flex items-center justify-between"
-              [class.bg-blue-50]="!empresaSeleccionada"
-              [class.dark:bg-blue-950/30]="!empresaSeleccionada"
+              [class.bg-amber-50/70]="!empresaSeleccionada"
+              [class.dark:bg-amber-950/20]="!empresaSeleccionada"
             >
-              <div class="flex items-center gap-2.5">
-                <div class="w-7 h-7 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs">
-                  🌐
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" />
+                  </svg>
                 </div>
-                <div>
-                  <p class="text-xs font-bold text-slate-900 dark:text-white">Vista Global de Plataforma</p>
-                  <p class="text-[10px] text-slate-500 dark:text-slate-400">Todas las empresas (Administración central)</p>
+                <div class="min-w-0">
+                  <p class="text-xs font-semibold text-slate-900 dark:text-white">Vista global</p>
+                  <p class="text-[11px] text-slate-500 dark:text-slate-400">Todas las empresas registradas</p>
                 </div>
               </div>
-              <span *ngIf="!empresaSeleccionada" class="text-amber-500 font-bold text-xs">✓</span>
+              <span *ngIf="!empresaSeleccionada" class="text-amber-600 dark:text-amber-400 font-bold text-xs ml-2">✓</span>
             </button>
 
-            <!-- Lista de empresas del tenant -->
-            <button 
+            <button
               *ngFor="let emp of empresasFiltradasSelector"
               (click)="seleccionarEmpresa(emp)"
               type="button"
               class="w-full text-left p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors flex items-center justify-between"
-              [class.bg-amber-50]="empresaSeleccionada?.id_empresa === emp.id_empresa"
+              [class.bg-amber-50/70]="empresaSeleccionada?.id_empresa === emp.id_empresa"
               [class.dark:bg-amber-950/20]="empresaSeleccionada?.id_empresa === emp.id_empresa"
             >
               <div class="flex items-center gap-2.5 min-w-0">
-                <div class="w-7 h-7 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center font-bold text-xs border border-slate-200 dark:border-slate-700 shrink-0">
-                  🏢
+                <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3 21h18M5 21V3h14v18M9 7h1m4 0h1M9 11h1m4 0h1M10 21v-6h4v6" />
+                  </svg>
                 </div>
                 <div class="min-w-0">
-                  <p class="text-xs font-bold text-slate-900 dark:text-white truncate">{{ emp.nombre_empresa }}</p>
-                  <p class="text-[10px] text-slate-500 dark:text-slate-400">NIT: {{ emp.nit || 'Sin NIT' }} • ID: {{ emp.id_empresa }}</p>
+                  <p class="text-xs font-semibold text-slate-900 dark:text-white truncate">{{ emp.nombre_empresa }}</p>
+                  <p class="text-[11px] text-slate-500 dark:text-slate-400">NIT: {{ emp.nit || 'Sin registro' }}</p>
                 </div>
               </div>
-              <span *ngIf="empresaSeleccionada?.id_empresa === emp.id_empresa" class="text-amber-500 font-bold text-xs ml-2">✓</span>
+              <span *ngIf="empresaSeleccionada?.id_empresa === emp.id_empresa" class="text-amber-600 dark:text-amber-400 font-bold text-xs ml-2">✓</span>
             </button>
 
-            <div *ngIf="empresasFiltradasSelector.length === 0" class="p-4 text-center text-xs text-slate-500">
+            <div *ngIf="empresasFiltradasSelector.length === 0" class="p-4 text-center text-xs text-slate-500 dark:text-slate-400">
               No se encontraron empresas
             </div>
           </div>
 
-          <!-- Pie del menú -->
-          <div class="p-2 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px]">
+          <div class="p-2.5 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
             <a (click)="navegarA('/empresas'); mostrarSelectorEmpresas = false" class="text-amber-600 dark:text-amber-400 font-semibold hover:underline cursor-pointer">
-              Directorio de Empresas →
+              Directorio de empresas →
             </a>
-            <button *ngIf="empresaSeleccionada" (click)="seleccionarEmpresa(null)" class="text-slate-500 hover:text-red-500 text-[10px] font-bold">
+            <button *ngIf="empresaSeleccionada" type="button" (click)="seleccionarEmpresa(null)" class="text-slate-500 hover:text-rose-500 text-[11px] font-semibold">
               Limpiar filtro
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Caso 2: Para Roles con Empresa Asignada (Inmutable) -->
-      <div *ngIf="!esAdministradorGlobal() && usuarioActual?.nombre_empresa" class="ml-2 sm:ml-3 flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-sm text-xs font-bold text-slate-800 dark:text-slate-200">
-        <span class="text-sm">🏢</span>
-        <span class="truncate max-w-[130px] md:max-w-[200px]" [title]="usuarioActual.nombre_empresa">
+      <!-- Empresa asignada (roles de empresa) -->
+      <div *ngIf="!esAdministradorGlobal() && usuarioActual?.nombre_empresa" class="context-chip context-chip-static">
+        <svg class="w-3.5 h-3.5 shrink-0 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3 21h18M5 21V3h14v18M9 7h1m4 0h1M9 11h1m4 0h1M10 21v-6h4v6" />
+        </svg>
+        <span class="truncate max-w-[115px] sm:max-w-[170px] md:max-w-[200px]" [title]="usuarioActual.nombre_empresa">
           {{ usuarioActual.nombre_empresa }}
         </span>
-        <span class="text-[9px] px-1 py-0.2 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 font-normal">Asignada</span>
       </div>
 
+      <!-- Selector de obra activa -->
       <div class="work-selector" data-work-selector *ngIf="hasPermission('Visualizar_obras')">
-        <button class="project-selector" (click)="toggleSelectorObras()" [attr.aria-expanded]="mostrarSelectorObras" aria-label="Seleccionar obra" [title]="contexto.obra?.nombre || 'Todas las obras'">🏗 <span>{{ contexto.obra?.nombre || 'Todas las obras' }}</span> ▾</button>
+        <button
+          type="button"
+          class="context-chip project-selector"
+          [class.context-chip-active]="!!contexto.obra"
+          (click)="toggleSelectorObras()"
+          [attr.aria-expanded]="mostrarSelectorObras"
+          aria-label="Seleccionar obra"
+          [title]="contexto.obra?.nombre || 'Todas las obras'"
+        >
+          <svg class="w-3.5 h-3.5 shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+          <span>{{ contexto.obra?.nombre || 'Todas las obras' }}</span>
+          <svg class="w-3.5 h-3.5 shrink-0 opacity-70" [class.rotate-180]="mostrarSelectorObras" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
         <div class="work-options" *ngIf="mostrarSelectorObras">
-          <p *ngIf="cargandoObras" role="status">Cargando obras…</p>
-          <p *ngIf="errorObras" role="alert">{{ errorObras }} <button (click)="cargarObrasSelector()">Reintentar</button></p>
-          <label>Obra activa<select [value]="contexto.obra?.id_obra || ''" (change)="seleccionarObra($any($event.target).value)"><option value="">Todas las obras</option><option *ngFor="let obra of obras" [value]="obra.id_obra">{{ obra.codigo }} · {{ obra.nombre }}</option></select></label>
-          <p *ngIf="!cargandoObras && !errorObras && !obras.length">No hay obras disponibles en este contexto.</p>
+          <p *ngIf="cargandoObras" role="status" class="text-xs text-slate-500">Cargando obras…</p>
+          <p *ngIf="errorObras" role="alert" class="text-xs text-rose-600">
+            {{ errorObras }}
+            <button type="button" class="underline font-semibold ml-1" (click)="cargarObrasSelector()">Reintentar</button>
+          </p>
+          <label class="work-options-label">
+            <span>Obra activa</span>
+            <select [value]="contexto.obra?.id_obra || ''" (change)="seleccionarObra($any($event.target).value)">
+              <option value="">Todas las obras</option>
+              <option *ngFor="let obra of obras" [value]="obra.id_obra">{{ obra.codigo }} · {{ obra.nombre }}</option>
+            </select>
+          </label>
+          <p *ngIf="!cargandoObras && !errorObras && !obras.length" class="text-xs text-slate-500 mt-2">
+            No hay obras disponibles en este contexto.
+          </p>
         </div>
       </div>
     </div>
 
+    <!-- Buscador rápido del asistente -->
     <div class="panel-header-center" *ngIf="suscripcion.iaPermitida && hasAnyPermission(assistantPermissions)">
       <div class="search-box">
-        <input type="text" [(ngModel)]="consultaAsistente" (keyup.enter)="abrirConsultaAsistente()" maxlength="2000" placeholder="Pregunta al asistente…" aria-label="Consulta para el asistente">
-        <button class="search-btn" (click)="abrirConsultaAsistente()" aria-label="Abrir consulta en el asistente">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        <input
+          type="text"
+          [(ngModel)]="consultaAsistente"
+          (keyup.enter)="abrirConsultaAsistente()"
+          maxlength="2000"
+          placeholder="Pregunta al asistente…"
+          aria-label="Consulta para el asistente"
+        />
+        <button type="button" class="search-btn" (click)="abrirConsultaAsistente()" aria-label="Abrir consulta en el asistente">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
         </button>
       </div>
     </div>
 
+    <!-- Acciones derechas -->
     <div class="panel-header-right" *ngIf="usuarioActual">
-      <!-- Theme Toggle -->
-      <button (click)="alternarModoOscuro()" class="panel-action-btn" title="Modo Oscuro">
-        <svg *ngIf="!modoOscuro" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
-        <svg *ngIf="modoOscuro" class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+      <!-- Tema claro / oscuro -->
+      <button
+        type="button"
+        (click)="alternarModoOscuro()"
+        class="panel-action-btn"
+        [title]="modoOscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+        [attr.aria-label]="modoOscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+      >
+        <svg *ngIf="!modoOscuro" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+        </svg>
+        <svg *ngIf="modoOscuro" class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+        </svg>
       </button>
 
-      <!-- Help -->
-      <button class="panel-action-btn" title="Ayuda y Soporte">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-      </button>
-
-      <!-- Notifications Panel -->
+      <!-- Notificaciones -->
       <div class="relative" data-notif-panel>
-        <!-- Bell button -->
-        <button (click)="toggleNotificaciones()" data-notif-panel class="panel-action-btn relative">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-          <!-- Red dot badge -->
-          <span *ngIf="cantidadNoLeidas > 0" class="absolute top-1 right-1 flex h-2.5 w-2.5">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600 border-2 border-white dark:border-slate-900"></span>
+        <button
+          type="button"
+          (click)="toggleNotificaciones()"
+          data-notif-panel
+          class="panel-action-btn relative"
+          aria-label="Notificaciones"
+          title="Notificaciones"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+          </svg>
+          <span *ngIf="cantidadNoLeidas > 0" class="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 border-2 border-[#0c1824]"></span>
           </span>
         </button>
 
-        <!-- Dropdown notifications panel -->
-        <div *ngIf="mostrarNotificaciones" data-notif-panel class="absolute right-0 mt-2 w-96 bg-white dark:bg-slate-900 rounded-lg shadow-2xl border border-gray-200 dark:border-slate-800 flex flex-col overflow-hidden z-[100] origin-top-right">
-          <div class="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-slate-800/40 border-b border-gray-100 dark:border-slate-800/60 shrink-0">
+        <!-- Panel desplegable de notificaciones -->
+        <div *ngIf="mostrarNotificaciones" data-notif-panel class="header-dropdown header-dropdown-right w-96 max-w-[calc(100vw-1.5rem)] flex flex-col">
+          <div class="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 shrink-0">
             <div class="flex items-center gap-2">
-              <span class="text-xs font-bold text-gray-800 dark:text-slate-200 uppercase tracking-wider">Notificaciones</span>
-              <span *ngIf="cantidadNoLeidas > 0" class="text-[10px] font-bold bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 px-2 py-0.5 rounded-full border border-red-200 dark:border-red-800/50">
+              <span class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">Notificaciones</span>
+              <span *ngIf="cantidadNoLeidas > 0" class="text-[10px] font-bold bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 px-2 py-0.5 rounded-full">
                 {{ cantidadNoLeidas }} sin leer
               </span>
             </div>
-            <button (click)="marcarTodasLeidas()" *ngIf="cantidadNoLeidas > 0" class="text-[11px] text-blue-600 dark:text-blue-400 hover:underline font-medium focus:outline-none">
-              Marcar todas como leidas
+            <button type="button" (click)="marcarTodasLeidas()" *ngIf="cantidadNoLeidas > 0" class="text-[11px] text-amber-600 dark:text-amber-400 hover:underline font-semibold">
+              Marcar todas
             </button>
           </div>
 
-          <!-- Notification List -->
-          <div class="overflow-y-auto max-h-[360px] divide-y divide-gray-100 dark:divide-slate-800/60">
-            <!-- Empty state -->
-            <div *ngIf="listaNotificaciones.length === 0" class="py-10 flex flex-col items-center gap-2">
-              <div class="w-12 h-12 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center">
-                <svg class="w-6 h-6 text-gray-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          <div class="overflow-y-auto max-h-[360px] divide-y divide-slate-100 dark:divide-slate-800/60">
+            <div *ngIf="listaNotificaciones.length === 0" class="py-10 flex flex-col items-center gap-2 text-center px-4">
+              <div class="w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                <svg class="w-5 h-5 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
               </div>
-              <p class="text-sm font-medium text-gray-500 dark:text-slate-400">Todo al dia</p>
-              <p class="text-xs text-gray-400 dark:text-slate-500">No tienes alertas pendientes</p>
+              <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">Todo al día</p>
+              <p class="text-xs text-slate-400 dark:text-slate-500">No tienes alertas pendientes</p>
             </div>
 
-            <!-- Item -->
-            <div *ngFor="let noti of listaNotificaciones" (click)="leerNotificacion(noti)" class="flex gap-3 px-4 py-3 transition-colors cursor-pointer group" [ngClass]="noti.leida ? 'bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-800/40' : 'bg-blue-50/60 dark:bg-blue-900/10 hover:bg-blue-50 dark:hover:bg-blue-900/20'">
+            <div
+              *ngFor="let noti of listaNotificaciones"
+              (click)="leerNotificacion(noti)"
+              class="flex gap-3 px-4 py-3 transition-colors cursor-pointer"
+              [ngClass]="noti.leida ? 'bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/40' : 'bg-amber-50/50 dark:bg-amber-900/10 hover:bg-amber-50 dark:hover:bg-amber-900/20'"
+            >
               <div class="mt-0.5 flex-shrink-0">
                 <div [ngClass]="getIconoClase(noti.tipo_alerta || noti.tipo_referencia || '')" class="w-8 h-8 rounded-lg flex items-center justify-center border">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="getIconoPath(noti.tipo_alerta || noti.tipo_referencia || '')"/></svg>
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="getIconoPath(noti.tipo_alerta || noti.tipo_referencia || '')" />
+                  </svg>
                 </div>
               </div>
               <div class="flex-1 min-w-0">
                 <div class="flex items-start justify-between gap-2">
-                  <p class="text-xs font-bold text-gray-900 dark:text-white leading-tight">{{ noti.titulo }}</p>
-                  <span *ngIf="!noti.leida" class="flex-shrink-0 w-2 h-2 mt-1 rounded-full bg-blue-500"></span>
+                  <p class="text-xs font-semibold text-slate-900 dark:text-white leading-snug">{{ noti.titulo }}</p>
+                  <span *ngIf="!noti.leida" class="flex-shrink-0 w-2 h-2 mt-1 rounded-full bg-amber-500"></span>
                 </div>
-                <p class="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5 line-clamp-2 leading-relaxed">{{ noti.cuerpo }}</p>
-                <p class="text-[10px] text-gray-400 dark:text-slate-500 mt-1.5 flex items-center gap-1">
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                  {{ noti.fecha | date:'HH:mm' }} - {{ noti.fecha | date:'dd MMM' }}
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2 leading-relaxed">{{ noti.cuerpo }}</p>
+                <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1.5 flex items-center gap-1 tabular-nums">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {{ noti.fecha | date:'HH:mm' }} · {{ noti.fecha | date:'dd MMM' }}
                 </p>
               </div>
             </div>
           </div>
 
-          <!-- Footer -->
-          <div class="border-t border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/30 shrink-0">
-            <a (click)="irANotificaciones()" class="flex items-center justify-center gap-2 py-3 text-xs font-semibold text-blue-700 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer">
+          <div class="border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 shrink-0">
+            <a (click)="irANotificaciones()" class="flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer">
               Ver todas las notificaciones
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
             </a>
           </div>
         </div>
       </div>
 
-      <!-- Logout -->
-      <button (click)="cerrarSesion()" class="panel-action-btn logout-btn" title="Cerrar Sesion" style="margin-left: 0.5rem">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+      <!-- Cerrar sesión -->
+      <button type="button" (click)="cerrarSesion()" class="panel-action-btn logout-btn" title="Cerrar sesión" aria-label="Cerrar sesión">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+        </svg>
       </button>
     </div>
   </header>
 
-  <!-- PANEL BODY CONTAINER -->
+  <!-- CUERPO PRINCIPAL -->
   <div class="panel-body" *ngIf="usuarioActual" [class.sidebar-hidden]="sidebarColapsado" [class.sidebar-open]="sidebarAbierto">
-    <button *ngIf="sidebarAbierto" class="sidebar-backdrop" (click)="sidebarAbierto = false" aria-label="Cerrar menú de navegación"></button>
-    <!-- SIDEBAR (PROCORE STYLE) -->
+    <button *ngIf="sidebarAbierto" type="button" class="sidebar-backdrop" (click)="sidebarAbierto = false" aria-label="Cerrar menú de navegación"></button>
+
+    <!-- MENÚ LATERAL -->
     <aside class="panel-sidebar" [class.is-collapsed]="sidebarColapsado" aria-label="Navegación principal">
-      <a class="sidebar-user-card" routerLink="/perfil" aria-label="Mi perfil" [title]="usuarioActual.nombre_completo || 'Mi perfil'">
+      <a class="sidebar-user-card" routerLink="/perfil" aria-label="Mi perfil" [title]="usuarioActual.nombre_completo || 'Mi perfil'" (click)="sidebarAbierto = false">
         <div class="sidebar-avatar">{{ (usuarioActual.nombre_completo || usuarioActual.nombre_usuario || 'U').substring(0,1).toUpperCase() }}</div>
-        <h4 class="sidebar-user-name">{{ usuarioActual.nombre_completo || usuarioActual.nombre_usuario }}</h4>
-        <p class="sidebar-user-role">{{ usuarioActual.nombre_rol }}</p>
-        <span class="sidebar-tenant">{{ nombreEmpresa }}</span>
+        <div class="sidebar-user-meta">
+          <h4 class="sidebar-user-name">{{ usuarioActual.nombre_completo || usuarioActual.nombre_usuario }}</h4>
+          <p class="sidebar-user-role">{{ usuarioActual.nombre_rol }}</p>
+          <span class="sidebar-tenant">{{ nombreEmpresa }}</span>
+        </div>
       </a>
+
       <nav class="sidebar-nav">
         <section *ngFor="let section of sections; trackBy: trackSection" class="nav-section">
-          <button class="category-toggle" (click)="toggleSection(section)" [class.active]="sectionActive(section)" [attr.aria-expanded]="expanded.has(section.id) || sidebarColapsado" [attr.aria-controls]="'nav-'+section.id" [attr.aria-label]="section.label" [title]="section.label">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path [attr.d]="section.icon"/></svg><span>{{ section.label }}</span><b aria-hidden="true">{{ expanded.has(section.id) ? '⌃' : '⌄' }}</b>
+          <button
+            type="button"
+            class="category-toggle"
+            (click)="toggleSection(section)"
+            [class.active]="sectionActive(section)"
+            [attr.aria-expanded]="expanded.has(section.id) || sidebarColapsado"
+            [attr.aria-controls]="'nav-' + section.id"
+            [attr.aria-label]="section.label"
+            [title]="section.label"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" [attr.d]="section.icon" /></svg>
+            <span>{{ section.label }}</span>
+            <svg class="chevron-icon" [class.rotated]="expanded.has(section.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
           </button>
-          <div *ngIf="expanded.has(section.id) || sidebarColapsado" [id]="'nav-'+section.id">
-            <a *ngFor="let item of section.items; trackBy: trackItem" class="sidebar-item" [routerLink]="itemRoute(item)" [queryParams]="itemQuery(item)" [fragment]="itemFragment(item)" [class.active]="itemActive(item)" [attr.aria-current]="itemActive(item) ? 'page' : null" [attr.aria-label]="item.label" [title]="item.label" (click)="sidebarAbierto = false">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path [attr.d]="item.icon"/></svg><span>{{ item.label }}</span>
+
+          <div *ngIf="expanded.has(section.id) || sidebarColapsado" [id]="'nav-' + section.id" class="nav-items-group">
+            <a
+              *ngFor="let item of section.items; trackBy: trackItem"
+              class="sidebar-item"
+              [routerLink]="itemRoute(item)"
+              [queryParams]="itemQuery(item)"
+              [fragment]="itemFragment(item)"
+              [class.active]="itemActive(item)"
+              [attr.aria-current]="itemActive(item) ? 'page' : null"
+              [attr.aria-label]="item.label"
+              [title]="item.label"
+              (click)="sidebarAbierto = false"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" [attr.d]="item.icon" /></svg>
+              <span>{{ item.label }}</span>
             </a>
           </div>
         </section>
-        <button class="sidebar-item logout-navigation" (click)="cerrarSesion()" title="Cerrar sesión" aria-label="Cerrar sesión"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 8l4 4-4 4m-8-4h12M9 4H3v16h6"/></svg><span>Cerrar sesión</span></button>
+
+        <button type="button" class="sidebar-item logout-navigation" (click)="cerrarSesion()" title="Cerrar sesión" aria-label="Cerrar sesión">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M14 8l4 4-4 4m-8-4h12M9 4H3v16h6" /></svg>
+          <span>Cerrar sesión</span>
+        </button>
       </nav>
     </aside>
 
-    <!-- MAIN ROUTER OUTLET CONTAINER -->
+    <!-- ÁREA DE CONTENIDO -->
     <main class="panel-content" #panelContent>
-      <p class="module-context">{{ moduloActual }}</p>
-      <p *ngIf="suscripcion.acceso()?.solo_lectura" role="status" class="m-4 p-3 border border-amber-500 rounded text-sm">
-        Tu empresa está en modo de solo lectura. Puedes consultar sus datos y gestionar tu cuenta.
-        <a routerLink="/suscripciones" class="underline font-bold">Ver suscripción</a>
-      </p>
-      <p *ngIf="suscripcion.acceso()?.estado_efectivo === 'GRACIA'" role="status" class="m-4 p-3 border border-amber-500 rounded text-sm">
-        Tu suscripción venció. El período de gracia termina el {{ suscripcion.acceso()?.gracia_hasta }}.
-      </p>
-      <router-outlet></router-outlet>
+      <div class="panel-content-inner">
+        <div class="module-context-bar">
+          <span class="module-context-dot" aria-hidden="true"></span>
+          <p class="module-context">{{ moduloActual }}</p>
+        </div>
+
+        <div *ngIf="suscripcion.acceso()?.solo_lectura" role="status" class="status-notice">
+          <span>Tu empresa está en modo de solo lectura. Puedes consultar sus datos y gestionar tu cuenta.</span>
+          <a routerLink="/suscripciones" class="underline font-semibold ml-1">Ver suscripción</a>
+        </div>
+
+        <div *ngIf="suscripcion.acceso()?.estado_efectivo === 'GRACIA'" role="status" class="status-notice">
+          <span>Tu suscripción venció. El período de gracia termina el {{ suscripcion.acceso()?.gracia_hasta }}.</span>
+        </div>
+
+        <router-outlet></router-outlet>
+      </div>
       <app-asistente></app-asistente>
     </main>
   </div>
-
 </div>

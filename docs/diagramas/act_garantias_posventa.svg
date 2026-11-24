@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1150" height="850" viewBox="0 0 1150 850">
+<defs>
+      <marker id="act-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#000000"/>
+      </marker>
+    </defs>
+<rect width="1150" height="850" fill="#FFFFFF"/>
+<text x="30" y="32" font-family="Arial, Helvetica, sans-serif" font-size="13.5" font-weight="bold" fill="#000000">Diagrama de Actividades: Gestionar Garantías y Servicio Posventa Inmobiliaria</text>
+<text x="30" y="48" font-family="Arial, Helvetica, sans-serif" font-size="10.5" fill="#555555">Atención de reclamos de propietarios, validación de pólizas de garantía y ejecución de reparaciones técnicas.</text>
+<rect x="30" y="60" width="1090" height="770" fill="none" stroke="#000000" stroke-width="1.3"/>
+<rect x="30.0" y="60" width="363.3333333333333" height="32" fill="#F4F4F4" stroke="#000000" stroke-width="1.2"/>
+<text x="211.66666666666666" y="81" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#000000">Propietario / Cliente</text>
+<rect x="393.3333333333333" y="60" width="363.3333333333333" height="32" fill="#F4F4F4" stroke="#000000" stroke-width="1.2"/>
+<text x="575.0" y="81" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#000000">Técnico de Posventa</text>
+<line x1="393.3333333333333" y1="92" x2="393.3333333333333" y2="830" stroke="#000000" stroke-width="1.2"/>
+<rect x="756.6666666666666" y="60" width="363.3333333333333" height="32" fill="#F4F4F4" stroke="#000000" stroke-width="1.2"/>
+<text x="938.3333333333333" y="81" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#000000">Sistema</text>
+<line x1="756.6666666666666" y1="92" x2="756.6666666666666" y2="830" stroke="#000000" stroke-width="1.2"/>
+<line x1="195" y1="81" x2="195.0" y2="120" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<line x1="195.0" y1="170" x2="195.0" y2="200" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 195.0 250 L 195.0 227.5 L 955.0 227.5 L 955.0 200" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<line x1="955.0" y1="250" x2="955.0" y2="290" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 955.0 330 L 955.0 352.5 L 860.0 352.5 L 860.0 380" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="907.5" y="348.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">[No cubre o expirada]</text>
+<path d="M 860.0 430 L 860.0 438.1 L 195 438.1 L 195 448" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="527.5" y="434.1" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Garantía declinada</text>
+<path d="M 955.0 330 L 955.0 352.5 L 1040.0 352.5 L 1040.0 380" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="997.5" y="348.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">[Garantía vigente]</text>
+<path d="M 1040.0 430 L 1040.0 452.5 L 575.0 452.5 L 575.0 480" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="807.5" y="448.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Asignación de orden</text>
+<path d="M 575.0 530 L 575.0 548.0 L 195.0 548.0 L 195.0 570" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="385.0" y="544.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Reparación concluida</text>
+<path d="M 195.0 620 L 195.0 638.0 L 955.0 638.0 L 955.0 660" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="575.0" y="634.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Conformidad firmada</text>
+<path d="M 955.0 710 L 955.0 722.6 L 195 722.6 L 195 738" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="575.0" y="718.6" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Ticket resuelto</text>
+<circle cx="195" cy="70" r="11" fill="#000000" stroke="#000000" stroke-width="1.2"/>
+<rect x="100" y="120" width="190" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="195.0" y="142.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Detectar desperfecto o falla</text>
+<text x="195.0" y="155.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">en unidad entregada</text>
+<rect x="100" y="200" width="190" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="195.0" y="222.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Registrar ticket de garantía</text>
+<text x="195.0" y="235.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">con descripción y fotos</text>
+<rect x="860" y="200" width="190" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="955.0" y="222.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Verificar vigencia de póliza</text>
+<text x="955.0" y="235.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y tipo de daño contractual</text>
+<polygon points="955.0,290 975,310.0 955.0,330 935,310.0" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="955.0" y="266" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="bold" fill="#000000">¿Cubre la</text>
+<text x="955.0" y="278" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="bold" fill="#000000">garantía?</text>
+<rect x="780" y="380" width="160" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="860.0" y="402.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Notificar improcedencia</text>
+<text x="860.0" y="415.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y cotizar servicio particular</text>
+<circle cx="195" cy="460" r="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<circle cx="195" cy="460" r="7" fill="#000000"/>
+<rect x="960" y="380" width="160" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="1040.0" y="402.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Aprobar garantía y agendar</text>
+<text x="1040.0" y="415.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">visita de inspección técnica</text>
+<rect x="480" y="480" width="190" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="575.0" y="502.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Acudir a la unidad inmobiliaria</text>
+<text x="575.0" y="515.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y ejecutar reparación física</text>
+<rect x="100" y="570" width="190" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="195.0" y="592.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Inspeccionar trabajos y firmar</text>
+<text x="195.0" y="605.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">acta digital de conformidad</text>
+<rect x="860" y="660" width="190" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="955.0" y="682.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Cerrar ticket de garantía,</text>
+<text x="955.0" y="695.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">liquidar costos y enviar encuesta</text>
+<circle cx="195" cy="750" r="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<circle cx="195" cy="750" r="7" fill="#000000"/>
+</svg>

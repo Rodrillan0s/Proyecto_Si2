@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-11-02T03:08:00.000Z" agent="Antigravity" version="24.0.0" type="device">
+  <diagram id="secuencia_cu34_asistente_comercial" name="CU34 - Secuencia Asistente">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="800" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="frame_sd" value="sd CU34 - Consultar asistente comercial y recomendaciones" style="shape=umlFrame;whiteSpace=wrap;html=1;width=451;height=22;fillColor=none;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=11;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="15" y="15" width="1190" height="603" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_actor" value="user : Cliente_Potencial" style="shape=umlLifeline;participant=umlActor;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="60" y="50" width="40" height="533" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_ui" value="ui : Form_Asistente_Comercial" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=11;fontColor=#000000;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="140" y="60" width="150" height="523" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_router" value="router : ai_routes" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=11;fontColor=#000000;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="315" y="60" width="150" height="523" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_service" value="service : Control_Asistente_Comercial" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=11;fontColor=#000000;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="490" y="60" width="150" height="523" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_t_asist" value="t_asistente_conversacion" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=11;fontColor=#000000;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="665" y="60" width="150" height="523" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_t_unid" value="t_unidad_construccion" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=11;fontColor=#000000;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="840" y="60" width="150" height="523" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_t_crm" value="t_crm_cliente" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=11;fontColor=#000000;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="1015" y="60" width="150" height="523" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_101" value="1: ingresar_consulta(&#x27;Busco depto 2 dorms&#x27;, presupuesto)" style="html=1;verticalAlign=bottom;endArrow=block;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="80" y="125" as="sourcePoint"/><mxPoint x="215" y="125" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_102" value="2: POST /api/ai/crm/consulta (pregunta, presupuesto)" style="html=1;verticalAlign=bottom;endArrow=block;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="215" y="153" as="sourcePoint"/><mxPoint x="390" y="153" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_103" value="3: consultar_crm_ia(pregunta, presupuesto, token, ip)" style="html=1;verticalAlign=bottom;endArrow=block;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="390" y="181" as="sourcePoint"/><mxPoint x="565" y="181" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_104" value="4: SELECT / INSERT t_asistente_conversacion(id_cliente)" style="html=1;verticalAlign=bottom;endArrow=block;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="565" y="209" as="sourcePoint"/><mxPoint x="740" y="209" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_105" value="5: return id_conversacion" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontStyle=2;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="740" y="237" as="sourcePoint"/><mxPoint x="565" y="237" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_106" value="6: SELECT * FROM t_unidad_construccion WHERE estado=&#x27;DISPONIBLE&#x27;" style="html=1;verticalAlign=bottom;endArrow=block;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="565" y="265" as="sourcePoint"/><mxPoint x="915" y="265" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_107" value="7: return lista_unidades_compatibles" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontStyle=2;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="915" y="293" as="sourcePoint"/><mxPoint x="565" y="293" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_108" value="8: generar_analisis_recomendaciones_ia()" style="html=1;align=left;spacingLeft=5;verticalAlign=bottom;endArrow=block;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontColor=#000000;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="565" y="321" as="sourcePoint"/><mxPoint x="565" y="335" as="targetPoint"/><Array as="points"><mxPoint x="585" y="321"/><mxPoint x="585" y="335"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_109" value="9: INSERT INTO t_asistente_mensaje (conversacion, texto, respuesta)" style="html=1;verticalAlign=bottom;endArrow=block;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="565" y="349" as="sourcePoint"/><mxPoint x="740" y="349" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_110" value="10: return id_mensaje" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontStyle=2;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="740" y="377" as="sourcePoint"/><mxPoint x="565" y="377" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_111" value="11: UPDATE t_crm_cliente SET clasificacion=&#x27;INTERESADO&#x27; WHERE id=:id" style="html=1;verticalAlign=bottom;endArrow=block;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="565" y="405" as="sourcePoint"/><mxPoint x="1090" y="405" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_112" value="12: return ok" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontStyle=2;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="1090" y="433" as="sourcePoint"/><mxPoint x="565" y="433" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_113" value="13: return {respuesta_ia, unidades_recomendadas, sugerencias}" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontStyle=2;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="565" y="461" as="sourcePoint"/><mxPoint x="390" y="461" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_114" value="14: 200 OK (Mensaje IA y tarjetas de unidades)" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontStyle=2;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="390" y="489" as="sourcePoint"/><mxPoint x="215" y="489" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_115" value="15: renderizar_mensajes_y_tarjetas_inmuebles()" style="html=1;align=left;spacingLeft=5;verticalAlign=bottom;endArrow=block;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontColor=#000000;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="215" y="517" as="sourcePoint"/><mxPoint x="215" y="531" as="targetPoint"/><Array as="points"><mxPoint x="235" y="517"/><mxPoint x="235" y="531"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_116" value="16: visualizar_recomendaciones_comerciales()" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontStyle=2;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="215" y="545" as="sourcePoint"/><mxPoint x="80" y="545" as="targetPoint"/></mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

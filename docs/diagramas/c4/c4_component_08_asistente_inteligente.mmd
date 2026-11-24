@@ -1,0 +1,29 @@
+C4Component
+    title Diagrama de Componentes C4 (Nivel 3) - Asistente Inteligente
+
+    %% 1. Contenedores consumidores (Arriba)
+    Container(web, "Aplicación Web", "Angular 18 + Tailwind CSS", "Chatbot interactivo comercial y de obra")
+    Container(mobile, "Aplicación Móvil", "Flutter + Dart", "Consultas por voz y texto al asistente")
+
+    %% 2. Límite del Contenedor analizado (Centro)
+    Container_Boundary(api, "API Backend [FastAPI + Uvicorn]") {
+        Component(c1, "AI Assistant Controller", "FastAPI Router", "Rutas de chat, sugerencias y CRM (ai_routes.py)")
+        Component(s1, "AI Engine Service", "Python Service", "Orquestación de prompts y memoria (ai/ai_service.py)")
+        Component(s2, "Context Builder Service", "Python Service", "Extracción de contexto de obra y empresa (context_builder.py)")
+        Component(a1, "Gemini & Groq Adapter", "Python Client", "Cliente SDK a modelos LLM (gemini_provider.py)")
+        Component(r1, "Assistant Repository", "SQLAlchemy / PostgreSQL", "Persistencia de sesiones de chat y mensajes (assistant_repos.py)")
+    }
+
+    %% 3. Persistencia y Sistemas Externos (Abajo)
+    ContainerDb(db, "Base de Datos Principal", "PostgreSQL (schema: obras)", "Persiste t_asistente_conversacion, t_asistente_mensaje")
+    System_Ext(gemini, "Gemini / Groq API", "Modelos LLM de lenguaje natural para inferencia")
+
+    %% 4. Relaciones unidireccionales etiquetadas
+    Rel(web, c1, "Envía preguntas y chat", "JSON/HTTPS")
+    Rel(mobile, c1, "Consultas operativas", "JSON/HTTPS")
+    Rel(c1, s1, "Delega consulta IA")
+    Rel(s1, s2, "Solicita contexto de negocio")
+    Rel(s1, a1, "Envía prompt enriquecido")
+    Rel(a1, gemini, "Inferencia HTTPS/REST")
+    Rel(s1, r1, "Persiste conversación")
+    Rel(r1, db, "SQL/TCP")

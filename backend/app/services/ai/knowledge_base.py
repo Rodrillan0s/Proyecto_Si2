@@ -114,6 +114,30 @@ MODULOS_OBRATEC = [
         "roles_permitidos": ["ADMINISTRADOR", "ADMINISTRADOR_EMPRESA", "JEFE DE OBRA"]
     },
     {
+        "id": "cronogramas",
+        "nombre": "Cronogramas",
+        "ruta": "/cronogramas",
+        "descripcion": "Planificación de actividades, hitos, dependencias fin-inicio y control de desviaciones de plazo.",
+        "permiso_ver": "Visualizar_cronograma",
+        "capacidades": [
+            "Creación y edición de cronogramas por obra con actividades e hitos",
+            "Seguimiento de fechas previstas vs reales y cálculo de días de retraso"
+        ],
+        "roles_permitidos": ["ADMINISTRADOR", "ADMINISTRADOR_EMPRESA", "JEFE DE OBRA", "SUPERVISOR_OBRA"]
+    },
+    {
+        "id": "posventa",
+        "nombre": "Garantías y posventa",
+        "ruta": "/posventa",
+        "descripcion": "Gestión de garantías inmobiliarias por unidad, solicitudes de posventa, clasificación, asignación y seguimiento.",
+        "permiso_ver": None,
+        "capacidades": [
+            "Registro y consulta de garantías por unidad inmobiliaria",
+            "Registro, clasificación, asignación y línea de seguimiento de solicitudes posventa"
+        ],
+        "roles_permitidos": ["ADMINISTRADOR", "ADMINISTRADOR_EMPRESA", "JEFE DE OBRA", "SUPERVISOR_OBRA", "CLIENTE"]
+    },
+    {
         "id": "equipo_maquinaria",
         "nombre": "Equipos y Maquinaria",
         "ruta": "/equipos-maquinaria",

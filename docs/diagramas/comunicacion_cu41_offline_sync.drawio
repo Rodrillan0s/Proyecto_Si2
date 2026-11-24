@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-11-22T14:35:00.000Z" agent="Antigravity" version="24.0.0" type="device">
+  <diagram id="cu41_comunicacion_offline_sync" name="CU41 - Comunicacion Offline Sync">
+    <mxGraphModel dx="1600" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="600" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="&lt;b&gt;Gestionar Operación Offline y Sincronización (CU41 - HU90 a HU94)&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555555&quot;&gt;Diagrama de Comunicación con Análisis de Robustez BCE (Móvil Flutter + Backend FastAPI)&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Arial;fontSize=13;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="50" y="25" width="800" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="zone_mobile" value="ZONA CLIENTE MÓVIL (FLUTTER / SQLITE)" style="swimlane;whiteSpace=wrap;html=1;dashed=1;dashPattern=5 5;fillColor=none;strokeColor=#666666;fontFamily=Arial;fontSize=11;fontStyle=1;align=left;spacingLeft=15;" vertex="1" parent="1">
+          <mxGeometry x="150" y="80" width="530" height="430" as="geometry" />
+        </mxCell>
+        <mxCell id="zone_backend" value="ZONA SERVIDOR CENTRAL (FASTAPI / POSTGRESQL OBRAS)" style="swimlane;whiteSpace=wrap;html=1;dashed=1;dashPattern=5 5;fillColor=none;strokeColor=#666666;fontFamily=Arial;fontSize=11;fontStyle=1;align=left;spacingLeft=15;" vertex="1" parent="1">
+          <mxGeometry x="710" y="80" width="1030" height="430" as="geometry" />
+        </mxCell>
+        <mxCell id="actor_user" value="Supervisor /&lt;br&gt;Personal de Campo" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=10;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="55" y="170" width="30" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="b_iu" value="IU_operacion_&lt;br&gt;offline" style="shape=umlBoundary;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=10;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="210" y="165" width="85" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="c_sync_mgr" value="sync_manager&lt;br&gt;&lt;font style=&quot;font-size: 8.5px; font-weight: normal;&quot;&gt;(Móvil)&lt;/font&gt;" style="shape=umlControl;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=10;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="425" y="165" width="75" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="e_sqlite" value="sqlite_local_db&lt;br&gt;&lt;font style=&quot;font-size: 8.5px; font-weight: normal;&quot;&gt;(Móvil)&lt;/font&gt;" style="shape=umlEntity;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=10;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="425" y="380" width="75" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cache_obra" value="cache_obra_&lt;br&gt;local&lt;br&gt;&lt;font style=&quot;font-size: 8.5px; font-weight: normal;&quot;&gt;(HU90)&lt;/font&gt;" style="shape=umlEntity;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=9.5;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="250" y="380" width="75" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cola_sync" value="cola_pendientes_&lt;br&gt;sync&lt;br&gt;&lt;font style=&quot;font-size: 8.5px; font-weight: normal;&quot;&gt;(HU91/92/94)&lt;/font&gt;" style="shape=umlEntity;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=9.5;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="590" y="380" width="80" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="c_sync_routes" value="sync_routes&lt;br&gt;&lt;font style=&quot;font-size: 8.5px; font-weight: normal;&quot;&gt;(FastAPI)&lt;/font&gt;" style="shape=umlControl;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=10;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="750" y="165" width="75" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="c_sync_services" value="sync_services&lt;br&gt;&lt;font style=&quot;font-size: 8.5px; font-weight: normal;&quot;&gt;(Lógica / Resolve)&lt;/font&gt;" style="shape=umlControl;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=10;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="990" y="165" width="75" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="c_sync_repos" value="sync_repos&lt;br&gt;&lt;font style=&quot;font-size: 8.5px; font-weight: normal;&quot;&gt;(PostgreSQL)&lt;/font&gt;" style="shape=umlControl;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=10;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="1230" y="165" width="75" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="e_db_obras" value="database&lt;br&gt;obras&lt;br&gt;&lt;font style=&quot;font-size: 8.5px; font-weight: normal;&quot;&gt;(PostgreSQL)&lt;/font&gt;" style="shape=umlEntity;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=10;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="1460" y="165" width="75" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="e_t_avance" value="t_avance_&lt;br&gt;obra" style="shape=umlEntity;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=9.5;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="1630" y="80" width="75" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="e_t_incidencia" value="t_incidencia" style="shape=umlEntity;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=9.5;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="1630" y="165" width="75" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="e_t_sync_log" value="t_sincronizacion_&lt;br&gt;log" style="shape=umlEntity;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=9;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="1630" y="250" width="75" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_user_iu" value="1. consultarInfoObra() [HU90] →&lt;br&gt;5. registrarAvance/Incidencia() [HU91/92] →&lt;br&gt;8. consultarEstadoSync() [HU94] →&lt;br&gt;← 9. mostrarEstadoLocal()&lt;br&gt;← 18. notificarSincronizacion()" style="endArrow=none;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1" source="actor_user" target="b_iu">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_iu_mgr" value="2. leerCacheObra() →&lt;br&gt;6. guardarOffline(PENDIENTE) →&lt;br&gt;← 4. returnInfoObraCache()&lt;br&gt;← 18a. callbackSyncCompletado()" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1" source="b_iu" target="c_sync_mgr">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_mgr_sqlite" value="3. SELECT cache_obra ↓&lt;br&gt;7. INSERT cola_sync (PENDIENTE) ↓&lt;br&gt;11. SELECT WHERE estado=PENDIENTE ↓&lt;br&gt;17. UPDATE estado=SINCRONIZADO ↓" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=8.5;fontColor=#000000;fontFamily=Arial;labelPosition=right;verticalLabelPosition=middle;align=left;spacingLeft=10;" edge="1" parent="1" source="c_sync_mgr" target="e_sqlite">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_sqlite_cache" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;" edge="1" parent="1" source="e_sqlite" target="e_cache_obra">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_sqlite_cola" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;" edge="1" parent="1" source="e_sqlite" target="e_cola_sync">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_mgr_routes" value="10. [Conexión Recuperada / HU93]&lt;br&gt;12. POST /api/v1/sync/batch (lote_json) →&lt;br&gt;← 16. 200 OK (ids_confirmados, timestamp)" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.5;strokeDasharray=4 3;fontSize=9;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1" source="c_sync_mgr" target="c_sync_routes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_routes_services" value="13. validarYAplicarLote() →&lt;br&gt;(idempotencia y permisos tenant)" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1" source="c_sync_routes" target="c_sync_services">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_services_repos" value="14. transaccionLote() →&lt;br&gt;(inserción atómica &amp; auditoría)" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1" source="c_sync_services" target="c_sync_repos">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_repos_db" value="15. INSERT / UPDATE →&lt;br&gt;SQL multi-tenant (obras)" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontSize=9;fontColor=#000000;fontFamily=Arial;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;" edge="1" parent="1" source="c_sync_repos" target="e_db_obras">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_db_avance" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;" edge="1" parent="1" source="e_db_obras" target="e_t_avance">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_db_incidencia" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;" edge="1" parent="1" source="e_db_obras" target="e_t_incidencia">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_db_sync_log" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#000000;strokeWidth=1.2;" edge="1" parent="1" source="e_db_obras" target="e_t_sync_log">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

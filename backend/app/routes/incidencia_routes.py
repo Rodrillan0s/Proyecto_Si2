@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, Request, UploadFile
+from fastapi import APIRouter, Body, Depends, File, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 
 from app.services import incidencia_services
+from app.services.sync_offline_services import SyncConflictError
 from app.utils.security import exigir_permiso, verificar_token
 
 
@@ -87,10 +88,13 @@ def get_incidencias(
 def post_incidencia(
     request: Request,
     data: dict = Body(...),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
     token=Depends(acceso_registro),
 ):
     try:
-        return incidencia_services.registrar(data, token, _ip(request))
+        return incidencia_services.registrar(data, token, _ip(request), idempotency_key=idempotency_key)
+    except SyncConflictError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=str(exc))
     except incidencia_services.IncidenciaError as exc:
         _raise(exc)
 

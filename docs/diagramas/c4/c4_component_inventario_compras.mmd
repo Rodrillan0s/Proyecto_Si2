@@ -1,0 +1,44 @@
+C4Component
+    title Diagrama de Componentes - API Backend (Inventario, Compras, Materiales y Almacén)
+
+    %% 1. Contenedores consumidores (Arriba)
+    Container(web, "Aplicación Web", "Angular 18 + Tailwind CSS", "Interfaz web para gestión de almacenes y compras")
+    Container(mobile, "Aplicación Móvil", "Flutter + Dart", "App móvil para control de recepciones y despachos en obra")
+
+    %% 2. Límite del Contenedor analizado (Centro)
+    Container_Boundary(api, "API Backend [FastAPI + Uvicorn]") {
+        Component(inv_ctrl, "Inventario Controller", "FastAPI Router", "Rutas para stock, KPIs y ajustes de almacén (inventario_routes.py)")
+        Component(compras_ctrl, "Compras Controller", "FastAPI Router", "Rutas para órdenes de compra y recepciones (compras_routes.py)")
+        Component(mat_ctrl, "Material Controller", "FastAPI Router", "Rutas para catálogo de materiales y categorías (material_routes.py)")
+
+        Component(inv_srv, "Inventario Service", "Python Service", "Lógica de movimientos kardex, validación de stock y auditoría (inventario_services.py)")
+        Component(compras_srv, "Compras Service", "Python Service", "Aprobación de compras y control de recepciones físicas (compras_services.py)")
+        Component(mat_srv, "Material Service", "Python Service", "Gestión de catálogo, precios e insumos base (material_services.py)")
+
+        Component(inv_repo, "Inventario Repository", "SQLAlchemy / Psycopg2", "Acceso a datos de stock y movimientos de almacén (inventario_repos.py)")
+        Component(compras_repo, "Compras Repository", "SQLAlchemy / Psycopg2", "Acceso a órdenes y recepciones de insumos (compras_repos.py)")
+        Component(mat_repo, "Material Repository", "SQLAlchemy / Psycopg2", "Acceso a tablas de materiales y categorías (material_repos.py)")
+    }
+
+    %% 3. Persistencia (Abajo)
+    ContainerDb(db, "Base de Datos Principal", "PostgreSQL (schema: obras)", "Persiste t_material, t_movimiento_almacen, t_orden_compra, t_recepcion_compra")
+
+    %% 4. Relaciones unidireccionales etiquetadas
+    Rel(web, inv_ctrl, "Gestiona inventario y movimientos", "JSON/HTTPS")
+    Rel(mobile, inv_ctrl, "Registra entradas y salidas físicas", "JSON/HTTPS")
+    Rel(web, compras_ctrl, "Genera y aprueba órdenes de compra", "JSON/HTTPS")
+    Rel(mobile, compras_ctrl, "Registra recepción de materiales", "JSON/HTTPS")
+    Rel(web, mat_ctrl, "Administra catálogo de materiales", "JSON/HTTPS")
+
+    Rel(inv_ctrl, inv_srv, "Delega ajustes y consultas de stock")
+    Rel(compras_ctrl, compras_srv, "Delega ciclo de compras")
+    Rel(mat_ctrl, mat_srv, "Delega catálogo de materiales")
+
+    Rel(inv_srv, inv_repo, "Persiste kardex y actualiza saldos")
+    Rel(compras_srv, compras_repo, "Persiste compras y recepciones")
+    Rel(compras_srv, inv_repo, "Actualiza stock al recepcionar")
+    Rel(mat_srv, mat_repo, "Consulta y actualiza catálogo")
+
+    Rel(inv_repo, db, "Lee y escribe t_material, t_movimiento_almacen", "SQL/TCP")
+    Rel(compras_repo, db, "Lee y escribe t_orden_compra, t_recepcion", "SQL/TCP")
+    Rel(mat_repo, db, "Lee y escribe t_categoria, t_material_base", "SQL/TCP")

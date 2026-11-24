@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1140" height="560" viewBox="0 0 1140 560">
+<defs>
+      <marker id="arr-left" viewBox="0 0 10 10" refX="2" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+        <path d="M 8 1.5 L 0 5 L 8 8.5 z" fill="#000000"/>
+      </marker>
+      <marker id="arr-right" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+        <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#000000"/>
+      </marker>
+    </defs>
+<rect width="1140" height="560" fill="#FFFFFF"/>
+<text x="45" y="36" font-family="Arial, Helvetica, sans-serif" font-size="14.5" font-weight="bold" fill="#000000">CU 41M – Gestionar operación offline y sincronización</text>
+<text x="45" y="54" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#555555">Diagrama de Tiempos: Transición de estados temporales entre App Móvil, Red, API Gateway y Base de Datos</text>
+<rect x="45" y="70" width="1050" height="450" fill="none" stroke="#000000" stroke-width="1.3"/>
+<line x1="190" y1="70" x2="190" y2="520" stroke="#000000" stroke-width="1.3"/>
+<text x="117.5" y="119" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" font-weight="bold" fill="#111111">APP MÓVIL</text>
+<text x="117.5" y="133" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" font-weight="bold" fill="#111111">(SQLITE LOCAL)</text>
+<line x1="45" y1="182" x2="1095" y2="182" stroke="#000000" stroke-width="1.1"/>
+<text x="117.5" y="231" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" font-weight="bold" fill="#111111">CONECTIVIDAD</text>
+<text x="117.5" y="245" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" font-weight="bold" fill="#111111">/ RED MÓVIL</text>
+<line x1="45" y1="294" x2="1095" y2="294" stroke="#000000" stroke-width="1.1"/>
+<text x="117.5" y="343" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" font-weight="bold" fill="#111111">API GATEWAY</text>
+<text x="117.5" y="357" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" font-weight="bold" fill="#111111">/ BACKEND</text>
+<line x1="45" y1="406" x2="1095" y2="406" stroke="#000000" stroke-width="1.1"/>
+<text x="117.5" y="455" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" font-weight="bold" fill="#111111">BASE DE DATOS</text>
+<text x="117.5" y="469" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" font-weight="bold" fill="#111111">CENTRAL (PG)</text>
+<path d="M 195 152 L 240 152 L 240 95 L 470 95 L 470 152 L 550 152 L 550 95 L 850 95 L 850 152 L 1060 152" fill="none" stroke="#000000" stroke-width="1.6"/>
+<text x="215" y="144" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="8.5" fill="#555555">En reposo</text>
+<text x="355" y="88" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="bold" fill="#000000">Captura Offline en SQLite (Modo local activo)</text>
+<line x1="260" y1="113" x2="450" y2="113" stroke="#000000" stroke-width="1" marker-start="url(#arr-left)" marker-end="url(#arr-right)"/>
+<text x="355" y="126" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="8.5" fill="#333333">T > 0 min (Jornada de faena)</text>
+<text x="510" y="144" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="8.5" fill="#555555">Espera red</text>
+<text x="700" y="88" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="bold" fill="#000000">Empaquetando lote JSON + Actualizando SQLite local</text>
+<line x1="570" y1="113" x2="830" y2="113" stroke="#000000" stroke-width="1" marker-start="url(#arr-left)" marker-end="url(#arr-right)"/>
+<text x="700" y="126" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="8.5" fill="#333333">&#123;1 - 4 seg&#125;</text>
+<text x="955" y="144" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="8.5" fill="#555555">Sincronizado / En reposo</text>
+<path d="M 195 264 L 470 264 L 470 207 L 740 207 L 740 264 L 1060 264" fill="none" stroke="#000000" stroke-width="1.6"/>
+<text x="330" y="256" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="8.5" fill="#555555">Sin cobertura celular (En túnel / frente)</text>
+<line x1="220" y1="278" x2="440" y2="278" stroke="#000000" stroke-width="1" marker-start="url(#arr-left)" marker-end="url(#arr-right)"/>
+<text x="330" y="289" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="8.5" fill="#333333">T > 0 seg</text>
+<text x="605" y="200" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="bold" fill="#000000">Detección de red activa + Canal HTTPS transmitiendo</text>
+<line x1="490" y1="225" x2="720" y2="225" stroke="#000000" stroke-width="1" marker-start="url(#arr-left)" marker-end="url(#arr-right)"/>
+<text x="605" y="238" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="8.5" fill="#333333">&#123;1 - 3 seg&#125;</text>
+<text x="900" y="256" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="8.5" fill="#555555">Canal en reposo (Conectado)</text>
+<path d="M 195 376 L 550 376 L 550 319 L 850 319 L 850 376 L 1060 376" fill="none" stroke="#000000" stroke-width="1.6"/>
+<text x="370" y="368" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="8.5" fill="#555555">Inactivo / En escucha</text>
+<text x="700" y="312" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="bold" fill="#000000">Validación JWT + Idempotencia + Resolución Last-Write-Wins</text>
+<line x1="570" y1="337" x2="830" y2="337" stroke="#000000" stroke-width="1" marker-start="url(#arr-left)" marker-end="url(#arr-right)"/>
+<text x="700" y="350" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="8.5" fill="#333333">&#123;&lt; 2 seg&#125;</text>
+<text x="955" y="368" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="8.5" fill="#555555">HTTP 200 OK (ACK emitido)</text>
+<path d="M 195 488 L 630 488 L 630 431 L 810 431 L 810 488 L 1060 488" fill="none" stroke="#000000" stroke-width="1.6"/>
+<text x="410" y="480" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="8.5" fill="#555555">Sin transacción (En espera)</text>
+<text x="720" y="424" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="bold" fill="#000000">BEGIN / COMMIT: Consolidación atómica de avances y auditoría</text>
+<line x1="650" y1="449" x2="790" y2="449" stroke="#000000" stroke-width="1" marker-start="url(#arr-left)" marker-end="url(#arr-right)"/>
+<text x="720" y="462" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="8.5" fill="#333333">&#123;&lt; 1 seg&#125;</text>
+<text x="935" y="480" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="8.5" fill="#555555">Persistido en PostgreSQL</text>
+</svg>

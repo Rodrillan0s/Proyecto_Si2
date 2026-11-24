@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1350" height="1120" viewBox="0 0 1350 1120">
+<defs>
+  <marker id="seq-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#000000"/>
+  </marker>
+  <marker id="seq-ret" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M 0 1.5 L 8 5 L 0 8.5" fill="none" stroke="#000000" stroke-width="1.3"/>
+  </marker>
+</defs>
+<rect width="1350" height="1120" fill="#FFFFFF"/>
+<text x="30" y="35" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="bold" fill="#000000">sd CU41 - Operacion Offline y Sincronizacion (Analisis BCE Puro)</text>
+<rect x="20" y="15" width="1310" height="1090" fill="none" stroke="#000000" stroke-width="1.3"/>
+<circle cx="70" cy="60" r="7" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+<line x1="70" y1="67" x2="70" y2="80" stroke="#000000" stroke-width="1.2"/>
+<line x1="60" y1="72" x2="80" y2="72" stroke="#000000" stroke-width="1.2"/>
+<line x1="70" y1="80" x2="62" y2="95" stroke="#000000" stroke-width="1.2"/>
+<line x1="70" y1="80" x2="78" y2="95" stroke="#000000" stroke-width="1.2"/>
+<text x="70" y="110" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">user : PersonalCampo</text>
+<line x1="70" y1="115" x2="70" y2="1080" stroke="#000000" stroke-width="1" stroke-dasharray="4 4"/>
+<rect x="145.0" y="55" width="170" height="32" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+<text x="230" y="75" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#000000">ui : IU_operacion_offline</text>
+<line x1="230" y1="87" x2="230" y2="1080" stroke="#000000" stroke-width="1" stroke-dasharray="4 4"/>
+<rect x="335.0" y="55" width="170" height="32" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+<text x="420" y="75" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#000000">control : Control_Operacion_Offline</text>
+<line x1="420" y1="87" x2="420" y2="1080" stroke="#000000" stroke-width="1" stroke-dasharray="4 4"/>
+<rect x="560.0" y="55" width="140" height="32" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+<text x="630" y="75" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#000000">obra : Obra</text>
+<line x1="630" y1="87" x2="630" y2="1080" stroke="#000000" stroke-width="1" stroke-dasharray="4 4"/>
+<rect x="740.0" y="55" width="140" height="32" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+<text x="810" y="75" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#000000">avance : Avance_Obra</text>
+<line x1="810" y1="87" x2="810" y2="1080" stroke="#000000" stroke-width="1" stroke-dasharray="4 4"/>
+<rect x="905.0" y="55" width="170" height="32" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+<text x="990" y="75" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#000000">incidencia : Incidencia</text>
+<line x1="990" y1="87" x2="990" y2="1080" stroke="#000000" stroke-width="1" stroke-dasharray="4 4"/>
+<rect x="1095.0" y="55" width="170" height="32" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+<text x="1180" y="75" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#000000">cola : Cola_Sincronizacion</text>
+<line x1="1180" y1="87" x2="1180" y2="1080" stroke="#000000" stroke-width="1" stroke-dasharray="4 4"/>
+<line x1="70" y1="140" x2="230" y2="140" stroke="#000000" stroke-width="1.2"  marker-end="url(#seq-arr)"/><text x="150.0" y="135" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">1: consultarInfoObra(id_obra)</text>
+<rect x="160" y="155" width="540" height="145" fill="none" stroke="#444444" stroke-width="1" stroke-dasharray="3 3"/><rect x="160" y="155" width="275.0" height="18" fill="#F0F0F0" stroke="#444444" stroke-width="1"/><text x="168" y="168" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#222222">alt [HU90 - Consultar Obra sin Conexión]</text>
+<line x1="230" y1="185" x2="420" y2="185" stroke="#000000" stroke-width="1.2"  marker-end="url(#seq-arr)"/><text x="325.0" y="180" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">2: solicitarDatosObra(id_obra)</text>
+<line x1="420" y1="215" x2="630" y2="215" stroke="#000000" stroke-width="1.2"  marker-end="url(#seq-arr)"/><text x="525.0" y="210" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">3: consultarDatosObra(id_obra)</text>
+<line x1="630" y1="245" x2="420" y2="245" stroke="#000000" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#seq-ret)"/><text x="525.0" y="240" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">4: return datos_obra</text>
+<line x1="420" y1="270" x2="230" y2="270" stroke="#000000" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#seq-ret)"/><text x="325.0" y="265" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">5: return datos_obra</text>
+<line x1="230" y1="290" x2="70" y2="290" stroke="#000000" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#seq-ret)"/><text x="150.0" y="285" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">6: mostrarInformacionObra(datos)</text>
+<line x1="70" y1="325" x2="230" y2="325" stroke="#000000" stroke-width="1.2"  marker-end="url(#seq-arr)"/><text x="150.0" y="320" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">7: registrarAvance(id_actividad, porcentaje)</text>
+<rect x="160" y="340" width="1100" height="180" fill="none" stroke="#444444" stroke-width="1" stroke-dasharray="3 3"/><rect x="160" y="340" width="288.0" height="18" fill="#F0F0F0" stroke="#444444" stroke-width="1"/><text x="168" y="353" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#222222">alt [HU91 - Registrar Avance sin Conexión]</text>
+<line x1="230" y1="370" x2="420" y2="370" stroke="#000000" stroke-width="1.2"  marker-end="url(#seq-arr)"/><text x="325.0" y="365" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">8: procesarRegistroAvance(datos)</text>
+<line x1="420" y1="400" x2="810" y2="400" stroke="#000000" stroke-width="1.2"  marker-end="url(#seq-arr)"/><text x="615.0" y="395" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">9: crearAvance(datos)</text>
+<line x1="810" y1="430" x2="420" y2="430" stroke="#000000" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#seq-ret)"/><text x="615.0" y="425" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">10: return id_avance</text>
+<line x1="420" y1="455" x2="1180" y2="455" stroke="#000000" stroke-width="1.2"  marker-end="url(#seq-arr)"/><text x="800.0" y="450" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">11: encolarPendiente('AVANCE', datos)</text>
+<line x1="1180" y1="480" x2="420" y2="480" stroke="#000000" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#seq-ret)"/><text x="800.0" y="475" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">12: return ok</text>
+<line x1="230" y1="505" x2="70" y2="505" stroke="#000000" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#seq-ret)"/><text x="150.0" y="500" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">13: mostrarConfirmacion('Guardado localmente')</text>
+<line x1="70" y1="540" x2="230" y2="540" stroke="#000000" stroke-width="1.2"  marker-end="url(#seq-arr)"/><text x="150.0" y="535" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">14: registrarIncidencia(titulo, desc, prioridad)</text>
+<rect x="160" y="555" width="1100" height="180" fill="none" stroke="#444444" stroke-width="1" stroke-dasharray="3 3"/><rect x="160" y="555" width="314.0" height="18" fill="#F0F0F0" stroke="#444444" stroke-width="1"/><text x="168" y="568" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#222222">alt [HU92 - Registrar Incidencia sin Conexión]</text>
+<line x1="230" y1="585" x2="420" y2="585" stroke="#000000" stroke-width="1.2"  marker-end="url(#seq-arr)"/><text x="325.0" y="580" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">15: procesarRegistroIncidencia(datos)</text>
+<line x1="420" y1="615" x2="990" y2="615" stroke="#000000" stroke-width="1.2"  marker-end="url(#seq-arr)"/><text x="705.0" y="610" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">16: crearIncidencia(datos)</text>
+<line x1="990" y1="645" x2="420" y2="645" stroke="#000000" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#seq-ret)"/><text x="705.0" y="640" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">17: return id_incidencia</text>
+<line x1="420" y1="670" x2="1180" y2="670" stroke="#000000" stroke-width="1.2"  marker-end="url(#seq-arr)"/><text x="800.0" y="665" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">18: encolarPendiente('INCIDENCIA', datos)</text>
+<line x1="1180" y1="695" x2="420" y2="695" stroke="#000000" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#seq-ret)"/><text x="800.0" y="690" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">19: return ok</text>
+<line x1="230" y1="720" x2="70" y2="720" stroke="#000000" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#seq-ret)"/><text x="150.0" y="715" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">20: mostrarConfirmacion('Guardado localmente')</text>
+<line x1="70" y1="755" x2="230" y2="755" stroke="#000000" stroke-width="1.2"  marker-end="url(#seq-arr)"/><text x="150.0" y="750" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">21: conectarRed() [Evento]</text>
+<rect x="160" y="770" width="1100" height="215" fill="none" stroke="#444444" stroke-width="1" stroke-dasharray="3 3"/><rect x="160" y="770" width="418.0" height="18" fill="#F0F0F0" stroke="#444444" stroke-width="1"/><text x="168" y="783" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#222222">opt [HU93 - Conexión Restablecida y Sincronización Automática]</text>
+<line x1="230" y1="800" x2="420" y2="800" stroke="#000000" stroke-width="1.2"  marker-end="url(#seq-arr)"/><text x="325.0" y="795" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">22: ejecutarSincronizacion()</text>
+<line x1="420" y1="825" x2="1180" y2="825" stroke="#000000" stroke-width="1.2"  marker-end="url(#seq-arr)"/><text x="800.0" y="820" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">23: obtenerPendientes()</text>
+<line x1="1180" y1="850" x2="420" y2="850" stroke="#000000" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#seq-ret)"/><text x="800.0" y="845" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">24: return lista_pendientes[]</text>
+<rect x="350" y="865" width="910" height="85" fill="none" stroke="#444444" stroke-width="1" stroke-dasharray="3 3"/><rect x="350" y="865" width="236.0" height="18" fill="#F0F0F0" stroke="#444444" stroke-width="1"/><text x="358" y="878" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#222222">loop [Por cada registro pendiente]</text>
+<line x1="420" y1="895" x2="810" y2="895" stroke="#000000" stroke-width="1.2"  marker-end="url(#seq-arr)"/><text x="615.0" y="890" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">25: consolidarRegistro(item)</text>
+<line x1="420" y1="925" x2="1180" y2="925" stroke="#000000" stroke-width="1.2"  marker-end="url(#seq-arr)"/><text x="800.0" y="920" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">26: marcarSincronizado(id_item)</text>
+<line x1="420" y1="960" x2="230" y2="960" stroke="#000000" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#seq-ret)"/><text x="325.0" y="955" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">27: notificarSincronizacionCompleta()</text>
+<line x1="230" y1="978" x2="70" y2="978" stroke="#000000" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#seq-ret)"/><text x="150.0" y="973" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">28: actualizarEstado('Sincronizado')</text>
+<line x1="70" y1="1005" x2="230" y2="1005" stroke="#000000" stroke-width="1.2"  marker-end="url(#seq-arr)"/><text x="150.0" y="1000" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">29: consultarEstadoSync()</text>
+<rect x="160" y="1018" width="1100" height="75" fill="none" stroke="#444444" stroke-width="1" stroke-dasharray="3 3"/><rect x="160" y="1018" width="320.5" height="18" fill="#F0F0F0" stroke="#444444" stroke-width="1"/><text x="168" y="1031" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#222222">opt [HU94 - Consultar Estado de Sincronización]</text>
+<line x1="230" y1="1040" x2="420" y2="1040" stroke="#000000" stroke-width="1.2"  marker-end="url(#seq-arr)"/><text x="325.0" y="1035" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">30: consultarEstado()</text>
+<line x1="420" y1="1060" x2="1180" y2="1060" stroke="#000000" stroke-width="1.2"  marker-end="url(#seq-arr)"/><text x="800.0" y="1055" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">31: contarPorEstado()</text>
+<line x1="1180" y1="1078" x2="230" y2="1078" stroke="#000000" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#seq-ret)"/><text x="705.0" y="1073" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#000000">32: return resumen_sync</text>
+</svg>

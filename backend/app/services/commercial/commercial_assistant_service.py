@@ -12,6 +12,7 @@ from app.services.commercial import blueprint_vision_service as vision_service
 from app.services.commercial import commercial_query_engine as query_engine
 from app.services.commercial import cost_estimation_service as cost_service
 from app.services.commercial import lead_capture_service as lead_service
+from app.services.commercial import project_proposal_engine as proposal_engine
 from app.services.commercial.contracts import (
     CommercialChatRequest,
     CommercialSearchCriteria,
@@ -25,30 +26,41 @@ SESSION_TTL_SECONDS = 3600  # 1 hora
 MAX_SESSIONS = 1500
 
 SYSTEM_PROMPT_INTENT = """Eres el motor de análisis semántico comercial de OBRATEC.
-Extrae los criterios exactos de búsqueda inmobiliaria del cliente potencial.
+Transforma la solicitud natural del cliente en criterios estructurados.
+Si un campo no fue mencionado en el mensaje actual, devuélvelo como null (el sistema conservará los criterios previos).
 Devuelve EXCLUSIVAMENTE un objeto JSON válido con estas claves:
 {
-  "intencion": "buscar_unidades | recomendar_presupuesto | comparar_unidades | estimar_costo | solicitar_contacto",
+  "intencion": "buscar_unidades | recomendar_presupuesto | comparar_unidades | estimar_costo | proponer_proyecto | solicitar_contacto | consulta_general",
   "tipo_unidad": "DEPARTAMENTO | VIVIENDA | LOCAL | LOTE | OFICINA | null",
   "min_dormitorios": null,
   "min_banos": null,
   "superficie_min_m2": null,
   "superficie_max_m2": null,
   "presupuesto_max": null,
-  "moneda": "BOB | USD",
+  "moneda": "BOB | USD | null",
   "zona": null,
   "estilo_acabado": "ESTANDAR | MINIMALISTA | INDUSTRIAL | CONTEMPORANEO | LUJO | null",
   "estado_construccion": "PLANIFICADO | EN_CONSTRUCCION | FINALIZADO | null",
-  "caracteristicas_deseadas": []
+  "amoblamiento_preferido": "AMOBLADA | PARCIALMENTE_AMOBLADA | SIN_AMOBLAR | null",
+  "amoblamiento_indispensable": false,
+  "acepta_cotizar_mobiliario": false,
+  "tiene_terreno": null,
+  "superficie_terreno_m2": null,
+  "plazo_deseado_meses": null,
+  "restricciones_indispensables": [],
+  "caracteristicas_deseadas": [],
+  "necesita_aclaracion": false,
+  "pregunta_aclaracion": null
 }"""
 
-SYSTEM_PROMPT_SYNTHESIS = """Eres el Asesor Comercial Inmobiliario Senior y Arquitecto Consultor de {nombre_empresa} en la plataforma OBRATEC.
-REGLAS ESTRICTAS DE RESPUESTA (CERO RESPUESTAS VAGAS):
-1. Responde de forma ejecutiva, cálida, estructurada y 100% fundamentada en los DATOS VERIFICADOS provistos.
-2. Menciona SIEMPRE códigos reales de unidad (ej. UNI-000001), nombres de proyecto/obra, superficies exactas en m², precios en BOB y USD, y estado de disponibilidad.
-3. Jamás inventes unidades, descuentos, ubicaciones ni precios que no estén en el bloque de datos verificados.
-4. Si el cliente consulta costos o estilos, presenta con claridad el costo por m², el presupuesto total estimado y las diferencias de materiales entre estilos.
-5. Finaliza con una invitación consultiva concreta (comparar unidades, cotizar otro estilo de acabado o agendar contacto con un asesor)."""
+SYSTEM_PROMPT_SYNTHESIS = """Eres el Asesor Comercial Inmobiliario Senior y Consultor de Proyectos de {nombre_empresa} en OBRATEC.
+REGLAS ESTRICTAS DE COHERENCIA Y VERACIDAD:
+1. Fundamenta el 100% de tu respuesta en el bloque de DATOS VERIFICADOS provisto.
+2. NUNCA contradigas disponibilidad, precio, tipo de precio (PRECIO_PUBLICADO vs ESTIMACION_PARAMETRICA), amoblamiento ni afinidad del bloque verificado.
+3. Si unidades_recomendadas está vacía, indica claramente que NO hay unidades disponibles que cumplan las restricciones y explica los motivos reales de exclusión. Jamás recomiendes unidades reservadas, vendidas, fuera de presupuesto ni tipologías incompatibles.
+4. Jamás asumas que una unidad está amoblada si su estado_amoblamiento es DESCONOCIDO o SIN_AMOBLAR; informa la situación con transparencia y ofrece cotizar mobiliario por separado cuando corresponda.
+5. Si existe propuesta_proyecto, presenta con claridad los escenarios (Económico, Equilibrado, Superior), la diferenciación entre terreno y construcción, las partidas no estimables y el carácter preliminar de la propuesta.
+6. Si existen preguntas_progresivas, incluye como máximo 1 o 2 preguntas concretas para avanzar."""
 
 
 def _get_or_create_session(id_empresa: int, conversacion_id: str | None) -> dict:
@@ -83,14 +95,39 @@ def _get_or_create_session(id_empresa: int, conversacion_id: str | None) -> dict
 
 
 def _heredar_criterios_conversacion(actual: CommercialSearchCriteria, previos: dict) -> CommercialSearchCriteria:
+    """Actualiza únicamente los criterios nuevos y conserva las preferencias comerciales previas."""
     if not previos:
         return actual
     data = actual.model_dump()
-    for campo in ('tipo_unidad', 'min_dormitorios', 'min_banos', 'presupuesto_max', 'zona', 'estilo_acabado'):
+    for campo in (
+        'tipo_unidad',
+        'min_dormitorios',
+        'min_banos',
+        'superficie_min_m2',
+        'superficie_max_m2',
+        'presupuesto_max',
+        'zona',
+        'estilo_acabado',
+        'estado_construccion',
+        'amoblamiento_preferido',
+        'tiene_terreno',
+        'superficie_terreno_m2',
+        'plazo_deseado_meses',
+    ):
         if data.get(campo) is None and previos.get(campo) is not None:
             data[campo] = previos[campo]
             if campo == 'presupuesto_max' and previos.get('moneda'):
                 data['moneda'] = previos['moneda']
+    if data.get('presupuesto_max') is not None and actual.moneda == 'BOB' and previos.get('moneda') == 'USD':
+        # Si el usuario solo actualizó el monto sin cambiar moneda explícitamente, conservar USD previo
+        if actual.presupuesto_max is None:
+            data['moneda'] = 'USD'
+    for bfield in ('amoblamiento_indispensable', 'acepta_cotizar_mobiliario'):
+        if not data.get(bfield) and previos.get(bfield):
+            data[bfield] = True
+    for lfield in ('caracteristicas_deseadas', 'restricciones_indispensables'):
+        merged_list = sorted(set(previos.get(lfield) or []) | set(data.get(lfield) or []))
+        data[lfield] = merged_list
     return CommercialSearchCriteria(**data)
 
 
@@ -103,10 +140,11 @@ def _construir_respuesta_determinista(
     estimacion_costo: dict | None,
     registro_crm: dict | None,
     requiere_datos_contacto: bool,
+    propuesta_proyecto: dict | None = None,
 ) -> str:
     """
-    Construye una respuesta comercial estructurada, exacta y sin vaguedades
-    con los datos deterministas verificados del backend.
+    Construye una respuesta comercial estructurada, exacta y 100% coherente con las tarjetas
+    y los datos deterministas verificados del backend.
     """
     lineas = []
     nombre_emp = empresa['nombre_empresa']
@@ -150,13 +188,13 @@ def _construir_respuesta_determinista(
             ventajas_txt = '; '.join(u.get('ventajas_competitivas') or [])
             lineas.append(
                 f"1. **{u['codigo_unidad']} — {u['nombre_unidad']}** (*{u['nombre_obra']}*)\n"
-                f"   - **Superficie y Programa:** {u['superficie_m2']} m² | {u['dormitorios']} dorm. | {u['banos']} baño(s) | Acabado `{u['especificacion_acabado']}`\n"
-                f"   - **Precio y Disponibilidad:** **{u['precio_usd']} USD** ({u['precio_bob']} BOB) — Estado: `{u['disponibilidad_comercial']}` ({u['estado_construccion']})\n"
+                f"   - **Superficie y Programa:** {u['superficie_m2']} m² | {u['dormitorios']} dorm. | {u['banos']} baño(s) | Amoblamiento `{u.get('estado_amoblamiento', 'DESCONOCIDO')}`\n"
+                f"   - **Precio ({u.get('tipo_precio', u['fuente_precio'])}) y Disponibilidad:** **{u['precio_usd']} USD** ({u['precio_bob']} BOB) — Estado: `{u['disponibilidad_comercial']}`\n"
                 f"   - **Diferencial:** {ventajas_txt}"
             )
         return '\n\n'.join(lineas)
 
-    if estimacion_costo:
+    if estimacion_costo and not propuesta_proyecto:
         p_ent = estimacion_costo['parametros_entrada']
         r_fin = estimacion_costo['resumen_financiero']
         lineas.append(
@@ -167,50 +205,90 @@ def _construir_respuesta_determinista(
             f"- **Valor Unitario Ajustado:** **{r_fin['costo_m2_ajustado_usd']} USD/m²** ({r_fin['costo_m2_ajustado_bob']} BOB/m²)\n"
             f"- **Configuración Evaluada:** {p_ent['tipo_inmueble']} de {p_ent['superficie_m2']} m², {p_ent['cantidad_plantas']} planta(s), {p_ent['dormitorios']} dormitorio(s) y {p_ent['banos']} baño(s)."
         )
-        desglose_txt = '\n'.join(
-            f"  - **{c['capitulo']} ({c['porcentaje']}):** {c['monto_usd']} USD ({c['monto_bob']} BOB)"
-            for c in estimacion_costo['desglose_capitulos']
-        )
-        lineas.append(f"**Desglose por Capítulos Constructivos:**\n{desglose_txt}")
-        eval_p = estimacion_costo.get('evaluacion_presupuesto')
-        if eval_p:
-            if eval_p['alcanza_presupuesto']:
-                lineas.append(
-                    f"- **Análisis frente a tu presupuesto ({eval_p['presupuesto_cliente_usd']} USD):** Cubre satisfactoriamente el proyecto con un margen favorable de **{eval_p['diferencia_usd']} USD** ({eval_p['diferencia_bob']} BOB)."
-                )
-            else:
-                lineas.append(
-                    f"- **Análisis frente a tu presupuesto ({eval_p['presupuesto_cliente_usd']} USD):** Requiere una inversión adicional de **{abs(float(eval_p['diferencia_usd'])):.2f} USD**, o bien ajustar la superficie a **{eval_p['superficie_maxima_recomendada_m2']} m²** manteniendo el mismo estilo."
-                )
 
     recomendadas = resultado_busqueda.get('unidades_recomendadas') or []
     exactas = resultado_busqueda.get('coincidencias_exactas', 0)
 
-    if recomendadas:
-        encabezado = (
-            f"### Unidades Recomendadas en {nombre_emp} ({exactas} coincidencia(s) exacta(s))"
-            if exactas > 0
-            else f"### Alternativas Más Cercanas en {nombre_emp} según tus Criterios"
-        )
-        lineas.append(encabezado)
+    if recomendadas and intencion != 'proponer_proyecto':
+        lineas.append(f"### Unidades Disponibles Recomendadas en {nombre_emp} ({exactas} coincidencia(s))")
         for idx, u in enumerate(recomendadas[:4], start=1):
             razones_str = ' · '.join(u.get('razones_recomendacion') or [])
             obs_str = (
-                f"\n   - *Nota comercial:* {' | '.join(u['observaciones_criterio'])}"
+                f"\n   - *Advertencia:* {' | '.join(u['observaciones_criterio'])}"
                 if u.get('observaciones_criterio')
                 else ''
             )
+            mob_extra = ''
+            cot_mob = u.get('cotizacion_mobiliario_separada')
+            if cot_mob:
+                if cot_mob.get('disponible'):
+                    mob_extra = (
+                        f"\n   - *Mobiliario por separado:* +{cot_mob['monto_usd']} USD ({cot_mob['monto_bob']} BOB)"
+                        + (
+                            f" · Total estimado con mobiliario: **{cot_mob['total_inmueble_mas_mobiliario_usd']} USD**"
+                            if cot_mob.get('total_inmueble_mas_mobiliario_usd')
+                            else ''
+                        )
+                    )
+                else:
+                    mob_extra = f"\n   - *Mobiliario por separado:* {cot_mob.get('nota')}"
+            etiqueta_precio = 'Precio publicado' if not u.get('es_estimacion_precio') else 'Estimación paramétrica'
             lineas.append(
                 f"{idx}. **{u['codigo_unidad']} — {u['nombre_unidad']}** (Proyecto: *{u['nombre_obra']}*)\n"
-                f"   - **Características:** {u['tipo_unidad']} | **{u['superficie_m2']} m²** | {u['ambientes_resumen']} | Acabado `{u['especificacion_acabado']}`\n"
-                f"   - **Valor Comercial:** **{u['precio_usd']} USD** (**{u['precio_bob']} BOB** · {u['costo_m2_usd']} USD/m²) — `{u['disponibilidad_comercial']}`\n"
-                f"   - **Por qué te conviene (Afinidad {u['afinidad_score']}%):** {razones_str}{obs_str}"
+                f"   - **Características:** {u['tipo_unidad']} | **{u['superficie_m2']} m²** | {u['ambientes_resumen']} | Amoblamiento: `{u.get('estado_amoblamiento', 'DESCONOCIDO')}`\n"
+                f"   - **{etiqueta_precio}:** **{u['precio_usd']} USD** (**{u['precio_bob']} BOB** · {u['costo_m2_usd']} USD/m²) — `{u['disponibilidad_comercial']}`\n"
+                f"   - **Afinidad ({u['afinidad_score']}%):** {razones_str}{obs_str}{mob_extra}"
             )
-    elif not estimacion_costo and not requiere_datos_contacto:
+    elif not recomendadas and intencion != 'proponer_proyecto' and not requiere_datos_contacto:
+        motivos = resultado_busqueda.get('motivos_exclusion') or {}
+        detalles_excl = []
+        if motivos.get('no_disponible_o_reservada'):
+            detalles_excl.append(f"{motivos['no_disponible_o_reservada']} reservada(s), vendida(s) o no comercializable(s)")
+        if motivos.get('tipologia_incompatible'):
+            detalles_excl.append(f"{motivos['tipologia_incompatible']} de tipología distinta")
+        if motivos.get('fuera_de_presupuesto'):
+            detalles_excl.append(f"{motivos['fuera_de_presupuesto']} por encima de tu presupuesto máximo")
+        if motivos.get('amoblamiento_incompatible'):
+            detalles_excl.append(f"{motivos['amoblamiento_incompatible']} sin el amoblamiento indispensable")
+        motivo_txt = ('; '.join(detalles_excl)) if detalles_excl else 'sin unidades activas en el catálogo'
         lineas.append(
-            f"Actualmente **{nombre_emp}** no registra unidades disponibles que coincidan con esos filtros exactos en el inventario activo. "
-            "Puedes consultar nuestra estimación paramétrica por m² y estilo o dejarnos tus datos para notificarte de nuevos lanzamientos."
+            f"### Sin coincidencias disponibles en inventario ({nombre_emp})\n\n"
+            f"No encontramos unidades disponibles que cumplan todas tus restricciones obligatorias "
+            f"(se excluyeron: {motivo_txt})."
         )
+
+    if propuesta_proyecto:
+        if propuesta_proyecto.get('informacion_insuficiente'):
+            lineas.append(
+                f"### Limitación para estimar proyecto personalizado\n\n"
+                f"{propuesta_proyecto['motivo']}\n"
+                f"- **Partidas no estimables:** {', '.join(propuesta_proyecto.get('partidas_no_estimables') or [])}\n"
+                f"- *{propuesta_proyecto['aviso_alcance']}*"
+            )
+        else:
+            terreno = propuesta_proyecto.get('terreno') or {}
+            lineas.append(
+                f"### Propuesta Preliminar de Proyecto Personalizado ({propuesta_proyecto['tipologia']} · ~{propuesta_proyecto['superficie_referencia_m2']} m²)\n\n"
+                f"- **Terreno:** `{terreno.get('estado')}` — {terreno.get('nota')}\n"
+                f"- **Nivel de confianza:** `{propuesta_proyecto['nivel_confianza']}` · TC `{propuesta_proyecto['tipo_cambio_referencia']}` al `{propuesta_proyecto['fecha_referencia']}`"
+            )
+            for esc in propuesta_proyecto.get('escenarios') or []:
+                encaja = ''
+                if esc.get('encaja_presupuesto') is True:
+                    encaja = f" · Dentro de presupuesto (margen {esc['diferencia_presupuesto_usd']} USD)"
+                elif esc.get('encaja_presupuesto') is False:
+                    encaja = f" · Excede en {abs(float(esc['diferencia_presupuesto_usd'])):.2f} USD"
+                lineas.append(
+                    f"- **Escenario {esc['escenario']} ({esc['estilo_nombre']}):** ~{esc['superficie_aprox_m2']} m² | "
+                    f"**{esc['presupuesto_preliminar_usd']} USD** ({esc['presupuesto_preliminar_bob']} BOB · {esc['costo_m2_usd']} USD/m²){encaja}"
+                )
+            if propuesta_proyecto.get('preguntas_progresivas'):
+                qs = '\n'.join(f"  - {q}" for q in propuesta_proyecto['preguntas_progresivas'])
+                lineas.append(f"**Para afinar tu propuesta:**\n{qs}")
+            lineas.append(f"*{propuesta_proyecto['aviso_alcance']}*")
+
+    if criterios.necesita_aclaracion and criterios.pregunta_aclaracion:
+        lineas.append(f"**Aclaración sugerida:** {criterios.pregunta_aclaracion}")
 
     return '\n\n'.join(lineas)
 
@@ -303,7 +381,16 @@ def procesar_consulta_comercial(
     except ProviderError:
         llm_criterios = None
 
-    criterios = query_engine.combinar_criterios(criterios_base, llm_criterios)
+    criterios = query_engine.combinar_criterios(
+        criterios_base,
+        llm_criterios,
+        explicit_overrides={
+            'presupuesto_max': solicitud.presupuesto_max,
+            'tipo_unidad': solicitud.tipo_unidad_preferido,
+            'estilo_acabado': solicitud.estilo_preferido,
+            'min_dormitorios': solicitud.min_dormitorios,
+        },
+    )
     criterios = _heredar_criterios_conversacion(criterios, sesion['criterios_previos'])
 
     # 3. Cargar inventario real y parámetros de la empresa autorizada
@@ -320,6 +407,7 @@ def procesar_consulta_comercial(
     intencion = criterios.intencion
     comparativa = None
     estimacion_costo = None
+    propuesta_proyecto = None
     registro_crm = None
     requiere_datos_contacto = False
 
@@ -388,6 +476,24 @@ def procesar_consulta_comercial(
             datos_parametros=datos_parametros,
         )
 
+    # Propuesta de proyecto personalizado: cuando el cliente pide construir O cuando 0 unidades cumplen
+    lotes_disp = [
+        u for u in resultado_busqueda['todas_enriquecidas']
+        if u.get('disponibilidad_comercial') == 'DISPONIBLE' and u.get('tipo_unidad') == 'LOTE'
+    ]
+    if intencion == 'proponer_proyecto' or (
+        not resultado_busqueda['unidades_recomendadas']
+        and intencion in ('buscar_unidades', 'recomendar_presupuesto')
+        and registro_crm is None
+        and not requiere_datos_contacto
+    ):
+        propuesta_proyecto = proposal_engine.generar_propuesta_proyecto(
+            id_empresa=id_empresa,
+            criterios=criterios,
+            datos_parametros=datos_parametros,
+            lotes_disponibles=lotes_disp,
+        )
+
     # 5. Construir respuesta fundamentada (Síntesis DeepSeek sobre datos verificados o fallback determinista)
     respuesta_base = _construir_respuesta_determinista(
         empresa=empresa,
@@ -398,6 +504,7 @@ def procesar_consulta_comercial(
         estimacion_costo=estimacion_costo,
         registro_crm=registro_crm,
         requiere_datos_contacto=requiere_datos_contacto,
+        propuesta_proyecto=propuesta_proyecto,
     )
 
     respuesta_final = respuesta_base
@@ -406,6 +513,7 @@ def procesar_consulta_comercial(
             'empresa': empresa['nombre_empresa'],
             'intencion_resuelta': intencion,
             'criterios_aplicados': criterios.model_dump(),
+            'motivos_exclusion': resultado_busqueda.get('motivos_exclusion'),
             'unidades_recomendadas': [
                 {
                     'id_unidad': u['id_unidad'],
@@ -417,14 +525,20 @@ def procesar_consulta_comercial(
                     'ambientes': u['ambientes_resumen'],
                     'precio_bob': u['precio_bob'],
                     'precio_usd': u['precio_usd'],
+                    'tipo_precio': u.get('tipo_precio', u['fuente_precio']),
+                    'es_estimacion_precio': u.get('es_estimacion_precio', False),
+                    'estado_amoblamiento': u.get('estado_amoblamiento', 'DESCONOCIDO'),
+                    'cotizacion_mobiliario_separada': u.get('cotizacion_mobiliario_separada'),
                     'costo_m2_usd': u['costo_m2_usd'],
                     'disponibilidad': u['disponibilidad_comercial'],
                     'estado_construccion': u['estado_construccion'],
                     'afinidad_score': u['afinidad_score'],
                     'razones': u['razones_recomendacion'],
+                    'advertencias': u.get('observaciones_criterio') or [],
                 }
                 for u in resultado_busqueda['unidades_recomendadas'][:4]
             ],
+            'propuesta_proyecto': propuesta_proyecto,
             'comparativa': comparativa,
             'estimacion_costo': estimacion_costo['resumen_financiero'] if estimacion_costo else None,
             'comparativa_estilos': estimacion_costo['comparativa_estilos'] if estimacion_costo else None,
@@ -447,7 +561,10 @@ def procesar_consulta_comercial(
         sesion['criterios_previos'] = {
             k: v
             for k, v in criterios.model_dump().items()
-            if v is not None and v != [] and k not in ('intencion', 'codigos_comparar', 'ids_unidades_comparar')
+            if v is not None and v != [] and k not in (
+                'intencion', 'codigos_comparar', 'ids_unidades_comparar',
+                'necesita_aclaracion', 'pregunta_aclaracion',
+            )
         }
         if resultado_busqueda['unidades_recomendadas']:
             sesion['ultimas_unidades_vistas'] = [
@@ -467,10 +584,14 @@ def procesar_consulta_comercial(
         'resumen_estructurado': respuesta_base,
         'unidades_recomendadas': resultado_busqueda['unidades_recomendadas'],
         'coincidencias_exactas': resultado_busqueda['coincidencias_exactas'],
+        'motivos_exclusion': resultado_busqueda.get('motivos_exclusion'),
+        'propuesta_proyecto': propuesta_proyecto,
         'comparativa': comparativa,
         'estimacion_costo': estimacion_costo,
         'registro_crm': registro_crm,
         'requiere_datos_contacto': requiere_datos_contacto,
+        'necesita_aclaracion': criterios.necesita_aclaracion,
+        'pregunta_aclaracion': criterios.pregunta_aclaracion,
     }
 
 

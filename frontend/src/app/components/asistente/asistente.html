@@ -130,6 +130,40 @@
             </div>
           </div>
 
+          <!-- Visualización gráfica (ChartSpec) -->
+          <app-chart-spec-card
+            *ngIf="message.chart_spec && message.chart_spec.tipo !== 'none'"
+            [spec]="message.chart_spec"
+            [rows]="message.execution?.resultado?.filas || []"
+            [resumen]="message.execution?.resultado?.resumen || null"
+            [compact]="true"
+          ></app-chart-spec-card>
+
+          <!-- Bandeja Proactiva de Pendientes -->
+          <div *ngIf="message.pendientes?.items?.length" class="inbox-card">
+            <div class="inbox-header">
+              <span class="inbox-eyebrow">PENDIENTES PRIORIZADOS</span>
+              <span class="inbox-count">{{ message.pendientes?.items?.length }}</span>
+            </div>
+            <div class="inbox-list">
+              <div *ngFor="let item of message.pendientes?.items?.slice(0, 6)" class="inbox-item">
+                <div class="inbox-item-main">
+                  <span class="inbox-prio" [attr.data-prio]="item.prioridad">{{ item.prioridad }}</span>
+                  <strong>{{ item.titulo }}</strong>
+                  <small>{{ item.modulo }}<ng-container *ngIf="item.obra"> · {{ item.obra }}</ng-container> — {{ item.motivo }}</small>
+                </div>
+                <button
+                  *ngIf="item.ruta_angular"
+                  type="button"
+                  class="inbox-link"
+                  (click)="openInboxRoute(item.ruta_angular)"
+                >
+                  Ir ↗
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- Tarjeta de Análisis y Diagnóstico Operativo -->
           <div *ngIf="message.resultado_analisis" class="analysis-card">
             <div class="analysis-header">

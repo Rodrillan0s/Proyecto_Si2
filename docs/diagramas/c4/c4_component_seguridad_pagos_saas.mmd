@@ -1,0 +1,55 @@
+C4Component
+    title Diagrama de Componentes - API Backend (Seguridad, Suscripciones y Pagos SaaS)
+
+    %% 1. Contenedores consumidores (Arriba)
+    Container(web, "Aplicación Web", "Angular 18 + Tailwind CSS", "Portal administrativo SaaS y autogestión de suscripción")
+    Container(mobile, "Aplicación Móvil", "Flutter + Dart", "Autenticación de usuarios operativos y control de acceso")
+
+    %% 2. Límite del Contenedor analizado (Centro)
+    Container_Boundary(api, "API Backend [FastAPI + Uvicorn]") {
+        Component(auth_ctrl, "Auth & Users Controller", "FastAPI Router", "Rutas para login, refresh token, perfil y usuarios (auth_routes.py, users_routes.py)")
+        Component(susc_ctrl, "Suscripción Controller", "FastAPI Router", "Rutas para planes, cupos y estado de cuenta (suscripcion_routes.py)")
+        Component(pago_ctrl, "Pagos Controller", "FastAPI Router", "Rutas para checkout, webhooks y cobros (pago_routes.py)")
+
+        Component(auth_srv, "Auth & Security Service", "Python Service", "Validación JWT, barrera multi-tenant y RBAC (auth_services.py, security.py)")
+        Component(susc_srv, "Suscripción Service", "Python Service", "Políticas SaaS, límites de obras/usuarios (suscripcion_services.py, suscripcion_policy.py)")
+        Component(pago_srv, "Pagos Service", "Python Service", "Orquestación de pagos y renovación de planes (pago_services.py)")
+
+        Component(stripe_adapter, "Stripe Gateway Adapter", "Python Client", "Adaptador SDK para procesar pagos y webhooks (payments/stripe_gateway.py)")
+        Component(email_adapter, "Email Service Adapter", "Python Client", "Envío de notificaciones de bienvenida y facturas (email_service.py)")
+
+        Component(auth_repo, "Auth Repository", "SQLAlchemy / Psycopg2", "Acceso a usuarios, contraseñas y permisos (auth_repos.py, users_repos.py)")
+        Component(pago_repo, "Pagos Repository", "SQLAlchemy / Psycopg2", "Persistencia de transacciones y estados de pago (pago_repos.py)")
+        Component(susc_repo, "Suscripción Repository", "SQLAlchemy / Psycopg2", "Persistencia de planes, empresas y cupos (suscripcion_repos.py)")
+    }
+
+    %% 3. Persistencia y Sistemas Externos (Abajo)
+    ContainerDb(db, "Base de Datos Principal", "PostgreSQL (schema: obras)", "Persiste t_usuario, t_rol, t_empresa, t_plan_suscripcion, t_pago_suscripcion")
+    System_Ext(stripe, "Stripe API", "Pasarela de pagos en línea externa")
+    System_Ext(brevo, "Brevo API", "Servicio transaccional de correos electrónicos")
+
+    %% 4. Relaciones unidireccionales etiquetadas
+    Rel(web, auth_ctrl, "Inicia sesión y administra cuentas", "JSON/HTTPS")
+    Rel(mobile, auth_ctrl, "Autentica usuarios móviles", "JSON/HTTPS")
+    Rel(web, susc_ctrl, "Consulta y cambia planes", "JSON/HTTPS")
+    Rel(web, pago_ctrl, "Inicia proceso de pago", "JSON/HTTPS")
+
+    Rel(auth_ctrl, auth_srv, "Valida credenciales y permisos")
+    Rel(susc_ctrl, susc_srv, "Verifica cupos y políticas SaaS")
+    Rel(pago_ctrl, pago_srv, "Procesa checkout y cobros")
+
+    Rel(pago_srv, stripe_adapter, "Ejecuta cobro de suscripción")
+    Rel(pago_srv, susc_srv, "Activa vigencia de plan")
+    Rel(auth_srv, email_adapter, "Solicita envío de activación")
+    Rel(pago_srv, email_adapter, "Solicita envío de recibo")
+
+    Rel(stripe_adapter, stripe, "Crea checkout y procesa cargos", "HTTPS/REST")
+    Rel(email_adapter, brevo, "Envía emails transaccionales", "HTTPS/REST")
+
+    Rel(auth_srv, auth_repo, "Verifica credenciales")
+    Rel(susc_srv, susc_repo, "Actualiza cuotas y estado")
+    Rel(pago_srv, pago_repo, "Registra transacción de pago")
+
+    Rel(auth_repo, db, "Lee y escribe t_usuario, t_seguridad", "SQL/TCP")
+    Rel(susc_repo, db, "Lee y escribe t_suscripcion_empresa", "SQL/TCP")
+    Rel(pago_repo, db, "Lee y escribe t_pago_suscripcion", "SQL/TCP")

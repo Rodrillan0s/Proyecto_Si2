@@ -4,11 +4,17 @@ Regla innegociable: todos los cálculos monetarios usan Decimal con escala expl�
 el LLM jamás calcula importes ni inventa precios.
 """
 import re
+from datetime import datetime
 from decimal import Decimal, ROUND_HALF_UP
+from zoneinfo import ZoneInfo
 from app.repos import commercial_repos
 
 TWO_DECIMALS = Decimal('0.01')
 TIPO_CAMBIO_BOB_USD = Decimal('6.96')
+
+
+def fecha_referencia_tc() -> str:
+    return datetime.now(ZoneInfo('America/La_Paz')).date().isoformat()
 
 DEFAULT_COSTO_M2_BOB = {
     'VIVIENDA': Decimal('2800.00'),
@@ -166,13 +172,64 @@ def _factor_estilo(estilo_codigo: str, parametros: dict) -> Decimal:
     return ESTILOS_CATALOGO[codigo]['factor_default']
 
 
-def _extraer_precio_explicito_bob(unidad: dict) -> tuple[Decimal | None, str | None]:
+def resolver_amoblamiento_unidad(unidad: dict) -> tuple[str, Decimal | None]:
     """
-    Revisa si la unidad posee precio explícito en sus características o en acuerdos CRM previos.
-    Retorna (precio_bob, fuente).
+    Determina de forma verificable el estado de amoblamiento de la unidad:
+    AMOBLADA | PARCIALMENTE_AMOBLADA | SIN_AMOBLAR | DESCONOCIDO.
+    Jamás infiere amoblamiento por cocina, baños, closets o nivel de acabados.
     """
+    valid = {'AMOBLADA', 'PARCIALMENTE_AMOBLADA', 'SIN_AMOBLAR', 'DESCONOCIDO'}
+    col_val = str(unidad.get('estado_amoblamiento') or '').strip().upper()
+    estado = col_val if col_val in valid else 'DESCONOCIDO'
+
+    if estado == 'DESCONOCIDO':
+        cmap = {str(k).strip().lower(): str(v or '').strip() for k, v in (unidad.get('caracteristicas_map') or {}).items()}
+        for key in ('estado_amoblamiento', 'amoblamiento', 'amoblado', 'amoblada', 'mobiliario', 'incluye_mobiliario'):
+            if key not in cmap:
+                continue
+            val = cmap[key].lower()
+            if any(t in val for t in ('parcial', 'semi')):
+                estado = 'PARCIALMENTE_AMOBLADA'
+                break
+            if any(t in val for t in ('sin amoblar', 'no amobl', 'vacio', 'vacío', 'no incluye', 'false')) or val == 'no':
+                estado = 'SIN_AMOBLAR'
+                break
+            if any(t in val for t in ('amoblad', 'equipad', 'completo', 'completa', 'incluye mobiliario', 'true')) or val in ('si', 'sí'):
+                estado = 'AMOBLADA'
+                break
+
+    costo_mob_bob = None
+    raw_mob = unidad.get('costo_mobiliario_estimado')
+    if raw_mob is not None:
+        try:
+            dec = Decimal(str(raw_mob))
+            if dec > 0:
+                mon = str(unidad.get('moneda_comercial') or 'BOB').upper()
+                costo_mob_bob = _q2(dec * TIPO_CAMBIO_BOB_USD) if mon == 'USD' else _q2(dec)
+        except Exception:
+            pass
+    return estado, costo_mob_bob
+
+
+def _extraer_precio_publicado_bob(unidad: dict) -> tuple[Decimal | None, str | None]:
+    """
+    Obtiene únicamente el precio comercial publicado oficial (t_unidad_construccion.precio_venta
+    o característica explícita de lista). Jamás expone montos pactados de terceros en CRM.
+    """
+    pv = unidad.get('precio_venta')
+    if pv is not None:
+        try:
+            amount = Decimal(str(pv))
+            if amount > 0:
+                mon = str(unidad.get('moneda_comercial') or 'BOB').strip().upper()
+                if mon == 'USD':
+                    return _q2(amount * TIPO_CAMBIO_BOB_USD), 'PRECIO_PUBLICADO'
+                return _q2(amount), 'PRECIO_PUBLICADO'
+        except Exception:
+            pass
+
     cmap = unidad.get('caracteristicas_map') or {}
-    for key in ('precio_venta', 'precio_lista', 'precio', 'valor_comercial', 'precio_usd', 'precio_bob'):
+    for key in ('precio_venta', 'precio_lista', 'precio_publicado', 'valor_comercial', 'precio_usd', 'precio_bob', 'precio'):
         raw_val = cmap.get(key)
         if raw_val:
             num_match = re.search(r'(\d+(?:[.,]\d+)?)', str(raw_val).replace(',', ''))
@@ -181,14 +238,11 @@ def _extraer_precio_explicito_bob(unidad: dict) -> tuple[Decimal | None, str | N
                     amount = Decimal(num_match.group(1))
                     if amount > 0:
                         if 'usd' in key or '$' in str(raw_val) or 'usd' in str(raw_val).lower():
-                            return _q2(amount * TIPO_CAMBIO_BOB_USD), 'CATALOGO_CARACTERISTICA'
-                        return _q2(amount), 'CATALOGO_CARACTERISTICA'
+                            return _q2(amount * TIPO_CAMBIO_BOB_USD), 'PRECIO_PUBLICADO'
+                        return _q2(amount), 'PRECIO_PUBLICADO'
                 except Exception:
                     pass
 
-    pactado = unidad.get('ultimo_monto_pactado')
-    if pactado is not None and Decimal(str(pactado)) > 0:
-        return _q2(Decimal(str(pactado))), 'REFERENCIA_COMERCIAL_CRM'
     return None, None
 
 
@@ -227,32 +281,56 @@ def _contar_ambientes(ambientes: list[dict], caracteristicas_map: dict) -> tuple
     return dormitorios, banos, resumen
 
 
+def estimar_mobiliario_separado(superficie_m2: Decimal, parametros: dict | None = None) -> dict | None:
+    """
+    Calcula un costo referencial de mobiliario adicional únicamente si existen parámetros
+    de amoblamiento configurados (o devuelve un rango referencial explícitamente marcado como estimado).
+    """
+    param_mob = ((parametros or {}).get('COSTO_MOBILIARIO_M2') or {}).get('ESTANDAR')
+    if param_mob and param_mob.get('valor_numerico'):
+        m2_bob = _q2(Decimal(str(param_mob['valor_numerico'])))
+        mob_bob = _q2(superficie_m2 * m2_bob)
+        return {
+            'disponible': True,
+            'monto_bob': str(mob_bob),
+            'monto_usd': str(_q2(mob_bob / TIPO_CAMBIO_BOB_USD)),
+            'tipo_precio': 'ESTIMACION_PARAMETRICA',
+            'fuente': 'PARAMETRO_EMPRESA_MOBILIARIO',
+            'nota': 'Cotización referencial de mobiliario separada del precio del inmueble.',
+        }
+    return None
+
+
 def enriquecer_unidad_comercial(unidad: dict, datos_parametros: dict) -> dict:
     """
-    Calcula y adjunta precios deterministas (BOB y USD), costo por m² y conteo de ambientes
-    a una unidad inmobiliaria del inventario.
+    Calcula y adjunta precios deterministas (BOB y USD) diferenciando precio publicado
+    de estimación paramétrica, estado verificable de amoblamiento y tipo de cambio con fecha.
     """
     parametros = (datos_parametros or {}).get('parametros') or {}
     superficie = Decimal(str(unidad.get('superficie_m2') or '0.00'))
+    superficie_estimada = False
     if superficie <= 0:
-        superficie = Decimal('65.00')  # Superficie referencial si la fila tiene 0
+        superficie = Decimal('65.00')
+        superficie_estimada = True
 
     plantas = max(1, int(unidad.get('cantidad_plantas') or 1))
     acabado = str(unidad.get('especificacion_acabado') or 'NORMAL').upper()
     estilo_unidad = 'LUJO' if acabado == 'LUJO' else 'ESTANDAR'
 
-    precio_explicito_bob, fuente = _extraer_precio_explicito_bob(unidad)
-    if precio_explicito_bob is not None and precio_explicito_bob > 0:
-        precio_bob = precio_explicito_bob
-        fuente_precio = fuente
+    precio_pub_bob, tipo_precio = _extraer_precio_publicado_bob(unidad)
+    if precio_pub_bob is not None and precio_pub_bob > 0:
+        precio_bob = precio_pub_bob
+        fuente_precio = 'PRECIO_PUBLICADO'
+        es_estimacion = False
     else:
         costo_m2_base = _costo_m2_base_bob(unidad.get('tipo_unidad'), parametros)
         f_niveles = _factor_niveles(plantas, parametros)
         f_estilo = _factor_estilo(estilo_unidad, parametros)
-        # Margen comercial de urbanización/desarrollo (1.18) sobre costo constructivo directo
         margen_comercial = Decimal('1.1800')
         precio_bob = _q2(superficie * costo_m2_base * f_niveles * f_estilo * margen_comercial)
-        fuente_precio = 'PARAMETRICO_OBRATEC'
+        fuente_precio = 'ESTIMACION_PARAMETRICA'
+        tipo_precio = 'ESTIMACION_PARAMETRICA'
+        es_estimacion = True
 
     precio_usd = _q2(precio_bob / TIPO_CAMBIO_BOB_USD)
     costo_m2_bob = _q2(precio_bob / superficie) if superficie > 0 else Decimal('0.00')
@@ -262,11 +340,15 @@ def enriquecer_unidad_comercial(unidad: dict, datos_parametros: dict) -> dict:
         unidad.get('ambientes') or [],
         unidad.get('caracteristicas_map') or {},
     )
+    estado_amoblamiento, costo_mob_bob = resolver_amoblamiento_unidad(unidad)
+    costo_mob_usd = _q2(costo_mob_bob / TIPO_CAMBIO_BOB_USD) if costo_mob_bob is not None else None
 
     enriquecida = dict(unidad)
+    enriquecida.pop('ultimo_monto_pactado', None)  # Jamás exponer montos pactados de terceros
     enriquecida.update({
         'superficie_m2': str(_q2(superficie)),
         'superficie_m2_num': float(_q2(superficie)),
+        'superficie_estimada': superficie_estimada,
         'dormitorios': dormitorios,
         'banos': banos,
         'ambientes_resumen': ambientes_resumen,
@@ -277,6 +359,13 @@ def enriquecer_unidad_comercial(unidad: dict, datos_parametros: dict) -> dict:
         'costo_m2_bob': str(costo_m2_bob),
         'costo_m2_usd': str(costo_m2_usd),
         'fuente_precio': fuente_precio,
+        'tipo_precio': tipo_precio,
+        'es_estimacion_precio': es_estimacion,
+        'estado_amoblamiento': estado_amoblamiento,
+        'costo_mobiliario_bob': str(costo_mob_bob) if costo_mob_bob is not None else None,
+        'costo_mobiliario_usd': str(costo_mob_usd) if costo_mob_usd is not None else None,
+        'tipo_cambio_referencia': str(TIPO_CAMBIO_BOB_USD),
+        'fecha_referencia_tc': fecha_referencia_tc(),
     })
     return enriquecida
 

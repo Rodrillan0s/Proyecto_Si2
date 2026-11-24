@@ -19,14 +19,17 @@ import { AuthService } from '../../services/auth';
 import { SuscripcionService } from '../../services/suscripcion';
 import { AsistenteService, ASSISTANT_PERMISSIONS } from '../../services/asistente.service';
 import {
+  ChartSpec,
   Execution,
   Interpretation,
+  ProactiveInbox,
   ReportCatalog,
   ReportesService,
   Work,
 } from '../../services/reportes.service';
 import { reportError, saveReportFile } from '../../services/reportes-ui';
 import { AsistenteComercialComponent } from '../../pages/asistente-comercial/asistente-comercial';
+import { ChartSpecCardComponent } from '../chart-spec-card/chart-spec-card';
 
 interface Message {
   author: 'user' | 'assistant';
@@ -42,6 +45,8 @@ interface Message {
   sugerencias?: string[];
   referencias?: string[];
   resultado_analisis?: any;
+  chart_spec?: ChartSpec;
+  pendientes?: ProactiveInbox;
 }
 interface Recognition {
   lang: string;
@@ -56,7 +61,7 @@ interface Recognition {
 @Component({
   selector: 'app-asistente',
   standalone: true,
-  imports: [CommonModule, FormsModule, AsistenteComercialComponent],
+  imports: [CommonModule, FormsModule, AsistenteComercialComponent, ChartSpecCardComponent],
   templateUrl: './asistente.html',
   styleUrl: './asistente.css',
 })
@@ -213,6 +218,11 @@ export class AsistenteComponent implements OnInit, OnDestroy {
     this.ui.close();
     this.launcher?.nativeElement.focus();
   }
+  openInboxRoute(route?: string | null) {
+    if (!route) return;
+    this.ui.close();
+    void this.router.navigateByUrl(route);
+  }
   onEnter(event: Event) {
     const key = event as KeyboardEvent;
     if (!key.shiftKey && !key.isComposing) {
@@ -258,6 +268,8 @@ export class AsistenteComponent implements OnInit, OnDestroy {
         sugerencias: response.sugerencias,
         referencias: response.referencias,
         resultado_analisis: response.resultado_analisis,
+        chart_spec: response.chart_spec ?? response.ejecucion?.resultado?.chart_spec,
+        pendientes: response.pendientes,
       });
     } catch (error) {
       if (version === this.version) {

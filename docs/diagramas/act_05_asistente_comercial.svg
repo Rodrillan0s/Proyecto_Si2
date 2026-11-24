@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="840" viewBox="0 0 1120 840">
+<defs>
+      <marker id="act-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#000000"/>
+      </marker>
+    </defs>
+<rect width="1120" height="840" fill="#FFFFFF"/>
+<text x="30" y="32" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="bold" fill="#000000">Diagrama de Actividades: Consultar Asistente Comercial y Recomendaciones</text>
+<text x="30" y="48" font-family="Arial, Helvetica, sans-serif" font-size="10.5" fill="#555555">Interacción interactiva del cliente potencial con el motor de IA para perfilamiento, recomendación de inmuebles y captura de oportunidades CRM.</text>
+<rect x="30" y="60" width="1060" height="760" fill="none" stroke="#000000" stroke-width="1.3"/>
+<rect x="30.0" y="60" width="353.3333333333333" height="32" fill="#F4F4F4" stroke="#000000" stroke-width="1.2"/>
+<text x="206.66666666666666" y="81" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#000000">Cliente Potencial</text>
+<rect x="383.3333333333333" y="60" width="353.3333333333333" height="32" fill="#F4F4F4" stroke="#000000" stroke-width="1.2"/>
+<text x="560.0" y="81" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#000000">Asistente Inteligente (IA)</text>
+<line x1="383.3333333333333" y1="92" x2="383.3333333333333" y2="820" stroke="#000000" stroke-width="1.2"/>
+<rect x="736.6666666666666" y="60" width="353.3333333333333" height="32" fill="#F4F4F4" stroke="#000000" stroke-width="1.2"/>
+<text x="913.3333333333333" y="81" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#000000">Asesor Comercial (CRM)</text>
+<line x1="736.6666666666666" y1="92" x2="736.6666666666666" y2="820" stroke="#000000" stroke-width="1.2"/>
+<path d="M 170 80 L 170 98.0 L 175.0 98.0 L 175.0 120" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 175.0 170 L 175.0 147.5 L 560.0 147.5 L 560.0 120" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<line x1="560.0" y1="170" x2="560.0" y2="210" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<line x1="560.0" y1="260" x2="560.0" y2="300" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 560.0 340 L 560.0 362.5 L 460.0 362.5 L 460.0 390" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="510.0" y="358.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">[Sin stock exacto]</text>
+<path d="M 560.0 340 L 560.0 362.5 L 655.0 362.5 L 655.0 390" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="607.5" y="358.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">[Disponibles]</text>
+<path d="M 460.0 440 L 460.0 458.0 L 560.0 458.0 L 560.0 480" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 655.0 440 L 655.0 458.0 L 560.0 458.0 L 560.0 480" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 560.0 500 L 560.0 513.5 L 175.0 513.5 L 175.0 530" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="367.5" y="509.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Mostrar opciones</text>
+<path d="M 175.0 580 L 175.0 598.0 L 560.0 598.0 L 560.0 620" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="367.5" y="594.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Datos de contacto</text>
+<path d="M 560.0 670 L 560.0 688.0 L 930.0 688.0 L 930.0 710" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="745.0" y="684.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Asignación de oportunidad</text>
+<line x1="930.0" y1="760" x2="930" y2="780" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="938.0" y="770.0" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Contacto comercial</text>
+<circle cx="170" cy="70" r="11" fill="#000000" stroke="#000000" stroke-width="1.2"/>
+<rect x="90" y="120" width="170" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="175.0" y="142.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Ingresar consulta en lenguaje</text>
+<text x="175.0" y="155.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">natural sobre proyectos</text>
+<rect x="470" y="120" width="180" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="560.0" y="142.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Interpretar intención, presupuesto</text>
+<text x="560.0" y="155.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y zona de interés</text>
+<rect x="470" y="210" width="180" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="560.0" y="232.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Consultar catálogo de unidades</text>
+<text x="560.0" y="245.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y disponibilidad en vivo</text>
+<polygon points="560.0,300 580,320.0 560.0,340 540,320.0" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="560.0" y="276" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="bold" fill="#000000">¿Coincidencias</text>
+<text x="560.0" y="288" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="bold" fill="#000000">encontradas?</text>
+<rect x="380" y="390" width="160" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="460.0" y="412.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Sugerir proyectos cercanos</text>
+<text x="460.0" y="425.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">o solicitar ampliar filtros</text>
+<rect x="570" y="390" width="170" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="655.0" y="412.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Presentar unidades recomendadas,</text>
+<text x="655.0" y="425.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">planos y simulador de cuotas</text>
+<rect x="540" y="480" width="40" height="20" fill="#000000" rx="3"/>
+<rect x="90" y="530" width="170" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="175.0" y="552.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Seleccionar inmueble y solicitar</text>
+<text x="175.0" y="565.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">agendar visita o cotización</text>
+<rect x="470" y="620" width="180" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="560.0" y="642.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Registrar lead en CRM y</text>
+<text x="560.0" y="655.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">calcular score comercial</text>
+<rect x="840" y="710" width="180" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="930.0" y="732.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Recibir notificación en vivo</text>
+<text x="930.0" y="745.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y expediente del prospecto</text>
+<circle cx="930" cy="790" r="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<circle cx="930" cy="790" r="7" fill="#000000"/>
+</svg>

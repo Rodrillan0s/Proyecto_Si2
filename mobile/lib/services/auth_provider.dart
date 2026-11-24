@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'ai_assistant_service.dart';
 import 'notificacion_service.dart';
+import 'offline_sync_service.dart';
 import 'token_storage.dart';
 
 /// Catálogo local de navegación; Reportes usa permisos actuales del backend.
@@ -306,8 +307,25 @@ class AuthProvider extends ChangeNotifier {
       }
 
       AiAssistantService.syncUserIdentity(userIdentityKey);
+      _inicializarOfflineSiCorresponde();
       notifyListeners();
     }
+  }
+
+  void _inicializarOfflineSiCorresponde() {
+    if (!_estaAutenticado || esCliente) return;
+    final emp = empresaId;
+    if (emp == null || emp <= 0) return;
+    OfflineSyncService.instance
+        .inicializarContexto(idEmpresa: emp, userKey: userIdentityKey)
+        .then((_) {
+      if (OfflineSyncService.instance.isOnline) {
+        OfflineSyncService.instance.precargarDatosObra(
+          idEmpresa: emp,
+          userKey: userIdentityKey,
+        );
+      }
+    }).catchError((_) {});
   }
 
   void loginExitoso(Map<String, String> datos) {
@@ -316,12 +334,14 @@ class AuthProvider extends ChangeNotifier {
     _datosUsuario = datos;
     _empresaActiva = null;
     AiAssistantService.syncUserIdentity(userIdentityKey);
+    _inicializarOfflineSiCorresponde();
     notifyListeners();
   }
 
   Future<void> cerrarSesion() async {
     AiAssistantService.clearAllSessions();
     NotificacionService.instance.disconnect();
+    OfflineSyncService.instance.limpiarContextoEnMemoria();
     _estaAutenticado = false;
     _datosUsuario = null;
     _empresaActiva = null;

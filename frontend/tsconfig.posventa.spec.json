@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.spec.json",
+  "files": [
+    "src/app/pages/posventa/posventa.spec.ts"
+  ],
+  "include": [],
+  "exclude": []
+}

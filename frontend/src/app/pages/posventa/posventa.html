@@ -1,0 +1,176 @@
+<main class="posventa-page">
+  <header class="page-head">
+    <div>
+      <span class="eyebrow">Comercial y clientes</span>
+      <h1>Garantías y posventa</h1>
+      <p>Administración de garantías por unidad, solicitudes de clientes, clasificación, asignación y seguimiento de atención.</p>
+    </div>
+    <nav class="tabs" aria-label="Secciones de posventa">
+      <button type="button" [class.active]="tab() === 'solicitudes'" (click)="tab.set('solicitudes')">Solicitudes</button>
+      <button type="button" [class.active]="tab() === 'garantias'" (click)="tab.set('garantias')">Garantías</button>
+      <button type="button" [class.active]="tab() === 'historial'" (click)="tab.set('historial')">Historial por unidad</button>
+    </nav>
+  </header>
+
+  <div *ngIf="error()" role="alert" class="alert alert-error">{{ error() }}</div>
+  <div *ngIf="mensaje()" role="status" class="alert alert-ok">{{ mensaje() }}</div>
+
+  <!-- Solicitudes de posventa -->
+  <section *ngIf="tab() === 'solicitudes'" class="grid-layout">
+    <article *ngIf="esCliente" class="card">
+      <h2>Registrar solicitud de posventa</h2>
+      <form (ngSubmit)="crearSolicitud()" class="form-grid">
+        <label>Unidad *<input type="number" min="1" required name="solUnidad" [(ngModel)]="nuevaSolicitud.id_unidad" placeholder="Número de unidad"></label>
+        <label>Garantía asociada (opcional)<input type="number" min="1" name="solGarantia" [(ngModel)]="nuevaSolicitud.id_garantia" placeholder="Código o número de garantía"></label>
+        <label class="full">Título *<input type="text" maxlength="200" required name="solTitulo" [(ngModel)]="nuevaSolicitud.titulo" placeholder="Resumen breve del requerimiento"></label>
+        <label class="full">Descripción *<textarea rows="3" required name="solDesc" [(ngModel)]="nuevaSolicitud.descripcion" placeholder="Detalla el problema observado en la unidad"></textarea></label>
+        <div class="full flex justify-end">
+          <button type="submit" class="btn-primary">Enviar solicitud</button>
+        </div>
+      </form>
+    </article>
+
+    <article class="card">
+      <div class="card-head">
+        <h2>Solicitudes registradas</h2>
+        <div class="filters">
+          <select [(ngModel)]="filtroEstado" (change)="cargarTodo()" aria-label="Filtrar por estado">
+            <option value="">Todos los estados</option>
+            <option *ngFor="let est of estados()" [value]="est">{{ est }}</option>
+          </select>
+          <select [(ngModel)]="filtroCategoria" (change)="cargarTodo()" aria-label="Filtrar por categoría">
+            <option value="">Todas las categorías</option>
+            <option *ngFor="let cat of categorias()" [value]="cat">{{ cat }}</option>
+          </select>
+        </div>
+      </div>
+
+      <app-empty-state *ngIf="!cargando() && !solicitudes().length" titulo="Sin solicitudes de posventa"
+        descripcion="No existen solicitudes registradas para los filtros actuales."></app-empty-state>
+
+      <div *ngIf="solicitudes().length" class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>N.º</th><th>Unidad</th><th>Título</th><th>Categoría</th><th>Responsable</th><th>Estado</th><th>Acción</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let s of solicitudes()">
+              <td class="tabular-nums">#{{ s.id_solicitud_posventa }}</td>
+              <td>{{ s.unidad_codigo || ('Unidad #' + s.id_unidad) }}</td>
+              <td><strong>{{ s.titulo }}</strong></td>
+              <td>{{ s.categoria || 'Sin clasificar' }}</td>
+              <td>{{ s.responsable_nombre || 'Sin asignar' }}</td>
+              <td><app-status-badge [estado]="s.estado"></app-status-badge></td>
+              <td><button type="button" class="btn-secondary" (click)="verSeguimiento(s)">Ver seguimiento</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <article *ngIf="seleccionada() as sel" class="card detail-card">
+      <div class="card-head">
+        <div>
+          <h3>Solicitud #{{ sel.id_solicitud_posventa }} · {{ sel.titulo }}</h3>
+          <p class="muted">{{ sel.descripcion }}</p>
+        </div>
+        <app-status-badge [estado]="sel.estado"></app-status-badge>
+      </div>
+
+      <div *ngIf="!esCliente" class="actions-grid">
+        <div *ngIf="esGestion" class="action-box">
+          <h4>Clasificar solicitud</h4>
+          <select [(ngModel)]="categoriaSeleccionada" name="catSel">
+            <option value="">Seleccione categoría</option>
+            <option *ngFor="let cat of categorias()" [value]="cat">{{ cat }}</option>
+          </select>
+          <input type="text" [(ngModel)]="obsClasificacion" name="obsClas" placeholder="Observación (opcional)">
+          <button type="button" class="btn-secondary" (click)="clasificar()">Guardar clasificación</button>
+        </div>
+
+        <div *ngIf="esGestion" class="action-box">
+          <h4>Asignar responsable</h4>
+          <input type="number" min="1" [(ngModel)]="idResponsableAsignar" name="idResp" placeholder="Número de usuario responsable">
+          <input type="text" [(ngModel)]="obsAsignacion" name="obsAsig" placeholder="Observación (opcional)">
+          <button type="button" class="btn-secondary" (click)="asignar()">Asignar</button>
+        </div>
+
+        <div class="action-box">
+          <h4>Registrar atención</h4>
+          <select [(ngModel)]="nuevoEstadoAtencion" name="estAt">
+            <option value="">Solo registrar nota de atención</option>
+            <option *ngFor="let est of estados()" [value]="est">{{ est }}</option>
+          </select>
+          <input type="text" [(ngModel)]="obsAtencion" name="obsAt" placeholder="Observación de atención *">
+          <button type="button" class="btn-primary" (click)="registrarAtencion()">Registrar atención</button>
+        </div>
+      </div>
+
+      <h4 class="section-subhead">Línea de seguimiento</h4>
+      <ul class="timeline" *ngIf="sel.seguimiento?.length">
+        <li *ngFor="let ev of sel.seguimiento">
+          <strong>{{ ev.accion }}</strong>
+          <span *ngIf="ev.estado_nuevo"> ({{ ev.estado_anterior || 'INICIO' }} → {{ ev.estado_nuevo }})</span>
+          — {{ ev.observacion }}
+          <small class="muted"> · {{ ev.usuario_nombre || ('Usuario #' + ev.id_usuario) }}</small>
+        </li>
+      </ul>
+    </article>
+  </section>
+
+  <!-- Garantías inmobiliarias -->
+  <section *ngIf="tab() === 'garantias'" class="grid-layout">
+    <article *ngIf="esGestion" class="card">
+      <h2>Registrar garantía inmobiliaria</h2>
+      <form (ngSubmit)="crearGarantia()" class="form-grid">
+        <label>Unidad *<input type="number" min="1" required name="gUnidad" [(ngModel)]="nuevaGarantia.id_unidad" placeholder="Número de unidad"></label>
+        <label>Código<input type="text" maxlength="50" name="gCodigo" [(ngModel)]="nuevaGarantia.codigo" placeholder="Ej. GAR-2026-01"></label>
+        <label>Tipo de garantía *<input type="text" maxlength="80" required name="gTipo" [(ngModel)]="nuevaGarantia.tipo_garantia" placeholder="Ej. Estructural, Instalaciones"></label>
+        <label>Fecha inicio *<input type="date" required name="gIni" [(ngModel)]="nuevaGarantia.fecha_inicio"></label>
+        <label>Fecha fin (opcional)<input type="date" name="gFin" [(ngModel)]="nuevaGarantia.fecha_fin"></label>
+        <label class="full">Descripción *<textarea rows="2" required name="gDesc" [(ngModel)]="nuevaGarantia.descripcion" placeholder="Cobertura y condiciones de la garantía"></textarea></label>
+        <div class="full flex justify-end">
+          <button type="submit" class="btn-primary">Registrar garantía</button>
+        </div>
+      </form>
+    </article>
+
+    <article class="card">
+      <h2>Garantías registradas</h2>
+      <app-empty-state *ngIf="!cargando() && !garantias().length" titulo="Sin garantías registradas"
+        descripcion="No hay garantías registradas en su ámbito autorizado."></app-empty-state>
+      <div *ngIf="garantias().length" class="table-wrap">
+        <table>
+          <thead><tr><th>N.º</th><th>Unidad</th><th>Código</th><th>Tipo</th><th>Inicio</th><th>Fin</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let g of garantias()">
+              <td class="tabular-nums">#{{ g.id_garantia }}</td>
+              <td>{{ g.unidad_codigo || ('Unidad #' + g.id_unidad) }}</td>
+              <td>{{ g.codigo || '—' }}</td>
+              <td><strong>{{ g.tipo_garantia }}</strong></td>
+              <td class="tabular-nums">{{ g.fecha_inicio }}</td>
+              <td class="tabular-nums">{{ g.fecha_fin || 'No definida' }}</td>
+              <td>{{ g.descripcion }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+
+  <!-- Historial por unidad -->
+  <section *ngIf="tab() === 'historial'" class="grid-layout">
+    <article class="card">
+      <h2>Historial de garantías y atenciones</h2>
+      <form (ngSubmit)="consultarHistorialUnidad()" class="inline-form">
+        <input type="number" min="1" required name="histUnidad" [(ngModel)]="idUnidadHistorial" placeholder="Número de unidad inmobiliaria">
+        <button type="submit" class="btn-primary">Consultar historial</button>
+      </form>
+
+      <div *ngIf="historial() as hist" class="history-box">
+        <h3>{{ hist.unidad.unidad_codigo }} · {{ hist.unidad.unidad_nombre }} ({{ hist.unidad.obra_nombre }})</h3>
+        <p class="muted">Garantías: {{ hist.garantias.length }} · Solicitudes posventa: {{ hist.solicitudes.length }}</p>
+      </div>
+    </article>
+  </section>
+</main>

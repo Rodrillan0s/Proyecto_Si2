@@ -4,10 +4,12 @@ import 'package:provider/provider.dart';
 
 import '../services/auth_provider.dart';
 import '../services/obra_service.dart';
+import '../services/offline_sync_service.dart';
 import '../services/unidad_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/construction_widgets.dart';
 import '../widgets/ev_widgets.dart';
+import '../widgets/offline_banner.dart';
 import 'avances_obra_screen.dart';
 import 'consultas_tecnicas_screen.dart';
 import 'cronogramas_screen.dart';
@@ -52,6 +54,8 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
   String _filtroEstadoUnidad = 'TODOS';
 
   String _estadoObraActual = '';
+  bool _esCopiaLocal = false;
+  DateTime? _ultimaActualizacion;
 
   @override
   void initState() {
@@ -69,9 +73,72 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
   }
 
   void _cargarDatos() {
-    _futureEstructura = _obraService.obtenerEstructura(widget.idObra);
-    _futureUnidades = _unidadService.listarUnidades(widget.idObra);
-    _futureDetalle = _obraService.obtenerDetalleProyecto(widget.idObra);
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final empId = auth.empresaId;
+    if (empId != null && empId > 0 && !auth.esCliente) {
+      final sync = OfflineSyncService.instance;
+      _futureEstructura = sync
+          .obtenerEstructuraOfflineFirst(
+            idEmpresa: empId,
+            userKey: auth.userIdentityKey,
+            idObra: widget.idObra,
+            fetcherRemoto: _obraService.obtenerEstructura,
+          )
+          .then((res) {
+            if (mounted && res.esCopiaLocal) {
+              setState(() {
+                _esCopiaLocal = true;
+                _ultimaActualizacion ??= res.ultimaActualizacion;
+              });
+            }
+            return res.data;
+          });
+      _futureUnidades = sync
+          .obtenerUnidadesOfflineFirst(
+            idEmpresa: empId,
+            userKey: auth.userIdentityKey,
+            idObra: widget.idObra,
+            fetcherRemoto: _unidadService.listarUnidades,
+          )
+          .then((res) {
+            if (mounted && res.esCopiaLocal) {
+              setState(() {
+                _esCopiaLocal = true;
+                _ultimaActualizacion ??= res.ultimaActualizacion;
+              });
+            }
+            return res.data;
+          });
+      _futureDetalle = sync
+          .obtenerDetalleObraOfflineFirst(
+            idEmpresa: empId,
+            userKey: auth.userIdentityKey,
+            idObra: widget.idObra,
+            fetcherRemoto: _obraService.obtenerDetalleProyecto,
+            fallbackLocal: {
+              'id_obra': widget.idObra,
+              'codigo': widget.codigo,
+              'nombre': widget.nombre,
+              'tipo_obra': widget.tipoNombre,
+              'estado_obra': widget.estado,
+              'ubicacion': widget.ubicacion,
+              'fecha_inicio': widget.fechaInicio,
+            },
+          )
+          .then((res) {
+            if (mounted) {
+              setState(() {
+                _esCopiaLocal = res.esCopiaLocal;
+                _ultimaActualizacion = res.ultimaActualizacion ?? _ultimaActualizacion;
+              });
+            }
+            return res.data;
+          });
+    } else {
+      _futureEstructura = _obraService.obtenerEstructura(widget.idObra);
+      _futureUnidades = _unidadService.listarUnidades(widget.idObra);
+      _futureDetalle = _obraService.obtenerDetalleProyecto(widget.idObra);
+    }
   }
 
   Color _colorTipoElemento(String tipo, bool isDark) {
@@ -1311,7 +1378,14 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
         ),
       ),
       body: SafeArea(
-        child: NestedScrollView(
+        child: Column(
+          children: [
+            OfflineBanner(
+              esCopiaLocal: _esCopiaLocal,
+              ultimaActualizacion: _ultimaActualizacion,
+            ),
+            Expanded(
+              child: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) {
             return [
               // HERO HEADER SÓLIDO
@@ -1480,6 +1554,9 @@ class _ProyectoDetalleScreenState extends State<ProyectoDetalleScreen> with Sing
               _buildTabEquipoYModulos(isDark),
             ],
           ),
+        ),
+            ),
+          ],
         ),
       ),
     );

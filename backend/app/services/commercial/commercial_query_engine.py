@@ -1,6 +1,13 @@
 """
 Motor determinista de búsqueda, recomendación por presupuesto/preferencias y comparación
 de unidades inmobiliarias (HU147, HU148, HU149 - CU34).
+
+Reglas innegociables:
+1. Los filtros obligatorios (disponibilidad, tipología, presupuesto máximo y requisitos
+   indispensables confirmados) se aplican ANTES de calcular afinidad.
+2. Ninguna puntuación de afinidad puede compensar el incumplimiento de una restricción obligatoria.
+3. Si ninguna unidad supera los filtros obligatorios, devuelve 0 recomendaciones válidas
+   con motivos explícitos de exclusión.
 """
 import re
 import unicodedata
@@ -9,15 +16,37 @@ from app.services.commercial.contracts import CommercialSearchCriteria
 from app.services.commercial.cost_estimation_service import (
     TIPO_CAMBIO_BOB_USD,
     enriquecer_unidad_comercial,
+    estimar_mobiliario_separado,
+    fecha_referencia_tc,
     normalizar_estilo,
 )
 
 TWO_DECIMALS = Decimal('0.01')
 
+TIPOLOGIA_GRUPOS = {
+    'VIVIENDA': {'VIVIENDA', 'CASA', 'DUPLEX', 'TOWNHOUSE', 'CHALET'},
+    'CASA': {'VIVIENDA', 'CASA', 'DUPLEX', 'TOWNHOUSE', 'CHALET'},
+    'DEPARTAMENTO': {'DEPARTAMENTO', 'PENTHOUSE', 'FLAT', 'DUPLEX'},
+    'OFICINA': {'OFICINA', 'CONSULTORIO'},
+    'LOCAL': {'LOCAL', 'COMERCIAL', 'TIENDA'},
+    'LOTE': {'LOTE', 'TERRENO', 'PARCELA'},
+}
+
 
 def _norm(text: str) -> str:
     clean = unicodedata.normalize('NFKD', str(text or '')).encode('ascii', 'ignore').decode('ascii')
     return re.sub(r'\s+', ' ', clean.lower()).strip()
+
+
+def _tipologia_compatible(solicitada: str | None, unidad_tipo: str | None) -> bool:
+    if not solicitada:
+        return True
+    req = str(solicitada).strip().upper()
+    actual = str(unidad_tipo or '').strip().upper()
+    if not actual:
+        return False
+    permitidos = TIPOLOGIA_GRUPOS.get(req, {req})
+    return actual in permitidos
 
 
 def extraer_criterios_locales(
@@ -30,27 +59,26 @@ def extraer_criterios_locales(
     ids_unidades_comparar: list[int] | None = None,
 ) -> CommercialSearchCriteria:
     """
-    Parser determinista local de respaldo y pre-extracción que detecta intención,
-    tipo de inmueble, dormitorios, baños, metraje, presupuesto, moneda, códigos de unidad
-    y estilo a partir del lenguaje natural del cliente potencial.
+    Parser determinista de respaldo (usado cuando DeepSeek no está disponible o para
+    incorporar parámetros explícitos enviados por formulario).
     """
     txt = _norm(mensaje)
     raw = str(mensaje or '')
 
-    # 1. Detectar intención primaria
     intencion = 'buscar_unidades'
-    if re.search(r'\b(contacta\w*|llamen\w*|llamar\w*|asesor\w*|visita\w*|agendar\w*|whatsapp|mi telefono|mi celular|mi correo|interesad[oa])\b', txt):
+    if re.search(r'\b(contacta\w*|llamen\w*|llamar\w*|asesor\w*|visita\w*|agendar\w*|whatsapp|mi telefono|mi celular|mi correo)\b', txt):
         intencion = 'solicitar_contacto'
     elif (ids_unidades_comparar and len(ids_unidades_comparar) >= 2) or re.search(
-        r'\b(compar\w*|diferencia\w*|versus|\bvs\b|cual conviene|entre la unidad|lado a lado)\b', txt
+        r'\b(compar\w*|diferencia\w*|versus|\bvs\b|cual conviene|lado a lado)\b', txt,
     ):
         intencion = 'comparar_unidades'
-    elif re.search(r'\b(cuanto cuesta construir|estimar costo|estimacion de costo|costo por m2|estilo minimalista|estilo industrial|estilo lujo|acabado\w* de lujo|remodelar|construir mi plano)\b', txt):
+    elif re.search(r'\b(construir|proyecto personalizado|edificar|construy\w*|tengo terreno|sin terreno|disenar una casa|hacer una casa)\b', txt):
+        intencion = 'proponer_proyecto'
+    elif re.search(r'\b(cuanto cuesta|estimar costo|estimacion de costo|costo por m2|estilo minimalista|estilo industrial|estilo lujo|remodelar)\b', txt):
         intencion = 'estimar_costo'
-    elif re.search(r'\b(recomiend\w*|sugier\w*|presupuesto|que me alcanza|opciones para mi|segun mi presupuesto|alternativa\w*)\b', txt):
+    elif re.search(r'\b(recomiend\w*|sugier\w*|presupuesto|que me alcanza|opciones|alternativa\w*)\b', txt):
         intencion = 'recomendar_presupuesto'
 
-    # 2. Tipo de unidad
     tipo_unidad = None
     if tipo_unidad_preferido:
         tipo_unidad = str(tipo_unidad_preferido).strip().upper()
@@ -62,24 +90,27 @@ def extraer_criterios_locales(
         tipo_unidad = 'OFICINA'
     elif re.search(r'\b(local\w*|comercial\w*|tienda\w*)\b', txt):
         tipo_unidad = 'LOCAL'
-    elif re.search(r'\b(lote\w*|terreno\w*|parcela\w*)\b', txt):
+    elif re.search(r'\b(lote\w*|parcela\w*)\b', txt) and intencion != 'proponer_proyecto':
         tipo_unidad = 'LOTE'
 
-    # 3. Dormitorios y baños
     dorms = min_dormitorios
     if dorms is None:
         m_dorm = re.search(r'(\d+)\s*(?:dormitorio\w*|habitacion\w*|cuarto\w*|recamara\w*|dorm\w*)', txt)
         if m_dorm:
             dorms = int(m_dorm.group(1))
-        elif 'monoambiente' in txt or 'estudio' in txt:
-            dorms = 1
+        else:
+            word_nums = {'una': 1, 'un': 1, 'dos': 2, 'tres': 3, 'cuatro': 4, 'cinco': 5}
+            m_word = re.search(r'\b(un|una|dos|tres|cuatro|cinco)\s+(?:dormitorio\w*|habitacion\w*|cuarto\w*)', txt)
+            if m_word:
+                dorms = word_nums.get(m_word.group(1))
+            elif 'monoambiente' in txt or 'estudio' in txt:
+                dorms = 1
 
     banos = None
     m_bano = re.search(r'(\d+)\s*(?:bano\w*|sanitario\w*)', txt)
     if m_bano:
         banos = int(m_bano.group(1))
 
-    # 4. Superficie (m2)
     sup_min = None
     sup_max = None
     m_rango_sup = re.search(r'entre\s+(\d+(?:[.,]\d+)?)\s*(?:y|a|-)\s*(\d+(?:[.,]\d+)?)\s*(?:m2|metros|mt2)', txt)
@@ -98,7 +129,6 @@ def extraer_criterios_locales(
                 sup_min = round(val_sup * 0.85, 2)
                 sup_max = round(val_sup * 1.20, 2)
 
-    # 5. Moneda y Presupuesto
     moneda_det = str(moneda or 'BOB').strip().upper()
     if re.search(r'(\busd\b|\bdolar\w*|\$us|\bus\$)', txt):
         moneda_det = 'USD'
@@ -107,15 +137,21 @@ def extraer_criterios_locales(
 
     pres_det = presupuesto_max
     if pres_det is None:
-        # Ej: "90000 usd", "90.000 dólares", "500 mil bs", "85,000 $"
         m_mil = re.search(r'(\d+(?:[.,]\d+)?)\s*mil\s*(?:usd|dolar\w*|bob|bs|boliviano\w*)', txt)
         if m_mil:
             pres_det = float(m_mil.group(1).replace(',', '.')) * 1000.0
         else:
             m_pres = re.search(
-                r'(?:presupuesto(?:\s+de|\s+maximo|\s+hasta)?|hasta| dispongo de|tengo|tope de)\s*(?:usd|\$us|bs|bob|\$)?\s*(\d{2,3}(?:[.,]\d{3})+|\d{4,9})(?:\s*(usd|dolar\w*|bs|bob|boliviano\w*|\$us|\$))?',
+                r'(?:presupuesto(?:\s+de|\s+maximo|\s+hasta|\s+a)?|hasta|dispongo de|tengo|tope de|aumento\w*(?:\s+mi\s+presupuesto)?\s+a|subo\s+a)\s*(?:usd|\$us|bs|bob|\$)?\s*(\d{2,3}(?:[.,]\d{3})+|\d{4,9})(?:\s*(usd|dolar\w*|bs|bob|boliviano\w*|\$us|\$))?',
                 txt,
             )
+            if not m_pres:
+                m_pres = re.search(
+                    r'(?:usd|\$us)\s*(\d{2,3}(?:[.,]\d{3})+|\d{4,9})',
+                    txt,
+                )
+                if m_pres:
+                    moneda_det = 'USD'
             if not m_pres:
                 m_pres = re.search(
                     r'(\d{2,3}(?:[.,]\d{3})+|\d{4,9})\s*(usd|dolar\w*|\$us|bs|bob|boliviano\w*)',
@@ -125,15 +161,15 @@ def extraer_criterios_locales(
                 num_str = m_pres.group(1).replace('.', '').replace(',', '')
                 try:
                     pres_det = float(num_str)
-                    unit_token = (m_pres.group(2) or '').lower()
-                    if any(u in unit_token for u in ('usd', 'dolar', '$')):
-                        moneda_det = 'USD'
-                    elif any(u in unit_token for u in ('bs', 'bob', 'boliviano')):
-                        moneda_det = 'BOB'
+                    if m_pres.lastindex and m_pres.lastindex >= 2 and m_pres.group(2):
+                        unit_token = m_pres.group(2).lower()
+                        if any(u in unit_token for u in ('usd', 'dolar', '$')):
+                            moneda_det = 'USD'
+                        elif any(u in unit_token for u in ('bs', 'bob', 'boliviano')):
+                            moneda_det = 'BOB'
                 except ValueError:
                     pass
 
-    # 6. Estilo y estado constructivo
     estilo = None
     if estilo_preferido:
         estilo = normalizar_estilo(estilo_preferido)
@@ -156,15 +192,34 @@ def extraer_criterios_locales(
     elif re.search(r'\b(preventa|en plano\w*|en pozo|planificad[oa])\b', txt):
         estado_const = 'PLANIFICADO'
 
-    # 7. Zona y características deseadas
+    # Amoblamiento y cotización de mobiliario por separado
+    amob_pref = None
+    amob_indisp = False
+    acepta_cotizar_mob = bool(re.search(r'\b(cotizar\s+(?:el\s+)?mobiliario|mobiliario\s+por\s+separado|amoblar\w*\s+aparte|sin\s+problema\s+cotizar\s+muebles|acepto\s+cotizar)\b', txt))
+    if re.search(r'\b(sin amoblar|no amoblad[oa]|vaci[oa])\b', txt):
+        amob_pref = 'SIN_AMOBLAR'
+    elif re.search(r'\b(parcialmente amoblad[oa]|semi\s*amoblad[oa])\b', txt):
+        amob_pref = 'PARCIALMENTE_AMOBLADA'
+    elif re.search(r'\b(amoblad[oa]|con muebles|bien amoblad[oa]|equipada con muebles)\b', txt):
+        amob_pref = 'AMOBLADA'
+        if re.search(r'\b(indispensable|obligatori[oa]|solo amoblad[oa]|si o si amoblad[oa]|imprescindible)\b', txt):
+            amob_indisp = True
+
+    # Terreno propio para propuestas de construcción
+    tiene_terreno = None
+    if re.search(r'\b(no tengo terreno|sin terreno|necesito terreno|no cuento con terreno|no dispongo de terreno)\b', txt):
+        tiene_terreno = False
+    elif re.search(r'\b(tengo terreno|cuento con terreno|dispongo de terreno|terreno propio|en mi terreno|en mi lote)\b', txt):
+        tiene_terreno = True
+
     zona = None
     m_zona = re.search(r'\b(?:zona|barrio|sector|distrito)\s+([a-z0-9\s]{3,25}?)(?:\b(?:con|de|para|por|que|y|o|entre|hasta)\b|$|[.,;])', txt)
     if m_zona:
         zona = m_zona.group(1).strip()
     else:
-        for z_cand in ('norte', 'sur', 'este', 'oeste', 'centro', 'equipetrol', 'urubo', 'calacoto', 'sopocachi', 'achumani', 'miraflores', ' Cala Cala'.lower()):
-            if re.search(r'\b' + re.escape(z_cand.strip()) + r'\b', txt):
-                zona = z_cand.strip()
+        for z_cand in ('norte', 'sur', 'este', 'oeste', 'centro', 'equipetrol', 'urubo', 'calacoto', 'sopocachi', 'achumani', 'miraflores', 'cala cala', 'tranquila'):
+            if re.search(r'\b' + re.escape(z_cand) + r'\b', txt):
+                zona = z_cand
                 break
 
     car_deseadas = []
@@ -172,7 +227,6 @@ def extraer_criterios_locales(
         if re.search(r'\b' + kw + r'\b', txt):
             car_deseadas.append(kw)
 
-    # 8. Códigos de unidad explícitos (ej. UNI-000001, A-101, etc.)
     codigos = [m.upper() for m in re.findall(r'\b(?:UNI-\d{1,6}|[A-Z]{1,4}-\d{2,4})\b', raw, flags=re.IGNORECASE)]
 
     return CommercialSearchCriteria(
@@ -187,6 +241,10 @@ def extraer_criterios_locales(
         zona=zona,
         estilo_acabado=estilo,
         estado_construccion=estado_const,
+        amoblamiento_preferido=amob_pref,
+        amoblamiento_indispensable=amob_indisp,
+        acepta_cotizar_mobiliario=acepta_cotizar_mob,
+        tiene_terreno=tiene_terreno,
         caracteristicas_deseadas=car_deseadas,
         codigos_comparar=codigos,
         ids_unidades_comparar=list(ids_unidades_comparar or []),
@@ -194,13 +252,35 @@ def extraer_criterios_locales(
     )
 
 
-def combinar_criterios(base: CommercialSearchCriteria, llm_dict: dict | None) -> CommercialSearchCriteria:
-    """Combina de forma segura los criterios extraídos por DeepSeek JSON mode con los criterios locales."""
+def combinar_criterios(
+    base: CommercialSearchCriteria,
+    llm_dict: dict | None,
+    explicit_overrides: dict | None = None,
+) -> CommercialSearchCriteria:
+    """
+    Combina la extracción semántica de DeepSeek (fuente primaria) con el respaldo local
+    y los campos explícitos del formulario. DeepSeek prevalece sobre las heurísticas regex
+    cuando devuelve valores estructurados válidos.
+    """
     if not llm_dict or not isinstance(llm_dict, dict):
         return base
+
     merged = base.model_dump()
+    overrides = explicit_overrides or {}
+
+    valid_intentions = {
+        'buscar_unidades',
+        'recomendar_presupuesto',
+        'comparar_unidades',
+        'estimar_costo',
+        'proponer_proyecto',
+        'solicitar_contacto',
+        'consulta_general',
+    }
+    if llm_dict.get('intencion') in valid_intentions:
+        merged['intencion'] = llm_dict['intencion']
+
     for field in (
-        'intencion',
         'tipo_unidad',
         'min_dormitorios',
         'min_banos',
@@ -212,26 +292,30 @@ def combinar_criterios(base: CommercialSearchCriteria, llm_dict: dict | None) ->
         'nombre_obra',
         'estilo_acabado',
         'estado_construccion',
+        'amoblamiento_preferido',
+        'superficie_terreno_m2',
+        'plazo_deseado_meses',
+        'pregunta_aclaracion',
     ):
         val = llm_dict.get(field)
-        if val is not None and val != '' and merged.get(field) is None:
+        if val is not None and val != '' and overrides.get(field) is None:
             merged[field] = val
-    if llm_dict.get('intencion') in (
-        'buscar_unidades',
-        'recomendar_presupuesto',
-        'comparar_unidades',
-        'estimar_costo',
-        'solicitar_contacto',
-    ) and base.intencion == 'buscar_unidades':
-        merged['intencion'] = llm_dict['intencion']
 
-    extra_car = llm_dict.get('caracteristicas_deseadas')
-    if isinstance(extra_car, list):
-        existing = set(merged.get('caracteristicas_deseadas') or [])
-        for c in extra_car:
-            if isinstance(c, str) and c.strip():
-                existing.add(_norm(c))
-        merged['caracteristicas_deseadas'] = sorted(existing)
+    for bfield in ('amoblamiento_indispensable', 'acepta_cotizar_mobiliario', 'necesita_aclaracion'):
+        if isinstance(llm_dict.get(bfield), bool):
+            merged[bfield] = llm_dict[bfield] or bool(merged.get(bfield))
+
+    if isinstance(llm_dict.get('tiene_terreno'), bool):
+        merged['tiene_terreno'] = llm_dict['tiene_terreno']
+
+    for lfield in ('caracteristicas_deseadas', 'restricciones_indispensables'):
+        extra = llm_dict.get(lfield)
+        if isinstance(extra, list):
+            existing = set(merged.get(lfield) or [])
+            for item in extra:
+                if isinstance(item, str) and item.strip():
+                    existing.add(_norm(item))
+            merged[lfield] = sorted(existing)
 
     try:
         return CommercialSearchCriteria(**merged)
@@ -246,12 +330,16 @@ def filtrar_y_recomendar_unidades(
     top_k: int = 6,
 ) -> dict:
     """
-    Enriquece el catálogo de la empresa con precios deterministas y ejecuta
-    el motor multicriterio de filtrado y recomendación (HU147 y HU148).
+    Motor comercial en dos fases estrictas:
+    - Fase 1 (Restricciones obligatorias): filtra disponibilidad, tipología, presupuesto máximo
+      y requisitos indispensables confirmados. Las descartadas JAMÁS entran a recomendaciones.
+    - Fase 2 (Afinidad verificable): puntúa únicamente unidades elegibles sobre criterios
+      activos y verificables, penalizando datos desconocidos relevantes.
     """
     unidades_enriquecidas = [
         enriquecer_unidad_comercial(u, datos_parametros) for u in (unidades_raw or [])
     ]
+    parametros = (datos_parametros or {}).get('parametros') or {}
 
     presupuesto_bob = None
     if criterios.presupuesto_max is not None and criterios.presupuesto_max > 0:
@@ -261,143 +349,254 @@ def filtrar_y_recomendar_unidades(
         else:
             presupuesto_bob = p_dec.quantize(TWO_DECIMALS, rounding=ROUND_HALF_UP)
 
-    evaluadas = []
-    coincidencias_exactas = 0
+    motivos_exclusion = {
+        'no_disponible_o_reservada': 0,
+        'tipologia_incompatible': 0,
+        'fuera_de_presupuesto': 0,
+        'amoblamiento_incompatible': 0,
+        'requisito_indispensable_incumplido': 0,
+    }
+    indispensables = {_norm(r) for r in (criterios.restricciones_indispensables or [])}
 
+    # --- FASE 1: RESTRICCIONES OBLIGATORIAS ---
+    elegibles = []
     for u in unidades_enriquecidas:
-        score = 0
+        disp = str(u.get('disponibilidad_comercial') or '').upper()
+        publicado = u.get('publicado_comercial', True)
+
+        if criterios.solo_disponibles:
+            if disp != 'DISPONIBLE' or publicado is False:
+                motivos_exclusion['no_disponible_o_reservada'] += 1
+                continue
+        else:
+            if disp in ('VENDIDA', 'NO_DISPONIBLE'):
+                motivos_exclusion['no_disponible_o_reservada'] += 1
+                continue
+
+        if criterios.tipo_unidad and not _tipologia_compatible(criterios.tipo_unidad, u.get('tipo_unidad')):
+            motivos_exclusion['tipologia_incompatible'] += 1
+            continue
+
+        u_precio_bob = Decimal(str(u['precio_bob']))
+        if presupuesto_bob is not None and presupuesto_bob > 0 and u_precio_bob > presupuesto_bob:
+            motivos_exclusion['fuera_de_presupuesto'] += 1
+            continue
+
+        amob_u = str(u.get('estado_amoblamiento') or 'DESCONOCIDO').upper()
+        if (
+            criterios.amoblamiento_indispensable
+            and criterios.amoblamiento_preferido
+            and not criterios.acepta_cotizar_mobiliario
+        ):
+            if criterios.amoblamiento_preferido == 'AMOBLADA' and amob_u != 'AMOBLADA':
+                motivos_exclusion['amoblamiento_incompatible'] += 1
+                continue
+            if criterios.amoblamiento_preferido == 'SIN_AMOBLAR' and amob_u != 'SIN_AMOBLAR':
+                motivos_exclusion['amoblamiento_incompatible'] += 1
+                continue
+
+        if 'dormitorios' in indispensables and criterios.min_dormitorios is not None:
+            if int(u.get('dormitorios') or 0) < criterios.min_dormitorios:
+                motivos_exclusion['requisito_indispensable_incumplido'] += 1
+                continue
+
+        if 'banos' in indispensables and criterios.min_banos is not None:
+            if int(u.get('banos') or 0) < criterios.min_banos:
+                motivos_exclusion['requisito_indispensable_incumplido'] += 1
+                continue
+
+        if 'zona' in indispensables and criterios.zona:
+            loc = _norm(f"{u.get('nombre_obra') or ''} {u.get('ubicacion') or ''} {u.get('zona') or ''} {u.get('distrito') or ''}")
+            if _norm(criterios.zona) not in loc:
+                motivos_exclusion['requisito_indispensable_incumplido'] += 1
+                continue
+
+        elegibles.append(u)
+
+    # --- FASE 2: MOTOR DE AFINIDAD VERIFICABLE (SOLO SOBRE ELEGIBLES) ---
+    evaluadas = []
+    for u in elegibles:
+        puntos_obtenidos = 0.0
+        puntos_posibles = 0.0
         razones = []
         alertas = []
-        cumple_estricto = True
 
-        # 1. Disponibilidad comercial (0-15 pts)
-        disp = u.get('disponibilidad_comercial')
-        if disp == 'DISPONIBLE':
-            score += 15
-            razones.append('Disponibilidad comercial inmediata')
-        elif disp == 'RESERVADA':
-            score += 5
-            alertas.append('Actualmente con reserva temporal (admite lista de espera)')
-            if criterios.solo_disponibles:
-                cumple_estricto = False
+        # Disponibilidad confirmada (base verificable)
+        puntos_posibles += 15.0
+        if u.get('disponibilidad_comercial') == 'DISPONIBLE':
+            puntos_obtenidos += 15.0
+            razones.append('Disponible para comercialización inmediata')
         else:
-            cumple_estricto = False
-            continue  # Excluir unidades ya vendidas/entregadas o suspendidas de recomendaciones nuevas
+            puntos_obtenidos += 5.0
+            alertas.append(f"Estado comercial: {u.get('disponibilidad_comercial')}")
 
-        # 2. Tipo de unidad (0-20 pts)
-        if criterios.tipo_unidad:
-            if u.get('tipo_unidad') == criterios.tipo_unidad.upper():
-                score += 20
-                razones.append(f"Tipología solicitada ({u['tipo_unidad']})")
-            else:
-                cumple_estricto = False
+        # Transparencia de precio (publicado vs estimación)
+        if u.get('es_estimacion_precio'):
+            alertas.append(
+                f"Precio estimado paramétricamente (no publicado; TC {u['tipo_cambio_referencia']} al {u['fecha_referencia_tc']})."
+            )
         else:
-            score += 12
+            razones.append(f"Precio publicado confirmado ({u['precio_usd']} USD / {u['precio_bob']} BOB)")
 
-        # 3. Presupuesto (0-35 pts)
-        u_precio_bob = Decimal(str(u['precio_bob']))
+        # Presupuesto
         if presupuesto_bob is not None and presupuesto_bob > 0:
-            if u_precio_bob <= presupuesto_bob:
-                ahorro_bob = (presupuesto_bob - u_precio_bob).quantize(TWO_DECIMALS)
-                ahorro_pct = int(((presupuesto_bob - u_precio_bob) / presupuesto_bob) * 100)
-                score += 35
-                razones.append(
-                    f"Dentro de tu presupuesto ({u['precio_bob']} BOB / {u['precio_usd']} USD; ahorro del {ahorro_pct}%)"
+            puntos_posibles += 25.0
+            u_precio_bob = Decimal(str(u['precio_bob']))
+            ahorro_pct = int(((presupuesto_bob - u_precio_bob) / presupuesto_bob) * 100)
+            puntos_obtenidos += 25.0
+            razones.append(
+                f"Dentro del presupuesto máximo ({u['precio_usd']} USD; margen disponible {ahorro_pct}%)"
+            )
+
+        # Tipología
+        if criterios.tipo_unidad:
+            puntos_posibles += 15.0
+            puntos_obtenidos += 15.0
+            razones.append(f"Tipología compatible ({u['tipo_unidad']})")
+
+        # Amoblamiento (preferencia puntuable + penalización por dato desconocido)
+        amob_u = str(u.get('estado_amoblamiento') or 'DESCONOCIDO').upper()
+        cotizacion_mobiliario = None
+        if criterios.amoblamiento_preferido:
+            puntos_posibles += 20.0
+            if amob_u == criterios.amoblamiento_preferido:
+                puntos_obtenidos += 20.0
+                razones.append(f"Estado de amoblamiento verificado: {amob_u}")
+            elif criterios.amoblamiento_preferido == 'AMOBLADA' and amob_u == 'PARCIALMENTE_AMOBLADA':
+                puntos_obtenidos += 12.0
+                alertas.append('Parcialmente amoblada; puede cotizarse equipamiento complementario por separado.')
+            elif amob_u == 'DESCONOCIDO':
+                puntos_obtenidos += 4.0  # Penalización explícita por información desconocida
+                alertas.append(
+                    'Mobiliario no registrado (DESCONOCIDO). No se asume amoblada; puedes cotizar mobiliario por separado.'
                 )
-            elif u_precio_bob <= (presupuesto_bob * Decimal('1.12')):
-                exceso_pct = round(float(((u_precio_bob - presupuesto_bob) / presupuesto_bob) * 100), 1)
-                score += 20
-                alertas.append(f"Supera tu presupuesto objetivo en {exceso_pct}% (opción de preventa/negociación)")
-                cumple_estricto = False
             else:
-                cumple_estricto = False
-        else:
-            score += 20
+                puntos_obtenidos += 2.0
+                alertas.append(
+                    f"Unidad registrada como {amob_u} (solicitaste {criterios.amoblamiento_preferido}); se puede cotizar amoblamiento aparte."
+                )
 
-        # 4. Dormitorios y baños (0-15 pts)
-        if criterios.min_dormitorios is not None:
-            if u['dormitorios'] >= criterios.min_dormitorios:
-                score += 15
-                razones.append(f"Cumple con {u['dormitorios']} dormitorio(s)")
-            elif u['dormitorios'] == 0 and u.get('tipo_unidad') in ('DEPARTAMENTO', 'VIVIENDA'):
-                # Unidad sin desglose de ambientes aún cargado pero con superficie compatible
-                sup_necesaria = Decimal(str(criterios.min_dormitorios * 24))
-                if Decimal(str(u['superficie_m2'])) >= sup_necesaria:
-                    score += 10
-                    razones.append(f"Superficie de {u['superficie_m2']} m² apta para {criterios.min_dormitorios} dormitorios")
+            if amob_u in ('SIN_AMOBLAR', 'DESCONOCIDO', 'PARCIALMENTE_AMOBLADA') and (
+                criterios.acepta_cotizar_mobiliario or u.get('costo_mobiliario_bob')
+            ):
+                if u.get('costo_mobiliario_bob'):
+                    mob_bob = Decimal(str(u['costo_mobiliario_bob']))
+                    cotizacion_mobiliario = {
+                        'disponible': True,
+                        'monto_bob': str(mob_bob),
+                        'monto_usd': str((mob_bob / TIPO_CAMBIO_BOB_USD).quantize(TWO_DECIMALS, rounding=ROUND_HALF_UP)),
+                        'tipo_precio': 'COSTO_MOBILIARIO_ADICIONAL',
+                        'nota': 'Paquete de mobiliario cotizado por separado del inmueble.',
+                    }
                 else:
-                    cumple_estricto = False
+                    cotizacion_mobiliario = estimar_mobiliario_separado(Decimal(str(u['superficie_m2'])), parametros)
+                    if cotizacion_mobiliario is None:
+                        cotizacion_mobiliario = {
+                            'disponible': False,
+                            'tipo_precio': 'NO_ESTIMABLE',
+                            'nota': 'Sin tarifario de mobiliario cargado en la empresa; requiere cotización de proveedor o asesor.',
+                        }
+                if cotizacion_mobiliario.get('disponible') and presupuesto_bob is not None:
+                    total_con_mob = Decimal(str(u['precio_bob'])) + Decimal(str(cotizacion_mobiliario['monto_bob']))
+                    cotizacion_mobiliario['total_inmueble_mas_mobiliario_bob'] = str(total_con_mob.quantize(TWO_DECIMALS))
+                    cotizacion_mobiliario['total_inmueble_mas_mobiliario_usd'] = str(
+                        (total_con_mob / TIPO_CAMBIO_BOB_USD).quantize(TWO_DECIMALS, rounding=ROUND_HALF_UP)
+                    )
+                    cotizacion_mobiliario['encaja_presupuesto_con_mobiliario'] = total_con_mob <= presupuesto_bob
+
+        # Dormitorios
+        if criterios.min_dormitorios is not None:
+            puntos_posibles += 15.0
+            dorms_u = int(u.get('dormitorios') or 0)
+            if dorms_u >= criterios.min_dormitorios:
+                puntos_obtenidos += 15.0
+                razones.append(f"Cuenta con {dorms_u} dormitorio(s)")
+            elif dorms_u == 0:
+                puntos_obtenidos += 4.0
+                alertas.append('Cantidad de dormitorios no registrada en la ficha de ambientes.')
             else:
-                cumple_estricto = False
-        else:
-            score += 10
+                puntos_obtenidos += 3.0
+                alertas.append(f"Registra {dorms_u} dormitorio(s) (preferiste {criterios.min_dormitorios}).")
 
-        if criterios.min_banos is not None and u['banos'] > 0 and u['banos'] < criterios.min_banos:
-            cumple_estricto = False
+        # Baños
+        if criterios.min_banos is not None:
+            puntos_posibles += 8.0
+            banos_u = int(u.get('banos') or 0)
+            if banos_u >= criterios.min_banos:
+                puntos_obtenidos += 8.0
+                razones.append(f"Cuenta con {banos_u} baño(s)")
+            elif banos_u == 0:
+                puntos_obtenidos += 2.0
+                alertas.append('Cantidad de baños no registrada en la ficha.')
 
-        # 5. Superficie (0-10 pts)
+        # Superficie
         sup_u = float(u['superficie_m2_num'])
         if criterios.superficie_min_m2 is not None or criterios.superficie_max_m2 is not None:
+            puntos_posibles += 12.0
             min_s = criterios.superficie_min_m2 or 0.0
             max_s = criterios.superficie_max_m2 or 999999.0
             if min_s <= sup_u <= max_s:
-                score += 10
-                razones.append(f"Superficie de {u['superficie_m2']} m² dentro del rango buscado")
+                puntos_obtenidos += 12.0
+                razones.append(f"Superficie verificada de {u['superficie_m2']} m²")
             else:
-                cumple_estricto = False
-        else:
-            score += 7
+                puntos_obtenidos += 3.0
+                alertas.append(f"Superficie de {u['superficie_m2']} m² fuera del rango preferido.")
 
-        # 6. Zona / Obra / Características (0-15 pts)
-        texto_ubicacion = _norm(
-            f"{u.get('nombre_obra') or ''} {u.get('ubicacion') or ''} {u.get('zona') or ''} {u.get('distrito') or ''}"
-        )
+        # Zona
         if criterios.zona:
+            puntos_posibles += 12.0
+            texto_ubicacion = _norm(
+                f"{u.get('nombre_obra') or ''} {u.get('ubicacion') or ''} {u.get('zona') or ''} {u.get('distrito') or ''}"
+            )
             if _norm(criterios.zona) in texto_ubicacion:
-                score += 10
+                puntos_obtenidos += 12.0
                 razones.append(f"Ubicación coincidente ({u.get('zona') or u.get('ubicacion') or u.get('nombre_obra')})")
+            elif not texto_ubicacion.strip():
+                puntos_obtenidos += 3.0
+                alertas.append('Ubicación/zona detallada no registrada en el proyecto.')
             else:
-                cumple_estricto = False
+                puntos_obtenidos += 2.0
+                alertas.append(f"Ubicada en {u.get('zona') or u.get('ubicacion') or u.get('nombre_obra')}.")
 
-        if criterios.nombre_obra and _norm(criterios.nombre_obra) in _norm(u.get('nombre_obra') or ''):
-            score += 8
-            razones.append(f"Pertenece al proyecto {u.get('nombre_obra')}")
-
-        if criterios.estado_construccion:
-            if u.get('estado_construccion') == criterios.estado_construccion:
-                score += 8
-                razones.append(f"Etapa constructiva: {u['estado_construccion']}")
+        # Estilo / Acabados
+        if criterios.estilo_acabado:
+            puntos_posibles += 8.0
+            if normalizar_estilo(u.get('especificacion_acabado')) == normalizar_estilo(criterios.estilo_acabado):
+                puntos_obtenidos += 8.0
+                razones.append(f"Acabado compatible ({u.get('especificacion_acabado')})")
             else:
-                cumple_estricto = False
+                puntos_obtenidos += 3.0
 
+        # Características adicionales
         if criterios.caracteristicas_deseadas:
+            puntos_posibles += 10.0
             texto_car = _norm(
                 f"{u.get('ambientes_resumen') or ''} "
                 + ' '.join(f"{c.get('nombre')} {c.get('valor')}" for c in (u.get('caracteristicas') or []))
                 + f" {u.get('descripcion_unidad') or ''}"
             )
-            matched_cars = [c for c in criterios.caracteristicas_deseadas if _norm(c) in texto_car]
-            if matched_cars:
-                score += min(10, len(matched_cars) * 5)
-                razones.append(f"Incluye: {', '.join(matched_cars)}")
+            matched = [c for c in criterios.caracteristicas_deseadas if _norm(c) in texto_car]
+            if matched:
+                ratio = len(matched) / max(1, len(criterios.caracteristicas_deseadas))
+                puntos_obtenidos += 10.0 * ratio
+                razones.append(f"Incluye: {', '.join(matched)}")
 
-        if cumple_estricto:
-            coincidencias_exactas += 1
+        afinidad = int(round((puntos_obtenidos / puntos_posibles) * 100)) if puntos_posibles > 0 else 0
+        afinidad = max(0, min(100, afinidad))
 
         item_out = dict(u)
-        item_out['afinidad_score'] = min(100, score)
-        item_out['cumple_criterios_estrictos'] = cumple_estricto
-        item_out['razones_recomendacion'] = razones or [
-            f"Opción disponible en {u.get('nombre_obra')} ({u['superficie_m2']} m²)"
-        ]
+        item_out['afinidad_score'] = afinidad
+        item_out['cumple_criterios_estrictos'] = True
+        item_out['razones_recomendacion'] = razones
         item_out['observaciones_criterio'] = alertas
+        if cotizacion_mobiliario is not None:
+            item_out['cotizacion_mobiliario_separada'] = cotizacion_mobiliario
         evaluadas.append(item_out)
 
-    # Ordenar primero las que cumplen criterios estrictos, luego por mayor score y mejor precio
     evaluadas.sort(
         key=lambda x: (
-            1 if x['cumple_criterios_estrictos'] else 0,
             x['afinidad_score'],
+            0 if x.get('es_estimacion_precio') else 1,
             -float(x['precio_bob_num']),
         ),
         reverse=True,
@@ -407,13 +606,16 @@ def filtrar_y_recomendar_unidades(
     return {
         'total_inventario_empresa': len(unidades_enriquecidas),
         'total_disponibles_evaluadas': len(evaluadas),
-        'coincidencias_exactas': coincidencias_exactas,
+        'coincidencias_exactas': len(evaluadas),
         'presupuesto_evaluado_bob': str(presupuesto_bob) if presupuesto_bob is not None else None,
         'presupuesto_evaluado_usd': (
             str((presupuesto_bob / TIPO_CAMBIO_BOB_USD).quantize(TWO_DECIMALS, rounding=ROUND_HALF_UP))
             if presupuesto_bob is not None
             else None
         ),
+        'tipo_cambio_referencia': str(TIPO_CAMBIO_BOB_USD),
+        'fecha_referencia_tc': fecha_referencia_tc(),
+        'motivos_exclusion': motivos_exclusion,
         'unidades_recomendadas': seleccionadas,
         'todas_enriquecidas': unidades_enriquecidas,
     }
@@ -427,7 +629,8 @@ def comparar_alternativas_inmobiliarias(
 ) -> dict:
     """
     Construye la matriz comparativa estructurada lado a lado (HU149) evaluando
-    características, superficie, precios (BOB/USD), costo por m², etapa y disponibilidad.
+    características, superficie, precios (BOB/USD), tipo de precio, amoblamiento,
+    costo por m², etapa y disponibilidad.
     """
     seleccion = []
     seen_ids = set()
@@ -442,7 +645,7 @@ def comparar_alternativas_inmobiliarias(
                 seen_ids.add(u['id_unidad'])
 
     if len(seleccion) < 2:
-        for cand in (candidatas_fallback or unidades_enriquecidas or []):
+        for cand in (candidatas_fallback or []):
             if cand['id_unidad'] not in seen_ids:
                 seleccion.append(cand)
                 seen_ids.add(cand['id_unidad'])
@@ -457,7 +660,6 @@ def comparar_alternativas_inmobiliarias(
             'resumen_comparativo': {},
         }
 
-    # Identificar líderes objetivos en cada métrica
     menor_precio = min(seleccion, key=lambda x: float(x['precio_bob_num']))
     mayor_superficie = max(seleccion, key=lambda x: float(x['superficie_m2_num']))
     mejor_costo_m2 = min(seleccion, key=lambda x: float(Decimal(str(x['costo_m2_bob']))))
@@ -471,12 +673,10 @@ def comparar_alternativas_inmobiliarias(
             ventajas.append(f"Mayor amplitud espacial ({u['superficie_m2']} m²)")
         if u['id_unidad'] == mejor_costo_m2['id_unidad'] and len(seleccion) > 1:
             ventajas.append(f"Mejor relación precio/m² ({u['costo_m2_usd']} USD/m²)")
+        if u.get('estado_amoblamiento') == 'AMOBLADA':
+            ventajas.append('Unidad amoblada verificada')
         if u.get('estado_construccion') == 'FINALIZADO':
             ventajas.append('Obra finalizada para entrega inmediata')
-        elif u.get('estado_construccion') == 'PLANIFICADO':
-            ventajas.append('Etapa en planos/preventa con alta plusvalía proyectada')
-        if u.get('especificacion_acabado') == 'LUJO':
-            ventajas.append('Especificación de acabados de lujo de fábrica')
 
         comparadas_out.append({
             'id_unidad': u['id_unidad'],
@@ -488,6 +688,7 @@ def comparar_alternativas_inmobiliarias(
             'tipo_unidad': u['tipo_unidad'],
             'disponibilidad_comercial': u['disponibilidad_comercial'],
             'estado_construccion': u['estado_construccion'],
+            'estado_amoblamiento': u.get('estado_amoblamiento', 'DESCONOCIDO'),
             'superficie_m2': u['superficie_m2'],
             'cantidad_plantas': u['cantidad_plantas'],
             'dormitorios': u['dormitorios'],
@@ -499,7 +700,8 @@ def comparar_alternativas_inmobiliarias(
             'costo_m2_bob': u['costo_m2_bob'],
             'costo_m2_usd': u['costo_m2_usd'],
             'fuente_precio': u['fuente_precio'],
-            'ventajas_competitivas': ventajas or ['Distribución equilibrada y respaldo constructivo'],
+            'tipo_precio': u.get('tipo_precio', u['fuente_precio']),
+            'ventajas_competitivas': ventajas or ['Distribución verificada y respaldo constructivo'],
         })
 
     return {
@@ -529,4 +731,3 @@ def comparar_alternativas_inmobiliarias(
             },
         },
     }
-

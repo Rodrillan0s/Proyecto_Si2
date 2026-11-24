@@ -139,6 +139,79 @@ class DeepSeekProvider(StructuredProvider):
             payload['response_format'] = {'type': 'json_object'}
         return self._post_payload(payload)
 
+    def chat_with_tools(
+        self,
+        messages: list[dict],
+        tools: list[dict],
+        system: str | None = None,
+        tool_choice: str | dict = 'auto',
+        model: str | None = None,
+        temperature: float = 0.1,
+        max_tokens: int = 1600,
+    ) -> dict:
+        """Invoca DeepSeek Chat Completions con Function Calling nativo (tools/tool_calls)."""
+        formatted_messages = []
+        if system:
+            formatted_messages.append({
+                'role': 'system',
+                'content': system + ' Usa únicamente datos devueltos por las herramientas autorizadas; no inventes cifras.',
+            })
+        for msg in messages or []:
+            role = msg.get('role')
+            if role in ('user', 'assistant', 'system', 'tool'):
+                entry = {'role': role}
+                if msg.get('content') is not None:
+                    entry['content'] = msg['content']
+                if msg.get('tool_calls'):
+                    entry['tool_calls'] = msg['tool_calls']
+                if msg.get('tool_call_id'):
+                    entry['tool_call_id'] = msg['tool_call_id']
+                if msg.get('name'):
+                    entry['name'] = msg['name']
+                formatted_messages.append(entry)
+        if not formatted_messages:
+            raise ProviderError('No se proporcionaron mensajes para la consulta.', 400)
+
+        payload = {
+            'model': model or getattr(Config, 'DEEPSEEK_CHAT_MODEL', None) or Config.DEEPSEEK_MODEL,
+            'messages': formatted_messages,
+            'temperature': temperature,
+            'max_tokens': max_tokens,
+        }
+        if tools:
+            payload['tools'] = tools
+            payload['tool_choice'] = tool_choice
+
+        endpoint = self._endpoint()
+        try:
+            response = requests.post(
+                endpoint,
+                headers={
+                    'Authorization': 'Bearer ' + Config.DEEPSEEK_API_KEY,
+                    'Content-Type': 'application/json',
+                },
+                json=payload,
+                timeout=Config.AI_TIMEOUT_SECONDS,
+            )
+            if response.status_code != 200:
+                raise ProviderError(
+                    'El proveedor de IA rechazó la consulta.',
+                    503 if response.status_code == 429 else 502,
+                )
+            choice = response.json()['choices'][0]
+            message = choice.get('message') or {}
+            return {
+                'content': (message.get('content') or '').strip(),
+                'tool_calls': message.get('tool_calls') or [],
+                'finish_reason': choice.get('finish_reason') or 'stop',
+            }
+        except requests.Timeout:
+            raise ProviderError('La consulta de IA agotó su tiempo de espera.', 504)
+        except ProviderError:
+            raise
+        except (requests.RequestException, ValueError, KeyError, IndexError, AttributeError):
+            raise ProviderError()
+
     def chat_structured(
         self,
         system: str,

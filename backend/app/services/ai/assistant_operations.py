@@ -2,7 +2,8 @@
 Implementa el flujo de dos pasos: Propuesta con Vista Previa Tipada -> Confirmación Explícita -> Ejecución Reautorizada.
 Prohíbe estrictamente eliminaciones, cambios de roles/permisos, pagos y restauraciones de BD.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+import json
 import threading
 from typing import Any, Literal
 from uuid import uuid4
@@ -80,14 +81,103 @@ class MaterialParams(BaseModel):
 
 # Memoria de propuestas con sincronización y ciclo de vida de estados
 # Estados: 'PENDIENTE' | 'EJECUTANDO' | 'EJECUTADA' | 'CANCELADA'
+# Si la tabla obras.t_asistente_propuesta está instalada, las operaciones se
+# persisten automáticamente en PostgreSQL y degradan a memoria si aún no se aplicó.
 _propuestas_lock = threading.Lock()
 _propuestas: dict[str, dict[str, Any]] = {}
 
 
+def _db_table_missing(exc: Exception) -> bool:
+    code = getattr(exc, 'pgcode', None)
+    return code == '42P01' or 't_asistente_propuesta' in str(exc)
+
+
+def _db_insert_propuesta(propuesta: dict[str, Any]) -> None:
+    try:
+        with repo.transaction() as db:
+            db.cur.execute(
+                """
+                INSERT INTO obras.t_asistente_propuesta (
+                    id_propuesta, id_empresa, id_usuario, tipo_operacion, entidad,
+                    resumen, parametros, politica, contexto_obra, estado, expira_en
+                ) VALUES (%s::uuid, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, %s, %s, %s)
+                """,
+                (
+                    propuesta['id_propuesta'],
+                    propuesta['id_empresa'],
+                    propuesta['id_usuario'],
+                    propuesta['tipo_operacion'],
+                    propuesta['entidad'],
+                    propuesta['resumen'],
+                    json.dumps(propuesta['parametros'], ensure_ascii=False, default=repo.json_default),
+                    json.dumps(propuesta['politica'], ensure_ascii=False, default=repo.json_default),
+                    propuesta['contexto_obra'],
+                    propuesta['estado'],
+                    propuesta['expira_en'],
+                ),
+            )
+    except Exception as exc:
+        if not _db_table_missing(exc):
+            pass  # Resiliencia: el respaldo en memoria mantiene la operación disponible
+
+
+def _db_load_propuesta(id_propuesta: str) -> dict[str, Any] | None:
+    try:
+        with repo.transaction(snapshot=True) as db:
+            row = repo.one(
+                db,
+                """
+                SELECT id_propuesta::text, id_empresa, id_usuario, tipo_operacion, entidad,
+                       resumen, parametros, politica, contexto_obra, estado,
+                       resultado, creado_en, expira_en
+                FROM obras.t_asistente_propuesta
+                WHERE id_propuesta = %s::uuid
+                """,
+                (id_propuesta,),
+            )
+            if not row:
+                return None
+            expira = row.get('expira_en')
+            if expira is not None:
+                now_ref = datetime.now(expira.tzinfo) if getattr(expira, 'tzinfo', None) else datetime.now()
+                if expira < now_ref:
+                    return None
+            return dict(row)
+    except Exception:
+        return None
+
+
+def _db_update_propuesta(id_propuesta: str, estado: str, resultado: dict[str, Any] | None = None) -> None:
+    try:
+        with repo.transaction() as db:
+            db.cur.execute(
+                """
+                UPDATE obras.t_asistente_propuesta
+                SET estado = %s,
+                    resultado = COALESCE(%s::jsonb, resultado),
+                    actualizado_en = NOW()
+                WHERE id_propuesta = %s::uuid
+                """,
+                (
+                    estado,
+                    json.dumps(resultado, ensure_ascii=False, default=repo.json_default) if resultado is not None else None,
+                    id_propuesta,
+                ),
+            )
+    except Exception:
+        pass
+
+
 def _limpiar_expiradas():
     """Limpia propuestas expiradas. DEBE llamarse con _propuestas_lock adquirido."""
-    ahora = datetime.now()
-    expiradas = [k for k, v in _propuestas.items() if v.get("expira_en") and v["expira_en"] < ahora]
+    ahora = datetime.now(timezone.utc)
+    expiradas = []
+    for k, v in _propuestas.items():
+        exp = v.get("expira_en")
+        if exp:
+            ref = ahora if getattr(exp, 'tzinfo', None) else datetime.now()
+            if exp < ref:
+                expiradas.append(k)
     for k in expiradas:
         _propuestas.pop(k, None)
 
@@ -152,7 +242,7 @@ def proponer_operacion(ctx, tipo_operacion: str, parametros: dict, resumen: str 
         if id_obra_contexto is not None:
             _autorizar_obra(db, ctx, id_obra_contexto)
     id_propuesta = str(uuid4())
-    ahora = datetime.now()
+    ahora = datetime.now(timezone.utc)
     expira_en = ahora + timedelta(minutes=15)
 
     propuesta = {
@@ -173,6 +263,7 @@ def proponer_operacion(ctx, tipo_operacion: str, parametros: dict, resumen: str 
 
     with _propuestas_lock:
         _propuestas[id_propuesta] = propuesta
+    _db_insert_propuesta(propuesta)
 
     return {
         "id_propuesta": id_propuesta,
@@ -193,6 +284,10 @@ def cancelar_propuesta(token: dict, id_propuesta: str, ip: str = "unknown", *, e
         _limpiar_expiradas()
         propuesta = _propuestas.get(id_propuesta)
         if not propuesta:
+            propuesta = _db_load_propuesta(id_propuesta)
+            if propuesta:
+                _propuestas[id_propuesta] = propuesta
+        if not propuesta:
             raise HTTPException(404, "La propuesta de operación no existe o ya ha expirado.")
 
         if usuario_token != propuesta["id_usuario"]:
@@ -206,6 +301,7 @@ def cancelar_propuesta(token: dict, id_propuesta: str, ip: str = "unknown", *, e
 
         propuesta["estado"] = "CANCELADA"
         _propuestas.pop(id_propuesta, None)
+    _db_update_propuesta(id_propuesta, "CANCELADA")
 
     try:
         bitacora_repos.registrar_bitacora(
@@ -232,6 +328,10 @@ def ejecutar_propuesta(token: dict, id_propuesta: str, ip: str = "unknown", *, e
         _limpiar_expiradas()
         propuesta = _propuestas.get(id_propuesta)
         if not propuesta:
+            propuesta = _db_load_propuesta(id_propuesta)
+            if propuesta:
+                _propuestas[id_propuesta] = propuesta
+        if not propuesta:
             raise HTTPException(404, "La propuesta de operación expiró, fue cancelada o no existe.")
 
         # Validar propiedad ANTES de alterar el ticket (M3)
@@ -243,6 +343,7 @@ def ejecutar_propuesta(token: dict, id_propuesta: str, ip: str = "unknown", *, e
 
         # Marcar en ejecución
         propuesta["estado"] = "EJECUTANDO"
+    _db_update_propuesta(id_propuesta, "EJECUTANDO")
 
     tipo = propuesta["tipo_operacion"]
     params = propuesta["parametros"]
@@ -284,6 +385,7 @@ def ejecutar_propuesta(token: dict, id_propuesta: str, ip: str = "unknown", *, e
         # Revertir estado a PENDIENTE en caso de fallo de reautorización o validación previa
         with _propuestas_lock:
             propuesta["estado"] = "PENDIENTE"
+        _db_update_propuesta(id_propuesta, "PENDIENTE")
         raise
 
     # 3. Preparar token forzado con la empresa objetivo del ticket (A2)
@@ -377,6 +479,7 @@ def ejecutar_propuesta(token: dict, id_propuesta: str, ip: str = "unknown", *, e
         # Revertir estado a PENDIENTE ante fallos para que el usuario no pierda el contexto ni quede bloqueado
         with _propuestas_lock:
             propuesta["estado"] = "PENDIENTE"
+        _db_update_propuesta(id_propuesta, "PENDIENTE")
 
         # Mapeo de errores de dominio para no arrojar 500 (M5)
         status_code = getattr(e, "status_code", None)
@@ -393,6 +496,7 @@ def ejecutar_propuesta(token: dict, id_propuesta: str, ip: str = "unknown", *, e
         propuesta["estado"] = "EJECUTADA"
         propuesta["resultado"] = resultado
         _propuestas.pop(id_propuesta, None)
+    _db_update_propuesta(id_propuesta, "EJECUTADA", resultado)
 
     return {
         "success": True,

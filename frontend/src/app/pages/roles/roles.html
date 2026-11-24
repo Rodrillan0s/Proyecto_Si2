@@ -1,20 +1,15 @@
-<div class="min-h-screen bg-gray-100 dark:bg-slate-950 p-4 sm:p-6 lg:p-8 font-sans transition-colors duration-300">
-  <div class="max-w-6xl mx-auto">
+<div class="ob-page">
+  <div class="w-full">
     
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-5 border-b border-slate-200 dark:border-slate-800 gap-4">
       <div>
-        <button routerLink="/home" class="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-slate-400 hover:text-blue-900 dark:hover:text-blue-400 transition-colors mb-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-          </svg>
-          Volver al Panel Principal
-        </button>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Gestión de Roles</h1>
-        <p class="text-sm text-gray-500 dark:text-slate-400">Administración de perfiles y niveles de acceso del sistema.</p>
+        <span class="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">Administración</span>
+        <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight mt-1">Roles y permisos</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Administración de perfiles y niveles de acceso de la plataforma.</p>
       </div>
-      <button *ngIf="esAdministradorSistema()" (click)="abrirModalNuevo()" class="flex items-center gap-2 px-4 py-2 bg-blue-900 dark:bg-blue-600 hover:bg-blue-800 dark:hover:bg-blue-500 text-white text-sm font-medium rounded-sm transition-colors shadow-sm">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-        Nuevo Rol
+      <button *ngIf="esAdministradorSistema()" (click)="abrirModalNuevo()" class="ob-btn-primary text-xs">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        Nuevo rol
       </button>
     </div>
 

@@ -1,6 +1,6 @@
 <section class="planning">
   <header class="heading">
-    <div><a routerLink="/proyectos">← Proyectos y obras</a><p class="eyebrow">CU39 · PLANIFICACIÓN DE OBRA</p>
+    <div><a routerLink="/proyectos">← Obras y proyectos</a><p class="eyebrow">Planificación de obra</p>
       <h1>Cronogramas</h1><p>{{ idObra ? obra() : 'Selecciona una obra para gestionar su planificación.' }}</p></div>
     @if (idObra && puedeCrear && !editor()) { <button class="primary" (click)="nuevo()" [disabled]="cargando() || guardando()">+ Crear cronograma</button> }
   </header>

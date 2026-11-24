@@ -13,6 +13,7 @@ import '../services/auth_provider.dart';
 import '../services/reportes_service.dart';
 import '../services/reportes_voice.dart';
 import '../theme/app_theme.dart';
+import '../widgets/chart_spec_card.dart';
 import 'asistente_screen.dart';
 
 class ReportesScreen extends StatefulWidget {
@@ -1580,6 +1581,17 @@ class _ReportesScreenState extends State<ReportesScreen> {
               ),
             ),
             const SizedBox(height: 12),
+          ],
+
+          // Visualización gráfica (ChartSpec)
+          if (result['chart_spec'] is Map &&
+              ((result['chart_spec'] as Map)['tipo']?.toString() ?? 'none') != 'none') ...[
+            ChartSpecCard(
+              spec: Map<String, dynamic>.from(result['chart_spec'] as Map),
+              rows: rows,
+              resumen: Map<String, dynamic>.from(resumen),
+            ),
+            const SizedBox(height: 8),
           ],
 
           // Tabla de datos

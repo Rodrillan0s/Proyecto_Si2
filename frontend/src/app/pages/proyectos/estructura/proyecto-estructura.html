@@ -696,7 +696,7 @@
     <div class="modal-card bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto p-6 space-y-6">
       <div class="flex justify-between items-start border-b border-gray-100 dark:border-slate-800 pb-4">
         <div>
-          <span class="text-[10px] font-bold uppercase tracking-widest text-green-600">CU12 · Unidad de construcción</span>
+          <span class="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Unidad de construcción</span>
           <h3 class="text-xl font-bold text-gray-900 dark:text-white">{{ editandoUnidad ? 'Modificar unidad' : (unidadForm.id_estructura ? 'Convertir nodo en unidad' : 'Registrar unidad') }}</h3>
           <p class="text-xs text-gray-500 mt-1">El nodo y la unidad se guardan en una sola transacción.</p>
         </div>
@@ -840,10 +840,10 @@
       </section>
 
       <section class="space-y-3 border-t border-gray-100 dark:border-slate-800 pt-4">
-        <div><h4 class="font-bold">Materiales y acabados</h4><p class="text-xs text-gray-400">Asociación a materiales existentes; el catálogo y almacén corresponden a CU14.</p></div>
+        <div><h4 class="font-bold">Materiales y acabados</h4><p class="text-xs text-gray-400">Asociación con materiales disponibles en el catálogo de la empresa.</p></div>
         <div *ngFor="let m of unidadDetalle.materiales || []; let i=index" class="grid grid-cols-[1fr_auto] gap-3 p-3 bg-gray-50 dark:bg-slate-800 rounded-xl text-sm"><div><strong>{{ m.nombre_material }}</strong><p>{{ m.cantidad }} {{ m.unidad_medida || '' }} · {{ m.uso_ubicacion || 'Uso no especificado' }}<span *ngIf="m.acabado"> · Acabado: {{ m.acabado }}</span></p></div><button *ngIf="esRolAutorizado()" (click)="quitarMaterialUnidad(i)" class="text-red-600 text-xs">Quitar</button></div>
-        <div *ngIf="esRolAutorizado() && materialesDisponibles.length > 0" class="grid grid-cols-2 md:grid-cols-7 gap-2"><select class="form-select" [(ngModel)]="materialForm.id_material"><option [ngValue]="0">Material...</option><option *ngFor="let material of materialesDisponibles" [ngValue]="material.id_material">{{ material.nombre_material }}</option></select><input type="number" min="0.001" class="form-input" [(ngModel)]="materialForm.cantidad" placeholder="Cantidad"><input class="form-input" [(ngModel)]="materialForm.unidad_medida" placeholder="Unidad de medida"><input class="form-input" [(ngModel)]="materialForm.uso_ubicacion" placeholder="Uso/ubicación"><input class="form-input" [(ngModel)]="materialForm.acabado" placeholder="Acabado"><input class="form-input" [(ngModel)]="materialForm.observacion" placeholder="Observación"><button class="btn-primary" (click)="agregarMaterialUnidad()">Asociar</button></div>
-        <p *ngIf="materialesDisponibles.length === 0" class="text-xs text-amber-600">CU14 aún no dispone de materiales en el catálogo.</p>
+        <div *ngIf="esRolAutorizado() && materialesDisponibles.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-2"><select class="form-select" [(ngModel)]="materialForm.id_material"><option [ngValue]="0">Material...</option><option *ngFor="let material of materialesDisponibles" [ngValue]="material.id_material">{{ material.nombre_material }}</option></select><input type="number" min="0.001" class="form-input" [(ngModel)]="materialForm.cantidad" placeholder="Cantidad"><input class="form-input" [(ngModel)]="materialForm.unidad_medida" placeholder="Unidad de medida"><input class="form-input" [(ngModel)]="materialForm.uso_ubicacion" placeholder="Uso/ubicación"><input class="form-input" [(ngModel)]="materialForm.acabado" placeholder="Acabado"><input class="form-input" [(ngModel)]="materialForm.observacion" placeholder="Observación"><button class="btn-primary" (click)="agregarMaterialUnidad()">Asociar</button></div>
+        <p *ngIf="materialesDisponibles.length === 0" class="text-xs text-amber-600">Aún no hay materiales disponibles en el catálogo de materiales.</p>
       </section>
 
       <!-- HU115: FOTOGRAFÍAS DE LA UNIDAD (OPERATIVO / JEFE DE OBRA) -->

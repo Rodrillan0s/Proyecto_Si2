@@ -69,15 +69,23 @@ class IncidenciaService {
     required String descripcion,
     required String prioridad,
     String? ubicacion,
+    String? idempotencyKey,
+    String? fechaOcurrenciaLocal,
   }) async {
-    final res = await _send('POST', '$_basePath/', data: {
+    final body = <String, dynamic>{
       'id_obra': idObra,
       'id_unidad': idUnidad,
       'titulo': titulo.trim(),
       'descripcion': descripcion.trim(),
       'prioridad': prioridad,
       'ubicacion': _nulaSiVacia(ubicacion),
-    });
+      if (fechaOcurrenciaLocal != null && fechaOcurrenciaLocal.trim().isNotEmpty)
+        'fecha_ocurrencia_local': fechaOcurrenciaLocal.trim(),
+    };
+    final headers = idempotencyKey != null && idempotencyKey.trim().isNotEmpty
+        ? <String, dynamic>{'Idempotency-Key': idempotencyKey.trim()}
+        : null;
+    final res = await _send('POST', '$_basePath/', data: body, headers: headers);
     NotificacionService.instance.emitLocalPush(
       titulo: 'Incidencia Registrada ($prioridad)',
       cuerpo: '${titulo.trim()} en proyecto #$idObra.',
@@ -298,6 +306,7 @@ class IncidenciaService {
     String method,
     String path, {
     Object? data,
+    Map<String, dynamic>? headers,
     void Function(int, int)? onSendProgress,
     Duration? timeout,
   }) async {
@@ -306,7 +315,12 @@ class IncidenciaService {
         path,
         data: data,
         onSendProgress: onSendProgress,
-        options: Options(method: method, sendTimeout: timeout, receiveTimeout: timeout),
+        options: Options(
+          method: method,
+          headers: headers,
+          sendTimeout: timeout,
+          receiveTimeout: timeout,
+        ),
       );
       return _validar(response.data);
     } on DioException catch (e) {

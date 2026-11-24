@@ -337,6 +337,12 @@
           <div class="warnings" *ngIf="data.advertencias.length">
             <p *ngFor="let note of data.advertencias">{{ note }}</p>
           </div>
+          <app-chart-spec-card
+            *ngIf="data.chart_spec && data.chart_spec.tipo !== 'none'"
+            [spec]="data.chart_spec"
+            [rows]="data.filas"
+            [resumen]="data.resumen"
+          ></app-chart-spec-card>
           <div class="table-scroll" *ngIf="data.filas.length">
             <table>
               <caption class="sr-only">

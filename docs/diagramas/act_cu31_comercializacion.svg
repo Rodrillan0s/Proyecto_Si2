@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1140" height="950" viewBox="0 0 1140 950">
+<defs>
+      <marker id="act-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#000000"/>
+      </marker>
+      <filter id="shadow" x="-5%" y="-5%" width="110%" height="115%">
+        <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.08"/>
+      </filter>
+    </defs>
+<rect width="1140" height="950" fill="#FFFFFF"/>
+<text x="45" y="30" font-family="Arial, Helvetica, sans-serif" font-size="14.5" font-weight="bold" fill="#000000">CU31W – Gestionar comercialización de unidades inmobiliarias</text>
+<text x="45" y="47" font-family="Arial, Helvetica, sans-serif" font-size="10.5" fill="#555555">Representación de reserva, validación de solvencia, aprobación gerencial y formalización de la venta.</text>
+<rect x="45" y="58" width="1050" height="867" fill="none" stroke="#000000" stroke-width="1.3"/>
+<rect x="45.0" y="58" width="350.0" height="38" fill="#F0F2F5" stroke="#000000" stroke-width="1.2"/>
+<text x="220.0" y="82" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" font-weight="bold" fill="#111111">Asesor Comercial</text>
+<rect x="395.0" y="58" width="350.0" height="38" fill="#F0F2F5" stroke="#000000" stroke-width="1.2"/>
+<text x="570.0" y="82" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" font-weight="bold" fill="#111111">Gerencia Comercial</text>
+<line x1="395.0" y1="96" x2="395.0" y2="925" stroke="#000000" stroke-width="1.2"/>
+<rect x="745.0" y="58" width="350.0" height="38" fill="#F0F2F5" stroke="#000000" stroke-width="1.2"/>
+<text x="920.0" y="82" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" font-weight="bold" fill="#111111">Sistema</text>
+<line x1="745.0" y1="96" x2="745.0" y2="925" stroke="#000000" stroke-width="1.2"/>
+<line x1="220" y1="146" x2="220" y2="180.0" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<line x1="220" y1="230.0" x2="220" y2="270.0" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 220 320.0 L 220 295.0 L 920 295.0 L 920 270.0" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 920 320.0 L 920 342.5 L 570 342.5 L 570 365.0" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<rect x="666.55" y="334.5" width="156.9" height="16" rx="3" fill="#FFFFFF" stroke="#BBBBBB" stroke-width="1"/>
+<text x="745.0" y="346.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Solicitud de evaluación</text>
+<line x1="570" y1="415.0" x2="570" y2="455.0" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 550.0 475 L 550.0 505.0 L 470 505.0 L 470 535.0" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<rect x="453.6" y="497.0" width="112.8" height="16" rx="3" fill="#FFFFFF" stroke="#BBBBBB" stroke-width="1"/>
+<text x="510.0" y="509.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">[No / Observado]</text>
+<path d="M 470 585.0 L 470 560.0 L 920 560.0 L 920 535.0" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 920 585.0 L 920 609.0 L 220 609.0 L 220 633" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<rect x="504.15" y="601.0" width="131.7" height="16" rx="3" fill="#FFFFFF" stroke="#BBBBBB" stroke-width="1"/>
+<text x="570.0" y="613.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Operación cancelada</text>
+<path d="M 590.0 475 L 590.0 505.0 L 670 505.0 L 670 535.0" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<rect x="576.75" y="497.0" width="106.5" height="16" rx="3" fill="#FFFFFF" stroke="#BBBBBB" stroke-width="1"/>
+<text x="630.0" y="509.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">[Sí / Aprobado]</text>
+<path d="M 670 585.0 L 670 601.25 L 920 601.25 L 920 617.5" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<rect x="738.6" y="593.25" width="112.8" height="16" rx="3" fill="#FFFFFF" stroke="#BBBBBB" stroke-width="1"/>
+<text x="795.0" y="605.25" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Venta autorizada</text>
+<path d="M 920 672.5 L 920 691.25 L 220 691.25 L 220 710.0" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<rect x="519.9" y="683.25" width="100.2" height="16" rx="3" fill="#FFFFFF" stroke="#BBBBBB" stroke-width="1"/>
+<text x="570.0" y="695.25" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Contrato listo</text>
+<path d="M 220 760.0 L 220 780.0 L 920 780.0 L 920 800.0" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<rect x="513.6" y="772.0" width="112.8" height="16" rx="3" fill="#FFFFFF" stroke="#BBBBBB" stroke-width="1"/>
+<text x="570.0" y="784.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Firma confirmada</text>
+<path d="M 920 850.0 L 920 871.5 L 220 871.5 L 220 893" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<rect x="510.45" y="863.5" width="119.1" height="16" rx="3" fill="#FFFFFF" stroke="#BBBBBB" stroke-width="1"/>
+<text x="570.0" y="875.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Venta formalizada</text>
+<circle cx="220" cy="135" r="11" fill="#000000" stroke="#000000" stroke-width="1.2" filter="url(#shadow)"/>
+<rect x="110.0" y="180.0" width="220" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="220" y="202" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Registrar solicitud de reserva</text>
+<text x="220" y="216" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y datos del cliente</text>
+<rect x="110.0" y="270.0" width="220" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="220" y="292" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Cargar comprobante de abono</text>
+<text x="220" y="306" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">inicial de separación</text>
+<rect x="810.0" y="270.0" width="220" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="920" y="292" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Validar disponibilidad de unidad</text>
+<text x="920" y="306" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y aplicar bloqueo temporal</text>
+<rect x="460.0" y="365.0" width="220" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="570" y="387" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Evaluar propuesta comercial</text>
+<text x="570" y="401" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y condiciones de financiamiento</text>
+<polygon points="570,455.0 590.0,475 570,495.0 550.0,475" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<rect x="509.2" y="435.0" width="121.60000000000001" height="16" rx="3" fill="#FFFFFF" stroke="#AAAAAA" stroke-width="0.8"/>
+<text x="570" y="447.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="bold" fill="#000000">¿Aprueba la venta?</text>
+<rect x="385.0" y="535.0" width="170" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="470" y="557" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Registrar causal</text>
+<text x="470" y="571" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">de rechazo o ajuste</text>
+<rect x="815.0" y="535.0" width="210" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="920" y="557" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Liberar bloqueo de unidad</text>
+<text x="920" y="571" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y notificar al asesor</text>
+<circle cx="220" cy="645" r="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.4" filter="url(#shadow)"/>
+<circle cx="220" cy="645" r="7" fill="#000000"/>
+<rect x="585.0" y="535.0" width="170" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="670" y="557" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Emitir aprobación formal</text>
+<text x="670" y="571" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">de la venta</text>
+<rect x="810.0" y="617.5" width="220" height="55" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="920" y="642" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Generar contrato de promesa</text>
+<text x="920" y="656" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">de compraventa y plan de pagos</text>
+<rect x="110.0" y="710.0" width="220" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="220" y="732" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Formalizar firma de contrato</text>
+<text x="220" y="746" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">con el comprador</text>
+<rect x="810.0" y="800.0" width="220" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="920" y="822" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Actualizar unidad a 'VENDIDA'</text>
+<text x="920" y="836" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y registrar expediente</text>
+<circle cx="220" cy="905" r="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.4" filter="url(#shadow)"/>
+<circle cx="220" cy="905" r="7" fill="#000000"/>
+</svg>

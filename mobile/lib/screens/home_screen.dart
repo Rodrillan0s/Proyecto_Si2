@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../services/auth_provider.dart';
 import '../services/notificacion_service.dart';
 import '../services/obra_service.dart';
+import '../services/offline_sync_service.dart';
 import '../services/empresa_service.dart';
 import '../theme/app_theme.dart';
 import 'asistente_screen.dart';
@@ -22,6 +23,7 @@ import 'proyectos_screen.dart';
 import 'proyecto_detalle_screen.dart';
 import 'avances_obra_screen.dart';
 import 'reportes_screen.dart';
+import 'sync_status_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -100,9 +102,20 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _cargarObras() async {
     setState(() => _cargando = true);
     try {
-      final lista = await _obraService.listarProyectos();
-      if (!mounted) return;
       final auth = Provider.of<AuthProvider>(context, listen: false);
+      final empId = auth.empresaId;
+      final List<Map<String, dynamic>> lista;
+      if (empId != null && empId > 0 && !auth.esCliente) {
+        final res = await OfflineSyncService.instance.obtenerObrasOfflineFirst(
+          idEmpresa: empId,
+          userKey: auth.userIdentityKey,
+          fetcherRemoto: _obraService.listarProyectos,
+        );
+        lista = res.data;
+      } else {
+        lista = await _obraService.listarProyectos();
+      }
+      if (!mounted) return;
 
       List<Map<String, dynamic>> listaFiltrada = lista;
       if (auth.esAdminGlobal && !auth.esVistaGlobal && auth.idEmpresaActiva != null) {
@@ -522,6 +535,57 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         actions: [
+          if (!auth.esCliente)
+            ListenableBuilder(
+              listenable: OfflineSyncService.instance,
+              builder: (_, __) {
+                final sync = OfflineSyncService.instance;
+                final badge = sync.pendientesCount + sync.erroresCount;
+                return IconButton(
+                  tooltip: 'Estado de sincronización',
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SyncStatusScreen()),
+                    );
+                  },
+                  icon: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Icon(
+                        sync.isOnline ? Icons.sync_rounded : Icons.cloud_off_rounded,
+                        size: 22,
+                        color: !sync.isOnline
+                            ? const Color(0xFFD97706)
+                            : (sync.erroresCount > 0 ? const Color(0xFFDC2626) : null),
+                      ),
+                      if (badge > 0)
+                        Positioned(
+                          right: -4,
+                          top: -4,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: sync.erroresCount > 0
+                                  ? const Color(0xFFDC2626)
+                                  : const Color(0xFFD97706),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '$badge',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
+            ),
           IconButton(
             icon: const Icon(Icons.search_rounded, size: 22),
             tooltip: 'Buscar proyectos',

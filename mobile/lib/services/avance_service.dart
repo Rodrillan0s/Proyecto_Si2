@@ -70,6 +70,49 @@ class AvanceService {
     }
   }
 
+  // ── CU18 / CU41: Registrar avance de obra (online o sincronización offline) ──
+  Future<Map<String, dynamic>> registrarAvance({
+    required int idObra,
+    required int idUnidad,
+    required double porcentajeAvance,
+    String? observacion,
+    String? fechaRegistro,
+    String? idempotencyKey,
+    String? fechaOcurrenciaLocal,
+  }) async {
+    try {
+      final body = <String, dynamic>{
+        'id_unidad': idUnidad,
+        'porcentaje_avance': porcentajeAvance,
+        if (observacion != null && observacion.trim().isNotEmpty)
+          'observacion': observacion.trim(),
+        if (fechaRegistro != null && fechaRegistro.trim().isNotEmpty)
+          'fecha_registro': fechaRegistro.trim(),
+        if (fechaOcurrenciaLocal != null && fechaOcurrenciaLocal.trim().isNotEmpty)
+          'fecha_ocurrencia_local': fechaOcurrenciaLocal.trim(),
+      };
+      final headers = <String, dynamic>{};
+      if (idempotencyKey != null && idempotencyKey.trim().isNotEmpty) {
+        headers['Idempotency-Key'] = idempotencyKey.trim();
+      }
+      final response = await ApiClient.dio.post(
+        '$_base/$idObra/avances/',
+        data: body,
+        options: headers.isEmpty ? null : Options(headers: headers),
+      );
+      final data = response.data;
+      if (data is! Map || data['success'] != true) {
+        throw Exception(data?['detail'] ?? data?['error'] ?? 'Error al registrar avance.');
+      }
+      return Map<String, dynamic>.from(data);
+    } on DioException catch (e) {
+      if (idempotencyKey != null && idempotencyKey.isNotEmpty) {
+        rethrow;
+      }
+      throw Exception(_parseError(e));
+    }
+  }
+
   // ── Helper de errores ──────────────────────────────────────────────────────
   String _parseError(DioException e) {
     if (e.response?.data != null && e.response!.data is Map) {

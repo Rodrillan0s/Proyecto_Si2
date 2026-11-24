@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="840" viewBox="0 0 1100 840">
+<defs>
+      <marker id="act-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#000000"/>
+      </marker>
+    </defs>
+<rect width="1100" height="840" fill="#FFFFFF"/>
+<text x="30" y="32" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="bold" fill="#000000">Diagrama de Actividades: Registrar Salida de Material de Obra</text>
+<text x="30" y="48" font-family="Arial, Helvetica, sans-serif" font-size="10.5" fill="#555555">Proceso de solicitud, verificación de disponibilidad, aprobación del supervisor y despacho físico de materiales hacia los frentes de trabajo.</text>
+<rect x="30" y="60" width="1040" height="760" fill="none" stroke="#000000" stroke-width="1.3"/>
+<rect x="30.0" y="60" width="346.6666666666667" height="32" fill="#F4F4F4" stroke="#000000" stroke-width="1.2"/>
+<text x="203.33333333333334" y="81" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#000000">Encargado de Cuadrilla</text>
+<rect x="376.6666666666667" y="60" width="346.6666666666667" height="32" fill="#F4F4F4" stroke="#000000" stroke-width="1.2"/>
+<text x="550.0" y="81" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#000000">Supervisor / Jefe de Obra</text>
+<line x1="376.6666666666667" y1="92" x2="376.6666666666667" y2="820" stroke="#000000" stroke-width="1.2"/>
+<rect x="723.3333333333334" y="60" width="346.6666666666667" height="32" fill="#F4F4F4" stroke="#000000" stroke-width="1.2"/>
+<text x="896.6666666666667" y="81" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#000000">Sistema OBRATEC</text>
+<line x1="723.3333333333334" y1="92" x2="723.3333333333334" y2="820" stroke="#000000" stroke-width="1.2"/>
+<path d="M 170 80 L 170 98.0 L 175.0 98.0 L 175.0 120" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 175.0 170 L 175.0 147.5 L 915.0 147.5 L 915.0 120" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<line x1="915.0" y1="170" x2="915.0" y2="210" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 915.0 250 L 915.0 268.0 L 840.0 268.0 L 840.0 290" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="877.5" y="264.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">[No disponible]</text>
+<path d="M 840.0 340 L 840.0 353.5 L 830 353.5 L 830 370" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 915.0 250 L 915.0 268.0 L 545.0 268.0 L 545.0 290" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="730.0" y="264.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">[Stock OK]</text>
+<line x1="545.0" y1="345" x2="545.0" y2="380" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 545.0 420 L 545.0 438.0 L 465.0 438.0 L 465.0 460" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="505.0" y="434.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">[Rechazado]</text>
+<path d="M 465.0 510 L 465.0 523.5 L 170 523.5 L 170 540" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 545.0 420 L 545.0 438.0 L 645.0 438.0 L 645.0 460" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="595.0" y="434.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">[Aprobado]</text>
+<path d="M 645.0 510 L 645.0 528.0 L 920.0 528.0 L 920.0 550" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 920.0 605 L 920.0 625.25 L 175.0 625.25 L 175.0 650" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 175.0 700 L 175.0 713.5 L 170 713.5 L 170 730" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<circle cx="170" cy="70" r="11" fill="#000000" stroke="#000000" stroke-width="1.2"/>
+<rect x="90" y="120" width="170" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="175.0" y="142.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Solicitar vale de salida</text>
+<text x="175.0" y="155.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">indicando frente y actividad</text>
+<rect x="830" y="120" width="170" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="915.0" y="142.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Verificar stock disponible</text>
+<text x="915.0" y="155.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">en almacén de la obra</text>
+<polygon points="915.0,210 935,230.0 915.0,250 895,230.0" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="915.0" y="186" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="bold" fill="#000000">¿Hay stock</text>
+<text x="915.0" y="198" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="bold" fill="#000000">suficiente?</text>
+<rect x="760" y="290" width="160" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="840.0" y="312.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Notificar desabastecimiento</text>
+<text x="840.0" y="325.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y sugerir reposición</text>
+<circle cx="830" cy="380" r="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<circle cx="830" cy="380" r="7" fill="#000000"/>
+<rect x="460" y="290" width="170" height="55" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="545.0" y="314.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Evaluar pertinencia técnica</text>
+<text x="545.0" y="327.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">según avance programado</text>
+<polygon points="545.0,380 565,400.0 545.0,420 525,400.0" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="545.0" y="356" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="bold" fill="#000000">¿Autoriza</text>
+<text x="545.0" y="368" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="bold" fill="#000000">despacho?</text>
+<rect x="390" y="460" width="150" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="465.0" y="482.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Registrar justificación</text>
+<text x="465.0" y="495.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">de rechazo del pedido</text>
+<circle cx="170" cy="550" r="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<circle cx="170" cy="550" r="7" fill="#000000"/>
+<rect x="570" y="460" width="150" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="645.0" y="482.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Firmar digitalmente</text>
+<text x="645.0" y="495.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">autorización de salida</text>
+<rect x="830" y="550" width="180" height="55" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="920.0" y="574.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Descontar inventario real</text>
+<text x="920.0" y="587.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">e imputar costo a la partida</text>
+<rect x="90" y="650" width="170" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="175.0" y="672.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Retirar material de almacén</text>
+<text x="175.0" y="685.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y firmar recepción en terreno</text>
+<circle cx="170" cy="740" r="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<circle cx="170" cy="740" r="7" fill="#000000"/>
+</svg>

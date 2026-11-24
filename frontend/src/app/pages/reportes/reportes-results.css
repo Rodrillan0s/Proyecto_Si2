@@ -278,3 +278,17 @@ select option {
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
 }
+
+@media (max-width: 768px) {
+  .page-header,
+  .result-header,
+  .section-heading,
+  .pagination,
+  .job {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .sharing > fieldset > label {
+    max-width: none;
+  }
+}

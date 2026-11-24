@@ -19,19 +19,19 @@
 
   <!-- ENCABEZADO -->
   <app-page-header
-    [titulo]="esVistaObraEspecifica ? 'Consultas Técnicas (RFI) — ' + (obraActual?.nombre || 'Obra') : 'Consultas Técnicas de Obra (RFI)'"
-    [subtitulo]="esVistaObraEspecifica ? 'Aclaraciones, discrepancias de planos y consultas técnicas para este proyecto.' : 'Ciclo de vida de solicitudes de información técnica (RFI) en todas las obras de la empresa.'"
-    categoria="PROYECTOS Y OBRAS"
+    [titulo]="esVistaObraEspecifica ? 'Consultas técnicas — ' + (obraActual?.nombre || 'Obra') : 'Consultas técnicas'"
+    [subtitulo]="esVistaObraEspecifica ? 'Aclaraciones, discrepancias de planos y consultas técnicas para este proyecto.' : 'Seguimiento de consultas y aclaraciones técnicas en todas las obras de la empresa.'"
+    categoria="Obras y proyectos"
   >
-    <div actions class="flex items-center gap-2.5">
+    <div actions class="flex flex-wrap items-center gap-2.5">
       <button
         *ngIf="esVistaObraEspecifica"
         type="button"
         (click)="volverAProyecto()"
-        class="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 transition"
+        class="ob-btn-secondary text-xs py-2 min-h-[38px]"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-        Volver a Obra
+        Volver a obra
       </button>
 
       <button
@@ -39,18 +39,18 @@
         type="button"
         id="btn-nueva-consulta"
         (click)="abrirModalCrear()"
-        class="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl bg-orange-600 hover:bg-orange-700 text-white transition shadow-sm hover:shadow"
+        class="ob-btn-primary text-xs py-2 min-h-[38px]"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-        Nueva Consulta Técnica
+        Nueva consulta técnica
       </button>
     </div>
   </app-page-header>
 
   <!-- TARJETAS DE RESUMEN KPI -->
-  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
     <app-dashboard-card
-      titulo="Total RFI"
+      titulo="Total consultas"
       [valor]="resumen.total"
       tipo="default"
       [clickable]="true"
@@ -200,7 +200,7 @@
     <div *ngIf="!cargando && consultas.length === 0" class="p-8">
       <app-empty-state
         titulo="No se encontraron consultas técnicas"
-        subtitulo="No existen registros de RFI con los filtros seleccionados. Puede registrar una nueva consulta con el botón superior."
+        subtitulo="No existen consultas técnicas con los filtros seleccionados. Puedes registrar una nueva consulta con el botón superior."
       ></app-empty-state>
     </div>
 
@@ -333,7 +333,7 @@
             <span class="text-lg">❓</span>
           </div>
           <div>
-            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Nueva Consulta Técnica de Obra (RFI)</h3>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Nueva consulta técnica de obra</h3>
             <p class="text-[11px] text-slate-500 dark:text-slate-400">Registra una duda técnica, discrepancia o solicitud de aclaración.</p>
           </div>
         </div>
@@ -523,7 +523,7 @@
                 (click)="abrirModalCierre()"
                 class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:hover:bg-rose-900/50 dark:text-rose-300 font-semibold transition"
               >
-                Cerrar RFI
+                Cerrar consulta
               </button>
 
               <button

@@ -1,0 +1,39 @@
+C4Component
+    title Diagrama de Componentes C4 (Nivel 3) - Inventario y Materiales
+
+    %% 1. Contenedores consumidores (Arriba)
+    Container(web, "Aplicación Web", "Angular 18 + Tailwind CSS", "Control de almacén y compras")
+    Container(mobile, "Aplicación Móvil", "Flutter + Dart", "Entradas, salidas y recepciones físicas")
+
+    %% 2. Límite del Contenedor analizado (Centro)
+    Container_Boundary(api, "API Backend [FastAPI + Uvicorn]") {
+        Component(c1, "Inventario Controller", "FastAPI Router", "Rutas para kardex y ajustes CU35/36 (inventario_routes.py)")
+        Component(c2, "Compras Controller", "FastAPI Router", "Órdenes de compra y recepciones (compras_routes.py)")
+        Component(c3, "Material Controller", "FastAPI Router", "Catálogo de insumos y precios (material_routes.py)")
+        Component(s1, "Inventario Service", "Python Service", "Movimientos de almacén y control de saldos (inventario_services.py)")
+        Component(s2, "Compras Service", "Python Service", "Validación de órdenes y compras (compras_services.py)")
+        Component(s3, "Material Service", "Python Service", "Mantenimiento del catálogo base (material_services.py)")
+        Component(r1, "Inventario Repository", "SQLAlchemy / PostgreSQL", "Kardex y t_movimiento_almacen (inventario_repos.py)")
+        Component(r2, "Compras Repository", "SQLAlchemy / PostgreSQL", "Órdenes y recepciones de compra (compras_repos.py)")
+        Component(r3, "Material Repository", "SQLAlchemy / PostgreSQL", "Tablas de materiales y categorías (material_repos.py)")
+    }
+
+    %% 3. Persistencia y Sistemas Externos (Abajo)
+    ContainerDb(db, "Base de Datos Principal", "PostgreSQL (schema: obras)", "Persiste t_material, t_movimiento_almacen, t_orden_compra")
+
+    %% 4. Relaciones unidireccionales etiquetadas
+    Rel(web, c1, "Kardex y ajustes", "JSON/HTTPS")
+    Rel(web, c2, "Órdenes de compra", "JSON/HTTPS")
+    Rel(web, c3, "Catálogo", "JSON/HTTPS")
+    Rel(mobile, c1, "Entradas y salidas", "JSON/HTTPS")
+    Rel(mobile, c2, "Recepciona insumos", "JSON/HTTPS")
+    Rel(c1, s1, "Delega ajuste")
+    Rel(c2, s2, "Delega compra")
+    Rel(c3, s3, "Delega catálogo")
+    Rel(s1, r1, "Persiste movimiento")
+    Rel(s2, r2, "Persiste compra")
+    Rel(s2, r1, "Actualiza stock")
+    Rel(s3, r3, "Actualiza material")
+    Rel(r1, db, "SQL/TCP")
+    Rel(r2, db, "SQL/TCP")
+    Rel(r3, db, "SQL/TCP")

@@ -67,16 +67,16 @@
   <!-- SELECTOR DE SUB-PESTAÑAS (VISTAS) -->
   <div class="sub-tabs-container">
     <button type="button" class="sub-tab" [class.active]="vistaActiva === 'partidas'" (click)="cambiarVista('partidas')">
-      <span>📑</span> Partidas & APU (HU54 & HU57)
+      Partidas y precios unitarios
     </button>
     <button type="button" class="sub-tab" [class.active]="vistaActiva === 'consolidado'" (click)="cambiarVista('consolidado')">
-      <span>📊</span> Presupuesto Consolidado (HU58)
+      Presupuesto consolidado
     </button>
     <button type="button" class="sub-tab" [class.active]="vistaActiva === 'comparativa'" (click)="cambiarVista('comparativa')">
-      <span>⚖️</span> Comparativa Presupuestado vs Ejecutado (HU60)
+      Presupuestado vs. ejecutado
     </button>
     <button type="button" class="sub-tab" [class.active]="vistaActiva === 'apus'" (click)="cambiarVista('apus')">
-      <span>📘</span> Biblioteca de APU Corporativa (HU55)
+      Biblioteca de precios unitarios
     </button>
   </div>
 
@@ -381,7 +381,7 @@
         <p class="text-xs text-gray-500">Comparativa analítica y detección automática de sobrecostos o ahorros en obra.</p>
       </div>
       <button *ngIf="puedeRegistrarCosto()" (click)="abrirNuevoCosto()" class="btn-primary text-xs">
-        <span>＋</span> Registrar Costo Real (HU59)
+        <span>＋</span> Registrar costo real
       </button>
     </div>
 

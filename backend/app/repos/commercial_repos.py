@@ -222,82 +222,106 @@ def obtener_parametros_estimacion_empresa(id_empresa: int) -> dict:
 def listar_unidades_comerciales(id_empresa: int) -> list[dict]:
     """
     Recupera todas las unidades inmobiliarias de la empresa con su estructura,
-    obra, ubicación, modelo, ambientes, características, acabados y estado comercial CRM.
-    """
-    sql = f"""
-        SELECT u.id_unidad,
-               u.codigo AS codigo_unidad,
-               e.nombre AS nombre_unidad,
-               e.descripcion AS descripcion_unidad,
-               e.tipo AS tipo_estructura,
-               u.tipo_unidad,
-               u.superficie,
-               u.cantidad_plantas,
-               u.estado AS estado_construccion,
-               COALESCE(u.especificacion_acabado, 'NORMAL') AS especificacion_acabado,
-               u.id_modelo,
-               m.nombre AS modelo_nombre,
-               m.descripcion AS modelo_descripcion,
-               o.id_obra,
-               o.nombre AS nombre_obra,
-               o.codigo AS codigo_obra,
-               o.estado_obra AS estado_obra,
-               d.ubicacion,
-               d.zona,
-               d.distrito,
-               COALESCE(
-                   (SELECT json_agg(json_build_object('nombre', ua.nombre, 'cantidad', ua.cantidad) ORDER BY ua.nombre)
-                    FROM {Config.SCHEMA}.t_unidad_ambiente ua
-                    WHERE ua.id_unidad = u.id_unidad),
-                   '[]'::json
-               ) AS ambientes_json,
-               COALESCE(
-                   (SELECT json_agg(json_build_object('nombre', uc.nombre, 'valor', uc.valor) ORDER BY uc.nombre)
-                    FROM {Config.SCHEMA}.t_unidad_caracteristica uc
-                    WHERE uc.id_unidad = u.id_unidad),
-                   '[]'::json
-               ) AS caracteristicas_unidad_json,
-               COALESCE(
-                   (SELECT json_agg(json_build_object('nombre', mc.nombre, 'valor', mc.valor) ORDER BY mc.nombre)
-                    FROM {Config.SCHEMA}.t_modelo_caracteristica mc
-                    WHERE mc.id_modelo = u.id_modelo),
-                   '[]'::json
-               ) AS caracteristicas_modelo_json,
-               COALESCE(
-                   (SELECT json_agg(json_build_object('tipo', up.tipo, 'descripcion', up.descripcion) ORDER BY up.id_personalizacion DESC)
-                    FROM {Config.SCHEMA}.t_unidad_personalizacion up
-                    WHERE up.id_unidad = u.id_unidad),
-                   '[]'::json
-               ) AS personalizaciones_json,
-               (SELECT cu.estado_asociacion
-                FROM {Config.SCHEMA}.t_crm_cliente_unidad cu
-                WHERE cu.id_unidad = u.id_unidad
-                  AND cu.estado_asociacion IN ('VENDIDO', 'ENTREGADO', 'RESERVADO')
-                ORDER BY CASE cu.estado_asociacion
-                    WHEN 'ENTREGADO' THEN 1
-                    WHEN 'VENDIDO' THEN 2
-                    WHEN 'RESERVADO' THEN 3
-                    ELSE 4
-                END
-                LIMIT 1) AS estado_crm_ocupacion,
-               (SELECT cu.monto_pactado
-                FROM {Config.SCHEMA}.t_crm_cliente_unidad cu
-                WHERE cu.id_unidad = u.id_unidad
-                  AND cu.monto_pactado IS NOT NULL
-                  AND cu.monto_pactado > 0
-                ORDER BY cu.updated_at DESC NULLS LAST, cu.id_cliente_unidad DESC
-                LIMIT 1) AS ultimo_monto_pactado
-        FROM {Config.SCHEMA}.t_unidad_construccion u
-        INNER JOIN {Config.SCHEMA}.t_estructura_obra e ON e.id_estructura = u.id_estructura
-        INNER JOIN {Config.SCHEMA}.t_obra o ON o.id_obra = e.id_obra
-        LEFT JOIN {Config.SCHEMA}.t_detalle_obra d ON d.id_obra = o.id_obra
-        LEFT JOIN {Config.SCHEMA}.t_modelo_unidad m ON m.id_modelo = u.id_modelo
-        WHERE o.id_empresa = %s
-        ORDER BY o.id_obra ASC, e.orden ASC NULLS LAST, u.id_unidad ASC;
+    obra, ubicación, modelo, ambientes, características, acabados, precio publicado
+    y estado comercial real. Nunca expone montos pactados de terceros.
     """
     db = PostgreSQL()
     db.create_connection()
     try:
+        # Detección segura de columnas opcionales de amoblamiento (si la migración aditiva está aplicada)
+        col_check = db.execute_query(
+            """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = %s
+              AND table_name = 't_unidad_construccion'
+              AND column_name IN ('estado_amoblamiento', 'costo_mobiliario_estimado');
+            """,
+            (Config.SCHEMA,),
+            fetchall=True,
+        ) or []
+        optional_cols = {r[0] for r in col_check}
+        amob_expr = (
+            "COALESCE(u.estado_amoblamiento, 'DESCONOCIDO')"
+            if 'estado_amoblamiento' in optional_cols
+            else "'DESCONOCIDO'"
+        )
+        mob_cost_expr = (
+            "u.costo_mobiliario_estimado"
+            if 'costo_mobiliario_estimado' in optional_cols
+            else "NULL::numeric"
+        )
+
+        sql = f"""
+            SELECT u.id_unidad,
+                   u.codigo AS codigo_unidad,
+                   e.nombre AS nombre_unidad,
+                   COALESCE(NULLIF(TRIM(u.descripcion_comercial), ''), e.descripcion) AS descripcion_unidad,
+                   e.tipo AS tipo_estructura,
+                   u.tipo_unidad,
+                   u.superficie,
+                   u.cantidad_plantas,
+                   u.estado AS estado_construccion,
+                   COALESCE(u.especificacion_acabado, 'NORMAL') AS especificacion_acabado,
+                   u.id_modelo,
+                   m.nombre AS modelo_nombre,
+                   m.descripcion AS modelo_descripcion,
+                   o.id_obra,
+                   o.nombre AS nombre_obra,
+                   o.codigo AS codigo_obra,
+                   o.estado_obra AS estado_obra,
+                   d.ubicacion,
+                   d.zona,
+                   d.distrito,
+                   COALESCE(
+                       (SELECT json_agg(json_build_object('nombre', ua.nombre, 'cantidad', ua.cantidad) ORDER BY ua.nombre)
+                        FROM {Config.SCHEMA}.t_unidad_ambiente ua
+                        WHERE ua.id_unidad = u.id_unidad),
+                       '[]'::json
+                   ) AS ambientes_json,
+                   COALESCE(
+                       (SELECT json_agg(json_build_object('nombre', uc.nombre, 'valor', uc.valor) ORDER BY uc.nombre)
+                        FROM {Config.SCHEMA}.t_unidad_caracteristica uc
+                        WHERE uc.id_unidad = u.id_unidad),
+                       '[]'::json
+                   ) AS caracteristicas_unidad_json,
+                   COALESCE(
+                       (SELECT json_agg(json_build_object('nombre', mc.nombre, 'valor', mc.valor) ORDER BY mc.nombre)
+                        FROM {Config.SCHEMA}.t_modelo_caracteristica mc
+                        WHERE mc.id_modelo = u.id_modelo),
+                       '[]'::json
+                   ) AS caracteristicas_modelo_json,
+                   COALESCE(
+                       (SELECT json_agg(json_build_object('tipo', up.tipo, 'descripcion', up.descripcion) ORDER BY up.id_personalizacion DESC)
+                        FROM {Config.SCHEMA}.t_unidad_personalizacion up
+                        WHERE up.id_unidad = u.id_unidad),
+                       '[]'::json
+                   ) AS personalizaciones_json,
+                   (SELECT cu.estado_asociacion
+                    FROM {Config.SCHEMA}.t_crm_cliente_unidad cu
+                    WHERE cu.id_unidad = u.id_unidad
+                      AND cu.estado_asociacion IN ('VENDIDO', 'ENTREGADO', 'RESERVADO')
+                    ORDER BY CASE cu.estado_asociacion
+                        WHEN 'ENTREGADO' THEN 1
+                        WHEN 'VENDIDO' THEN 2
+                        WHEN 'RESERVADO' THEN 3
+                        ELSE 4
+                    END
+                    LIMIT 1) AS estado_crm_ocupacion,
+                   u.publicado_comercial,
+                   u.precio_venta,
+                   COALESCE(u.moneda_comercial, o.moneda, 'BOB') AS moneda_comercial,
+                   u.estado_comercial,
+                   {amob_expr} AS estado_amoblamiento,
+                   {mob_cost_expr} AS costo_mobiliario_estimado
+            FROM {Config.SCHEMA}.t_unidad_construccion u
+            INNER JOIN {Config.SCHEMA}.t_estructura_obra e ON e.id_estructura = u.id_estructura
+            INNER JOIN {Config.SCHEMA}.t_obra o ON o.id_obra = e.id_obra
+            LEFT JOIN {Config.SCHEMA}.t_detalle_obra d ON d.id_obra = o.id_obra
+            LEFT JOIN {Config.SCHEMA}.t_modelo_unidad m ON m.id_modelo = u.id_modelo
+            WHERE o.id_empresa = %s
+            ORDER BY o.id_obra ASC, e.orden ASC NULLS LAST, u.id_unidad ASC;
+        """
         rows = db.execute_query(sql, (id_empresa,), fetchall=True) or []
         unidades = []
         for r in rows:
@@ -316,11 +340,18 @@ def listar_unidades_comerciales(id_empresa: int) -> list[dict]:
 
             estado_construccion = str(r[8] or 'PLANIFICADO').upper()
             estado_crm = str(r[24] or '').upper() if r[24] else None
-            if estado_crm in ('VENDIDO', 'ENTREGADO'):
+            publicado_comercial = r[25]
+            precio_venta = _to_decimal(r[26], '0.00') if r[26] is not None else None
+            moneda_comercial = str(r[27] or 'BOB').strip().upper()
+            estado_comercial_col = str(r[28] or '').strip().upper()
+            estado_amoblamiento_col = str(r[29] or 'DESCONOCIDO').strip().upper()
+            costo_mobiliario_col = _to_decimal(r[30], '0.00') if r[30] is not None else None
+
+            if estado_crm in ('VENDIDO', 'ENTREGADO') or estado_comercial_col in ('VENDIDA', 'VENDIDO', 'ENTREGADA', 'ENTREGADO'):
                 disponibilidad = 'VENDIDA'
-            elif estado_crm == 'RESERVADO':
+            elif estado_crm == 'RESERVADO' or estado_comercial_col in ('RESERVADA', 'RESERVADO'):
                 disponibilidad = 'RESERVADA'
-            elif estado_construccion == 'SUSPENDIDO':
+            elif estado_construccion == 'SUSPENDIDO' or estado_comercial_col in ('NO_DISPONIBLE', 'INACTIVA', 'BLOQUEADA') or publicado_comercial is False:
                 disponibilidad = 'NO_DISPONIBLE'
             else:
                 disponibilidad = 'DISPONIBLE'
@@ -353,7 +384,11 @@ def listar_unidades_comerciales(id_empresa: int) -> list[dict]:
                 'caracteristicas_map': {k.lower(): v for k, v in merged_car.items()},
                 'personalizaciones': personalizaciones,
                 'disponibilidad_comercial': disponibilidad,
-                'ultimo_monto_pactado': _to_decimal(r[25], '0.00') if r[25] is not None else None,
+                'publicado_comercial': publicado_comercial if publicado_comercial is not None else True,
+                'precio_venta': precio_venta if (precio_venta is not None and precio_venta > 0) else None,
+                'moneda_comercial': moneda_comercial,
+                'estado_amoblamiento': estado_amoblamiento_col,
+                'costo_mobiliario_estimado': costo_mobiliario_col if (costo_mobiliario_col is not None and costo_mobiliario_col > 0) else None,
             })
         return unidades
     finally:

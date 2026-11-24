@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-11-02T03:08:00.000Z" agent="Antigravity" version="24.0.0" type="device">
+  <diagram id="secuencia_cu36_salida_material" name="CU36 - Secuencia Salida">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="800" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="frame_sd" value="sd CU36 - Registrar salida de material" style="shape=umlFrame;whiteSpace=wrap;html=1;width=309;height=22;fillColor=none;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=11;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="15" y="15" width="1015" height="715" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_actor" value="user : Supervisor" style="shape=umlLifeline;participant=umlActor;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="60" y="50" width="40" height="645" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_ui" value="ui : Form_Registrar_Salida" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=11;fontColor=#000000;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="140" y="60" width="150" height="635" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_router" value="router : inventario_routes" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=11;fontColor=#000000;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="315" y="60" width="150" height="635" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_service" value="service : inventario_services" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=11;fontColor=#000000;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="490" y="60" width="150" height="635" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_t_mat" value="t_material" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=11;fontColor=#000000;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="665" y="60" width="150" height="635" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_t_mov" value="t_movimiento_almacen" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=11;fontColor=#000000;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="840" y="60" width="150" height="635" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_101" value="1: ingresar_datos_salida(id_material, cantidad, obs)" style="html=1;verticalAlign=bottom;endArrow=block;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="80" y="125" as="sourcePoint"/><mxPoint x="215" y="125" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_102" value="2: verificarStockDisponible()" style="html=1;align=left;spacingLeft=5;verticalAlign=bottom;endArrow=block;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontColor=#000000;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="215" y="153" as="sourcePoint"/><mxPoint x="215" y="167" as="targetPoint"/><Array as="points"><mxPoint x="235" y="153"/><mxPoint x="235" y="167"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_103" value="3: POST /api/inventario/ajuste (tipo=&#x27;SALIDA_AJUSTE&#x27;, ...)" style="html=1;verticalAlign=bottom;endArrow=block;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="215" y="181" as="sourcePoint"/><mxPoint x="390" y="181" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_104" value="4: registrar_ajuste(data, token, ip)" style="html=1;verticalAlign=bottom;endArrow=block;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="390" y="209" as="sourcePoint"/><mxPoint x="565" y="209" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_105" value="5: validar_permiso(&#x27;Modificar_inventario&#x27;)" style="html=1;align=left;spacingLeft=5;verticalAlign=bottom;endArrow=block;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontColor=#000000;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="565" y="237" as="sourcePoint"/><mxPoint x="565" y="251" as="targetPoint"/><Array as="points"><mxPoint x="585" y="237"/><mxPoint x="585" y="251"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_106" value="6: SELECT stock_actual FROM t_material WHERE id_material=:id" style="html=1;verticalAlign=bottom;endArrow=block;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="565" y="265" as="sourcePoint"/><mxPoint x="740" y="265" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_107" value="7: return stock_actual" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontStyle=2;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="740" y="293" as="sourcePoint"/><mxPoint x="565" y="293" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_108" value="8: UPDATE t_material SET stock_actual = stock_actual - :cant" style="html=1;verticalAlign=bottom;endArrow=block;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="565" y="331" as="sourcePoint"/><mxPoint x="740" y="331" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_109" value="9: return ok" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontStyle=2;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="740" y="359" as="sourcePoint"/><mxPoint x="565" y="359" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_110" value="10: INSERT INTO t_movimiento_almacen (id_material, tipo=&#x27;SALIDA_AJUSTE&#x27;, ...)" style="html=1;verticalAlign=bottom;endArrow=block;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="565" y="387" as="sourcePoint"/><mxPoint x="915" y="387" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_111" value="11: return id_movimiento" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontStyle=2;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="915" y="415" as="sourcePoint"/><mxPoint x="565" y="415" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_112" value="12: return {success: true, data: resultado}" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontStyle=2;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="565" y="443" as="sourcePoint"/><mxPoint x="390" y="443" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_113" value="13: 200 OK (Salida registrada)" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontStyle=2;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="390" y="471" as="sourcePoint"/><mxPoint x="215" y="471" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_114" value="14: mostrar_exito(&#x27;Salida de material registrada&#x27;)" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontStyle=2;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="215" y="499" as="sourcePoint"/><mxPoint x="80" y="499" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_115" value="15: raise InventarioError(400, &#x27;Stock insuficiente&#x27;)" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontStyle=2;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="565" y="542" as="sourcePoint"/><mxPoint x="390" y="542" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_116" value="16: 400 Bad Request (&#x27;Stock insuficiente&#x27;)" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontStyle=2;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="390" y="570" as="sourcePoint"/><mxPoint x="215" y="570" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="edge_117" value="17: mostrar_alerta(&#x27;No hay suficiente stock para despachar&#x27;)" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;rounded=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontStyle=2;fontColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="215" y="598" as="sourcePoint"/><mxPoint x="80" y="598" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="alt_box" value="alt [stock_actual &gt;= cantidad]" style="shape=umlFrame;whiteSpace=wrap;html=1;width=140;height=20;fillColor=none;strokeColor=#000000;strokeWidth=1.2;fontFamily=Arial;fontSize=10;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="350" y="309" width="605" height="327" as="geometry" />
+        </mxCell>
+        <mxCell id="alt_else_line" value="[else stock insuficiente]" style="strokeColor=#000000;strokeWidth=1.2;dashed=1;endArrow=none;html=1;fontFamily=Arial;fontSize=10;fontStyle=1;align=left;spacingLeft=8;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="350" y="517" as="sourcePoint"/><mxPoint x="955" y="517" as="targetPoint"/></mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

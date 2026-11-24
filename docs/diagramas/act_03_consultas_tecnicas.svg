@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1150" height="860" viewBox="0 0 1150 860">
+<defs>
+      <marker id="act-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#000000"/>
+      </marker>
+    </defs>
+<rect width="1150" height="860" fill="#FFFFFF"/>
+<text x="30" y="32" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="bold" fill="#000000">Diagrama de Actividades: Gestionar Solicitudes Técnicas y Aclaraciones de Obra</text>
+<text x="30" y="48" font-family="Arial, Helvetica, sans-serif" font-size="10.5" fill="#555555">Flujo de resolución de dudas técnicas, inconsistencias de planos o solicitudes de información (RFI) entre terreno y proyectistas.</text>
+<rect x="30" y="60" width="1090" height="780" fill="none" stroke="#000000" stroke-width="1.3"/>
+<rect x="30.0" y="60" width="363.3333333333333" height="32" fill="#F4F4F4" stroke="#000000" stroke-width="1.2"/>
+<text x="211.66666666666666" y="81" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#000000">Supervisor en Obra</text>
+<rect x="393.3333333333333" y="60" width="363.3333333333333" height="32" fill="#F4F4F4" stroke="#000000" stroke-width="1.2"/>
+<text x="575.0" y="81" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#000000">Proyectista / Especialista</text>
+<line x1="393.3333333333333" y1="92" x2="393.3333333333333" y2="840" stroke="#000000" stroke-width="1.2"/>
+<rect x="756.6666666666666" y="60" width="363.3333333333333" height="32" fill="#F4F4F4" stroke="#000000" stroke-width="1.2"/>
+<text x="938.3333333333333" y="81" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#000000">Sistema OBRATEC</text>
+<line x1="756.6666666666666" y1="92" x2="756.6666666666666" y2="840" stroke="#000000" stroke-width="1.2"/>
+<line x1="180" y1="80" x2="180.0" y2="120" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<line x1="180.0" y1="175" x2="180.0" y2="210" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 180.0 265 L 180.0 240.25 L 950.0 240.25 L 950.0 210" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 950.0 260 L 950.0 278.0 L 570.0 278.0 L 570.0 300" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<line x1="570.0" y1="350" x2="570.0" y2="390" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 570.0 430 L 570.0 452.5 L 485.0 452.5 L 485.0 480" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="527.5" y="448.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">[Impacto mayor]</text>
+<path d="M 570.0 430 L 570.0 452.5 L 675.0 452.5 L 675.0 480" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="622.5" y="448.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">[Aclaración directa]</text>
+<path d="M 485.0 530 L 485.0 548.0 L 570.0 548.0 L 570.0 570" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 675.0 530 L 675.0 548.0 L 570.0 548.0 L 570.0 570" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 570.0 590 L 570.0 603.5 L 950.0 603.5 L 950.0 620" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 950.0 675 L 950.0 690.75 L 180.0 690.75 L 180.0 710" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<line x1="180.0" y1="760" x2="180" y2="780" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<circle cx="180" cy="70" r="11" fill="#000000" stroke="#000000" stroke-width="1.2"/>
+<rect x="90" y="120" width="180" height="55" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="180.0" y="144.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Detectar discrepancia o duda</text>
+<text x="180.0" y="157.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">en planos / especificaciones</text>
+<rect x="90" y="210" width="180" height="55" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="180.0" y="234.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Registrar consulta técnica,</text>
+<text x="180.0" y="247.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">adjuntar fotos y fijar urgencia</text>
+<rect x="860" y="210" width="180" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="950.0" y="232.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Asignar código único (RFI)</text>
+<text x="950.0" y="245.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y notificar al especialista</text>
+<rect x="480" y="300" width="180" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="570.0" y="322.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Examinar antecedentes,</text>
+<text x="570.0" y="335.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">planos base y memorias</text>
+<polygon points="570.0,390 590,410.0 570.0,430 550,410.0" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="570.0" y="366" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="bold" fill="#000000">¿Modifica diseño</text>
+<text x="570.0" y="378" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="bold" fill="#000000">o presupuesto?</text>
+<rect x="400" y="480" width="170" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="485.0" y="502.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Elaborar orden de cambio</text>
+<text x="485.0" y="515.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y convocar a comité de costos</text>
+<rect x="590" y="480" width="170" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="675.0" y="502.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Redactar dictamen técnico</text>
+<text x="675.0" y="515.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y adjuntar plano aclaratorio</text>
+<rect x="550" y="570" width="40" height="20" fill="#000000" rx="3"/>
+<rect x="860" y="620" width="180" height="55" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="950.0" y="644.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Marcar RFI como RESUELTA</text>
+<text x="950.0" y="657.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y distribuir respuesta oficial</text>
+<rect x="90" y="710" width="180" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="180.0" y="732.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Aplicar resolución en terreno</text>
+<text x="180.0" y="745.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y cerrar consulta técnica</text>
+<circle cx="180" cy="790" r="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<circle cx="180" cy="790" r="7" fill="#000000"/>
+</svg>

@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 
 import '../services/auth_provider.dart';
 import '../services/obra_service.dart';
+import '../services/offline_sync_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/offline_banner.dart';
 import 'proyecto_detalle_screen.dart';
 
 class ProyectosScreen extends StatefulWidget {
@@ -25,6 +27,8 @@ class _ProyectosScreenState extends State<ProyectosScreen> {
   List<Map<String, dynamic>> _tiposProyectoCache = [];
   String _filtroEstado = 'TODOS';
   String _busqueda = '';
+  bool _esCopiaLocal = false;
+  DateTime? _ultimaActualizacion;
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -49,13 +53,34 @@ class _ProyectosScreenState extends State<ProyectosScreen> {
     super.dispose();
   }
 
-  void _cargarProyectos() {
-    _futureProyectos = _obraService.listarProyectos();
+  void _cargarProyectos({bool forzar = false}) {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final empId = auth.empresaId;
+    if (empId != null && empId > 0 && !auth.esCliente) {
+      _futureProyectos = OfflineSyncService.instance
+          .obtenerObrasOfflineFirst(
+            idEmpresa: empId,
+            userKey: auth.userIdentityKey,
+            fetcherRemoto: _obraService.listarProyectos,
+            forzarRefresco: forzar,
+          )
+          .then((res) {
+            if (mounted) {
+              setState(() {
+                _esCopiaLocal = res.esCopiaLocal;
+                _ultimaActualizacion = res.ultimaActualizacion;
+              });
+            }
+            return res.data;
+          });
+    } else {
+      _futureProyectos = _obraService.listarProyectos();
+    }
   }
 
   Future<void> _refrescar() async {
     setState(() {
-      _cargarProyectos();
+      _cargarProyectos(forzar: true);
     });
     await _futureProyectos;
   }
@@ -327,6 +352,10 @@ class _ProyectosScreenState extends State<ProyectosScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            OfflineBanner(
+              esCopiaLocal: _esCopiaLocal,
+              ultimaActualizacion: _ultimaActualizacion,
+            ),
             // Filtros horizontales y Barra de búsqueda (Prototipo Screens 3 y 9)
             Container(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),

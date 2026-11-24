@@ -6,23 +6,23 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="flex flex-col items-center justify-center p-8 lg:p-12 text-center rounded-xl border border-dashed border-slate-300 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
-      <div class="flex h-14 w-14 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 mb-4 border border-amber-200 dark:border-amber-800/40">
-        <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" [attr.d]="iconoPath" />
+    <div class="flex flex-col items-center justify-center p-8 sm:p-10 text-center rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/40">
+      <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 mb-3.5 border border-amber-200/80 dark:border-amber-800/40">
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" [attr.d]="iconoPath" />
         </svg>
       </div>
       <h3 class="text-base font-bold text-slate-900 dark:text-white">
         {{ titulo }}
       </h3>
-      <p *ngIf="descripcion" class="mt-1 text-sm text-slate-500 dark:text-slate-400 max-w-sm">
+      <p *ngIf="descripcion" class="mt-1 text-sm text-slate-500 dark:text-slate-400 max-w-md leading-relaxed">
         {{ descripcion }}
       </p>
       <div *ngIf="accionTexto" class="mt-5">
         <button
           type="button"
           (click)="onAccion.emit()"
-          class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition shadow-xs"
+          class="ob-btn-primary text-xs px-4 py-2 min-h-[38px]"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />

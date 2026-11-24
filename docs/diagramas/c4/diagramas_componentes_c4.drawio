@@ -1,0 +1,679 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-11-22T12:05:00.000Z" agent="Antigravity" version="24.0.0" type="device">
+  <diagram id="01_gestion_usuarios" name="1. Usuarios">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="900" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title_01_gestion_usuarios" value="&lt;b style=&quot;font-size:14px;&quot;&gt;Diagrama de Componentes C4 (Nivel 3) - Gestión de Usuarios&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Arial;" vertex="1" parent="1">
+          <mxGeometry x="50" y="20" width="700" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="web" value="&lt;b&gt;Aplicación Web&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:10px;&quot;&gt;[Angular 18 + Tailwind CSS]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9.5px;&quot;&gt;Interfaz web para administración de usuarios y roles&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2B6CB0;strokeColor=#1A365D;strokeWidth=1.3;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="250" y="60" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="mobile" value="&lt;b&gt;Aplicación Móvil&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:10px;&quot;&gt;[Flutter + Dart]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9.5px;&quot;&gt;App móvil para inicio de sesión de operadores&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2B6CB0;strokeColor=#1A365D;strokeWidth=1.3;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="600" y="60" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="boundary" value="&lt;b&gt;Container:&lt;/b&gt; API Backend [FastAPI + Uvicorn]" style="swimlane;fontStyle=1;align=left;spacingLeft=10;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=0;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#4A5568;strokeWidth=1.5;strokeDasharray=4 4;fontFamily=Arial;fontSize=11;fontColor=#2D3748;" vertex="1" parent="1">
+          <mxGeometry x="80" y="200" width="940" height="460" as="geometry" />
+        </mxCell>
+        <mxCell id="c1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Auth &amp; Recovery Controller&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: FastAPI Router]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Login, refresh token y recuperación (auth_routes.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="260" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="c2" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Users &amp; Roles Controller&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: FastAPI Router]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Gestión de usuarios, roles y empresas (users_routes.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="580" y="260" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Auth &amp; Security Service&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: Python Service]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Validación JWT, hash contraseñas y RBAC (auth_services.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="390" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Users &amp; Tenant Service&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: Python Service]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Lógica multi-inquilino y perfiles (users_services.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="480" y="390" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="a1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Email Brevo Adapter&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: Python Client]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Envío de correos de recuperación (email_service.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="780" y="390" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="r1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Auth &amp; Users Repository&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: SQLAlchemy / PostgreSQL]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Persistencia de usuarios, roles y seguridad (auth_repos.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="300" y="520" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="db" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Base de Datos Principal&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[ContainerDb: PostgreSQL (schema: obras)]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Persiste t_usuario, t_rol, t_empresa, t_persona&lt;/span&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#2B6CB0;strokeColor=#1A365D;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="280" y="720" width="320" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="brevo" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Brevo API&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[System_Ext: Servicio Externo]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Servicio de correos transaccionales&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#718096;strokeColor=#4A5568;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="770" y="720" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="link_101" value="Login y recuperación [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="web" target="c1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_102" value="Administra usuarios y roles [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="web" target="c2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_103" value="Autenticación móvil [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="mobile" target="c1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_104" value="Delega autenticación" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="c1" target="s1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_105" value="Delega perfiles" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="c2" target="s2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_106" value="Solicita envío de correo" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s1" target="a1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_107" value="HTTPS/REST" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a1" target="brevo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_108" value="Consulta credenciales" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s1" target="r1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_109" value="Persiste usuario" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s2" target="r1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_110" value="SQL/TCP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="r1" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="02_gestion_proyectos" name="2. Proyectos">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="900" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title_02_gestion_proyectos" value="&lt;b style=&quot;font-size:14px;&quot;&gt;Diagrama de Componentes C4 (Nivel 3) - Gestión de Proyectos&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Arial;" vertex="1" parent="1">
+          <mxGeometry x="50" y="20" width="700" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="web" value="&lt;b&gt;Aplicación Web&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:10px;&quot;&gt;[Angular 18 + Tailwind CSS]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9.5px;&quot;&gt;Administración de obras y estructuras&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2B6CB0;strokeColor=#1A365D;strokeWidth=1.3;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="250" y="60" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="mobile" value="&lt;b&gt;Aplicación Móvil&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:10px;&quot;&gt;[Flutter + Dart]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9.5px;&quot;&gt;Supervisión en terreno y avance&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2B6CB0;strokeColor=#1A365D;strokeWidth=1.3;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="600" y="60" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="boundary" value="&lt;b&gt;Container:&lt;/b&gt; API Backend [FastAPI + Uvicorn]" style="swimlane;fontStyle=1;align=left;spacingLeft=10;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=0;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#4A5568;strokeWidth=1.5;strokeDasharray=4 4;fontFamily=Arial;fontSize=11;fontColor=#2D3748;" vertex="1" parent="1">
+          <mxGeometry x="80" y="200" width="940" height="460" as="geometry" />
+        </mxCell>
+        <mxCell id="c1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Obra &amp; Estructura Controller&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: FastAPI Router]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Rutas de proyectos y estructuras (obra_routes.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="100" y="260" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="c2" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Avance de Obra Controller&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: FastAPI Router]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Registro de avances físicos (avance_routes.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="420" y="260" width="230" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Consulta Técnica Controller&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: FastAPI Router]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Ciclo de vida de RFIs (consulta_tecnica_routes.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="720" y="260" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Obra Service&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: Python Service]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Lógica de proyectos y jerarquías (obra_services.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="100" y="390" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Avance Service&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: Python Service]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Cálculo de avances acumulados (avance_services.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="420" y="390" width="230" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Consulta Técnica Service&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: Python Service]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Flujo de estados y respuestas RFI (consulta_tecnica_services.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="720" y="390" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="r1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Proyectos Repository&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: SQLAlchemy / PostgreSQL]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Persistencia de obras, frentes y avances (obra_repos.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="240" y="520" width="260" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="r2" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Consulta Técnica Repository&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: SQLAlchemy / PostgreSQL]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Trazabilidad e historial de RFIs (consulta_tecnica_repos.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="600" y="520" width="260" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="db" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Base de Datos Principal&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[ContainerDb: PostgreSQL (schema: obras)]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Persiste t_obra, t_estructura, t_avance, t_consulta_tecnica&lt;/span&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#2B6CB0;strokeColor=#1A365D;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="390" y="720" width="320" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="link_101" value="Gestiona proyectos [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="web" target="c1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_102" value="Consulta avances [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="web" target="c2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_103" value="Gestiona consultas RFI [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="web" target="c3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_104" value="Consulta asignación [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="mobile" target="c1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_105" value="Registra avance [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="mobile" target="c2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_106" value="Reporta RFI [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="mobile" target="c3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_107" value="Delega proyecto" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="c1" target="s1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_108" value="Delega avance" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="c2" target="s2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_109" value="Delega RFI" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="c3" target="s3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_110" value="Persiste obra" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s1" target="r1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_111" value="Persiste avance" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s2" target="r1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_112" value="Persiste consulta" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s3" target="r2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_113" value="SQL/TCP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="r1" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_114" value="SQL/TCP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="r2" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="03_inventario_materiales" name="3. Inventario">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="900" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title_03_inventario_materiales" value="&lt;b style=&quot;font-size:14px;&quot;&gt;Diagrama de Componentes C4 (Nivel 3) - Inventario y Materiales&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Arial;" vertex="1" parent="1">
+          <mxGeometry x="50" y="20" width="700" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="web" value="&lt;b&gt;Aplicación Web&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:10px;&quot;&gt;[Angular 18 + Tailwind CSS]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9.5px;&quot;&gt;Control de almacén y compras&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2B6CB0;strokeColor=#1A365D;strokeWidth=1.3;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="250" y="60" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="mobile" value="&lt;b&gt;Aplicación Móvil&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:10px;&quot;&gt;[Flutter + Dart]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9.5px;&quot;&gt;Entradas, salidas y recepciones físicas&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2B6CB0;strokeColor=#1A365D;strokeWidth=1.3;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="600" y="60" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="boundary" value="&lt;b&gt;Container:&lt;/b&gt; API Backend [FastAPI + Uvicorn]" style="swimlane;fontStyle=1;align=left;spacingLeft=10;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=0;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#4A5568;strokeWidth=1.5;strokeDasharray=4 4;fontFamily=Arial;fontSize=11;fontColor=#2D3748;" vertex="1" parent="1">
+          <mxGeometry x="80" y="200" width="940" height="460" as="geometry" />
+        </mxCell>
+        <mxCell id="c1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Inventario Controller&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: FastAPI Router]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Rutas para kardex y ajustes CU35/36 (inventario_routes.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="100" y="260" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="c2" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Compras Controller&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: FastAPI Router]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Órdenes de compra y recepciones (compras_routes.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="420" y="260" width="230" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Material Controller&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: FastAPI Router]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Catálogo de insumos y precios (material_routes.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="720" y="260" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Inventario Service&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: Python Service]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Movimientos de almacén y control de saldos (inventario_services.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="100" y="390" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Compras Service&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: Python Service]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Validación de órdenes y compras (compras_services.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="420" y="390" width="230" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Material Service&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: Python Service]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Mantenimiento del catálogo base (material_services.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="720" y="390" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="r1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Inventario Repository&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: SQLAlchemy / PostgreSQL]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Kardex y t_movimiento_almacen (inventario_repos.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="100" y="520" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="r2" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Compras Repository&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: SQLAlchemy / PostgreSQL]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Órdenes y recepciones de compra (compras_repos.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="420" y="520" width="230" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="r3" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Material Repository&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: SQLAlchemy / PostgreSQL]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Tablas de materiales y categorías (material_repos.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="720" y="520" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="db" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Base de Datos Principal&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[ContainerDb: PostgreSQL (schema: obras)]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Persiste t_material, t_movimiento_almacen, t_orden_compra&lt;/span&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#2B6CB0;strokeColor=#1A365D;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="390" y="720" width="320" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="link_101" value="Kardex y ajustes [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="web" target="c1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_102" value="Órdenes de compra [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="web" target="c2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_103" value="Catálogo [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="web" target="c3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_104" value="Entradas y salidas [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="mobile" target="c1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_105" value="Recepciona insumos [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="mobile" target="c2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_106" value="Delega ajuste" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="c1" target="s1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_107" value="Delega compra" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="c2" target="s2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_108" value="Delega catálogo" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="c3" target="s3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_109" value="Persiste movimiento" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s1" target="r1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_110" value="Persiste compra" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s2" target="r2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_111" value="Actualiza stock" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s2" target="r1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_112" value="Actualiza material" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s3" target="r3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_113" value="SQL/TCP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="r1" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_114" value="SQL/TCP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="r2" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_115" value="SQL/TCP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="r3" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="04_presupuesto_costos" name="4. Costos">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="900" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title_04_presupuesto_costos" value="&lt;b style=&quot;font-size:14px;&quot;&gt;Diagrama de Componentes C4 (Nivel 3) - Presupuesto y Costos&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Arial;" vertex="1" parent="1">
+          <mxGeometry x="50" y="20" width="700" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="web" value="&lt;b&gt;Aplicación Web&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:10px;&quot;&gt;[Angular 18 + Tailwind CSS]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9.5px;&quot;&gt;Gestión financiera, APU y costos&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2B6CB0;strokeColor=#1A365D;strokeWidth=1.3;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="250" y="60" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="mobile" value="&lt;b&gt;Aplicación Móvil&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:10px;&quot;&gt;[Flutter + Dart]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9.5px;&quot;&gt;Consulta de costos y estimaciones&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2B6CB0;strokeColor=#1A365D;strokeWidth=1.3;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="600" y="60" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="boundary" value="&lt;b&gt;Container:&lt;/b&gt; API Backend [FastAPI + Uvicorn]" style="swimlane;fontStyle=1;align=left;spacingLeft=10;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=0;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#4A5568;strokeWidth=1.5;strokeDasharray=4 4;fontFamily=Arial;fontSize=11;fontColor=#2D3748;" vertex="1" parent="1">
+          <mxGeometry x="80" y="200" width="940" height="460" as="geometry" />
+        </mxCell>
+        <mxCell id="c1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Presupuesto &amp; APU Controller&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: FastAPI Router]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Rutas de partidas, APU e insumos (presupuesto_routes.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="150" y="260" width="260" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="c2" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Control Costos Controller&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: FastAPI Router]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Costos ejecutados y estimaciones (control_costos_routes.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="560" y="260" width="260" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Presupuesto &amp; APU Service&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: Python Service]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Cálculo de precios unitarios y partidas (presupuesto_services.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="150" y="390" width="260" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Control Costos Service&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: Python Service]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Desviaciones de costo y afectaciones (control_costos_services.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="560" y="390" width="260" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="r1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Presupuesto Repository&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: SQLAlchemy / PostgreSQL]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Persistencia de partidas y APUs (presupuesto_repos.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="150" y="520" width="260" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="r2" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Costos Repository&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: SQLAlchemy / PostgreSQL]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Persistencia de costos y órdenes de cambio (control_costos_repos.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="560" y="520" width="260" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="db" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Base de Datos Principal&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[ContainerDb: PostgreSQL (schema: obras)]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Persiste t_presupuesto, t_partida, t_apu, t_control_costo&lt;/span&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#2B6CB0;strokeColor=#1A365D;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="360" y="720" width="320" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="link_101" value="Administra presupuestos [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="web" target="c1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_102" value="Audita costos finales [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="web" target="c2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_103" value="Consulta costos en obra [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="mobile" target="c2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_104" value="Delega presupuesto" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="c1" target="s1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_105" value="Delega liquidación" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="c2" target="s2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_106" value="Persiste partida" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s1" target="r1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_107" value="Persiste costo ejecutado" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s2" target="r2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_108" value="SQL/TCP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="r1" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_109" value="SQL/TCP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="r2" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="05_actividades_ordenes" name="5. Actividades">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="900" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title_05_actividades_ordenes" value="&lt;b style=&quot;font-size:14px;&quot;&gt;Diagrama de Componentes C4 (Nivel 3) - Actividades y Órdenes de Trabajo&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Arial;" vertex="1" parent="1">
+          <mxGeometry x="50" y="20" width="700" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="web" value="&lt;b&gt;Aplicación Web&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:10px;&quot;&gt;[Angular 18 + Tailwind CSS]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9.5px;&quot;&gt;Planificación y asignación operativa&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2B6CB0;strokeColor=#1A365D;strokeWidth=1.3;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="250" y="60" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="mobile" value="&lt;b&gt;Aplicación Móvil&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:10px;&quot;&gt;[Flutter + Dart]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9.5px;&quot;&gt;Ejecución de órdenes e incidencias&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2B6CB0;strokeColor=#1A365D;strokeWidth=1.3;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="600" y="60" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="boundary" value="&lt;b&gt;Container:&lt;/b&gt; API Backend [FastAPI + Uvicorn]" style="swimlane;fontStyle=1;align=left;spacingLeft=10;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=0;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#4A5568;strokeWidth=1.5;strokeDasharray=4 4;fontFamily=Arial;fontSize=11;fontColor=#2D3748;" vertex="1" parent="1">
+          <mxGeometry x="70" y="200" width="960" height="460" as="geometry" />
+        </mxCell>
+        <mxCell id="c1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Cronograma Controller&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: FastAPI Router]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Rutas de planificación CU39 (cronograma_routes.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="90" y="260" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="c2" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Orden Trabajo Controller&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: FastAPI Router]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Asignación de cuadrillas y tareas (orden_Trabajo_routes.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="350" y="260" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Incidencias Controller&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: FastAPI Router]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Registro de eventos e incidencias (incidencia_routes.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="610" y="260" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Cronograma Service&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: Python Service]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Diagrama de Gantt y dependencias (cronograma_services.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="90" y="390" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Orden Trabajo Service&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: Python Service]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Control de cuadrillas y ejecución (orden_Trabajo_services.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="350" y="390" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Incidencias Service&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: Python Service]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Resolución y evidencias multimedia (incidencia_services.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="610" y="390" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="a1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Cloudinary Adapter&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: Python Client]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Subida segura de fotos y planos (incidencia_services.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="840" y="390" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="r1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Cronograma Repository&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: SQLAlchemy / PostgreSQL]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Persistencia de hitos y tareas (cronograma_repos.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="90" y="520" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="r2" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Orden Trabajo Repository&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: SQLAlchemy / PostgreSQL]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Persistencia de asignaciones de cuadrilla (orden_Trabajo_repos.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="350" y="520" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="r3" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Incidencias Repository&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: SQLAlchemy / PostgreSQL]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Persistencia de incidencias y evidencias (incidencia_repos.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="610" y="520" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="db" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Base de Datos Principal&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[ContainerDb: PostgreSQL (schema: obras)]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Persiste t_cronograma, t_orden_trabajo, t_incidencia&lt;/span&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#2B6CB0;strokeColor=#1A365D;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="280" y="720" width="320" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="cloudinary" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Cloudinary API&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[System_Ext: Servicio Externo]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Almacenamiento multimedia en la nube&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#718096;strokeColor=#4A5568;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="780" y="720" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="link_101" value="Planifica cronograma [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="web" target="c1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_102" value="Emite órdenes [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="web" target="c2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_103" value="Monitorea incidencias [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="web" target="c3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_104" value="Ejecuta órdenes [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="mobile" target="c2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_105" value="Reporta incidencias [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="mobile" target="c3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_106" value="Delega cronograma" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="c1" target="s1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_107" value="Delega orden" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="c2" target="s2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_108" value="Delega incidencia" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="c3" target="s3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_109" value="Sube evidencias multimedia" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s3" target="a1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_110" value="HTTPS/REST" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a1" target="cloudinary">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_111" value="Persiste tarea" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s1" target="r1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_112" value="Persiste asignación" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s2" target="r2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_113" value="Persiste incidencia" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s3" target="r3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_114" value="SQL/TCP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="r1" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_115" value="SQL/TCP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="r2" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_116" value="SQL/TCP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="r3" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="06_reportes_analisis" name="6. Reportes">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="900" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title_06_reportes_analisis" value="&lt;b style=&quot;font-size:14px;&quot;&gt;Diagrama de Componentes C4 (Nivel 3) - Reportes y Análisis&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Arial;" vertex="1" parent="1">
+          <mxGeometry x="50" y="20" width="700" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="web" value="&lt;b&gt;Aplicación Web&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:10px;&quot;&gt;[Angular 18 + Tailwind CSS]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9.5px;&quot;&gt;Generación y visualización de reportes&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2B6CB0;strokeColor=#1A365D;strokeWidth=1.3;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="250" y="60" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="mobile" value="&lt;b&gt;Aplicación Móvil&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:10px;&quot;&gt;[Flutter + Dart]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9.5px;&quot;&gt;Descarga de reportes operativos&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2B6CB0;strokeColor=#1A365D;strokeWidth=1.3;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="600" y="60" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="boundary" value="&lt;b&gt;Container:&lt;/b&gt; API Backend [FastAPI + Uvicorn]" style="swimlane;fontStyle=1;align=left;spacingLeft=10;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=0;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#4A5568;strokeWidth=1.5;strokeDasharray=4 4;fontFamily=Arial;fontSize=11;fontColor=#2D3748;" vertex="1" parent="1">
+          <mxGeometry x="80" y="200" width="940" height="460" as="geometry" />
+        </mxCell>
+        <mxCell id="c1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Reportes Controller&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: FastAPI Router]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Rutas de generación y descarga PDF/Excel (reportes_routes.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="260" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="c2" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Notificaciones Controller&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: FastAPI Router]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Alertas y auditoría del sistema (notificaciones_routes.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="580" y="260" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Reportes Service&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: Python Service]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Motor de reportes PDF/Excel (reportes_services.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="390" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Notificaciones Service&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: Python Service]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Gestión de eventos y bitácora (notificaciones_services.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="480" y="390" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="a1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Brevo Dispatch Adapter&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: Python Client]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Envío de reportes adjuntos (reportes/worker.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="780" y="390" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="r1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Reportes Repository&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: SQLAlchemy / PostgreSQL]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Persistencia de archivos y programaciones (reportes_repos.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="220" y="520" width="260" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="r2" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Notificaciones Repository&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: SQLAlchemy / PostgreSQL]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Persistencia de alertas y bitácora (notificaciones_repos.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="540" y="520" width="260" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="db" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Base de Datos Principal&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[ContainerDb: PostgreSQL (schema: obras)]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Persiste t_reporte_ejecucion, notificacion, t_bitacora&lt;/span&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#2B6CB0;strokeColor=#1A365D;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="280" y="720" width="320" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="brevo" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Brevo API&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[System_Ext: Servicio Externo]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Envío de correos y documentos adjuntos&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#718096;strokeColor=#4A5568;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="770" y="720" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="link_101" value="Solicita reportes [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="web" target="c1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_102" value="Consulta alertas [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="web" target="c2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_103" value="Descarga PDF [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="mobile" target="c1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_104" value="Delega generación" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="c1" target="s1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_105" value="Delega notificación" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="c2" target="s2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_106" value="Programa despacho por email" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s1" target="a1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_107" value="HTTPS/REST" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a1" target="brevo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_108" value="Persiste archivo" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s1" target="r1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_109" value="Persiste alerta" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s2" target="r2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_110" value="SQL/TCP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="r1" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_111" value="SQL/TCP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="r2" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="07_comercial_crm" name="7. CRM">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="900" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title_07_comercial_crm" value="&lt;b style=&quot;font-size:14px;&quot;&gt;Diagrama de Componentes C4 (Nivel 3) - Comercial y CRM&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Arial;" vertex="1" parent="1">
+          <mxGeometry x="50" y="20" width="700" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="web" value="&lt;b&gt;Aplicación Web&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:10px;&quot;&gt;[Angular 18 + Tailwind CSS]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9.5px;&quot;&gt;Gestión de prospectos, unidades y pagos SaaS&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2B6CB0;strokeColor=#1A365D;strokeWidth=1.3;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="250" y="60" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="mobile" value="&lt;b&gt;Aplicación Móvil&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:10px;&quot;&gt;[Flutter + Dart]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9.5px;&quot;&gt;Consulta comercial de unidades&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2B6CB0;strokeColor=#1A365D;strokeWidth=1.3;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="600" y="60" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="boundary" value="&lt;b&gt;Container:&lt;/b&gt; API Backend [FastAPI + Uvicorn]" style="swimlane;fontStyle=1;align=left;spacingLeft=10;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=0;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#4A5568;strokeWidth=1.5;strokeDasharray=4 4;fontFamily=Arial;fontSize=11;fontColor=#2D3748;" vertex="1" parent="1">
+          <mxGeometry x="70" y="200" width="960" height="460" as="geometry" />
+        </mxCell>
+        <mxCell id="c1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;CRM Controller&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: FastAPI Router]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Rutas de prospectos e interacciones (crm_routes.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="100" y="260" width="210" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="c2" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Unidades Controller&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: FastAPI Router]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Catálogo de inmuebles y modelos (unidad_routes.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="350" y="260" width="210" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Suscripción &amp; Pagos Controller&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: FastAPI Router]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Checkout Stripe y planes (pago_routes.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="600" y="260" width="210" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;CRM Service&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: Python Service]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Embudo comercial y seguimiento (crm_services.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="100" y="390" width="210" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Unidades Service&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: Python Service]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Gestión de inmuebles y precios (unidad_services.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="350" y="390" width="210" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Pagos &amp; SaaS Service&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: Python Service]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Cobros y renovación de planes (pago_services.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="600" y="390" width="210" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="a1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Stripe Gateway Adapter&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: Python Client]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Adaptador SDK Stripe (stripe_gateway.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="840" y="390" width="170" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="r1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;CRM Repository&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: SQLAlchemy / PostgreSQL]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Clientes e interacciones (crm_repos.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="100" y="520" width="210" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="r2" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Unidades Repository&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: SQLAlchemy / PostgreSQL]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Unidades y modelos (unidad_repos.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="350" y="520" width="210" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="r3" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Pagos Repository&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: SQLAlchemy / PostgreSQL]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Planes y transacciones (pago_repos.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="600" y="520" width="210" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="db" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Base de Datos Principal&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[ContainerDb: PostgreSQL (schema: obras)]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Persiste t_crm_cliente, t_unidad_construccion, t_pago_suscripcion&lt;/span&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#2B6CB0;strokeColor=#1A365D;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="280" y="720" width="320" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="stripe" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Stripe API&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[System_Ext: Servicio Externo]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Pasarela de pagos en línea&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#718096;strokeColor=#4A5568;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="780" y="720" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="link_101" value="Gestiona prospectos [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="web" target="c1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_102" value="Catálogo de unidades [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="web" target="c2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_103" value="Pago de plan [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="web" target="c3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_104" value="Consulta inmuebles [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="mobile" target="c2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_105" value="Delega CRM" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="c1" target="s1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_106" value="Delega unidades" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="c2" target="s2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_107" value="Delega pago" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="c3" target="s3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_108" value="Ejecuta cobro" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s3" target="a1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_109" value="HTTPS/REST" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a1" target="stripe">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_110" value="Persiste cliente" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s1" target="r1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_111" value="Persiste unidad" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s2" target="r2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_112" value="Persiste pago" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s3" target="r3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_113" value="SQL/TCP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="r1" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_114" value="SQL/TCP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="r2" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_115" value="SQL/TCP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="r3" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="08_asistente_inteligente" name="8. IA">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="900" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title_08_asistente_inteligente" value="&lt;b style=&quot;font-size:14px;&quot;&gt;Diagrama de Componentes C4 (Nivel 3) - Asistente Inteligente&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Arial;" vertex="1" parent="1">
+          <mxGeometry x="50" y="20" width="700" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="web" value="&lt;b&gt;Aplicación Web&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:10px;&quot;&gt;[Angular 18 + Tailwind CSS]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9.5px;&quot;&gt;Chatbot interactivo comercial y de obra&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2B6CB0;strokeColor=#1A365D;strokeWidth=1.3;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="250" y="60" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="mobile" value="&lt;b&gt;Aplicación Móvil&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:10px;&quot;&gt;[Flutter + Dart]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9.5px;&quot;&gt;Consultas por voz y texto al asistente&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2B6CB0;strokeColor=#1A365D;strokeWidth=1.3;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="600" y="60" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="boundary" value="&lt;b&gt;Container:&lt;/b&gt; API Backend [FastAPI + Uvicorn]" style="swimlane;fontStyle=1;align=left;spacingLeft=10;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=0;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#4A5568;strokeWidth=1.5;strokeDasharray=4 4;fontFamily=Arial;fontSize=11;fontColor=#2D3748;" vertex="1" parent="1">
+          <mxGeometry x="80" y="200" width="940" height="460" as="geometry" />
+        </mxCell>
+        <mxCell id="c1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;AI Assistant Controller&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: FastAPI Router]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Rutas de chat, sugerencias y CRM (ai_routes.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="200" y="260" width="260" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;AI Engine Service&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: Python Service]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Orquestación de prompts y memoria (ai/ai_service.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="390" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Context Builder Service&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: Python Service]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Extracción de contexto de obra y empresa (context_builder.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="420" y="390" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="a1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Gemini &amp; Groq Adapter&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: Python Client]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Cliente SDK a modelos LLM (gemini_provider.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="740" y="390" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="r1" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Assistant Repository&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[Component: SQLAlchemy / PostgreSQL]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Persistencia de sesiones de chat y mensajes (assistant_repos.py)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4299E1;strokeColor=#2B6CB0;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="200" y="520" width="260" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="db" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Base de Datos Principal&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[ContainerDb: PostgreSQL (schema: obras)]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Persiste t_asistente_conversacion, t_asistente_mensaje&lt;/span&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#2B6CB0;strokeColor=#1A365D;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="220" y="720" width="320" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="gemini" value="&lt;b style=&quot;font-size:11px;&quot;&gt;Gemini / Groq API&lt;/b&gt;&lt;br/&gt;&lt;i style=&quot;font-size:9.5px;&quot;&gt;[System_Ext: Servicio Externo]&lt;/i&gt;&lt;br/&gt;&lt;span style=&quot;font-size:9px;&quot;&gt;Modelos LLM de lenguaje natural para inferencia&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#718096;strokeColor=#4A5568;strokeWidth=1.2;fontFamily=Arial;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="730" y="720" width="240" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="link_101" value="Envía preguntas y chat [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="web" target="c1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_102" value="Consultas operativas [JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="mobile" target="c1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_103" value="Delega consulta IA" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="c1" target="s1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_104" value="Solicita contexto de negocio" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s1" target="s2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_105" value="Envía prompt enriquecido" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s1" target="a1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_106" value="Inferencia HTTPS/REST" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a1" target="gemini">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_107" value="Persiste conversación" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="s1" target="r1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link_108" value="SQL/TCP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;strokeColor=#2D3748;strokeWidth=1.2;fontFamily=Arial;fontSize=9.5;fontColor=#1A202C;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="r1" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

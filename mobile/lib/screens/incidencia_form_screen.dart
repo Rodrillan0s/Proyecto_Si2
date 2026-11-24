@@ -4,9 +4,11 @@ import 'package:provider/provider.dart';
 import '../services/auth_provider.dart';
 import '../services/incidencia_service.dart';
 import '../services/obra_service.dart';
+import '../services/offline_sync_service.dart';
 import '../services/unidad_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/incidencia_widgets.dart';
+import '../widgets/offline_banner.dart';
 
 /// CU19 — HU69/HU70: registrar o editar una incidencia.
 ///
@@ -79,8 +81,20 @@ class _IncidenciaFormScreenState extends State<IncidenciaFormScreen> {
       _errorCarga = null;
     });
     try {
-      final trabajador = context.read<AuthProvider>().esTrabajadorCampo;
-      final lista = trabajador ? await _service.obrasRegistro() : await _obraService.listarProyectos();
+      final auth = context.read<AuthProvider>();
+      final trabajador = auth.esTrabajadorCampo;
+      final empId = auth.empresaId;
+      List<Map<String, dynamic>> lista;
+      if (empId != null && empId > 0 && !OfflineSyncService.instance.isOnline) {
+        final res = await OfflineSyncService.instance.obtenerObrasOfflineFirst(
+          idEmpresa: empId,
+          userKey: auth.userIdentityKey,
+          fetcherRemoto: trabajador ? _service.obrasRegistro : _obraService.listarProyectos,
+        );
+        lista = res.data;
+      } else {
+        lista = trabajador ? await _service.obrasRegistro() : await _obraService.listarProyectos();
+      }
       if (!mounted) return;
       setState(() {
         _proyectos = lista;
@@ -108,7 +122,20 @@ class _IncidenciaFormScreenState extends State<IncidenciaFormScreen> {
       _errorUnidades = null;
     });
     try {
-      final lista = await _unidadService.listarUnidades(idObra);
+      final auth = context.read<AuthProvider>();
+      final empId = auth.empresaId;
+      List<Map<String, dynamic>> lista;
+      if (empId != null && empId > 0 && !OfflineSyncService.instance.isOnline) {
+        final res = await OfflineSyncService.instance.obtenerUnidadesOfflineFirst(
+          idEmpresa: empId,
+          userKey: auth.userIdentityKey,
+          idObra: idObra,
+          fetcherRemoto: _unidadService.listarUnidades,
+        );
+        lista = res.data;
+      } else {
+        lista = await _unidadService.listarUnidades(idObra);
+      }
       if (!mounted || _idObra != idObra || solicitud != _solicitudUnidades) return;
       setState(() {
         _unidades = lista;
@@ -142,6 +169,28 @@ class _IncidenciaFormScreenState extends State<IncidenciaFormScreen> {
         mostrarMensajeIncidencia(context, 'Incidencia actualizada exitosamente.');
         Navigator.pop(context, true);
       } else {
+        final auth = context.read<AuthProvider>();
+        final empId = auth.empresaId;
+        final sync = OfflineSyncService.instance;
+        if (!sync.isOnline && empId != null && empId > 0) {
+          await sync.registrarIncidenciaOffline(
+            idEmpresa: empId,
+            userKey: auth.userIdentityKey,
+            idObra: _idObra!,
+            idUnidad: _idUnidad,
+            titulo: _tituloCtrl.text,
+            descripcion: _descripcionCtrl.text,
+            prioridad: _prioridad!,
+            ubicacion: _ubicacionCtrl.text,
+          );
+          if (!mounted) return;
+          mostrarMensajeIncidencia(
+            context,
+            'Sin conexión: incidencia guardada localmente para sincronización automática.',
+          );
+          Navigator.pop(context, true);
+          return;
+        }
         final res = await _service.registrar(
           idObra: _idObra!,
           idUnidad: _idUnidad,
@@ -175,6 +224,7 @@ class _IncidenciaFormScreenState extends State<IncidenciaFormScreen> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              const OfflineBanner(),
               if (_errorCarga != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),

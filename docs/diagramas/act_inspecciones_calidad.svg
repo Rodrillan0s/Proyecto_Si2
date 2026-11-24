@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1150" height="850" viewBox="0 0 1150 850">
+<defs>
+      <marker id="act-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#000000"/>
+      </marker>
+    </defs>
+<rect width="1150" height="850" fill="#FFFFFF"/>
+<text x="30" y="32" font-family="Arial, Helvetica, sans-serif" font-size="13.5" font-weight="bold" fill="#000000">Diagrama de Actividades: Gestionar Inspecciones y Control de Calidad</text>
+<text x="30" y="48" font-family="Arial, Helvetica, sans-serif" font-size="10.5" fill="#555555">Inspección técnica en terreno, aplicación de listas de chequeo normativo y resolución de no conformidades.</text>
+<rect x="30" y="60" width="1090" height="770" fill="none" stroke="#000000" stroke-width="1.3"/>
+<rect x="30.0" y="60" width="363.3333333333333" height="32" fill="#F4F4F4" stroke="#000000" stroke-width="1.2"/>
+<text x="211.66666666666666" y="81" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#000000">Inspector de Calidad</text>
+<rect x="393.3333333333333" y="60" width="363.3333333333333" height="32" fill="#F4F4F4" stroke="#000000" stroke-width="1.2"/>
+<text x="575.0" y="81" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#000000">Responsable de Cuadrilla</text>
+<line x1="393.3333333333333" y1="92" x2="393.3333333333333" y2="830" stroke="#000000" stroke-width="1.2"/>
+<rect x="756.6666666666666" y="60" width="363.3333333333333" height="32" fill="#F4F4F4" stroke="#000000" stroke-width="1.2"/>
+<text x="938.3333333333333" y="81" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#000000">Sistema</text>
+<line x1="756.6666666666666" y1="92" x2="756.6666666666666" y2="830" stroke="#000000" stroke-width="1.2"/>
+<line x1="195" y1="81" x2="195.0" y2="120" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 195.0 170 L 195.0 147.5 L 955.0 147.5 L 955.0 120" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 955.0 170 L 955.0 188.0 L 195.0 188.0 L 195.0 210" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="575.0" y="184.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Checklist cargado</text>
+<line x1="195.0" y1="260" x2="195.0" y2="300" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 195.0 340 L 195.0 358.0 L 125.0 358.0 L 125.0 380" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="160.0" y="354.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">[Con observaciones]</text>
+<path d="M 125.0 435 L 125.0 410.25 L 955.0 410.25 L 955.0 380" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 955.0 430 L 955.0 448.0 L 575.0 448.0 L 575.0 470" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="765.0" y="444.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Aviso de corrección</text>
+<path d="M 575.0 525 L 575.0 383.25 L 195.0 383.25 L 195.0 210" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="385.0" y="379.25" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Reinspeccionar</text>
+<line x1="195.0" y1="340" x2="195.0" y2="550" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="203.0" y="445.0" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">[Conforme 100%]</text>
+<path d="M 195.0 600 L 195.0 618.0 L 955.0 618.0 L 955.0 640" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="575.0" y="614.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Acta firmada</text>
+<path d="M 955.0 695 L 955.0 706.25 L 195.0 706.25 L 195.0 720" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="575.0" y="702.25" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Partida liberada</text>
+<line x1="195.0" y1="770" x2="195" y2="788" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<text x="203.0" y="779.0" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Dossier completo</text>
+<circle cx="195" cy="70" r="11" fill="#000000" stroke="#000000" stroke-width="1.2"/>
+<rect x="100" y="120" width="190" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="195.0" y="142.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Seleccionar frente de obra</text>
+<text x="195.0" y="155.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y partida a inspeccionar</text>
+<rect x="860" y="120" width="190" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="955.0" y="142.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Cargar lista de chequeo y</text>
+<text x="955.0" y="155.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">tolerancias técnicas normadas</text>
+<rect x="100" y="210" width="190" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="195.0" y="232.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Evaluar parámetros en campo</text>
+<text x="195.0" y="245.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y tomar fotografías de control</text>
+<polygon points="195.0,300 215,320.0 195.0,340 175,320.0" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="195.0" y="276" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="bold" fill="#000000">¿Cumple con</text>
+<text x="195.0" y="288" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="bold" fill="#000000">la norma?</text>
+<rect x="40" y="380" width="170" height="55" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="125.0" y="404.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Registrar 'No Conformidad',</text>
+<text x="125.0" y="417.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">plazo y severidad del defecto</text>
+<rect x="860" y="380" width="190" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="955.0" y="402.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Generar orden de subsanación</text>
+<text x="955.0" y="415.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y notificar al responsable</text>
+<rect x="480" y="470" width="190" height="55" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="575.0" y="494.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Ejecutar corrección en obra</text>
+<text x="575.0" y="507.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y solicitar reinspección</text>
+<rect x="100" y="550" width="190" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="195.0" y="572.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Firmar digitalmente acta</text>
+<text x="195.0" y="585.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">de aprobación de calidad</text>
+<rect x="860" y="640" width="190" height="55" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="955.0" y="664.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Certificar partida como apta</text>
+<text x="955.0" y="677.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">para avance y valorización</text>
+<rect x="100" y="720" width="190" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<text x="195.0" y="742.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Incorporar informe al dossier</text>
+<text x="195.0" y="755.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">de aseguramiento de obra</text>
+<circle cx="195" cy="800" r="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
+<circle cx="195" cy="800" r="7" fill="#000000"/>
+</svg>

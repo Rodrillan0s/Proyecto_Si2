@@ -564,8 +564,8 @@
       <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs">
         <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
           <div>
-            <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Gestión de Obras en Terreno</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400">Accede directamente a la estructura (CU12) y los materiales de cada obra (CU14)</p>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Obras en terreno</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Accede directamente a la estructura y los materiales de cada obra</p>
           </div>
           <button (click)="navegarA('/proyectos')" class="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline">
             Ver todas →
@@ -593,13 +593,13 @@
                 (click)="verProyecto(p.id_obra)"
                 class="px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition shadow-xs"
               >
-                🏗 Gestionar Estructura (CU12)
+                Estructura y unidades
               </button>
               <button
                 (click)="navegarA('/materiales')"
                 class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
               >
-                📦 Materiales (CU14)
+                Materiales
               </button>
             </div>
           </div>

@@ -44,6 +44,17 @@ def catalog(token, empresa=None):
 def build(db, ctx, request, intersect=None, rows_allowed=None, source_allowlist=None):
     if ctx.rol!='ADMINISTRADOR':
         subscription.exigir_escritura(ctx.empresa,getattr(db, "cur", None))
+    if getattr(request, 'consulta_dinamica', None):
+        from app.services.semantic.contracts import SemanticQuerySpec
+        from app.services.semantic.executor import execute_semantic_query
+        ctx.require('Visualizar_reportes')
+        spec = SemanticQuerySpec.model_validate(request.consulta_dinamica)
+        if request.presentacion and request.presentacion.titulo:
+            spec.titulo = request.presentacion.titulo
+        unified, scope = execute_semantic_query(db, ctx, spec)
+        if intersect is not None and scope:
+            scope = sorted(set(scope) & set(intersect))
+        return json.loads(json.dumps(unified.model_dump(mode='json'), default=repo.json_default)), scope
     definition, scope = authorize(db,ctx,request)
     if intersect is not None and request.reporte!='stock':
         scope = sorted(set(scope)&set(intersect))
@@ -164,7 +175,17 @@ def owned(db, ident, token, action='Visualizar_reportes'):
     ctx = context(db,user(token),item['id_empresa'])
     if ctx.usuario != item['id_usuario']:
         raise HTTPException(403,'El reporte pertenece a otro actor.')
-    _,scope = authorize(db,ctx,ReportRequest.model_validate(item['solicitud']),action,lectura=True)
+    sol = item['solicitud'] or {}
+    if isinstance(sol, dict) and sol.get('consulta_dinamica'):
+        from app.services.reportes.authorization import authorize_semantic_query
+        from app.services.semantic.contracts import SemanticQuerySpec
+        ctx.require(action)
+        if sol.get('reporte') == 'dinamico:cruce_obras':
+            scope = [w['id_obra'] for w in repo.works(db, ctx)]
+        else:
+            _, scope = authorize_semantic_query(db, ctx, SemanticQuerySpec.model_validate(sol['consulta_dinamica']))
+    else:
+        _,scope = authorize(db,ctx,ReportRequest.model_validate(sol),action,lectura=True)
     for permission in (item.get('resultado') or {}).get('permisos_fuente',[]):
         ctx.require(permission)
     if ctx.policy()!=item['politica'] or not set(item['alcance']).issubset(scope):

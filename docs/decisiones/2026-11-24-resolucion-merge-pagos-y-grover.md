@@ -61,3 +61,15 @@ Al inspeccionar `git status` y buscar marcadores de conflicto (`<<<<<<<`, `>>>>>
    - **Frontend (`npm run build`):** Compilación completa exitosa (`frontend/dist/frontend`).
 
 > Nota: Los cambios quedaron integrados en la rama local `main` (sin `git push` automático).
+
+---
+
+## 5. Ajuste posterior en Panel de Cliente (CU30)
+
+- **Hallazgo en ejecución local:** Al ingresar con rol `CLIENTE`:
+  1. `panel.ts` invocaba `GET /api/proyectos/` porque el mapa local de permisos en `auth.ts` incluye `Visualizar_obras` para `CLIENTE`, mientras el backend valida permisos contra BD (`t_rol_permiso`) y devuelve `403 Forbidden`.
+  2. Los endpoints `/api/crm/cliente/unidades`, `/api/crm/cliente/comunicaciones` y `/api/crm/cliente/solicitudes` devuelven `404 Not Found` cuando el usuario `CLIENTE` autenticado no tiene un registro vinculado en `t_crm_cliente` (`tipo_cliente = 'CLIENTE'`) para su `(id_persona, id_empresa)` (o si el servidor Uvicorn no fue reiniciado tras el merge).
+- **Ajuste en `frontend/src/app/pages/panel/panel.ts`:**
+  - En `cargarDatosPorRol()`, omitir `cargarObras()` cuando `this.rolUsuario === 'CLIENTE'` (el portal de cliente consume exclusivamente los endpoints CU30).
+  - Mostrar el mensaje `err?.error?.detail` devuelto por el backend en los manejadores de error de `cargarUnidadesCliente`, `cargarComunicacionesCliente` y `cargarSolicitudesCliente` para diagnosticar de inmediato si falta vinculación CRM.
+- **Sin cambios en backend ni contratos:** se preserva el aislamiento multi-tenant y las pruebas unitarias CU30 existentes.

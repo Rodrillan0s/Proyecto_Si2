@@ -255,8 +255,8 @@ export class PanelComponent implements OnInit {
   }
 
   cargarDatosPorRol() {
-    // 1. Obras (si tiene Visualizar_obras)
-    if (this.hasPermission('Visualizar_obras')) {
+    // 1. Obras (si tiene Visualizar_obras y no es portal CLIENTE, que usa CU30)
+    if (this.rolUsuario !== 'CLIENTE' && this.hasPermission('Visualizar_obras')) {
       this.cargarObras();
     }
 
@@ -516,10 +516,10 @@ export class PanelComponent implements OnInit {
             this.cdr.detectChanges();
           });
         },
-        error: () => {
+        error: (err) => {
           this.ngZone.run(() => {
             this.cargandoUnidadesCliente = false;
-            this.errorUnidadesCliente = 'No se pudieron consultar sus unidades asignadas.';
+            this.errorUnidadesCliente = err?.error?.detail || 'No se pudieron consultar sus unidades asignadas.';
             this.cdr.detectChanges();
           });
         }
@@ -642,10 +642,10 @@ export class PanelComponent implements OnInit {
             this.cdr.detectChanges();
           });
         },
-        error: () => {
+        error: (err) => {
           this.ngZone.run(() => {
             this.cargandoComunicaciones = false;
-            this.errorComunicaciones = 'No se pudieron consultar las comunicaciones.';
+            this.errorComunicaciones = err?.error?.detail || 'No se pudieron consultar las comunicaciones.';
             this.cdr.detectChanges();
           });
         }
@@ -665,10 +665,10 @@ export class PanelComponent implements OnInit {
             this.cdr.detectChanges();
           });
         },
-        error: () => {
+        error: (err) => {
           this.ngZone.run(() => {
             this.cargandoSolicitudes = false;
-            this.errorSolicitudes = 'No se pudieron consultar sus solicitudes.';
+            this.errorSolicitudes = err?.error?.detail || 'No se pudieron consultar sus solicitudes.';
             this.cdr.detectChanges();
           });
         }

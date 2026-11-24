@@ -14,6 +14,7 @@ import '../services/notificacion_service.dart';
 import '../services/reportes_service.dart';
 import '../services/reportes_voice.dart';
 import '../theme/app_theme.dart';
+import '../widgets/chart_spec_card.dart';
 import 'reportes_screen.dart';
 
 class AsistenteScreen extends StatefulWidget {
@@ -477,6 +478,18 @@ class _AsistenteScreenState extends State<AsistenteScreen> {
               ? Map<String, dynamic>.from(respuesta['diagnostico'] as Map)
               : null);
 
+      final execChart = (ejecucion?['resultado'] is Map &&
+              (ejecucion!['resultado'] as Map)['chart_spec'] is Map)
+          ? Map<String, dynamic>.from((ejecucion['resultado'] as Map)['chart_spec'] as Map)
+          : null;
+      final chartSpec = (respuesta['chart_spec'] is Map)
+          ? Map<String, dynamic>.from(respuesta['chart_spec'] as Map)
+          : execChart;
+
+      final pendientes = (respuesta['pendientes'] is Map)
+          ? Map<String, dynamic>.from(respuesta['pendientes'] as Map)
+          : null;
+
       final sugerencias = (respuesta['sugerencias'] as List? ?? [])
           .map((e) => e.toString())
           .toList();
@@ -500,6 +513,8 @@ class _AsistenteScreenState extends State<AsistenteScreen> {
             request: solicitud,
             operacionPropuesta: operacionPropuesta,
             resultadoAnalisis: resultadoAnalisis,
+            chartSpec: chartSpec,
+            pendientes: pendientes,
             sugerencias: sugerencias,
             referencias: referencias,
           ),
@@ -876,6 +891,14 @@ class _AsistenteScreenState extends State<AsistenteScreen> {
           ? Map<String, dynamic>.from(res['estimacion_costo'] as Map)
           : null;
 
+      final propuestaProyecto = (res['propuesta_proyecto'] is Map)
+          ? Map<String, dynamic>.from(res['propuesta_proyecto'] as Map)
+          : null;
+
+      final motivosExclusion = (res['motivos_exclusion'] is Map)
+          ? Map<String, dynamic>.from(res['motivos_exclusion'] as Map)
+          : null;
+
       final registroCrm = (res['registro_crm'] is Map)
           ? Map<String, dynamic>.from(res['registro_crm'] as Map)
           : null;
@@ -904,6 +927,8 @@ class _AsistenteScreenState extends State<AsistenteScreen> {
             unidades: recomendadas,
             comparativa: comparativa,
             estimacionCosto: estimacion,
+            propuestaProyecto: propuestaProyecto,
+            motivosExclusion: motivosExclusion,
             registroCrm: registroCrm,
             requiereContacto: requiereContacto,
             mostrarFormularioContacto: requiereContacto,
@@ -1918,6 +1943,38 @@ class _AsistenteScreenState extends State<AsistenteScreen> {
               ),
             ],
 
+          // Visualización gráfica (ChartSpec)
+          if (msg.chartSpec != null &&
+              (msg.chartSpec!['tipo']?.toString() ?? 'none') != 'none') ...[
+            ChartSpecCard(
+              spec: msg.chartSpec,
+              rows: (msg.execution?['resultado'] is Map &&
+                      (msg.execution!['resultado'] as Map)['filas'] is List)
+                  ? List<dynamic>.from((msg.execution!['resultado'] as Map)['filas'] as List)
+                  : const [],
+              resumen: (msg.execution?['resultado'] is Map &&
+                      (msg.execution!['resultado'] as Map)['resumen'] is Map)
+                  ? Map<String, dynamic>.from((msg.execution!['resultado'] as Map)['resumen'] as Map)
+                  : null,
+              compact: true,
+            ),
+          ],
+
+          // Bandeja Proactiva de Pendientes
+          if (msg.pendientes != null &&
+              (msg.pendientes!['items'] is List) &&
+              (msg.pendientes!['items'] as List).isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _buildPendientesAdminCard(
+              msg.pendientes!,
+              isDark,
+              cardBg,
+              borderColor,
+              titleColor,
+              subColor,
+            ),
+          ],
+
           // Chips de desambiguación (Opciones de reportes u Obras)
           if (msg.choices.isNotEmpty || msg.works.isNotEmpty) ...[
             const SizedBox(height: 8),
@@ -2091,6 +2148,84 @@ class _AsistenteScreenState extends State<AsistenteScreen> {
               ],
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPendientesAdminCard(
+    Map<String, dynamic> pendientes,
+    bool isDark,
+    Color cardBg,
+    Color borderColor,
+    Color titleColor,
+    Color subColor,
+  ) {
+    final items = (pendientes['items'] as List? ?? []).whereType<Map>().take(6).toList();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'PENDIENTES PRIORIZADOS',
+                style: GoogleFonts.inter(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.primary,
+                ),
+              ),
+              Text(
+                '${items.length}',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          for (final item in items)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF0B0F19) : const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: borderColor),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '[${item['prioridad'] ?? 'MEDIA'}] ${item['titulo'] ?? ''}',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: titleColor,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${item['modulo'] ?? ''}${item['obra'] != null ? ' · ${item['obra']}' : ''} — ${item['motivo'] ?? ''}',
+                      style: GoogleFonts.inter(fontSize: 11, color: subColor),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -2634,6 +2769,20 @@ class _AsistenteScreenState extends State<AsistenteScreen> {
               ),
           ],
 
+          // 2b. Propuesta de Proyecto de Construcción Personalizado
+          if (msg.propuestaProyecto != null) ...[
+            const SizedBox(height: 10),
+            _buildPropuestaProyectoCard(
+              auth,
+              msg.propuestaProyecto!,
+              isDark,
+              cardBg,
+              borderColor,
+              titleColor,
+              subColor,
+            ),
+          ],
+
           // 3. Tabla Comparativa Lado a Lado
           if (msg.comparativa != null) ...[
             const SizedBox(height: 10),
@@ -2732,6 +2881,12 @@ class _AsistenteScreenState extends State<AsistenteScreen> {
     final banos = u['banos']?.toString() ?? '0';
     final score = u['afinidad_score'];
     final razones = (u['razones_recomendacion'] as List? ?? []);
+    final observaciones = (u['observaciones_criterio'] as List? ?? []);
+    final amoblamiento = u['estado_amoblamiento']?.toString() ?? 'DESCONOCIDO';
+    final esEstimacionPrecio = u['es_estimacion_precio'] == true;
+    final cotMob = (u['cotizacion_mobiliario_separada'] is Map)
+        ? Map<String, dynamic>.from(u['cotizacion_mobiliario_separada'] as Map)
+        : null;
     final seleccionada = sesion.unidadesSeleccionadasComparar.contains(idUnidad);
 
     return Container(
@@ -2821,15 +2976,54 @@ class _AsistenteScreenState extends State<AsistenteScreen> {
               Text('📐 $sup m²', style: GoogleFonts.inter(fontSize: 11.5, color: subColor)),
               Text('🛏 $dorms dorms', style: GoogleFonts.inter(fontSize: 11.5, color: subColor)),
               Text('🚿 $banos baños', style: GoogleFonts.inter(fontSize: 11.5, color: subColor)),
+              Text(
+                '🪑 $amoblamiento',
+                style: GoogleFonts.inter(fontSize: 11.5, color: subColor, fontWeight: FontWeight.w600),
+              ),
+              Text(
+                esEstimacionPrecio ? 'Precio: Estimado' : 'Precio: Publicado',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  color: esEstimacionPrecio ? AppTheme.warning : AppTheme.success,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ],
           ),
           if (razones.isNotEmpty) ...[
             const SizedBox(height: 6),
-            for (final r in razones.take(2))
+            for (final r in razones.take(3))
               Text(
                 '✓ $r',
                 style: GoogleFonts.inter(fontSize: 11, color: AppTheme.success),
               ),
+          ],
+          if (observaciones.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            for (final obs in observaciones.take(2))
+              Text(
+                '⚠ $obs',
+                style: GoogleFonts.inter(fontSize: 11, color: AppTheme.warning),
+              ),
+          ],
+          if (cotMob != null) ...[
+            const SizedBox(height: 6),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF0B0F19) : const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: borderColor),
+              ),
+              child: Text(
+                cotMob['disponible'] == true
+                    ? 'Mobiliario por separado: +\$${cotMob['monto_usd']} USD (Bs ${cotMob['monto_bob']})'
+                        '${cotMob['total_inmueble_mas_mobiliario_usd'] != null ? ' · Total: \$${cotMob['total_inmueble_mas_mobiliario_usd']} USD' : ''}'
+                    : (cotMob['nota']?.toString() ?? 'Mobiliario cotizable por separado.'),
+                style: GoogleFonts.inter(fontSize: 11, color: titleColor, fontWeight: FontWeight.w600),
+              ),
+            ),
           ],
           const SizedBox(height: 10),
           Row(
@@ -2865,6 +3059,164 @@ class _AsistenteScreenState extends State<AsistenteScreen> {
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPropuestaProyectoCard(
+    AuthProvider auth,
+    Map<String, dynamic> propuesta,
+    bool isDark,
+    Color cardBg,
+    Color borderColor,
+    Color titleColor,
+    Color subColor,
+  ) {
+    final viable = propuesta['viable'] == true;
+    final escenarios = (propuesta['escenarios'] as List? ?? []).whereType<Map>().toList();
+    final terreno = (propuesta['terreno'] is Map)
+        ? Map<String, dynamic>.from(propuesta['terreno'] as Map)
+        : <String, dynamic>{};
+    final preguntas = (propuesta['preguntas_progresivas'] as List? ?? [])
+        .map((e) => e.toString())
+        .toList();
+    final aviso = propuesta['aviso_alcance']?.toString() ?? '';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.45), width: 1.2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  viable
+                      ? 'PROPUESTA DE PROYECTO PERSONALIZADO'
+                      : 'LIMITACIÓN DE ESTIMACIÓN',
+                  style: GoogleFonts.inter(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.primary,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'Confianza: ${propuesta['nivel_confianza'] ?? 'MEDIO'}',
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          if (!viable) ...[
+            Text(
+              propuesta['motivo']?.toString() ??
+                  'Información técnica o económica insuficiente para estimar el proyecto.',
+              style: GoogleFonts.inter(fontSize: 12, color: titleColor, height: 1.35),
+            ),
+          ] else ...[
+            if (terreno.isNotEmpty) ...[
+              Text(
+                'Terreno (${terreno['estado'] ?? 'POR_CONFIRMAR'}): ${terreno['nota'] ?? ''}',
+                style: GoogleFonts.inter(fontSize: 11.5, color: subColor, height: 1.35),
+              ),
+              const SizedBox(height: 8),
+            ],
+            for (final esc in escenarios)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF0B0F19) : const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: borderColor),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${esc['escenario']} · ${esc['superficie_aprox_m2']} m²',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: titleColor,
+                          ),
+                        ),
+                        Text(
+                          '\$${esc['presupuesto_preliminar_usd']} USD',
+                          style: GoogleFonts.inter(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w900,
+                            color: AppTheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '${esc['estilo_nombre'] ?? ''} · Bs ${esc['presupuesto_preliminar_bob']} (\$${esc['costo_m2_usd']} USD/m²)',
+                      style: GoogleFonts.inter(fontSize: 11, color: subColor),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+          if (preguntas.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: preguntas
+                  .map(
+                    (q) => ActionChip(
+                      label: Text(q, style: const TextStyle(fontSize: 11)),
+                      onPressed: _enviando
+                          ? null
+                          : () {
+                              _inputController.text = q;
+                              _inputController.selection = TextSelection.fromPosition(
+                                TextPosition(offset: _inputController.text.length),
+                              );
+                            },
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+          if (aviso.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              aviso,
+              style: GoogleFonts.inter(
+                fontSize: 10.5,
+                fontStyle: FontStyle.italic,
+                color: subColor,
+              ),
+            ),
+          ],
         ],
       ),
     );

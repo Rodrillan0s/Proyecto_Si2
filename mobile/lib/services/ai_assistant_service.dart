@@ -14,6 +14,8 @@ class AdminChatMessage {
   Map<String, dynamic>? request;
   Map<String, dynamic>? operacionPropuesta;
   Map<String, dynamic>? resultadoAnalisis;
+  Map<String, dynamic>? chartSpec;
+  Map<String, dynamic>? pendientes;
   List<String> sugerencias;
   List<String> referencias;
   bool ejecutandoAccion;
@@ -31,6 +33,8 @@ class AdminChatMessage {
     this.request,
     this.operacionPropuesta,
     this.resultadoAnalisis,
+    this.chartSpec,
+    this.pendientes,
     this.sugerencias = const [],
     this.referencias = const [],
     this.ejecutandoAccion = false,
@@ -57,6 +61,8 @@ class CommercialChatMessage {
   List<Map<String, dynamic>> unidades;
   Map<String, dynamic>? comparativa;
   Map<String, dynamic>? estimacionCosto;
+  Map<String, dynamic>? propuestaProyecto;
+  Map<String, dynamic>? motivosExclusion;
   Map<String, dynamic>? lecturaPlano;
   Map<String, dynamic>? registroCrm;
   bool requiereContacto;
@@ -75,6 +81,8 @@ class CommercialChatMessage {
     this.unidades = const [],
     this.comparativa,
     this.estimacionCosto,
+    this.propuestaProyecto,
+    this.motivosExclusion,
     this.lecturaPlano,
     this.registroCrm,
     this.requiereContacto = false,

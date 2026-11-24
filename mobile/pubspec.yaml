@@ -19,6 +19,8 @@ dependencies:
   web_socket_channel: ^3.0.1
   shared_preferences:
   connectivity_plus:
+  sqflite: ^2.3.3+1
+  path: ^1.9.0
   image_picker:
   record:
   path_provider:
@@ -31,6 +33,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+  sqflite_common_ffi: ^2.3.3
 
 flutter:
   uses-material-design: true

@@ -16,7 +16,8 @@
     "test:navigation": "ng test --watch=false --ts-config=tsconfig.navigation.spec.json --include=src/app/**/lecturas.spec.ts --include=src/app/**/rendimiento.spec.ts --include=src/app/**/admin-layout.spec.ts",
     "test:cu30": "ng test --watch=false --ts-config=tsconfig.cu30.spec.json --include=src/app/services/crm-cu30.spec.ts",
     "test:pagos": "ng test --watch=false --ts-config=tsconfig.pagos.spec.json --include=src/app/services/pagos.spec.ts --include=src/app/pages/pagos/**/*.spec.ts",
-    "test:cu31": "ng test --watch=false --ts-config=tsconfig.cu31.spec.json --include=src/app/pages/comercializacion/comercializacion.spec.ts"
+    "test:cu31": "ng test --watch=false --ts-config=tsconfig.cu31.spec.json --include=src/app/pages/comercializacion/comercializacion.spec.ts",
+    "test:posventa": "ng test --watch=false --ts-config=tsconfig.posventa.spec.json --include=src/app/pages/posventa/posventa.spec.ts"
   },
   "private": true,
   "packageManager": "npm@10.9.2",

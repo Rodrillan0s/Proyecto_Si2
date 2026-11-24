@@ -8,6 +8,7 @@ import { interval } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../services/auth';
 import { AsistenteService } from '../../services/asistente.service';
+import { ChartSpecCardComponent } from '../../components/chart-spec-card/chart-spec-card';
 import { reportError, saveReportFile } from '../../services/reportes-ui';
 import {
   ReportesService,
@@ -26,7 +27,7 @@ import {
 @Component({
   selector: 'app-reportes',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ChartSpecCardComponent],
   templateUrl: './reportes.html',
   styleUrls: ['./reportes-results.css', './reportes.css', './reportes-personalizacion.css'],
 })

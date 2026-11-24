@@ -7,9 +7,10 @@ Permisos utilizados:
   - Visualizar_avances → GET
   - Registrar_avances  → POST / DELETE
 """
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, Request
 
 from app.services import avance_services
+from app.services.sync_offline_services import SyncConflictError
 from app.utils.security import exigir_permiso, exigir_rol
 
 router = APIRouter(
@@ -87,12 +88,17 @@ def post_avance(
     id_obra: int,
     request: Request,
     data: dict = Body(...),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
     token_data: dict = Depends(exigir_permiso("Registrar_avances")),
 ):
     if not data:
         raise HTTPException(status_code=400, detail="El cuerpo de la petición está vacío.")
     try:
-        return avance_services.registrar_avance(id_obra, data, token_data, _ip(request))
+        return avance_services.registrar_avance(
+            id_obra, data, token_data, _ip(request), idempotency_key=idempotency_key
+        )
+    except SyncConflictError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:

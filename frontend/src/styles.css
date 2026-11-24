@@ -1,97 +1,349 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import 'leaflet/dist/leaflet.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Opcional: Esto hace que el renderizado de la fuente en pantallas de alta resolución se vea mucho más nítido y profesional */
-body {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* ==========================================================================
+   SISTEMA DE DISEÑO OBRATEC — TOKENS GLOBALES (LIGHT & DARK)
+   ========================================================================== */
+:root {
+  --ob-font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Superficies neutrales (familia Slate fría consistente) */
+  --ob-bg: #f4f6f9;
+  --ob-surface: #ffffff;
+  --ob-surface-subtle: #f8fafc;
+  --ob-surface-hover: #f1f5f9;
+  --ob-border: #e2e8f0;
+  --ob-border-strong: #cbd5e1;
+
+  /* Tipografía */
+  --ob-text: #0f172a;
+  --ob-text-secondary: #475569;
+  --ob-text-muted: #64748b;
+
+  /* Acento corporativo único: Ámbar arquitectónico */
+  --ob-accent: #d97706;
+  --ob-accent-hover: #b45309;
+  --ob-accent-soft: #fef3c7;
+  --ob-accent-text: #92400e;
+
+  /* Shell corporativo */
+  --ob-shell: #0c1824;
+  --ob-shell-elevated: #132336;
+  --ob-shell-border: rgba(255, 255, 255, 0.08);
+  --ob-shell-text: #f8fafc;
+  --ob-shell-muted: #94a3b8;
+
+  /* Estados semánticos */
+  --ob-success: #059669;
+  --ob-success-soft: #ecfdf5;
+  --ob-warning: #d97706;
+  --ob-warning-soft: #fffbeb;
+  --ob-danger: #dc2626;
+  --ob-danger-soft: #fef2f2;
+  --ob-info: #0284c7;
+  --ob-info-soft: #f0f9ff;
+
+  /* Radios y sombras tintadas en Slate */
+  --ob-radius-sm: 0.375rem;
+  --ob-radius-md: 0.625rem;
+  --ob-radius-lg: 0.875rem;
+  --ob-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --ob-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --ob-shadow-md: 0 10px 24px -6px rgba(15, 23, 42, 0.12);
+  --ob-shadow-lg: 0 20px 40px -12px rgba(15, 23, 42, 0.22);
+
+  /* Escala Z-index */
+  --ob-z-dropdown: 90;
+  --ob-z-sidebar: 95;
+  --ob-z-header: 100;
+  --ob-z-modal: 120;
+  --ob-z-toast: 140;
+}
+
+.dark {
+  --ob-bg: #0b1120;
+  --ob-surface: #111827;
+  --ob-surface-subtle: #1e293b;
+  --ob-surface-hover: #263449;
+  --ob-border: #1f2937;
+  --ob-border-strong: #334155;
+
+  --ob-text: #f8fafc;
+  --ob-text-secondary: #cbd5e1;
+  --ob-text-muted: #94a3b8;
+
+  --ob-accent: #f59e0b;
+  --ob-accent-hover: #d97706;
+  --ob-accent-soft: rgba(245, 158, 11, 0.16);
+  --ob-accent-text: #fcd34d;
+
+  --ob-success: #34d399;
+  --ob-success-soft: rgba(16, 185, 129, 0.14);
+  --ob-warning: #fbbf24;
+  --ob-warning-soft: rgba(245, 158, 11, 0.14);
+  --ob-danger: #f87171;
+  --ob-danger-soft: rgba(239, 68, 68, 0.14);
+  --ob-info: #38bdf8;
+  --ob-info-soft: rgba(14, 165, 233, 0.14);
+
+  --ob-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.28);
+  --ob-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.32);
+  --ob-shadow-md: 0 12px 28px -6px rgba(0, 0, 0, 0.45);
+  --ob-shadow-lg: 0 24px 48px -12px rgba(0, 0, 0, 0.6);
 }
 
 /* ==========================================================================
-   ESTILOS DE SCROLLBAR (Global)
+   BASE TIPOGRAFÍA, ACCESIBILIDAD Y RENDERIZADO
    ========================================================================== */
+@layer base {
+  html {
+    font-family: var(--ob-font-sans);
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
 
-/* 1. Para navegadores basados en WebKit (Chrome, Edge, Safari, Opera) */
+  body {
+    font-family: var(--ob-font-sans);
+    background-color: var(--ob-bg);
+    color: var(--ob-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
 
+  h1, h2, h3, h4 {
+    text-wrap: balance;
+    letter-spacing: -0.015em;
+  }
+
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+
+  button, a, input, select, textarea {
+    font-family: inherit;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid var(--ob-accent);
+    outline-offset: 2px;
+  }
+}
+
+/* ==========================================================================
+   COMPONENTES REUTILIZABLES DEL SISTEMA DE DISEÑO (.ob-*)
+   ========================================================================== */
+@layer components {
+  .ob-page {
+    @apply w-full max-w-[1440px] mx-auto space-y-6;
+  }
+
+  .ob-card {
+    background-color: var(--ob-surface);
+    border: 1px solid var(--ob-border);
+    border-radius: var(--ob-radius-lg);
+    box-shadow: var(--ob-shadow-sm);
+    @apply transition-colors duration-200;
+  }
+
+  .ob-card-padded {
+    @apply ob-card p-4 sm:p-6;
+  }
+
+  .ob-btn {
+    @apply inline-flex items-center justify-center gap-2 font-semibold text-sm rounded-lg px-4 py-2.5 min-h-[40px] transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98];
+  }
+
+  .ob-btn-sm {
+    @apply inline-flex items-center justify-center gap-1.5 font-semibold text-xs rounded-lg px-3 py-2 min-h-[34px] transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98];
+  }
+
+  .ob-btn-primary {
+    @apply ob-btn text-white shadow-xs;
+    background-color: var(--ob-accent);
+  }
+  .ob-btn-primary:hover:not(:disabled) {
+    background-color: var(--ob-accent-hover);
+  }
+
+  .ob-btn-secondary {
+    @apply ob-btn;
+    background-color: var(--ob-surface);
+    color: var(--ob-text);
+    border: 1px solid var(--ob-border-strong);
+  }
+  .ob-btn-secondary:hover:not(:disabled) {
+    background-color: var(--ob-surface-hover);
+  }
+
+  .ob-btn-danger {
+    @apply ob-btn bg-rose-600 text-white hover:bg-rose-700 shadow-xs;
+  }
+
+  .ob-btn-ghost {
+    @apply ob-btn bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800;
+    color: var(--ob-text-secondary);
+  }
+
+  .ob-label {
+    @apply block text-xs font-semibold uppercase tracking-wide mb-1.5;
+    color: var(--ob-text-secondary);
+  }
+
+  .ob-input,
+  .ob-select,
+  .ob-textarea {
+    @apply w-full rounded-lg px-3.5 py-2.5 text-sm transition-colors duration-150;
+    background-color: var(--ob-surface);
+    color: var(--ob-text);
+    border: 1px solid var(--ob-border-strong);
+  }
+  .ob-input:focus,
+  .ob-select:focus,
+  .ob-textarea:focus {
+    border-color: var(--ob-accent);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--ob-accent-soft);
+  }
+
+  .ob-table-wrap {
+    @apply w-full overflow-x-auto rounded-xl;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--ob-border);
+    background-color: var(--ob-surface);
+  }
+
+  .ob-table {
+    @apply w-full border-collapse text-left text-sm;
+  }
+
+  .ob-table thead th {
+    @apply px-4 py-3 text-[11px] font-bold uppercase tracking-wider whitespace-nowrap;
+    background-color: var(--ob-surface-subtle);
+    color: var(--ob-text-muted);
+    border-bottom: 1px solid var(--ob-border);
+  }
+
+  .ob-table tbody td {
+    @apply px-4 py-3.5 align-middle;
+    color: var(--ob-text);
+    border-bottom: 1px solid var(--ob-border);
+  }
+
+  .ob-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .ob-table tbody tr:hover td {
+    background-color: var(--ob-surface-hover);
+  }
+
+  .ob-modal-overlay {
+    @apply fixed inset-0 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-[2px];
+    z-index: var(--ob-z-modal);
+  }
+
+  .ob-modal {
+    background-color: var(--ob-surface);
+    border: 1px solid var(--ob-border);
+    border-radius: var(--ob-radius-lg);
+    box-shadow: var(--ob-shadow-lg);
+    @apply w-full max-h-[90dvh] overflow-y-auto;
+  }
+
+  .ob-skeleton {
+    @apply animate-pulse rounded-lg bg-slate-200/80 dark:bg-slate-800/80;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* ==========================================================================
+   SALVAGUARDAS GLOBALES DE COHESIÓN Y RESPONSIVE EN EL WORKSPACE
+   ========================================================================== */
+.panel-content > *:not(router-outlet):not(app-asistente) {
+  max-width: 100%;
+}
+
+/* Evitar desbordamientos horizontales en tablas heredadas y wrappers */
+.panel-content .table-wrap,
+.panel-content .table-container,
+.panel-content .table-scroll,
+.panel-content .overflow-x-auto {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Garantizar que modales heredados nunca se salgan del viewport en móvil/tablet */
+@media (max-width: 768px) {
+  .panel-content [class*="modal-card"],
+  .panel-content [class*="modal-box"],
+  .panel-content [class*="modal-content"],
+  .panel-content [class*="modal-dialog"] {
+    width: calc(100vw - 1.5rem) !important;
+    max-width: calc(100vw - 1.5rem) !important;
+    max-height: 90dvh !important;
+    overflow-y: auto;
+  }
+
+  .panel-content .modal-header,
+  .panel-content .modal-footer,
+  .panel-content .page-header,
+  .panel-content .toolbar,
+  .panel-content .filters-bar {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+}
+
+/* ==========================================================================
+   SCROLLBAR GLOBAL (LIGHT & DARK)
+   ========================================================================== */
 ::-webkit-scrollbar {
-  width: 8px;  /* Ancho de la barra vertical */
-  height: 8px; /* Alto de la barra horizontal */
+  width: 7px;
+  height: 7px;
 }
 
-/* El fondo (riel) de la barra */
 ::-webkit-scrollbar-track {
-  background: #f8fafc; /* Equivalente a slate-50 */
-  border-radius: 4px;
+  background: var(--ob-surface-subtle);
 }
 
-/* La barra deslizable (thumb) */
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1; /* Equivalente a slate-300 */
-  border-radius: 4px;
+  background: var(--ob-border-strong);
+  border-radius: 9999px;
 }
 
-/* La barra deslizable cuando pasas el mouse por encima */
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8; /* Equivalente a slate-400 */
+  background: var(--ob-text-muted);
 }
-
-
-/* 2. Para Firefox (Firefox usa un estándar diferente) */
 
 * {
-  /* Opciones: auto, thin, none */
-  scrollbar-width: thin; 
-  /* Primer color es el thumb (barra), segundo es el track (fondo) */
-  scrollbar-color: #cbd5e1 #f8fafc; 
+  scrollbar-width: thin;
+  scrollbar-color: var(--ob-border-strong) var(--ob-surface-subtle);
 }
 
-/* Adaptación para modo oscuro */
-.dark ::-webkit-scrollbar-track {
-  background: #0f172a; /* slate-900 */
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background: #334155; /* slate-700 */
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #475569; /* slate-600 */
-}
-
-.dark * {
-  scrollbar-color: #334155 #0f172a;
-}
-
-.leaflet-tooltip-taller {
-  background-color: #1e3a8a;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 4px 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  white-space: nowrap;
-}
- 
-.leaflet-tooltip-taller::before {
-  border-top-color: #1e3a8a;
-}
-
+/* ==========================================================================
+   LEAFLET TOOLTIP CORPORATIVO
+   ========================================================================== */
 .leaflet-tooltip-taller {
   background: transparent !important;
   border: none !important;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.18) !important;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.18) !important;
   padding: 0 !important;
   border-radius: 8px !important;
   overflow: hidden;
 }
- 
-/* Quitar el triángulo blanco de Leaflet */
+
 .leaflet-tooltip-taller::before {
   display: none !important;
 }

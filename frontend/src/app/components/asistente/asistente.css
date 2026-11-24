@@ -482,3 +482,93 @@ textarea {
   border-color: #f59e0b;
   color: #b45309;
 }
+
+
+/* Bandeja Proactiva de Pendientes */
+.inbox-card {
+  margin: 8px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--ob-border, #e2e8f0);
+  background: var(--ob-surface-2, #f8fafc);
+}
+.inbox-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.inbox-eyebrow {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--ob-primary, #d97706);
+}
+.inbox-count {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(217, 119, 6, 0.14);
+  color: var(--ob-primary, #b45309);
+}
+.inbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.inbox-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  background: var(--ob-surface, #ffffff);
+  border: 1px solid var(--ob-border, #e2e8f0);
+}
+.inbox-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.inbox-item-main strong {
+  font-size: 12px;
+  color: var(--ob-text, #0f172a);
+}
+.inbox-item-main small {
+  font-size: 11px;
+  color: var(--ob-muted, #64748b);
+}
+.inbox-prio {
+  align-self: flex-start;
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(100, 116, 139, 0.14);
+  color: #475569;
+}
+.inbox-prio[data-prio='CRITICA'] {
+  background: rgba(220, 38, 38, 0.14);
+  color: #b91c1c;
+}
+.inbox-prio[data-prio='ALTA'] {
+  background: rgba(217, 119, 6, 0.16);
+  color: #b45309;
+}
+.inbox-link {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--ob-border, #cbd5e1);
+  background: transparent;
+  color: var(--ob-primary, #d97706);
+  cursor: pointer;
+}
+.inbox-link:hover {
+  background: rgba(217, 119, 6, 0.1);
+}

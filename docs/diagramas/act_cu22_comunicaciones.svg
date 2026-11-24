@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1140" height="980" viewBox="0 0 1140 980">
+<defs>
+      <marker id="act-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#000000"/>
+      </marker>
+      <filter id="shadow" x="-5%" y="-5%" width="110%" height="115%">
+        <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.08"/>
+      </filter>
+    </defs>
+<rect width="1140" height="980" fill="#FFFFFF"/>
+<text x="45" y="30" font-family="Arial, Helvetica, sans-serif" font-size="14.5" font-weight="bold" fill="#000000">CU22 (W/M) – Gestionar comunicaciones y notificaciones</text>
+<text x="45" y="47" font-family="Arial, Helvetica, sans-serif" font-size="10.5" fill="#555555">Representación de redacción de comunicados, selección de canales, despacho prioritario/asíncrono y confirmación de lectura.</text>
+<rect x="45" y="58" width="1050" height="897" fill="none" stroke="#000000" stroke-width="1.3"/>
+<rect x="45.0" y="58" width="350.0" height="38" fill="#F0F2F5" stroke="#000000" stroke-width="1.2"/>
+<text x="220.0" y="82" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" font-weight="bold" fill="#111111">Usuario Gestor / Emisor</text>
+<rect x="395.0" y="58" width="350.0" height="38" fill="#F0F2F5" stroke="#000000" stroke-width="1.2"/>
+<text x="570.0" y="82" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" font-weight="bold" fill="#111111">Destinatario (Cliente / Equipo)</text>
+<line x1="395.0" y1="96" x2="395.0" y2="955" stroke="#000000" stroke-width="1.2"/>
+<rect x="745.0" y="58" width="350.0" height="38" fill="#F0F2F5" stroke="#000000" stroke-width="1.2"/>
+<text x="920.0" y="82" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" font-weight="bold" fill="#111111">Sistema</text>
+<line x1="745.0" y1="96" x2="745.0" y2="955" stroke="#000000" stroke-width="1.2"/>
+<line x1="220" y1="146" x2="220" y2="180.0" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<line x1="220" y1="230.0" x2="220" y2="270.0" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 220 320.0 L 220 295.0 L 920 295.0 L 920 270.0" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<rect x="504.15" y="287.0" width="131.7" height="16" rx="3" fill="#FFFFFF" stroke="#BBBBBB" stroke-width="1"/>
+<text x="570.0" y="299.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Configuración lista</text>
+<line x1="920" y1="320.0" x2="920" y2="365.0" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 900.0 385 L 900.0 415.0 L 820 415.0 L 820 445.0" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<rect x="816.2" y="407.0" width="87.6" height="16" rx="3" fill="#FFFFFF" stroke="#BBBBBB" stroke-width="1"/>
+<text x="860.0" y="419.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">[Individual]</text>
+<path d="M 940.0 385 L 940.0 415.0 L 1020 415.0 L 1020 445.0" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<rect x="926.75" y="407.0" width="106.5" height="16" rx="3" fill="#FFFFFF" stroke="#BBBBBB" stroke-width="1"/>
+<text x="980.0" y="419.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">[Masiva / Lote]</text>
+<path d="M 820 495.0 L 820 514.5 L 920 514.5 L 920 534.0" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<path d="M 1020 495.0 L 1020 514.5 L 920 514.5 L 920 534.0" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<line x1="920" y1="546.0" x2="920" y2="590.0" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<rect x="869.9" y="560.0" width="100.2" height="16" rx="3" fill="#FFFFFF" stroke="#BBBBBB" stroke-width="1"/>
+<text x="920" y="572.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Cola procesada</text>
+<path d="M 920 640.0 L 920 657.5 L 570 657.5 L 570 675.0" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<rect x="691.75" y="649.5" width="106.5" height="16" rx="3" fill="#FFFFFF" stroke="#BBBBBB" stroke-width="1"/>
+<text x="745.0" y="661.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Mensaje emitido</text>
+<path d="M 570 725.0 L 570 742.5 L 920 742.5 L 920 760.0" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<rect x="682.3" y="734.5" width="125.39999999999999" height="16" rx="3" fill="#FFFFFF" stroke="#BBBBBB" stroke-width="1"/>
+<text x="745.0" y="746.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Apertura / Lectura</text>
+<path d="M 920 810.0 L 920 825.0 L 220 825.0 L 220 840.0" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<rect x="516.75" y="817.0" width="106.5" height="16" rx="3" fill="#FFFFFF" stroke="#BBBBBB" stroke-width="1"/>
+<text x="570.0" y="829.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Trazabilidad OK</text>
+<line x1="220" y1="890.0" x2="220" y2="923" stroke="#000000" stroke-width="1.2" marker-end="url(#act-arr)"/>
+<rect x="160.45" y="898.5" width="119.1" height="16" rx="3" fill="#FFFFFF" stroke="#BBBBBB" stroke-width="1"/>
+<text x="220" y="910.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-style="italic" fill="#000000">Proceso concluido</text>
+<circle cx="220" cy="135" r="11" fill="#000000" stroke="#000000" stroke-width="1.2" filter="url(#shadow)"/>
+<rect x="110.0" y="180.0" width="220" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="220" y="202" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Redactar comunicado técnico o</text>
+<text x="220" y="216" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">seleccionar evento de obra</text>
+<rect x="110.0" y="270.0" width="220" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="220" y="292" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Definir destinatarios y seleccionar</text>
+<text x="220" y="306" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">canales (Push, Email, In-App)</text>
+<rect x="810.0" y="270.0" width="220" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="920" y="292" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Validar permisos, destinatarios y</text>
+<text x="920" y="306" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">preferencias de notificación</text>
+<polygon points="920,365.0 940.0,385 920,405.0 900.0,385" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<rect x="846.8" y="345.0" width="146.4" height="16" rx="3" fill="#FFFFFF" stroke="#AAAAAA" stroke-width="0.8"/>
+<text x="920" y="357.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="bold" fill="#000000">¿Tipo de notificación?</text>
+<rect x="740.0" y="445.0" width="160" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="820" y="467" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Priorizar despacho</text>
+<text x="820" y="481" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">inmediato individual</text>
+<rect x="940.0" y="445.0" width="160" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="1020" y="467" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Encolar lote en broker</text>
+<text x="1020" y="481" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">para envío asíncrono</text>
+<rect x="895.0" y="534.0" width="50" height="12" rx="3" fill="#000000"/>
+<rect x="810.0" y="590.0" width="220" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="920" y="612" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Despachar mensajes y registrar</text>
+<text x="920" y="626" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">transacción en base de datos</text>
+<rect x="460.0" y="675.0" width="220" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="570" y="697" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Recibir notificación en móvil</text>
+<text x="570" y="711" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">o web y abrir contenido</text>
+<rect x="810.0" y="760.0" width="220" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="920" y="782" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Registrar acuse de recibo y</text>
+<text x="920" y="796" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">actualizar estado a 'LEÍDO'</text>
+<rect x="110.0" y="840.0" width="220" height="50" rx="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.3" filter="url(#shadow)"/>
+<text x="220" y="862" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">Consultar métricas de entrega</text>
+<text x="220" y="876" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#000000">y confirmaciones de lectura</text>
+<circle cx="220" cy="935" r="12" fill="#FFFFFF" stroke="#000000" stroke-width="1.4" filter="url(#shadow)"/>
+<circle cx="220" cy="935" r="7" fill="#000000"/>
+</svg>

@@ -1,0 +1,43 @@
+C4Component
+    title Diagrama de Componentes - API Backend (Gestión de Obras, Estructuras y Control de Costos)
+
+    %% 1. Contenedores consumidores (Arriba)
+    Container(web, "Aplicación Web", "Angular 18 + Tailwind CSS", "Interfaz web para administración técnica y financiera")
+    Container(mobile, "Aplicación Móvil", "Flutter + Dart", "App móvil operativa para supervisión en terreno")
+
+    %% 2. Límite del Contenedor analizado (Centro)
+    Container_Boundary(api, "API Backend [FastAPI + Uvicorn]") {
+        Component(obra_ctrl, "Obra Controller", "FastAPI Router", "Rutas REST para proyectos, estructuras y asignaciones (obra_routes.py)")
+        Component(costos_ctrl, "Control Costos Controller", "FastAPI Router", "Rutas para costos ejecutados, órdenes de cambio y estimaciones (control_costos_routes.py)")
+        Component(ct_ctrl, "Consulta Técnica Controller", "FastAPI Router", "Rutas para ciclo de vida de RFIs y aclaraciones (consulta_tecnica_routes.py)")
+
+        Component(obra_srv, "Obra Service", "Python Service", "Lógica de obras, validación de avances y presupuestos (obra_services.py)")
+        Component(costos_srv, "Control Costos Service", "Python Service", "Cálculo de desviaciones, afectación y costos finales (control_costos_services.py)")
+        Component(ct_srv, "Consulta Técnica Service", "Python Service", "Gestión de estados, asignación y auditoría de RFIs (consulta_tecnica_services.py)")
+
+        Component(obra_repo, "Obras Repository", "SQLAlchemy / Psycopg2", "Persistencia de proyectos, estructuras y avances (obra_repos.py)")
+        Component(costos_repo, "Costos Repository", "SQLAlchemy / Psycopg2", "Persistencia de costos, estimaciones y órdenes (control_costos_repos.py)")
+        Component(ct_repo, "Consulta Técnica Repository", "SQLAlchemy / Psycopg2", "Persistencia y trazabilidad de consultas (consulta_tecnica_repos.py)")
+    }
+
+    %% 3. Persistencia (Abajo)
+    ContainerDb(db, "Base de Datos Principal", "PostgreSQL (schema: obras)", "Almacena obras, estructuras, consultas técnicas y costos ejecutados")
+
+    %% 4. Relaciones unidireccionales etiquetadas
+    Rel(web, obra_ctrl, "Gestiona obras y estructuras", "JSON/HTTPS")
+    Rel(mobile, obra_ctrl, "Consulta proyectos asignados", "JSON/HTTPS")
+    Rel(web, costos_ctrl, "Consulta y audita costos", "JSON/HTTPS")
+    Rel(web, ct_ctrl, "Registra y responde consultas RFI", "JSON/HTTPS")
+    Rel(mobile, ct_ctrl, "Reporta consultas desde terreno", "JSON/HTTPS")
+
+    Rel(obra_ctrl, obra_srv, "Invoca lógica de proyectos")
+    Rel(costos_ctrl, costos_srv, "Invoca cálculo de costos")
+    Rel(ct_ctrl, ct_srv, "Invoca flujo de RFIs")
+
+    Rel(obra_srv, obra_repo, "Consulta y persiste obras")
+    Rel(costos_srv, costos_repo, "Registra y liquida costos")
+    Rel(ct_srv, ct_repo, "Persiste consultas y respuestas")
+
+    Rel(obra_repo, db, "Lee y escribe t_obra, t_estructura", "SQL/TCP")
+    Rel(costos_repo, db, "Lee y escribe t_control_costo, t_costo_ejecutado", "SQL/TCP")
+    Rel(ct_repo, db, "Lee y escribe t_consulta_tecnica, t_historial", "SQL/TCP")

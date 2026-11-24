@@ -97,6 +97,10 @@ export const routes: Routes = [
                 data: { permissions: ['Visualizar_clientes', 'Registrar_obras'] }
             },
             {
+                path: 'posventa',
+                loadComponent: () => import('./pages/posventa/posventa').then(module => module.PosventaComponent)
+            },
+            {
                 path: 'crm',
                 loadComponent: () => import('./pages/crm/crm').then(module => module.CrmComponent),
                 canActivate: [roleGuard],

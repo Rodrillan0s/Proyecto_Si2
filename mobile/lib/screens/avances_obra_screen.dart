@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
+import '../services/auth_provider.dart';
 import '../services/avance_service.dart';
+import '../services/offline_sync_service.dart';
+import '../services/unidad_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/offline_banner.dart';
 
 /// CU18 – Pantalla de Avances de Obra (Bitácora de Órdenes de Trabajo)
 /// El avance físico no es editable directamente; se calcula en base al
@@ -26,6 +31,7 @@ class AvancesObraScreen extends StatefulWidget {
 class _AvancesObraScreenState extends State<AvancesObraScreen>
     with SingleTickerProviderStateMixin {
   final AvanceService _avanceService = AvanceService();
+  final UnidadService _unidadService = UnidadService();
 
   late TabController _tabController;
   final TextEditingController _searchCtrl = TextEditingController();
@@ -139,13 +145,209 @@ class _AvancesObraScreenState extends State<AvancesObraScreen>
     });
   }
 
+  bool _puedeRegistrarAvance(AuthProvider auth) {
+    if (auth.esCliente) return false;
+    return auth.esAdminGlobal ||
+        auth.esAdminEmpresa ||
+        auth.esJefeObra ||
+        auth.esSupervisor ||
+        auth.hasPermission('Registrar_avances');
+  }
+
+  Future<void> _mostrarModalRegistrarAvance() async {
+    final auth = context.read<AuthProvider>();
+    final sync = context.read<OfflineSyncService>();
+    final empId = auth.empresaId;
+
+    List<Map<String, dynamic>> unidades = [];
+    try {
+      if (empId != null && empId > 0) {
+        final res = await sync.obtenerUnidadesOfflineFirst(
+          idEmpresa: empId,
+          userKey: auth.userIdentityKey,
+          idObra: widget.idObra,
+          fetcherRemoto: _unidadService.listarUnidades,
+        );
+        unidades = res.data;
+      } else {
+        unidades = await _unidadService.listarUnidades(widget.idObra);
+      }
+    } catch (_) {
+      unidades = [];
+    }
+
+    if (!mounted) return;
+    int? idUnidadSel = unidades.isNotEmpty
+        ? int.tryParse(unidades.first['id_unidad']?.toString() ?? '')
+        : null;
+    final pctCtrl = TextEditingController();
+    final obsCtrl = TextEditingController();
+    bool guardando = false;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                16,
+                16,
+                16,
+                MediaQuery.of(ctx).viewInsets.bottom + 16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Registrar avance físico',
+                    style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<int>(
+                    initialValue: idUnidadSel,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Unidad *',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: unidades
+                        .where((u) => int.tryParse(u['id_unidad']?.toString() ?? '') != null)
+                        .map((u) => DropdownMenuItem<int>(
+                              value: int.parse(u['id_unidad'].toString()),
+                              child: Text('${u['codigo'] ?? ''} · ${u['nombre'] ?? 'Unidad'}'),
+                            ))
+                        .toList(),
+                    onChanged: guardando ? null : (v) => setModalState(() => idUnidadSel = v),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: pctCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Porcentaje de avance (0 - 100) *',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: obsCtrl,
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                      labelText: 'Observación (opcional)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: guardando
+                          ? null
+                          : () async {
+                              final pct = double.tryParse(pctCtrl.text.trim().replaceAll(',', '.'));
+                              if (idUnidadSel == null || pct == null || pct < 0 || pct > 100) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Seleccione unidad e ingrese un porcentaje entre 0 y 100.'),
+                                  ),
+                                );
+                                return;
+                              }
+                              setModalState(() => guardando = true);
+                              try {
+                                if (!sync.isOnline && empId != null && empId > 0) {
+                                  await sync.registrarAvanceOffline(
+                                    idEmpresa: empId,
+                                    userKey: auth.userIdentityKey,
+                                    idObra: widget.idObra,
+                                    idUnidad: idUnidadSel!,
+                                    porcentajeAvance: pct,
+                                    observacion: obsCtrl.text.trim(),
+                                  );
+                                  if (!mounted) return;
+                                  if (ctx.mounted) Navigator.pop(ctx);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Sin conexión: avance guardado localmente para sincronización.'),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                await _avanceService.registrarAvance(
+                                  idObra: widget.idObra,
+                                  idUnidad: idUnidadSel!,
+                                  porcentajeAvance: pct,
+                                  observacion: obsCtrl.text.trim(),
+                                );
+                                if (!mounted) return;
+                                if (ctx.mounted) Navigator.pop(ctx);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Avance registrado exitosamente.')),
+                                );
+                                _cargarDatos();
+                              } catch (e) {
+                                // Si falla por red, respaldar en cola offline SQLite sin perder datos
+                                if (empId != null && empId > 0 && !sync.isOnline) {
+                                  await sync.registrarAvanceOffline(
+                                    idEmpresa: empId,
+                                    userKey: auth.userIdentityKey,
+                                    idObra: widget.idObra,
+                                    idUnidad: idUnidadSel!,
+                                    porcentajeAvance: pct,
+                                    observacion: obsCtrl.text.trim(),
+                                  );
+                                  if (!mounted) return;
+                                  if (ctx.mounted) Navigator.pop(ctx);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Guardado localmente para sincronización automática.'),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                setModalState(() => guardando = false);
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+                                );
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primary,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: Text(guardando ? 'Guardando...' : 'Guardar avance'),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final auth = context.watch<AuthProvider>();
 
     return Scaffold(
       backgroundColor:
           isDark ? AppTheme.darkBackground : AppTheme.background,
+      floatingActionButton: _puedeRegistrarAvance(auth)
+          ? FloatingActionButton.extended(
+              onPressed: _mostrarModalRegistrarAvance,
+              backgroundColor: AppTheme.primary,
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.add_task_rounded),
+              label: const Text('Registrar avance'),
+            )
+          : null,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,12 +394,16 @@ class _AvancesObraScreenState extends State<AvancesObraScreen>
           ],
         ),
       ),
-      body: _cargando
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? _buildErrorView(isDark)
-              : RefreshIndicator(
-                  onRefresh: _cargarDatos,
+      body: Column(
+        children: [
+          const OfflineBanner(),
+          Expanded(
+            child: _cargando
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                    ? _buildErrorView(isDark)
+                    : RefreshIndicator(
+                        onRefresh: _cargarDatos,
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                     children: [
@@ -223,6 +429,9 @@ class _AvancesObraScreenState extends State<AvancesObraScreen>
                     ],
                   ),
                 ),
+          ),
+        ],
+      ),
     );
   }
 

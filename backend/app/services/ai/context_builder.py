@@ -1,3 +1,9 @@
+"""DEPRECATED: Módulo heredado de contexto CRM en memoria.
+
+Conservado únicamente por compatibilidad con `app.services.ai.ai_service` (`/api/ai/crm`).
+Todas las consultas del Asistente IA y Reportes Dinámicos deben usar el Motor Semántico
+Compartido (`app.services.semantic`) y el Orquestador (`app.services.ai.orchestrator`).
+"""
 from app.classes.postgres import PostgreSQL
 from app.config import Config
 from app.repos import crm_repos

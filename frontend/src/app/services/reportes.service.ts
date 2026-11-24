@@ -45,6 +45,30 @@ export interface ReportCatalog {
   acciones: string[];
   id_empresa: number;
 }
+export interface ChartSpec {
+  tipo: 'none' | 'kpi' | 'bar' | 'stacked_bar' | 'line' | 'pie';
+  eje_x?: string | null;
+  series?: { campo?: string; titulo?: string; field?: string; label?: string }[];
+  titulo?: string | null;
+}
+export interface ProactiveInboxItem {
+  modulo: string;
+  tipo: string;
+  id_recurso?: number | string | null;
+  titulo: string;
+  obra?: string | null;
+  fecha_limite?: string | null;
+  prioridad: 'CRITICA' | 'ALTA' | 'MEDIA' | 'BAJA' | string;
+  motivo: string;
+  ruta_angular?: string | null;
+}
+export interface ProactiveInbox {
+  rol?: string;
+  total?: number;
+  horizonte_dias?: number;
+  items: ProactiveInboxItem[];
+  fuentes_consultadas?: string[];
+}
 export interface ReportResult {
   titulo: string;
   corte: string;
@@ -55,6 +79,8 @@ export interface ReportResult {
   advertencias: string[];
   recomendaciones: Record<string, unknown>[];
   solicitud: ReportRequest;
+  chart_spec?: ChartSpec;
+  tipo_resultado?: string;
 }
 export interface Execution {
   id: string;
@@ -91,6 +117,8 @@ export interface AssistantResponse extends Interpretation {
   sugerencias?: string[];
   referencias?: string[];
   resultado_analisis?: any;
+  chart_spec?: ChartSpec;
+  pendientes?: ProactiveInbox;
 }
 export interface Recipient {
   id_usuario: number;

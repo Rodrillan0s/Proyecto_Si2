@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-11-22T23:30:00.000Z" agent="Antigravity" version="24.0.0" type="device">
+  <diagram id="diag_estado_cu41" name="CU41 - Diagrama de Estados">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1260" pageHeight="440" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title_estado" value="&lt;b&gt;CU 41M – Gestionar operación offline y sincronización&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555555&quot;&gt;Diagrama de Estados: Ciclo de vida del registro de datos y sincronización de faena&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Arial;fontSize=12;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="45" y="18" width="800" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="frame_estado" value="" style="rounded=1;arcSize=4;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;strokeWidth=1.3;" vertex="1" parent="1">
+          <mxGeometry x="35" y="72" width="1190" height="345" as="geometry" />
+        </mxCell>
+        <mxCell id="start_node" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=#000000;strokeWidth=1.2;" vertex="1" parent="1">
+          <mxGeometry x="54" y="174" width="22" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="s1" value="&lt;b&gt;CREADO LOCAL&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555555&quot;&gt;(SQLite)&lt;/font&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=9.5;align=center;" vertex="1" parent="1">
+          <mxGeometry x="98" y="159" width="125" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" value="&lt;b&gt;EN ESPERA DE RED&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555555&quot;&gt;(Cola offline)&lt;/font&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=9.5;align=center;" vertex="1" parent="1">
+          <mxGeometry x="273" y="159" width="135" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" value="&lt;b&gt;EMPAQUETANDO LOTE&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555555&quot;&gt;(JSON + Checksum)&lt;/font&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=9.5;align=center;" vertex="1" parent="1">
+          <mxGeometry x="458" y="159" width="145" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="s4" value="&lt;b&gt;TRANSMITIENDO&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555555&quot;&gt;(HTTP POST sync)&lt;/font&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=9.5;align=center;" vertex="1" parent="1">
+          <mxGeometry x="655" y="159" width="140" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="s_conf" value="&lt;b&gt;RESOLVIENDO CONFLICTO&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555555&quot;&gt;(Last-Write-Wins)&lt;/font&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=9.5;align=center;" vertex="1" parent="1">
+          <mxGeometry x="778" y="279" width="155" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="s5" value="&lt;b&gt;CONSOLIDADO&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555555&quot;&gt;(PostgreSQL Central)&lt;/font&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=9.5;align=center;" vertex="1" parent="1">
+          <mxGeometry x="930" y="159" width="150" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="s6" value="&lt;b&gt;SINCRONIZADO&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555555&quot;&gt;(Confirmado local)&lt;/font&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontFamily=Arial;fontSize=9.5;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1098" y="159" width="115" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="d1" value="" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;" vertex="1" parent="1">
+          <mxGeometry x="837" y="167" width="36" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="end_node" value="" style="ellipse;shape=doubleEllipse;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=#000000;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="1193" y="293" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="e_0" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#000000;strokeWidth=1.2;fontSize=8.5;fontColor=#333333;fontFamily=Arial;labelBackgroundColor=#FFFFFF;labelBorderColor=#CCCCCC;" edge="1" parent="1" source="start_node" target="s1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_1" value="Almacenar local" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#000000;strokeWidth=1.2;fontSize=8.5;fontColor=#333333;fontFamily=Arial;labelBackgroundColor=#FFFFFF;labelBorderColor=#CCCCCC;" edge="1" parent="1" source="s1" target="s2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_2" value="Red detectada" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#000000;strokeWidth=1.2;fontSize=8.5;fontColor=#333333;fontFamily=Arial;labelBackgroundColor=#FFFFFF;labelBorderColor=#CCCCCC;" edge="1" parent="1" source="s2" target="s3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_3" value="Payload listo" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#000000;strokeWidth=1.2;fontSize=8.5;fontColor=#333333;fontFamily=Arial;labelBackgroundColor=#FFFFFF;labelBorderColor=#CCCCCC;" edge="1" parent="1" source="s3" target="s4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#000000;strokeWidth=1.2;fontSize=8.5;fontColor=#333333;fontFamily=Arial;labelBackgroundColor=#FFFFFF;labelBorderColor=#CCCCCC;" edge="1" parent="1" source="s4" target="d1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_5" value="[Sin conflicto]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#000000;strokeWidth=1.2;fontSize=8.5;fontColor=#333333;fontFamily=Arial;labelBackgroundColor=#FFFFFF;labelBorderColor=#CCCCCC;" edge="1" parent="1" source="d1" target="s5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_6" value="[Hay conflicto]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#000000;strokeWidth=1.2;fontSize=8.5;fontColor=#333333;fontFamily=Arial;labelBackgroundColor=#FFFFFF;labelBorderColor=#CCCCCC;" edge="1" parent="1" source="d1" target="s_conf">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_7" value="Resolución Last-Write" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#000000;strokeWidth=1.2;fontSize=8.5;fontColor=#333333;fontFamily=Arial;labelBackgroundColor=#FFFFFF;labelBorderColor=#CCCCCC;" edge="1" parent="1" source="s_conf" target="s5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_8" value="HTTP 200 (ACK)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#000000;strokeWidth=1.2;fontSize=8.5;fontColor=#333333;fontFamily=Arial;labelBackgroundColor=#FFFFFF;labelBorderColor=#CCCCCC;" edge="1" parent="1" source="s5" target="s6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_9" value="Purga / Archivo" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#000000;strokeWidth=1.2;fontSize=8.5;fontColor=#333333;fontFamily=Arial;labelBackgroundColor=#FFFFFF;labelBorderColor=#CCCCCC;" edge="1" parent="1" source="s6" target="end_node">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_retry" value="Fallo de red / Timeout (Reintento con backoff)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#000000;strokeWidth=1.2;fontSize=8.5;fontColor=#333333;fontFamily=Arial;labelBackgroundColor=#FFFFFF;labelBorderColor=#CCCCCC;" edge="1" parent="1" source="s4" target="s2">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="725" y="385" />
+              <mxPoint x="340" y="385" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="diag_tiempo_cu41" name="CU41 - Diagrama de Tiempos">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1140" pageHeight="560" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title_tiempo" value="&lt;b&gt;CU 41M – Gestionar operación offline y sincronización&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555555&quot;&gt;Diagrama de Tiempos: Transición temporal entre App Móvil, Red, API Gateway y Base de Datos&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Arial;fontSize=12;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="45" y="16" width="850" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="frame_timing" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;strokeWidth=1.3;" vertex="1" parent="1">
+          <mxGeometry x="45" y="70" width="1050" height="450" as="geometry" />
+        </mxCell>
+        <mxCell id="th_70" value="&lt;b&gt;APP MÓVIL
+(SQLITE LOCAL)&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8F9FA;strokeColor=#000000;strokeWidth=1.1;fontFamily=Arial;fontSize=9.5;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="45" y="70" width="145" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="tc_70" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;strokeWidth=1.1;" vertex="1" parent="1">
+          <mxGeometry x="190" y="70" width="905" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="th_182" value="&lt;b&gt;CONECTIVIDAD
+/ RED MÓVIL&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8F9FA;strokeColor=#000000;strokeWidth=1.1;fontFamily=Arial;fontSize=9.5;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="45" y="182" width="145" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="tc_182" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;strokeWidth=1.1;" vertex="1" parent="1">
+          <mxGeometry x="190" y="182" width="905" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="th_294" value="&lt;b&gt;API GATEWAY
+/ BACKEND&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8F9FA;strokeColor=#000000;strokeWidth=1.1;fontFamily=Arial;fontSize=9.5;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="45" y="294" width="145" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="tc_294" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;strokeWidth=1.1;" vertex="1" parent="1">
+          <mxGeometry x="190" y="294" width="905" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="th_406" value="&lt;b&gt;BASE DE DATOS
+CENTRAL (PG)&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8F9FA;strokeColor=#000000;strokeWidth=1.1;fontFamily=Arial;fontSize=9.5;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="45" y="406" width="145" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="tc_406" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;strokeWidth=1.1;" vertex="1" parent="1">
+          <mxGeometry x="190" y="406" width="905" height="112" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
